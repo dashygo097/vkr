@@ -1,3 +1,13 @@
+#include "hello_triangle.cc"
+#include <iostream>
+
 int main() {
-    return 0;
+  HelloTriangleApplication app;
+  try {
+    app.run();
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
 }
