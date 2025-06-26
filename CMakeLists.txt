@@ -49,7 +49,7 @@ if(APPLE)
 endif()
 
 # vkr
-add_library(vkr src/a.cpp)
+add_library(vkr)
 target_include_directories(vkr PUBLIC include)
 set_target_properties(vkr PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY src
