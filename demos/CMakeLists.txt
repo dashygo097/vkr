@@ -5,7 +5,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 file(GLOB sample_projects ./basic/*)
 
-print_info("――――――――――――――――――APP SCOPE――――――――――――――――――" "91")
+print_info("――――――――――――――――――APP SCOPE――――――――――――――――――" "0")
 
 foreach(project ${sample_projects})
   if(IS_DIRECTORY ${project})
@@ -23,6 +23,6 @@ foreach(project ${sample_projects})
   endif()
 endforeach()
 
-print_info("[TRACE] CMake configuration completed" "92")
-print_info("[TRACE] Total ${index} exec files will be generated" "92")
+print_info("[INFO] CMake configuration completed" "92")
+print_info("[INFO] Total ${index} exec files will be generated" "92")
 print_info("------------END OF CONFIGURATION-------------" "90")

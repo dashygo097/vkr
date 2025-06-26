@@ -39,7 +39,7 @@ function(print_info text color)
     endif()
 endfunction()
 
-print_info("――――――――――――――――――LIB SCOPE――――――――――――――――――" "91")
+print_info("――――――――――――――――――LIB SCOPE――――――――――――――――――" "0")
 
 # Add targets
 if(APPLE)
@@ -49,12 +49,19 @@ if(APPLE)
 endif()
 
 # vkr
-add_library(vkr)
-target_include_directories(vkr PUBLIC include)
+file(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.c src/*.cc)
+file(GLOB_RECURSE HEADER_FILES include/*.h include/*.hpp)
+
+add_library(vkr ${SOURCE_FILES})
+target_include_directories(vkr PUBLIC ${HEADER_FILES})
 set_target_properties(vkr PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY src
     LIBRARY_OUTPUT_DIRECTORY src
 )
+
+# stastics
+print_info("[TRACE] Header files: ${HEADER_FILES}" "95")
+print_info("[TRACE] Source files: ${SOURCE_FILES}" "96")
 
 # Apps
 add_subdirectory(demos)
