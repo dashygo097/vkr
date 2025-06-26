@@ -1,0 +1,28 @@
+cmake_minimum_required(VERSION 3.24)
+project(demos LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+file(GLOB sample_projects ./basic/*)
+
+print_info("――――――――――――――――――APP SCOPE――――――――――――――――――" "91")
+
+foreach(project ${sample_projects})
+  if(IS_DIRECTORY ${project})
+    set(EXECUTABLE_OUTPUT_PATH ./output)
+    math(EXPR index "${index} + 1" OUTPUT_FORMAT DECIMAL)
+    get_filename_component(project-name ${project} NAME)
+    file(GLOB ${project}-src ${project}/*.cpp ${project}/*.c ${project}/*.cc)
+
+    add_executable(${project-name} ${${project}-src})
+
+    target_link_libraries(${project-name} PRIVATE glfw Vulkan::Vulkan Vulkan::MoltenVK vkr)
+
+    print_info("[TRACE] Adding: ${project-name}" "0")
+
+  endif()
+endforeach()
+
+print_info("[TRACE] CMake configuration completed" "92")
+print_info("[TRACE] Total ${index} exec files will be generated" "92")
+print_info("------------END OF CONFIGURATION-------------" "90")
