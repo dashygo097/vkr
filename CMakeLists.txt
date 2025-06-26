@@ -12,7 +12,7 @@ if (NOT Vulkan_MOLTENVK_LIBRARY)
 endif()
 
 # 3rdparty
-add_subdirectory(3rdparty/glfw-3.4 EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/glfw EXCLUDE_FROM_ALL)
 include_directories(3rdparty)
 
 
@@ -49,9 +49,7 @@ if(APPLE)
 endif()
 
 # vkr
-add_library(vkr
-    src/test.cpp
-)
+add_library(vkr src/a.cpp)
 target_include_directories(vkr PUBLIC include)
 set_target_properties(vkr PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY src
