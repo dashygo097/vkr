@@ -1,2 +1,3 @@
-# vkr
-A simple renderer impled in vulkan 
+# VKR
+
+A simple toy renderer impled in vulkan
