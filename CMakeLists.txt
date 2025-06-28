@@ -64,4 +64,5 @@ print_info("[TRACE] Header files: ${HEADER_FILES}" "95")
 print_info("[TRACE] Source files: ${SOURCE_FILES}" "96")
 
 # Apps
+add_subdirectory(tests)
 add_subdirectory(demos)
