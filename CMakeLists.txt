@@ -15,7 +15,6 @@ endif()
 add_subdirectory(3rdparty/glfw EXCLUDE_FROM_ALL)
 include_directories(3rdparty)
 
-
 set(GLFW_BUILD_DOCS
     OFF
     CACHE BOOL "" FORCE)
@@ -52,8 +51,10 @@ endif()
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.c src/*.cc)
 file(GLOB_RECURSE HEADER_FILES include/*.h include/*.hpp)
 
-add_library(vkr ${SOURCE_FILES})
-target_include_directories(vkr PUBLIC ${HEADER_FILES})
+add_library(vkr ${SOURCE_FILES} ${HEADER_FILES})
+target_include_directories(vkr PUBLIC include)
+target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan Vulkan::MoltenVK)
+
 set_target_properties(vkr PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY src
     LIBRARY_OUTPUT_DIRECTORY src

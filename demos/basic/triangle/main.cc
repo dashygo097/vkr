@@ -4,8 +4,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <vector>
+
+#include "window.hpp"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -45,35 +48,26 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 class HelloTriangleApplication {
 public:
   void run() {
-    initWindow();
     initVulkan();
     mainLoop();
     cleanup();
   }
 
 private:
-  GLFWwindow *window;
+  std::unique_ptr<Window> window;
 
   VkInstance instance;
   VkDebugUtilsMessengerEXT debugMessenger;
 
-  void initWindow() {
-    glfwInit();
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-  }
-
   void initVulkan() {
+    window = std::make_unique<Window>(WIDTH, HEIGHT, "Vulkan");
     createInstance();
     setupDebugMessenger();
   }
 
   void mainLoop() {
-    while (!glfwWindowShouldClose(window)) {
-      glfwPollEvents();
+    while (!window->shouldClose()) {
+      window->pollEvents();
     }
   }
 
@@ -83,10 +77,6 @@ private:
     }
 
     vkDestroyInstance(instance, nullptr);
-
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
   }
 
   void createInstance() {

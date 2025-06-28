@@ -16,7 +16,7 @@ foreach(project ${sample_projects})
 
     add_executable(${project-name} ${${project}-src})
 
-    target_link_libraries(${project-name} PRIVATE glfw Vulkan::Vulkan Vulkan::MoltenVK vkr)
+    target_link_libraries(${project-name} PRIVATE vkr)
 
     print_info("[TRACE] Adding: ${project-name}" "0")
 
