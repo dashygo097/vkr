@@ -53,7 +53,7 @@ file(GLOB_RECURSE HEADER_FILES include/*.h include/*.hpp)
 
 add_library(vkr ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(vkr PUBLIC include)
-target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan Vulkan::MoltenVK)
+target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan)
 
 target_link_libraries(vkr PUBLIC
   "-framework Metal"
@@ -71,5 +71,6 @@ print_info("[TRACE] Header files: ${HEADER_FILES}" "95")
 print_info("[TRACE] Source files: ${SOURCE_FILES}" "96")
 
 # Apps
+enable_testing()
 add_subdirectory(tests)
 add_subdirectory(demos)

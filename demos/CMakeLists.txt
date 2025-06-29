@@ -9,7 +9,7 @@ print_info("――――――――――――――――――APP SCOPE―�
 
 foreach(project ${sample_projects})
   if(IS_DIRECTORY ${project})
-    set(EXECUTABLE_OUTPUT_PATH ./output)
+    set(EXECUTABLE_OUTPUT_PATH ../outputs/demos)
     math(EXPR index "${index} + 1" OUTPUT_FORMAT DECIMAL)
     get_filename_component(project-name ${project} NAME)
     file(GLOB ${project}-src ${project}/*.cpp ${project}/*.c ${project}/*.cc)

@@ -13,7 +13,7 @@ cd $CURRENT_DIR
 GLSL_COMPILER=$(which glslc)
 echo "[INFO] Compiling shaders with glslc at $GLSL_COMPILER"
 
-mkdir -p build/shaders
-$GLSL_COMPILER -o $BUILD_DIR/shaders/vert.spv $CURRENT_DIR/shaders/shader.vert
-$GLSL_COMPILER -o $BUILD_DIR/shaders/frag.spv $CURRENT_DIR/shaders/shader.frag
+mkdir -p build/outputs/demos/shaders
+$GLSL_COMPILER -o $BUILD_DIR/outputs/demos/shaders/vert.spv $CURRENT_DIR/shaders/shader.vert
+$GLSL_COMPILER -o $BUILD_DIR/outputs/demos/shaders/frag.spv $CURRENT_DIR/shaders/shader.frag
 
