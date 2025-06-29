@@ -55,6 +55,12 @@ add_library(vkr ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(vkr PUBLIC include)
 target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan Vulkan::MoltenVK)
 
+target_link_libraries(vkr PUBLIC
+  "-framework Metal"
+  "-framework Foundation"
+  "-framework IOSurface"
+)
+
 set_target_properties(vkr PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY src
     LIBRARY_OUTPUT_DIRECTORY src
