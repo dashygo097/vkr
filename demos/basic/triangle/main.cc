@@ -7,6 +7,7 @@
 #include <iostream>
 #include <set>
 
+#include "interface/device.hpp"
 #include "interface/instance.hpp"
 #include "interface/surface.hpp"
 #include "interface/window.hpp"
@@ -28,15 +29,6 @@ const std::vector<const char *> preExtensions = {
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
     // VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-};
-
-struct QueueFamilyIndices {
-  std::optional<uint32_t> graphicsFamily;
-  std::optional<uint32_t> presentFamily;
-
-  bool isComplete() {
-    return graphicsFamily.has_value() && presentFamily.has_value();
-  }
 };
 
 struct SwapChainSupportDetails {
@@ -788,23 +780,6 @@ private:
     QueueFamilyIndices indices = findQueueFamilies(device);
 
     return indices.isComplete();
-  }
-
-  bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
-    uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,
-                                         nullptr);
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,
-                                         availableExtensions.data());
-    std::set<std::string> requiredExtensions({
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
-    });
-    for (const auto &extension : availableExtensions) {
-      requiredExtensions.erase(extension.extensionName);
-    }
-    return requiredExtensions.empty();
   }
 
   QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {

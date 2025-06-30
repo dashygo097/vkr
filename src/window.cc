@@ -1,6 +1,7 @@
-#include "interface/window.hpp"
-#include "GLFW/glfw3.h"
+#include <GLFW/glfw3.h>
 #include <stdexcept>
+
+#include "interface/window.hpp"
 
 Window::Window(uint32_t width, uint32_t height, const char *title = "Vulkan") {
   this->width = width;

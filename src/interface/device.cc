@@ -1,13 +1,29 @@
-#include "interface/device.hpp"
-
-#include "interface/instance.hpp"
 #include <set>
 #include <vector>
+
+#include "interface/device.hpp"
+#include "interface/instance.hpp"
 
 Device::Device(VkInstance instance, VkSurfaceKHR surface,
                std::vector<const char *> deviceExtensions,
                std::vector<const char *> validationLayers)
     : instance(instance), surface(surface) {
+  pickPhysicalDevice();
+  createLogicalDevice(deviceExtensions, validationLayers);
+}
+
+Device::~Device() {
+  if (device != VK_NULL_HANDLE) {
+    vkDestroyDevice(device, nullptr);
+  }
+}
+
+VkDevice Device::getVkDevice() const { return device; }
+VkPhysicalDevice Device::getVkPhysicalDevice() const { return physicalDevice; }
+VkQueue Device::getGraphicsQueue() const { return graphicsQueue; }
+VkQueue Device::getPresentQueue() const { return presentQueue; }
+
+void Device::pickPhysicalDevice() {
   uint32_t deviceCount = 0;
   vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -28,7 +44,10 @@ Device::Device(VkInstance instance, VkSurfaceKHR surface,
   if (physicalDevice == VK_NULL_HANDLE) {
     throw std::runtime_error("failed to find a suitable GPU!");
   }
+}
 
+void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
+                                 std::vector<const char *> validationLayers) {
   QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -68,27 +87,14 @@ Device::Device(VkInstance instance, VkSurfaceKHR surface,
     createInfo.enabledLayerCount = 0;
   }
 
-  if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &logicalDevice) !=
+  if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create logical device!");
   }
 
-  vkGetDeviceQueue(logicalDevice, indices.graphicsFamily.value(), 0,
-                   &graphicsQueue);
-  vkGetDeviceQueue(logicalDevice, indices.presentFamily.value(), 0,
-                   &presentQueue);
+  vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+  vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
-
-Device::~Device() {
-  if (logicalDevice != VK_NULL_HANDLE) {
-    vkDestroyDevice(logicalDevice, nullptr);
-  }
-}
-
-VkDevice Device::getVkDevice() const { return logicalDevice; }
-VkPhysicalDevice Device::getVkPhysicalDevice() const { return physicalDevice; }
-VkQueue Device::getGraphicsQueue() const { return graphicsQueue; }
-VkQueue Device::getPresentQueue() const { return presentQueue; }
 
 bool Device::isSuitable(VkPhysicalDevice pDevice) {
   QueueFamilyIndices indices = findQueueFamilies(pDevice);
