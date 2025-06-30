@@ -97,6 +97,7 @@ private:
                                         window->getGLFWWindow());
     pickPhysicalDevice();
     createLogicalDevice();
+
     createSwapChain();
     createImageViews();
     createRenderPass();

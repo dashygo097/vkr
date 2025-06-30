@@ -1,7 +1,7 @@
 #include <GLFW/glfw3.h>
 
-#include "interface/extensions.hpp"
 #include "interface/instance.hpp"
+#include "interface/vk_utils.hpp"
 
 std::vector<const char *>
 getRequiredExtensions(std::vector<const char *> preExtensions) {
@@ -21,3 +21,28 @@ getRequiredExtensions(std::vector<const char *> preExtensions) {
 
   return extensions;
 }
+
+bool checkValidationLayerSupport(std::vector<const char *> validationLayers) {
+  uint32_t layerCount;
+  vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+  std::vector<VkLayerProperties> availableLayers(layerCount);
+  vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+  for (const char *layerName : validationLayers) {
+    bool layerFound = false;
+
+    for (const auto &layerProperties : availableLayers) {
+      if (strcmp(layerName, layerProperties.layerName) == 0) {
+        layerFound = true;
+        break;
+      }
+    }
+
+    if (!layerFound) {
+      return false;
+    }
+  }
+
+  return true;
+};
