@@ -1,11 +1,10 @@
 #include "interface/instance.hpp"
 #include "interface/extensions.hpp"
 #include "interface/validation_layers.hpp"
-#include <stdexcept>
 
 Instance::Instance(VkApplicationInfo appInfo,
-                   std::vector<const char *> validationLayers,
-                   std::vector<const char *> preExtensions) {
+                   std::vector<const char *> preExtensions,
+                   std::vector<const char *> validationLayers) {
 
   if (ENABLE_VALIDATION_LAYERS &&
       !checkValidationLayerSupport(validationLayers)) {
@@ -27,7 +26,7 @@ Instance::Instance(VkApplicationInfo appInfo,
         static_cast<uint32_t>(validationLayers.size());
     createInfo.ppEnabledLayerNames = validationLayers.data();
 
-    populateDebugMessengerCreateInfo(debugCreateInfo);
+    DebugMessenger::populateCreateInfo(debugCreateInfo);
     createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
   } else {
     createInfo.enabledLayerCount = 0;
@@ -38,11 +37,17 @@ Instance::Instance(VkApplicationInfo appInfo,
   if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
     throw std::runtime_error("failed to create instance!");
   }
+
+  if (ENABLE_VALIDATION_LAYERS) {
+    debugMessenger = std::make_unique<DebugMessenger>(instance);
+  }
 }
 
 Instance::~Instance() {
+  if (ENABLE_VALIDATION_LAYERS) {
+    debugMessenger.reset();
+  }
   vkDestroyInstance(instance, nullptr);
-  DestroyDebugUtilsMessengerEXT(nullptr);
 }
 
 VkInstance Instance::getVkInstance() const { return instance; }

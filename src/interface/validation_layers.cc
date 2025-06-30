@@ -1,4 +1,5 @@
 #include "interface/validation_layers.hpp"
+#include <vulkan/vulkan.h>
 
 bool checkValidationLayerSupport(std::vector<const char *> validationLayers) {
   uint32_t layerCount;
