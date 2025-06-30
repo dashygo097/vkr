@@ -38,6 +38,15 @@ function(print_info text color)
     endif()
 endfunction()
 
+function(make_paths_relative out_var)
+    set(result "")
+    foreach(path IN LISTS ${ARGV1})
+        file(RELATIVE_PATH rel "${CMAKE_SOURCE_DIR}" "${path}")
+        list(APPEND result "${rel}")
+    endforeach()
+    set(${out_var} "${result}" PARENT_SCOPE)
+endfunction()
+
 print_info("――――――――――――――――――LIB SCOPE――――――――――――――――――" "0")
 
 # Add targets
@@ -67,8 +76,11 @@ set_target_properties(vkr PROPERTIES
 )
 
 # stastics
-print_info("[TRACE] Header files: ${HEADER_FILES}" "95")
-print_info("[TRACE] Source files: ${SOURCE_FILES}" "96")
+make_paths_relative(REL_HEADER_FILES HEADER_FILES)
+make_paths_relative(REL_SOURCE_FILES SOURCE_FILES)
+
+print_info("[TRACE] Header files: ${REL_HEADER_FILES}" "95")
+print_info("[TRACE] Source files: ${REL_SOURCE_FILES}" "96")
 
 # Apps
 enable_testing()
