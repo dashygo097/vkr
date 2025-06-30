@@ -1,6 +1,5 @@
 #include "interface/instance.hpp"
-#include "interface/extensions.hpp"
-#include "interface/validation_layers.hpp"
+#include "interface/vk_utils.hpp"
 
 Instance::Instance(VkApplicationInfo appInfo,
                    std::vector<const char *> preExtensions,
