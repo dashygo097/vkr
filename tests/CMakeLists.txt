@@ -14,4 +14,6 @@ add_test(NAME list_validation_layers_test COMMAND list_validation_layers)
 file(GLOB_RECURSE SOURCE_FILES *.cpp *.c *.cc)
 
 # stastics
-print_info("[DEBUG] Test files: ${SOURCE_FILES}" "92")
+
+make_paths_relative(REL_SOURCE_FILES SOURCE_FILES)
+print_info("[DEBUG] Test files: ${REL_SOURCE_FILES}" "92")

@@ -10,8 +10,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include "interface/window.hpp"
 #include "utils.hpp"
-#include "window.hpp"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
