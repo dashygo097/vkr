@@ -1,6 +1,7 @@
+#include <GLFW/glfw3.h>
+
 #include "interface/extensions.hpp"
 #include "interface/instance.hpp"
-#include <GLFW/glfw3.h>
 
 std::vector<const char *>
 getRequiredExtensions(std::vector<const char *> preExtensions) {

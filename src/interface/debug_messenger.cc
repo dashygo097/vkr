@@ -1,5 +1,6 @@
-#include "interface/debug_messenger.hpp"
 #include <iostream>
+
+#include "interface/debug_messenger.hpp"
 
 DebugMessenger::DebugMessenger(VkInstance instance)
     : instance(instance), messenger(VK_NULL_HANDLE) {

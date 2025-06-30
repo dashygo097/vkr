@@ -1,7 +1,8 @@
 #pragma once
 
-#include "interface/debug_messenger.hpp"
 #include <vector>
+
+#include "interface/debug_messenger.hpp"
 
 #ifdef NDEBUG
 const bool ENABLE_VALIDATION_LAYERS = false;
