@@ -48,5 +48,3 @@ Instance::~Instance() {
   }
   vkDestroyInstance(instance, nullptr);
 }
-
-VkInstance Instance::getVkInstance() const { return instance; }

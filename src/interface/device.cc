@@ -18,11 +18,6 @@ Device::~Device() {
   }
 }
 
-VkDevice Device::getVkDevice() const { return device; }
-VkPhysicalDevice Device::getVkPhysicalDevice() const { return physicalDevice; }
-VkQueue Device::getGraphicsQueue() const { return graphicsQueue; }
-VkQueue Device::getPresentQueue() const { return presentQueue; }
-
 void Device::pickPhysicalDevice() {
   {
     uint32_t deviceCount = 0;
