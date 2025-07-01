@@ -19,6 +19,7 @@ public:
   VkInstance getVkInstance() const;
 
 private:
+  // components
   VkInstance instance;
   std::unique_ptr<DebugMessenger> debugMessenger;
 };

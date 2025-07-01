@@ -18,5 +18,6 @@ public:
   GLFWwindow *getGLFWWindow() const;
 
 private:
+  // components
   GLFWwindow *window;
 };

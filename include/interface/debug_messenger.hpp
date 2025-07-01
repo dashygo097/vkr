@@ -11,6 +11,7 @@ public:
   populateCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
 
 private:
+  // dependencies
   VkInstance instance;
   VkDebugUtilsMessengerEXT messenger;
 

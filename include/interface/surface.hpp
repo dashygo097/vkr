@@ -12,7 +12,10 @@ public:
   VkSurfaceKHR getSurface() const;
 
 private:
+  // dependencies
   VkInstance instance;
   GLFWwindow *window;
+
+  // components
   VkSurfaceKHR surface;
 };
