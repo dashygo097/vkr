@@ -16,6 +16,7 @@ Device::~Device() {
   if (device != VK_NULL_HANDLE) {
     vkDestroyDevice(device, nullptr);
   }
+  device = VK_NULL_HANDLE;
 }
 
 void Device::waitIdle() {

@@ -47,4 +47,5 @@ Instance::~Instance() {
     debugMessenger.reset();
   }
   vkDestroyInstance(instance, nullptr);
+  instance = VK_NULL_HANDLE;
 }
