@@ -2,9 +2,12 @@
 
 #include <vulkan/vulkan.h>
 
+#include "ctx.hpp"
+
 class DebugMessenger {
 public:
   DebugMessenger(VkInstance instance);
+  DebugMessenger(const VulkanContext &ctx);
   ~DebugMessenger();
 
   static void

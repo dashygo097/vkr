@@ -19,6 +19,9 @@ CommandPool::CommandPool(VkPhysicalDevice physicalDevice, VkDevice device,
   }
 }
 
+CommandPool::CommandPool(const VulkanContext &context)
+    : CommandPool(context.physicalDevice, context.device, context.surface) {}
+
 CommandPool::~CommandPool() {
   if (commandPool != VK_NULL_HANDLE) {
     vkDestroyCommandPool(device, commandPool, nullptr);

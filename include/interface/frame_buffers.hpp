@@ -3,25 +3,29 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-class FrameBuffers {
+#include "ctx.hpp"
+
+class Framebuffers {
 public:
-  FrameBuffers(VkDevice device, VkRenderPass renderPass,
-               std::vector<VkImageView> imageViews, VkExtent2D SwapExtend);
-  ~FrameBuffers();
+  Framebuffers(VkDevice device, VkRenderPass renderPass,
+               std::vector<VkImageView> swapchainImageViews,
+               VkExtent2D swapchainExtend);
+  Framebuffers(const VulkanContext &ctx);
+  ~Framebuffers();
 
   void create();
   void destroy();
 
-  std::vector<VkFramebuffer> getFrameBuffers() const { return frameBuffers; }
+  std::vector<VkFramebuffer> getFramebuffers() const { return framebuffers; }
 
 private:
   // dependencies
   VkDevice device;
   VkRenderPass renderPass;
-  std::vector<VkImageView> swapChainImageViews;
-  VkExtent2D swapChainExtent;
+  std::vector<VkImageView> swapchainImageViews;
+  VkExtent2D swapchainExtent;
 
   // components
-  std::vector<VkFramebuffer> frameBuffers{};
+  std::vector<VkFramebuffer> framebuffers{};
   bool frameBufferResized{false};
 };

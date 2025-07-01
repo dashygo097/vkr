@@ -1,10 +1,10 @@
 #include "interface/render_pass.hpp"
 #include <stdexcept>
 
-RenderPass::RenderPass(VkDevice device, VkFormat swapChainFormat)
+RenderPass::RenderPass(VkDevice device, VkFormat swapchainImageFormat)
     : device(device) {
   VkAttachmentDescription colorAttachment{};
-  colorAttachment.format = swapChainFormat;
+  colorAttachment.format = swapchainImageFormat;
   colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
   colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -34,6 +34,9 @@ RenderPass::RenderPass(VkDevice device, VkFormat swapChainFormat)
     throw std::runtime_error("failed to create render pass!");
   }
 }
+
+RenderPass::RenderPass(const VulkanContext &ctx)
+    : RenderPass(ctx.device, ctx.swapchainImageFormat) {}
 
 RenderPass::~RenderPass() {
   if (renderPass != VK_NULL_HANDLE) {

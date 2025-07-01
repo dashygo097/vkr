@@ -3,11 +3,14 @@
 #include <string>
 #include <vulkan/vulkan.h>
 
+#include "ctx.hpp"
+
 class GraphicsPipeline {
 public:
   GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
                    const std::string &vertShaderPath,
                    const std::string &fragShaderPath);
+  GraphicsPipeline(const VulkanContext &ctx);
   ~GraphicsPipeline();
 
   VkPipelineLayout getPipelineLayout() const { return pipelineLayout; }

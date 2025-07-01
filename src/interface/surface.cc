@@ -10,4 +10,7 @@ Surface::Surface(VkInstance instance, GLFWwindow *window)
   }
 }
 
+Surface::Surface(const VulkanContext &ctx)
+    : Surface(ctx.instance, ctx.window) {}
+
 Surface::~Surface() { vkDestroySurfaceKHR(instance, surface, nullptr); }

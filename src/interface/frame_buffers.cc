@@ -1,42 +1,50 @@
 #include "interface/frame_buffers.hpp"
 
-FrameBuffers::FrameBuffers(VkDevice device, VkRenderPass renderPass,
-                           std::vector<VkImageView> imageViews,
-                           VkExtent2D extend)
-    : device(device), renderPass(renderPass), swapChainImageViews(imageViews),
-      swapChainExtent(extend) {
+Framebuffers::Framebuffers(VkDevice device, VkRenderPass renderPass,
+                           std::vector<VkImageView> swapchainImageViews,
+                           VkExtent2D swapchainExtend)
+    : device(device), renderPass(renderPass),
+      swapchainImageViews(swapchainImageViews),
+      swapchainExtent(swapchainExtend) {
   create();
 }
 
-FrameBuffers::~FrameBuffers() { destroy(); }
+Framebuffers::Framebuffers(const VulkanContext &ctx)
+    : device(ctx.device), renderPass(ctx.renderPass),
+      swapchainImageViews(ctx.swapchainImageViews),
+      swapchainExtent(ctx.swapchainExtent) {
+  create();
+}
 
-void FrameBuffers::create() {
-  frameBuffers.resize(swapChainImageViews.size());
+Framebuffers::~Framebuffers() { destroy(); }
 
-  for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-    VkImageView attachments[] = {swapChainImageViews[i]};
+void Framebuffers::create() {
+  framebuffers.resize(swapchainImageViews.size());
+
+  for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+    VkImageView attachments[] = {swapchainImageViews[i]};
 
     VkFramebufferCreateInfo framebufferInfo{};
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebufferInfo.renderPass = renderPass;
     framebufferInfo.attachmentCount = 1;
     framebufferInfo.pAttachments = attachments;
-    framebufferInfo.width = swapChainExtent.width;
-    framebufferInfo.height = swapChainExtent.height;
+    framebufferInfo.width = swapchainExtent.width;
+    framebufferInfo.height = swapchainExtent.height;
     framebufferInfo.layers = 1;
 
     if (vkCreateFramebuffer(device, &framebufferInfo, nullptr,
-                            &frameBuffers[i]) != VK_SUCCESS) {
+                            &framebuffers[i]) != VK_SUCCESS) {
       throw std::runtime_error("failed to create framebuffer!");
     }
   }
 }
 
-void FrameBuffers::destroy() {
-  for (auto framebuffer : frameBuffers) {
+void Framebuffers::destroy() {
+  for (auto framebuffer : framebuffers) {
     if (framebuffer != VK_NULL_HANDLE) {
       vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
   }
-  frameBuffers.clear();
+  framebuffers.clear();
 }

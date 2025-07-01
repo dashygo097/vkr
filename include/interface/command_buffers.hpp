@@ -3,12 +3,22 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-#define MAX_FRAMES_IN_FLIGHT 2
+#include "ctx.hpp"
+
+const int MAX_FRAMES_IN_FLIGHT = 2;
 
 class CommandBuffers {
 public:
   CommandBuffers(VkDevice device, VkCommandPool commandPool);
+  CommandBuffers(const VulkanContext &ctx);
   ~CommandBuffers();
+
+  std::vector<VkCommandBuffer> getCommandBuffers() const {
+    return commandBuffers;
+  }
+  std::vector<VkCommandBuffer> &getCommandBuffersRef() {
+    return commandBuffers;
+  }
 
 private:
   // dependencies
@@ -18,3 +28,9 @@ private:
   // components
   std::vector<VkCommandBuffer> commandBuffers{};
 };
+
+void recordCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer,
+                         VkRenderPass renderPass,
+                         const std::vector<VkFramebuffer> swapchainFrameBuffers,
+                         VkExtent2D swapchainExtent,
+                         VkPipeline graphicsPipeline);

@@ -3,11 +3,14 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
+#include "ctx.hpp"
+
 class Device {
 public:
   Device(VkInstance instance, VkSurfaceKHR surface,
-         std::vector<const char *> deviceExtensions,
-         std::vector<const char *> validationLayers);
+         const std::vector<const char *> &deviceExtensions,
+         const std::vector<const char *> &validationLayers);
+  Device(const VulkanContext &ctx);
   ~Device();
 
   void waitIdle();
