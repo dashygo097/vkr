@@ -18,6 +18,12 @@ Device::~Device() {
   }
 }
 
+void Device::waitIdle() {
+  if (device != VK_NULL_HANDLE) {
+    vkDeviceWaitIdle(device);
+  }
+}
+
 void Device::pickPhysicalDevice() {
   {
     uint32_t deviceCount = 0;

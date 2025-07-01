@@ -10,6 +10,8 @@ public:
          std::vector<const char *> validationLayers);
   ~Device();
 
+  void waitIdle();
+
   VkDevice getVkDevice() const { return device; }
   VkPhysicalDevice getVkPhysicalDevice() const { return physicalDevice; }
   VkQueue getGraphicsQueue() const { return graphicsQueue; }

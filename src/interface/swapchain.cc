@@ -5,7 +5,17 @@ SwapChain::SwapChain(GLFWwindow *window, VkDevice device,
                      VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     : window(window), device(device), physicalDevice(physicalDevice),
       surface(surface) {
+  create();
+}
+SwapChain::~SwapChain() { destroy(); }
 
+void SwapChain::recreate() {
+  vkDeviceWaitIdle(device);
+  destroy();
+  create();
+}
+
+void SwapChain::create() {
   SwapChainSupportDetails swapChainSupport =
       querySwapChainSupport(physicalDevice);
 
@@ -87,7 +97,12 @@ SwapChain::SwapChain(GLFWwindow *window, VkDevice device,
   }
 }
 
-SwapChain::~SwapChain() { vkDestroySwapchainKHR(device, swapChain, nullptr); }
+void SwapChain::destroy() {
+  for (auto imageView : imageViews) {
+    vkDestroyImageView(device, imageView, nullptr);
+  }
+  vkDestroySwapchainKHR(device, swapChain, nullptr);
+}
 
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR> &availableFormats) {
