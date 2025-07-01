@@ -2,8 +2,7 @@
 
 #include "interface/debug_messenger.hpp"
 
-DebugMessenger::DebugMessenger(VkInstance instance)
-    : instance(instance), messenger(VK_NULL_HANDLE) {
+DebugMessenger::DebugMessenger(VkInstance instance) : instance(instance) {
   VkDebugUtilsMessengerCreateInfoEXT createInfo{};
   populateCreateInfo(createInfo);
 
@@ -22,6 +21,7 @@ DebugMessenger::~DebugMessenger() {
   if (func && messenger != VK_NULL_HANDLE) {
     func(instance, messenger, nullptr);
   }
+  messenger = VK_NULL_HANDLE;
 }
 
 void DebugMessenger::populateCreateInfo(

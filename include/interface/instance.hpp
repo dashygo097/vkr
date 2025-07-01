@@ -20,6 +20,6 @@ public:
 
 private:
   // components
-  VkInstance instance;
+  VkInstance instance{VK_NULL_HANDLE};
   std::unique_ptr<DebugMessenger> debugMessenger;
 };

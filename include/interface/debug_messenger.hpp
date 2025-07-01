@@ -13,7 +13,9 @@ public:
 private:
   // dependencies
   VkInstance instance;
-  VkDebugUtilsMessengerEXT messenger;
+
+  // components
+  VkDebugUtilsMessengerEXT messenger{VK_NULL_HANDLE};
 
   static VKAPI_ATTR VkBool32 VKAPI_CALL
   debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

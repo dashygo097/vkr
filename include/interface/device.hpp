@@ -23,10 +23,10 @@ private:
   VkSurfaceKHR surface;
 
   // components
-  VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-  VkDevice device;
-  VkQueue graphicsQueue;
-  VkQueue presentQueue;
+  VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
+  VkDevice device{VK_NULL_HANDLE};
+  VkQueue graphicsQueue{VK_NULL_HANDLE};
+  VkQueue presentQueue{VK_NULL_HANDLE};
 
   void pickPhysicalDevice();
   void createLogicalDevice(std::vector<const char *> deviceExtensions,

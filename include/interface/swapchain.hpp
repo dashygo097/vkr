@@ -17,7 +17,6 @@ VkPresentModeKHR chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR> &availablePresentModes);
 VkExtent2D chooseSwapExtent(GLFWwindow *window,
                             const VkSurfaceCapabilitiesKHR &capabilities);
-SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
 class SwapChain {
 public:
@@ -43,9 +42,9 @@ private:
   VkSurfaceKHR surface;
 
   // components
-  VkSwapchainKHR swapChain;
-  std::vector<VkImage> images;
-  std::vector<VkImageView> imageViews;
-  VkFormat format;
-  VkExtent2D extent;
+  VkSwapchainKHR swapChain{VK_NULL_HANDLE};
+  std::vector<VkImage> images{};
+  std::vector<VkImageView> imageViews{};
+  VkFormat format{VK_FORMAT_UNDEFINED};
+  VkExtent2D extent{};
 };
