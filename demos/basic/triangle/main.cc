@@ -111,7 +111,7 @@ private:
       drawFrame();
     }
 
-    vkDeviceWaitIdle(device->getVkDevice());
+    device->waitIdle();
   }
 
   void cleanupSwapChain() {
@@ -156,7 +156,7 @@ private:
       glfwWaitEvents();
     }
 
-    vkDeviceWaitIdle(device->getVkDevice());
+    device->waitIdle();
 
     cleanupSwapChain();
 

@@ -26,12 +26,14 @@ public:
   ~SwapChain();
 
   VkSwapchainKHR getSwapChain() const { return swapChain; }
-  VkImage getImage(uint32_t index) const { return images.at(index); }
-  VkImageView getImageView(uint32_t index) const {
-    return imageViews.at(index);
-  }
+  std::vector<VkImage> getImages() const { return images; }
+  std::vector<VkImageView> getImageViews() const { return imageViews; }
   VkFormat getFormat() const { return format; }
   VkExtent2D getExtent() const { return extent; }
+
+  void create();
+  void destroy();
+  void recreate();
 
 private:
   // dependencies
