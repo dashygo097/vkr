@@ -17,7 +17,7 @@ void SwapChain::recreate() {
 
 void SwapChain::create() {
   SwapChainSupportDetails swapChainSupport =
-      querySwapChainSupport(physicalDevice);
+      querySwapChainSupport(physicalDevice, surface);
 
   VkSurfaceFormatKHR surfaceFormat =
       chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -99,9 +99,16 @@ void SwapChain::create() {
 
 void SwapChain::destroy() {
   for (auto imageView : imageViews) {
-    vkDestroyImageView(device, imageView, nullptr);
+    if (imageView != VK_NULL_HANDLE) {
+      vkDestroyImageView(device, imageView, nullptr);
+    }
   }
-  vkDestroySwapchainKHR(device, swapChain, nullptr);
+  imageViews.clear();
+
+  if (swapChain != VK_NULL_HANDLE) {
+    vkDestroySwapchainKHR(device, swapChain, nullptr);
+    swapChain = VK_NULL_HANDLE;
+  }
 }
 
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(

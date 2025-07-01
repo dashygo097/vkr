@@ -17,5 +17,5 @@ private:
   GLFWwindow *window;
 
   // components
-  VkSurfaceKHR surface;
+  VkSurfaceKHR surface{VK_NULL_HANDLE};
 };

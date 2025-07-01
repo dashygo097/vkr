@@ -19,5 +19,5 @@ public:
 
 private:
   // components
-  GLFWwindow *window;
+  GLFWwindow *window{nullptr};
 };
