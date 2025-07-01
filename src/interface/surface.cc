@@ -11,5 +11,3 @@ Surface::Surface(VkInstance instance, GLFWwindow *window)
 }
 
 Surface::~Surface() { vkDestroySurfaceKHR(instance, surface, nullptr); }
-
-VkSurfaceKHR Surface::getSurface() const { return surface; }

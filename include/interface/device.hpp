@@ -10,10 +10,10 @@ public:
          std::vector<const char *> validationLayers);
   ~Device();
 
-  VkDevice getVkDevice() const;
-  VkPhysicalDevice getVkPhysicalDevice() const;
-  VkQueue getGraphicsQueue() const;
-  VkQueue getPresentQueue() const;
+  VkDevice getVkDevice() const { return device; }
+  VkPhysicalDevice getVkPhysicalDevice() const { return physicalDevice; }
+  VkQueue getGraphicsQueue() const { return graphicsQueue; }
+  VkQueue getPresentQueue() const { return presentQueue; }
 
 private:
   // dependencies

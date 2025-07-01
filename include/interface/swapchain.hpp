@@ -1,8 +1,8 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
-
-#include "interface/image.hpp"
+#include <vector>
+#include <vulkan/vulkan.h>
 
 struct SwapChainSupportDetails {
   VkSurfaceCapabilitiesKHR capabilities;
@@ -11,17 +11,21 @@ struct SwapChainSupportDetails {
 };
 SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device,
                                               VkSurfaceKHR surface);
-
+VkSurfaceFormatKHR chooseSwapSurfaceFormat(
+    const std::vector<VkSurfaceFormatKHR> &availableFormats);
+VkPresentModeKHR chooseSwapPresentMode(
+    const std::vector<VkPresentModeKHR> &availablePresentModes);
+VkExtent2D chooseSwapExtent(GLFWwindow *window,
+                            const VkSurfaceCapabilitiesKHR &capabilities);
+SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 class SwapChain {
 public:
   SwapChain(GLFWwindow *window, VkDevice device,
             VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
   ~SwapChain();
 
-  VkSwapchainKHR getSwapChain() const;
-  VkExtent2D getExtent() const;
-
-  Images images;
+  VkSwapchainKHR getSwapChain() const { return swapChain; }
+  VkExtent2D getExtent() const { return extent; }
 
 private:
   // dependencies
@@ -32,12 +36,8 @@ private:
 
   // components
   VkSwapchainKHR swapChain;
+  std::vector<VkImage> images;
+  std::vector<VkImageView> imageViews;
+  VkFormat format;
   VkExtent2D extent;
-
-  VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
-  VkSurfaceFormatKHR chooseSwapSurfaceFormat(
-      const std::vector<VkSurfaceFormatKHR> &availableFormats);
-  SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-  VkPresentModeKHR chooseSwapPresentMode(
-      const std::vector<VkPresentModeKHR> &availablePresentModes);
 };

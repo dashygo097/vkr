@@ -9,7 +9,7 @@ public:
   Surface(VkInstance instance, GLFWwindow *window);
   ~Surface();
 
-  VkSurfaceKHR getSurface() const;
+  VkSurfaceKHR getSurface() const { return surface; }
 
 private:
   // dependencies

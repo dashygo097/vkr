@@ -16,7 +16,7 @@ public:
            std::vector<const char *> validationLayers);
   ~Instance();
 
-  VkInstance getVkInstance() const;
+  VkInstance getVkInstance() const { return instance; }
 
 private:
   // components
