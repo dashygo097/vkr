@@ -1,34 +1,41 @@
 #include "interface/swapchain.hpp"
 #include "interface/vk_utils.hpp"
 
-SwapChain::SwapChain(GLFWwindow *window, VkDevice device,
-                     VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-    : window(window), device(device), physicalDevice(physicalDevice),
+Swapchain::Swapchain(GLFWwindow *window, VkPhysicalDevice physicalDevice,
+                     VkDevice device, VkSurfaceKHR surface)
+    : window(window), physicalDevice(physicalDevice), device(device),
       surface(surface) {
   create();
 }
-SwapChain::~SwapChain() { destroy(); }
 
-void SwapChain::recreate() {
+Swapchain::Swapchain(const VulkanContext &ctx)
+    : window(ctx.window), physicalDevice(ctx.physicalDevice),
+      device(ctx.device), surface(ctx.surface) {
+  create();
+}
+
+Swapchain::~Swapchain() { destroy(); }
+
+void Swapchain::recreate() {
   vkDeviceWaitIdle(device);
   destroy();
   create();
 }
 
-void SwapChain::create() {
-  SwapChainSupportDetails swapChainSupport =
-      querySwapChainSupport(physicalDevice, surface);
+void Swapchain::create() {
+  SwapchainSupportDetails swapchainSupport =
+      querySwapchainSupport(physicalDevice, surface);
 
   VkSurfaceFormatKHR surfaceFormat =
-      chooseSwapSurfaceFormat(swapChainSupport.formats);
+      chooseSwapSurfaceFormat(swapchainSupport.formats);
   VkPresentModeKHR presentMode =
-      chooseSwapPresentMode(swapChainSupport.presentModes);
-  VkExtent2D extent = chooseSwapExtent(window, swapChainSupport.capabilities);
+      chooseSwapPresentMode(swapchainSupport.presentModes);
+  VkExtent2D extent = chooseSwapExtent(window, swapchainSupport.capabilities);
 
-  uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-  if (swapChainSupport.capabilities.maxImageCount > 0 &&
-      imageCount > swapChainSupport.capabilities.maxImageCount) {
-    imageCount = swapChainSupport.capabilities.maxImageCount;
+  uint32_t imageCount = swapchainSupport.capabilities.minImageCount + 1;
+  if (swapchainSupport.capabilities.maxImageCount > 0 &&
+      imageCount > swapchainSupport.capabilities.maxImageCount) {
+    imageCount = swapchainSupport.capabilities.maxImageCount;
   }
 
   VkSwapchainCreateInfoKHR createInfo{};
@@ -54,21 +61,21 @@ void SwapChain::create() {
     createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
   }
 
-  createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+  createInfo.preTransform = swapchainSupport.capabilities.currentTransform;
   createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   createInfo.presentMode = presentMode;
   createInfo.clipped = VK_TRUE;
 
   createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-  if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) !=
+  if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create swap chain!");
   }
 
-  vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+  vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
   images.resize(imageCount);
-  vkGetSwapchainImagesKHR(device, swapChain, &imageCount, images.data());
+  vkGetSwapchainImagesKHR(device, swapchain, &imageCount, images.data());
 
   this->format = surfaceFormat.format;
   this->extent = extent;
@@ -97,7 +104,7 @@ void SwapChain::create() {
   }
 }
 
-void SwapChain::destroy() {
+void Swapchain::destroy() {
   for (auto imageView : imageViews) {
     if (imageView != VK_NULL_HANDLE) {
       vkDestroyImageView(device, imageView, nullptr);
@@ -105,9 +112,9 @@ void SwapChain::destroy() {
   }
   imageViews.clear();
 
-  if (swapChain != VK_NULL_HANDLE) {
-    vkDestroySwapchainKHR(device, swapChain, nullptr);
-    swapChain = VK_NULL_HANDLE;
+  if (swapchain != VK_NULL_HANDLE) {
+    vkDestroySwapchainKHR(device, swapchain, nullptr);
+    swapchain = VK_NULL_HANDLE;
   }
 }
 
@@ -157,9 +164,9 @@ VkExtent2D chooseSwapExtent(GLFWwindow *window,
   }
 }
 
-SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device,
+SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device,
                                               VkSurfaceKHR surface) {
-  SwapChainSupportDetails details;
+  SwapchainSupportDetails details;
 
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface,
                                             &details.capabilities);

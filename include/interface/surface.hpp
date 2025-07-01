@@ -4,9 +4,12 @@
 
 #include <GLFW/glfw3.h>
 
+#include "ctx.hpp"
+
 class Surface {
 public:
   Surface(VkInstance instance, GLFWwindow *window);
+  Surface(const VulkanContext &ctx);
   ~Surface();
 
   VkSurfaceKHR getSurface() const { return surface; }

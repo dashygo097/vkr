@@ -1,7 +1,18 @@
 #pragma once
 
-#include <vector>
+#include <string>
 #include <vulkan/vulkan.h>
 
-VkShaderModule createShaderModule(VkDevice device,
-                                  const std::vector<char> &code);
+class ShaderModule {
+public:
+  ShaderModule(VkDevice device, const std::string &filepath);
+  ~ShaderModule();
+
+  VkShaderModule getModule() const { return shaderModule; }
+
+private:
+  // dependencies
+  VkDevice device;
+  // components
+  VkShaderModule shaderModule{VK_NULL_HANDLE};
+};

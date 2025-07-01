@@ -2,9 +2,12 @@
 
 #include <vulkan/vulkan.h>
 
+#include "ctx.hpp"
+
 class RenderPass {
 public:
-  RenderPass(VkDevice device, VkFormat swapChainFormat);
+  RenderPass(VkDevice device, VkFormat swapchainFormat);
+  RenderPass(const VulkanContext &ctx);
   ~RenderPass();
 
   VkRenderPass getRenderPass() const { return renderPass; }
@@ -12,7 +15,7 @@ public:
 private:
   // dependencies
   VkDevice device{VK_NULL_HANDLE};
-  VkFormat swapChainFormat{VK_FORMAT_UNDEFINED};
+  VkFormat swapchainImageFormat{VK_FORMAT_UNDEFINED};
 
   // components
   VkRenderPass renderPass{VK_NULL_HANDLE};

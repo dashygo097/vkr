@@ -4,12 +4,14 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-struct SwapChainSupportDetails {
+#include "ctx.hpp"
+
+struct SwapchainSupportDetails {
   VkSurfaceCapabilitiesKHR capabilities;
   std::vector<VkSurfaceFormatKHR> formats;
   std::vector<VkPresentModeKHR> presentModes;
 };
-SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device,
+SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device,
                                               VkSurfaceKHR surface);
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR> &availableFormats);
@@ -18,13 +20,14 @@ VkPresentModeKHR chooseSwapPresentMode(
 VkExtent2D chooseSwapExtent(GLFWwindow *window,
                             const VkSurfaceCapabilitiesKHR &capabilities);
 
-class SwapChain {
+class Swapchain {
 public:
-  SwapChain(GLFWwindow *window, VkDevice device,
-            VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
-  ~SwapChain();
+  Swapchain(GLFWwindow *window, VkPhysicalDevice physicalDevice,
+            VkDevice device, VkSurfaceKHR surface);
+  Swapchain(const VulkanContext &ctx);
+  ~Swapchain();
 
-  VkSwapchainKHR getSwapChain() const { return swapChain; }
+  VkSwapchainKHR getSwapchain() const { return swapchain; }
   std::vector<VkImage> getImages() const { return images; }
   std::vector<VkImageView> getImageViews() const { return imageViews; }
   VkFormat getFormat() const { return format; }
@@ -42,7 +45,7 @@ private:
   VkSurfaceKHR surface;
 
   // components
-  VkSwapchainKHR swapChain{VK_NULL_HANDLE};
+  VkSwapchainKHR swapchain{VK_NULL_HANDLE};
   std::vector<VkImage> images{};
   std::vector<VkImageView> imageViews{};
   VkFormat format{VK_FORMAT_UNDEFINED};

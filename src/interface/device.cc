@@ -5,12 +5,16 @@
 #include "interface/vk_utils.hpp"
 
 Device::Device(VkInstance instance, VkSurfaceKHR surface,
-               std::vector<const char *> deviceExtensions,
-               std::vector<const char *> validationLayers)
+               const std::vector<const char *> &deviceExtensions,
+               const std::vector<const char *> &validationLayers)
     : instance(instance), surface(surface) {
   pickPhysicalDevice();
   createLogicalDevice(deviceExtensions, validationLayers);
 }
+
+Device::Device(const VulkanContext &ctx)
+    : Device(ctx.instance, ctx.surface, ctx.deviceExtensions,
+             ctx.validationLayers) {}
 
 Device::~Device() {
   if (device != VK_NULL_HANDLE) {
