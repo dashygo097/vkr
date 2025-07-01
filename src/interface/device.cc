@@ -2,6 +2,7 @@
 
 #include "interface/device.hpp"
 #include "interface/instance.hpp"
+#include "interface/vk_utils.hpp"
 
 Device::Device(VkInstance instance, VkSurfaceKHR surface,
                std::vector<const char *> deviceExtensions,
@@ -49,7 +50,7 @@ void Device::pickPhysicalDevice() {
 
 void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
                                  std::vector<const char *> validationLayers) {
-  QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+  QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
   std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
@@ -98,31 +99,6 @@ void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
 }
 
 bool Device::isSuitable(VkPhysicalDevice pDevice) {
-  QueueFamilyIndices indices = findQueueFamilies(pDevice);
+  QueueFamilyIndices indices = findQueueFamilies(pDevice, surface);
   return indices.isComplete();
-}
-
-QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice pDevice) {
-  QueueFamilyIndices indices;
-  uint32_t queueFamilyCount = 0;
-  vkGetPhysicalDeviceQueueFamilyProperties(pDevice, &queueFamilyCount, nullptr);
-  std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount,
-                                           queueFamilies.data());
-  int i = 0;
-  for (const auto &queueFamily : queueFamilies) {
-    if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-      indices.graphicsFamily = i;
-    }
-    VkBool32 presentSupport = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR(pDevice, i, surface, &presentSupport);
-    if (presentSupport) {
-      indices.presentFamily = i;
-    }
-    if (indices.isComplete()) {
-      break;
-    }
-    i++;
-  }
-  return indices;
 }

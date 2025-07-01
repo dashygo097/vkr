@@ -3,6 +3,32 @@
 #include "interface/instance.hpp"
 #include "interface/vk_utils.hpp"
 
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,
+                                     VkSurfaceKHR surface) {
+  QueueFamilyIndices indices;
+  uint32_t queueFamilyCount = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(pDevice, &queueFamilyCount, nullptr);
+  std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+  vkGetPhysicalDeviceQueueFamilyProperties(pDevice, &queueFamilyCount,
+                                           queueFamilies.data());
+  int i = 0;
+  for (const auto &queueFamily : queueFamilies) {
+    if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+      indices.graphicsFamily = i;
+    }
+    VkBool32 presentSupport = false;
+    vkGetPhysicalDeviceSurfaceSupportKHR(pDevice, i, surface, &presentSupport);
+    if (presentSupport) {
+      indices.presentFamily = i;
+    }
+    if (indices.isComplete()) {
+      break;
+    }
+    i++;
+  }
+  return indices;
+}
+
 std::vector<const char *>
 getRequiredExtensions(std::vector<const char *> preExtensions) {
   uint32_t glfwExtensionCount = 0;
