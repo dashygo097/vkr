@@ -146,8 +146,6 @@ private:
     }
 
     vkDestroyCommandPool(device->getVkDevice(), commandPool, nullptr);
-
-    vkDestroyDevice(device->getVkDevice(), nullptr);
   }
 
   void recreateSwapChain() {

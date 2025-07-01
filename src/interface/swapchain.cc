@@ -1,9 +1,10 @@
 #include "interface/swapchain.hpp"
 #include "interface/vk_utils.hpp"
 
-SwapChain::SwapChain(VkDevice device, VkPhysicalDevice physicalDevice,
-                     VkSurfaceKHR surface, uint32_t width, uint32_t height)
-    : device(device), physicalDevice(physicalDevice), surface(surface) {
+SwapChain::SwapChain(GLFWwindow *window, VkDevice device,
+                     VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    : window(window), device(device), physicalDevice(physicalDevice),
+      surface(surface) {
 
   SwapChainSupportDetails swapChainSupport =
       querySwapChainSupport(physicalDevice);
@@ -63,6 +64,8 @@ SwapChain::SwapChain(VkDevice device, VkPhysicalDevice physicalDevice,
   this->extent = extent;
 }
 
+SwapChain::~SwapChain() { vkDestroySwapchainKHR(device, swapChain, nullptr); }
+
 SwapChainSupportDetails
 SwapChain::querySwapChainSupport(VkPhysicalDevice device) {
   SwapChainSupportDetails details;
@@ -91,6 +94,9 @@ SwapChain::querySwapChainSupport(VkPhysicalDevice device) {
 
   return details;
 }
+
+VkSwapchainKHR SwapChain::getSwapChain() const { return swapChain; }
+VkExtent2D SwapChain::getExtent() const { return extent; }
 
 VkExtent2D
 SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {

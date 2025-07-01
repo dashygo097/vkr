@@ -15,11 +15,13 @@ SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device,
 class SwapChain {
 public:
   SwapChain(GLFWwindow *window, VkDevice device,
-            VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
-            uint32_t width, uint32_t height);
+            VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
   ~SwapChain();
 
-  VkSwapchainKHR getSwapchain() const;
+  VkSwapchainKHR getSwapChain() const;
+  VkExtent2D getExtent() const;
+
+  Images images;
 
 private:
   // dependencies
@@ -27,7 +29,6 @@ private:
   VkDevice device;
   VkPhysicalDevice physicalDevice;
   VkSurfaceKHR surface;
-  Images images;
 
   // components
   VkSwapchainKHR swapChain;
