@@ -8,6 +8,7 @@
 class GraphicsPipeline {
 public:
   GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
+                   VkDescriptorSetLayout descriptorSetLayout,
                    const std::string &vertShaderPath,
                    const std::string &fragShaderPath);
   GraphicsPipeline(const VulkanContext &ctx);
@@ -20,6 +21,7 @@ private:
   // dependencies
   VkDevice device;
   VkRenderPass renderPass;
+  VkDescriptorSetLayout descriptorSetLayout;
 
   // componets
   VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};

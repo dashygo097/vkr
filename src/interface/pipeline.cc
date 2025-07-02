@@ -5,9 +5,11 @@
 #include "interface/shader_module.hpp"
 
 GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
+                                   VkDescriptorSetLayout descriptorSetLayout,
                                    const std::string &vertShaderPath,
                                    const std::string &fragShaderPath)
-    : device(device), renderPass(renderPass) {
+    : device(device), renderPass(renderPass),
+      descriptorSetLayout(descriptorSetLayout) {
 
   ShaderModule vertShader(device, vertShaderPath);
   ShaderModule fragShader(device, fragShaderPath);
@@ -127,8 +129,8 @@ GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
 }
 
 GraphicsPipeline::GraphicsPipeline(const VulkanContext &ctx)
-    : GraphicsPipeline(ctx.device, ctx.renderPass, ctx.vertexShaderPath,
-                       ctx.fragmentShaderPath) {}
+    : GraphicsPipeline(ctx.device, ctx.renderPass, ctx.descriptorSetLayout,
+                       ctx.vertexShaderPath, ctx.fragmentShaderPath) {}
 
 GraphicsPipeline::~GraphicsPipeline() {
   if (graphicsPipeline != VK_NULL_HANDLE) {

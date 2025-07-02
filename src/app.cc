@@ -33,6 +33,9 @@ void VulkanApplication::initVulkan() {
   swapchainFramebuffers = std::make_unique<Framebuffers>(ctx);
   ctx.swapchainFramebuffers = swapchainFramebuffers->getVkFramebuffers();
 
+  descriptor = std::make_unique<Descriptor>(ctx);
+  ctx.descriptorSetLayout = descriptor->getVkDescriptorSetLayout();
+
   graphicsPipeline = std::make_unique<GraphicsPipeline>(ctx);
   ctx.pipelineLayout = graphicsPipeline->getVkPipelineLayout();
   ctx.graphicsPipeline = graphicsPipeline->getVkPipeline();
@@ -47,6 +50,11 @@ void VulkanApplication::initVulkan() {
   indexBuffer = std::make_unique<IndexBuffer>(std::vector<uint16_t>{}, ctx);
   ctx.indexBuffer = indexBuffer->getVkBuffer();
   ctx.indexBufferMemory = indexBuffer->getVkBufferMemory();
+
+  uniformBuffers = std::make_unique<UniformBuffers>(UniformBufferObject{}, ctx);
+  ctx.uniformBuffers = uniformBuffers->getVkBuffers();
+  ctx.uniformBuffersMemory = uniformBuffers->getVkBuffersMemory();
+  ctx.uniformBuffersMapped = uniformBuffers->getMapped();
 
   commandBuffers = std::make_unique<CommandBuffers>(ctx);
   ctx.commandBuffers = commandBuffers->getVkCommandBuffers();
@@ -69,10 +77,12 @@ void VulkanApplication::mainLoop() {
 void VulkanApplication::cleanup() {
   syncObjects.reset();
   commandBuffers.reset();
+  uniformBuffers.reset();
   indexBuffer.reset();
   vertexBuffer.reset();
   commandPool.reset();
   graphicsPipeline.reset();
+  descriptor.reset();
   swapchainFramebuffers.reset();
   renderPass.reset();
   swapchain.reset();

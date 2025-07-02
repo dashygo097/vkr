@@ -42,6 +42,7 @@ struct VulkanContext {
 
   // --- Rendering ---
   VkRenderPass renderPass = VK_NULL_HANDLE;
+  VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
   VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
   VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 
@@ -55,6 +56,11 @@ struct VulkanContext {
   // --- Index Buffers ---
   VkBuffer indexBuffer = VK_NULL_HANDLE;
   VkDeviceMemory indexBufferMemory = VK_NULL_HANDLE;
+
+  // --- Uniform Buffers ---
+  std::vector<VkBuffer> uniformBuffers = {};
+  std::vector<VkDeviceMemory> uniformBuffersMemory = {};
+  std::vector<void *> uniformBuffersMapped = {};
 
   // --- Command Buffers ---
   std::vector<VkCommandBuffer> commandBuffers = {};
