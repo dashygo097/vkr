@@ -13,10 +13,10 @@ public:
   CommandBuffers(const VulkanContext &ctx);
   ~CommandBuffers();
 
-  std::vector<VkCommandBuffer> getCommandBuffers() const {
+  std::vector<VkCommandBuffer> getVkCommandBuffers() const {
     return commandBuffers;
   }
-  std::vector<VkCommandBuffer> &getCommandBuffersRef() {
+  std::vector<VkCommandBuffer> &getVkCommandBuffersRef() {
     return commandBuffers;
   }
 

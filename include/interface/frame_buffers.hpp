@@ -16,7 +16,7 @@ public:
   void create();
   void destroy();
 
-  std::vector<VkFramebuffer> getFramebuffers() const { return framebuffers; }
+  std::vector<VkFramebuffer> getVkFramebuffers() const { return framebuffers; }
 
 private:
   // dependencies

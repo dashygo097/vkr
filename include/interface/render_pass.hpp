@@ -10,7 +10,7 @@ public:
   RenderPass(const VulkanContext &ctx);
   ~RenderPass();
 
-  VkRenderPass getRenderPass() const { return renderPass; }
+  VkRenderPass getVkRenderPass() const { return renderPass; }
 
 private:
   // dependencies
