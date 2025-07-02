@@ -1,3 +1,7 @@
+#define GLM_FORCE_RADIANS
+#include <chrono>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -5,7 +9,7 @@
 #include "app.hpp"
 #include "impl/vertex.hpp"
 
-class VertexBufferTestApplication : public VulkanApplication {
+class UniformBufferTestApplication : public VulkanApplication {
 private:
   const std::vector<Vertex> vertices = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
                                         {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
@@ -13,6 +17,7 @@ private:
                                         {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
 
   const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
+
   void initVulkan() {
 
     ctx.appName = "Hello Triangle";
@@ -48,8 +53,11 @@ private:
     renderPass = std::make_unique<RenderPass>(ctx);
     ctx.renderPass = renderPass->getVkRenderPass();
 
-    ctx.vertexShaderPath = "shaders/vertex/vert.spv";
-    ctx.fragmentShaderPath = "shaders/vertex/frag.spv";
+    descriptor = std::make_unique<Descriptor>(ctx);
+    ctx.descriptorSetLayout = descriptor->getVkDescriptorSetLayout();
+
+    ctx.vertexShaderPath = "shaders/uniform/vert.spv";
+    ctx.fragmentShaderPath = "shaders/uniform/frag.spv";
     graphicsPipeline = std::make_unique<GraphicsPipeline>(ctx);
     ctx.graphicsPipeline = graphicsPipeline->getVkPipeline();
     ctx.pipelineLayout = graphicsPipeline->getVkPipelineLayout();
@@ -68,6 +76,12 @@ private:
     ctx.indexBuffer = indexBuffer->getVkBuffer();
     ctx.indexBufferMemory = indexBuffer->getVkBufferMemory();
 
+    uniformBuffers =
+        std::make_unique<UniformBuffers>(UniformBufferObject{}, ctx);
+    ctx.uniformBuffers = uniformBuffers->getVkBuffers();
+    ctx.uniformBuffersMemory = uniformBuffers->getVkBuffersMemory();
+    ctx.uniformBuffersMapped = uniformBuffers->getMapped();
+
     commandBuffers = std::make_unique<CommandBuffers>(ctx);
     ctx.commandBuffers = commandBuffers->getVkCommandBuffersRef();
 
@@ -79,7 +93,7 @@ private:
 
   static void framebufferResizeCallback(GLFWwindow *window, int width,
                                         int height) {
-    auto app = reinterpret_cast<VertexBufferTestApplication *>(
+    auto app = reinterpret_cast<UniformBufferTestApplication *>(
         glfwGetWindowUserPointer(window));
     app->ctx.framebufferResized = true;
   }
@@ -125,6 +139,8 @@ private:
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
       throw std::runtime_error("failed to acquire swap chain image!");
     }
+
+    updateUniformBuffer(imageIndex);
 
     vkResetFences(device->getVkDevice(), 1,
                   &syncObjects->getInFlightFences()[ctx.currentFrame]);
@@ -190,10 +206,33 @@ private:
     }
     ctx.currentFrame = (ctx.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
   }
+
+  void updateUniformBuffer(uint32_t currentImage) {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(
+                     currentTime - startTime)
+                     .count();
+
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f),
+                            glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view =
+        glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                    glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.proj = glm::perspective(glm::radians(45.0f),
+                                ctx.swapchainExtent.width /
+                                    (float)ctx.swapchainExtent.height,
+                                0.1f, 10.0f);
+    ubo.proj[1][1] *= -1;
+
+    memcpy(ctx.uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+  }
 };
 
 int main() {
-  VertexBufferTestApplication app;
+  UniformBufferTestApplication app;
 
   try {
     app.run();
