@@ -27,11 +27,11 @@ public:
   Swapchain(const VulkanContext &ctx);
   ~Swapchain();
 
-  VkSwapchainKHR getSwapchain() const { return swapchain; }
-  std::vector<VkImage> getImages() const { return images; }
-  std::vector<VkImageView> getImageViews() const { return imageViews; }
-  VkFormat getFormat() const { return format; }
-  VkExtent2D getExtent() const { return extent; }
+  VkSwapchainKHR getVkSwapchain() const { return swapchain; }
+  std::vector<VkImage> getVkImages() const { return images; }
+  std::vector<VkImageView> getVkImageViews() const { return imageViews; }
+  VkFormat getVkFormat() const { return format; }
+  VkExtent2D getVkExtent2D() const { return extent; }
 
   void create();
   void destroy();

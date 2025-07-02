@@ -11,7 +11,7 @@ public:
   CommandPool(const VulkanContext &ctx);
   ~CommandPool();
 
-  VkCommandPool getCommandPool() const { return commandPool; }
+  VkCommandPool getVkCommandPool() const { return commandPool; }
 
 private:
   // dependencies

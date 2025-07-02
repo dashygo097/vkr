@@ -13,8 +13,8 @@ public:
   GraphicsPipeline(const VulkanContext &ctx);
   ~GraphicsPipeline();
 
-  VkPipelineLayout getPipelineLayout() const { return pipelineLayout; }
-  VkPipeline getPipeline() const { return graphicsPipeline; }
+  VkPipelineLayout getVkPipelineLayout() const { return pipelineLayout; }
+  VkPipeline getVkPipeline() const { return graphicsPipeline; }
 
 private:
   // dependencies

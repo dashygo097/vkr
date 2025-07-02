@@ -12,7 +12,7 @@ public:
   Surface(const VulkanContext &ctx);
   ~Surface();
 
-  VkSurfaceKHR getSurface() const { return surface; }
+  VkSurfaceKHR getVkSurface() const { return surface; }
 
 private:
   // dependencies
