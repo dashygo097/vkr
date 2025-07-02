@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 #include "ctx.hpp"
+#include "impl/index.hpp"
 #include "impl/vertex.hpp"
 #include "interface/command_buffers.hpp"
 #include "interface/command_pool.hpp"
@@ -42,6 +43,7 @@ public:
 
   std::unique_ptr<CommandPool> commandPool;
   std::unique_ptr<VertexBuffer> vertexBuffer;
+  std::unique_ptr<IndexBuffer> indexBuffer;
   std::unique_ptr<CommandBuffers> commandBuffers;
 
   std::unique_ptr<SyncObjects> syncObjects;

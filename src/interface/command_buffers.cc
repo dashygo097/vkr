@@ -31,6 +31,7 @@ CommandBuffers::~CommandBuffers() {
 }
 
 void recordCommandBuffer(uint32_t imageIndex, std::vector<Vertex> vertices,
+                         std::vector<uint16_t> indices, VkBuffer indexBuffer,
                          VkBuffer vertexBuffer, VkCommandBuffer commandBuffer,
                          VkRenderPass renderPass,
                          std::vector<VkFramebuffer> swapchainFrameBuffers,
@@ -78,7 +79,9 @@ void recordCommandBuffer(uint32_t imageIndex, std::vector<Vertex> vertices,
   VkDeviceSize offsets[] = {0};
   vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-  vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+  vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+  vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0,
+                   0, 0);
 
   vkCmdEndRenderPass(commandBuffer);
 

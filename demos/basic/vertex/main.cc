@@ -7,9 +7,12 @@
 
 class VertexBufferTestApplication : public VulkanApplication {
 private:
-  const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                                        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-                                        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+  const std::vector<Vertex> vertices = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                                        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+                                        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+                                        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+
+  const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
   void initVulkan() {
 
     ctx.appName = "Hello Triangle";
@@ -60,6 +63,10 @@ private:
     vertexBuffer = std::make_unique<VertexBuffer>(vertices, ctx);
     ctx.vertexBuffer = vertexBuffer->getVkBuffer();
     ctx.vertexBufferMemory = vertexBuffer->getVkBufferMemory();
+
+    indexBuffer = std::make_unique<IndexBuffer>(indices, ctx);
+    ctx.indexBuffer = indexBuffer->getVkBuffer();
+    ctx.indexBufferMemory = indexBuffer->getVkBufferMemory();
 
     commandBuffers = std::make_unique<CommandBuffers>(ctx);
     ctx.commandBuffers = commandBuffers->getVkCommandBuffersRef();
@@ -126,7 +133,8 @@ private:
         commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
         /*VkCommandBufferResetFlagBits*/ 0);
 
-    recordCommandBuffer(imageIndex, vertices, vertexBuffer->getVkBuffer(),
+    recordCommandBuffer(imageIndex, vertices, indices,
+                        indexBuffer->getVkBuffer(), vertexBuffer->getVkBuffer(),
                         commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
                         renderPass->getVkRenderPass(),
                         swapchainFramebuffers->getVkFramebuffers(),

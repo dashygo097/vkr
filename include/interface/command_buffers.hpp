@@ -31,6 +31,7 @@ private:
 };
 
 void recordCommandBuffer(uint32_t imageIndex, std::vector<Vertex> vertices,
+                         std::vector<uint16_t> indices, VkBuffer indexBuffer,
                          VkBuffer vertexBuffer, VkCommandBuffer commandBuffer,
                          VkRenderPass renderPass,
                          const std::vector<VkFramebuffer> swapchainFrameBuffers,

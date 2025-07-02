@@ -2,8 +2,6 @@
 
 #include <array>
 #include <glm/glm.hpp>
-#include <vector>
-#include <vulkan/vulkan.h>
 
 #include "ctx.hpp"
 
@@ -44,7 +42,8 @@ public:
 class VertexBuffer {
 public:
   VertexBuffer(const std::vector<Vertex> &vertices, VkDevice device,
-               VkPhysicalDevice physicalDevice);
+               VkPhysicalDevice physicalDevice, VkCommandPool commandPool,
+               VkQueue graphicsQueue);
   VertexBuffer(const std::vector<Vertex> &vertices, const VulkanContext &ctx);
   ~VertexBuffer();
 
@@ -60,6 +59,8 @@ private:
   // dependencies
   VkDevice device;
   VkPhysicalDevice physicalDevice;
+  VkCommandPool commandPool;
+  VkQueue graphicsQueue;
 
   // components
   std::vector<Vertex> vertices;

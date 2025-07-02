@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include <memory>
 
 VulkanApplication::VulkanApplication() {}
 VulkanApplication::~VulkanApplication() { cleanup(); }
@@ -43,6 +44,10 @@ void VulkanApplication::initVulkan() {
   ctx.vertexBuffer = vertexBuffer->getVkBuffer();
   ctx.vertexBufferMemory = vertexBuffer->getVkBufferMemory();
 
+  indexBuffer = std::make_unique<IndexBuffer>(std::vector<uint16_t>{}, ctx);
+  ctx.indexBuffer = indexBuffer->getVkBuffer();
+  ctx.indexBufferMemory = indexBuffer->getVkBufferMemory();
+
   commandBuffers = std::make_unique<CommandBuffers>(ctx);
   ctx.commandBuffers = commandBuffers->getVkCommandBuffers();
 
@@ -64,6 +69,7 @@ void VulkanApplication::mainLoop() {
 void VulkanApplication::cleanup() {
   syncObjects.reset();
   commandBuffers.reset();
+  indexBuffer.reset();
   vertexBuffer.reset();
   commandPool.reset();
   graphicsPipeline.reset();
