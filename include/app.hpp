@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 #include "ctx.hpp"
+#include "impl/vertex.hpp"
 #include "interface/command_buffers.hpp"
 #include "interface/command_pool.hpp"
 #include "interface/device.hpp"
@@ -40,6 +41,7 @@ public:
   std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 
   std::unique_ptr<CommandPool> commandPool;
+  std::unique_ptr<VertexBuffer> vertexBuffer;
   std::unique_ptr<CommandBuffers> commandBuffers;
 
   std::unique_ptr<SyncObjects> syncObjects;

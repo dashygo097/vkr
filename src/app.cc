@@ -39,6 +39,10 @@ void VulkanApplication::initVulkan() {
   commandPool = std::make_unique<CommandPool>(ctx);
   ctx.commandPool = commandPool->getVkCommandPool();
 
+  vertexBuffer = std::make_unique<VertexBuffer>(std::vector<Vertex>{}, ctx);
+  ctx.vertexBuffer = vertexBuffer->getVkBuffer();
+  ctx.vertexBufferMemory = vertexBuffer->getVkBufferMemory();
+
   commandBuffers = std::make_unique<CommandBuffers>(ctx);
   ctx.commandBuffers = commandBuffers->getVkCommandBuffers();
 
@@ -60,6 +64,7 @@ void VulkanApplication::mainLoop() {
 void VulkanApplication::cleanup() {
   syncObjects.reset();
   commandBuffers.reset();
+  vertexBuffer.reset();
   commandPool.reset();
   graphicsPipeline.reset();
   swapchainFramebuffers.reset();
@@ -71,4 +76,6 @@ void VulkanApplication::cleanup() {
   window.reset();
 }
 
-void VulkanApplication::drawFrame() {}
+void VulkanApplication::drawFrame() {
+  // TODO: Implement the frame drawing logic
+}

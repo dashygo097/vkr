@@ -1,5 +1,6 @@
-#include "interface/command_buffers.hpp"
 #include <stdexcept>
+
+#include "interface/command_buffers.hpp"
 
 CommandBuffers::CommandBuffers(VkDevice device, VkCommandPool commandPool)
     : device(device), commandPool(commandPool) {
@@ -29,7 +30,8 @@ CommandBuffers::~CommandBuffers() {
   commandBuffers.clear();
 }
 
-void recordCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer,
+void recordCommandBuffer(uint32_t imageIndex, std::vector<Vertex> vertices,
+                         VkBuffer vertexBuffer, VkCommandBuffer commandBuffer,
                          VkRenderPass renderPass,
                          std::vector<VkFramebuffer> swapchainFrameBuffers,
                          VkExtent2D swapchainExtent,
@@ -72,7 +74,11 @@ void recordCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer,
   scissor.extent = swapchainExtent;
   vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-  vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+  VkBuffer vertexBuffers[] = {vertexBuffer};
+  VkDeviceSize offsets[] = {0};
+  vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+  vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
   vkCmdEndRenderPass(commandBuffer);
 

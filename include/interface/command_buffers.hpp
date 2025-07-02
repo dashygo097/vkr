@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 #include "ctx.hpp"
+#include "impl/vertex.hpp"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -29,7 +30,8 @@ private:
   std::vector<VkCommandBuffer> commandBuffers{};
 };
 
-void recordCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer,
+void recordCommandBuffer(uint32_t imageIndex, std::vector<Vertex> vertices,
+                         VkBuffer vertexBuffer, VkCommandBuffer commandBuffer,
                          VkRenderPass renderPass,
                          const std::vector<VkFramebuffer> swapchainFrameBuffers,
                          VkExtent2D swapchainExtent,
