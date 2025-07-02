@@ -52,6 +52,10 @@ struct VulkanContext {
   VkBuffer vertexBuffer = VK_NULL_HANDLE;
   VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
 
+  // --- Index Buffers ---
+  VkBuffer indexBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory indexBufferMemory = VK_NULL_HANDLE;
+
   // --- Command Buffers ---
   std::vector<VkCommandBuffer> commandBuffers = {};
 
