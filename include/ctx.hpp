@@ -45,8 +45,14 @@ struct VulkanContext {
   VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
   VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 
-  // --- Commands ---
+  // --- CommandPool ---
   VkCommandPool commandPool = VK_NULL_HANDLE;
+
+  // --- Vertex Buffers ---
+  VkBuffer vertexBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
+
+  // --- Command Buffers ---
   std::vector<VkCommandBuffer> commandBuffers = {};
 
   // --- Synchronization ---

@@ -1,55 +1,20 @@
-#include <vulkan/vulkan.h>
-#define GLFW_INCLUDE_VULKAN
-#include <vulkan/vulkan_beta.h>
-
-#include <cstdlib>
-#include <cstring>
 #include <iostream>
+#include <vector>
+#include <vulkan/vulkan.h>
 
-#include "interface/command_buffers.hpp"
-#include "interface/command_pool.hpp"
-#include "interface/device.hpp"
-#include "interface/frame_buffers.hpp"
-#include "interface/instance.hpp"
-#include "interface/pipeline.hpp"
-#include "interface/render_pass.hpp"
-#include "interface/surface.hpp"
-#include "interface/swapchain.hpp"
-#include "interface/sync_objects.hpp"
-#include "interface/window.hpp"
-#include <ctx.hpp>
+#include "app.hpp"
+#include "impl/vertex.hpp"
 
-class HelloTriangleApplication {
-public:
-  void run() {
-    initVulkan();
-    mainLoop();
-    cleanup();
-  }
-
+class VertexBufferTestApplication : public VulkanApplication {
 private:
-  VulkanContext ctx;
-  std::unique_ptr<Window> window;
-  std::unique_ptr<Instance> instance;
-  std::unique_ptr<Surface> surface;
-  std::unique_ptr<Device> device;
-
-  std::unique_ptr<Swapchain> swapchain;
-  std::unique_ptr<Framebuffers> swapchainFramebuffers;
-
-  std::unique_ptr<RenderPass> renderPass;
-  std::unique_ptr<GraphicsPipeline> graphicsPipeline;
-
-  std::unique_ptr<CommandPool> commandPool;
-  std::unique_ptr<CommandBuffers> commandBuffers;
-
-  std::unique_ptr<SyncObjects> syncObjects;
-
+  const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                                        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+                                        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
   void initVulkan() {
 
-    ctx.appName = (char *)"Hello Triangle";
+    ctx.appName = "Hello Triangle";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
-    ctx.engineName = (char *)"No Engine";
+    ctx.engineName = "No Engine";
     ctx.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 
     window = std::make_unique<Window>(ctx);
@@ -80,8 +45,8 @@ private:
     renderPass = std::make_unique<RenderPass>(ctx);
     ctx.renderPass = renderPass->getVkRenderPass();
 
-    ctx.vertexShaderPath = (char *)"shaders/triangle/vert.spv";
-    ctx.fragmentShaderPath = (char *)"shaders/triangle/frag.spv";
+    ctx.vertexShaderPath = "shaders/vertex/vert.spv";
+    ctx.fragmentShaderPath = "shaders/vertex/frag.spv";
     graphicsPipeline = std::make_unique<GraphicsPipeline>(ctx);
     ctx.graphicsPipeline = graphicsPipeline->getVkPipeline();
     ctx.pipelineLayout = graphicsPipeline->getVkPipelineLayout();
@@ -91,6 +56,10 @@ private:
 
     commandPool = std::make_unique<CommandPool>(ctx);
     ctx.commandPool = commandPool->getVkCommandPool();
+
+    vertexBuffer = std::make_unique<VertexBuffer>(vertices, ctx);
+    ctx.vertexBuffer = vertexBuffer->getVkBuffer();
+    ctx.vertexBufferMemory = vertexBuffer->getVkBufferMemory();
 
     commandBuffers = std::make_unique<CommandBuffers>(ctx);
     ctx.commandBuffers = commandBuffers->getVkCommandBuffersRef();
@@ -103,7 +72,7 @@ private:
 
   static void framebufferResizeCallback(GLFWwindow *window, int width,
                                         int height) {
-    auto app = reinterpret_cast<HelloTriangleApplication *>(
+    auto app = reinterpret_cast<VertexBufferTestApplication *>(
         glfwGetWindowUserPointer(window));
     app->ctx.framebufferResized = true;
   }
@@ -157,11 +126,12 @@ private:
         commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
         /*VkCommandBufferResetFlagBits*/ 0);
 
-    recordCommandBuffer(
-        imageIndex, commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
-        renderPass->getVkRenderPass(),
-        swapchainFramebuffers->getVkFramebuffers(), swapchain->getVkExtent2D(),
-        graphicsPipeline->getVkPipeline());
+    recordCommandBuffer(imageIndex, vertices, vertexBuffer->getVkBuffer(),
+                        commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
+                        renderPass->getVkRenderPass(),
+                        swapchainFramebuffers->getVkFramebuffers(),
+                        swapchain->getVkExtent2D(),
+                        graphicsPipeline->getVkPipeline());
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -215,7 +185,7 @@ private:
 };
 
 int main() {
-  HelloTriangleApplication app;
+  VertexBufferTestApplication app;
 
   try {
     app.run();
@@ -225,4 +195,4 @@ int main() {
   }
 
   return EXIT_SUCCESS;
-}
+};
