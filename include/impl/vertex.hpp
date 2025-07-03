@@ -63,7 +63,7 @@ private:
   VkQueue graphicsQueue;
 
   // components
-  std::vector<Vertex> vertices;
-  VkBuffer vertexBuffer;
-  VkDeviceMemory memory;
+  std::vector<Vertex> vertices{};
+  VkBuffer vertexBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory memory = VK_NULL_HANDLE;
 };

@@ -62,6 +62,10 @@ struct VulkanContext {
   std::vector<VkDeviceMemory> uniformBuffersMemory = {};
   std::vector<void *> uniformBuffersMapped = {};
 
+  // --- Descriptor Sets ---
+  VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+  std::vector<VkDescriptorSet> descriptorSets = {};
+
   // --- Command Buffers ---
   std::vector<VkCommandBuffer> commandBuffers = {};
 

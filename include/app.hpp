@@ -9,7 +9,8 @@
 #include "impl/vertex.hpp"
 #include "interface/command_buffers.hpp"
 #include "interface/command_pool.hpp"
-#include "interface/descriptor.hpp"
+#include "interface/descriptor_layout.hpp"
+#include "interface/descriptor_set.hpp"
 #include "interface/device.hpp"
 #include "interface/frame_buffers.hpp"
 #include "interface/instance.hpp"
@@ -41,13 +42,14 @@ public:
   std::unique_ptr<Framebuffers> swapchainFramebuffers;
 
   std::unique_ptr<RenderPass> renderPass;
-  std::unique_ptr<Descriptor> descriptor;
+  std::unique_ptr<DescriptorSetLayout> descriptorSetLayout;
   std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 
   std::unique_ptr<CommandPool> commandPool;
   std::unique_ptr<VertexBuffer> vertexBuffer;
   std::unique_ptr<IndexBuffer> indexBuffer;
   std::unique_ptr<UniformBuffers> uniformBuffers;
+  std::unique_ptr<DescriptorSet> descriptorSet;
   std::unique_ptr<CommandBuffers> commandBuffers;
 
   std::unique_ptr<SyncObjects> syncObjects;

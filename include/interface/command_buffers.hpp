@@ -30,10 +30,13 @@ private:
   std::vector<VkCommandBuffer> commandBuffers{};
 };
 
-void recordCommandBuffer(uint32_t imageIndex, std::vector<Vertex> vertices,
+void recordCommandBuffer(uint32_t imageIndex, uint32_t currentFrame,
+                         std::vector<Vertex> vertices,
                          std::vector<uint16_t> indices, VkBuffer indexBuffer,
                          VkBuffer vertexBuffer, VkCommandBuffer commandBuffer,
                          VkRenderPass renderPass,
-                         const std::vector<VkFramebuffer> swapchainFrameBuffers,
+                         VkPipelineLayout pipelineLayout,
+                         std::vector<VkDescriptorSet> descriptorSets,
+                         std::vector<VkFramebuffer> swapchainFrameBuffers,
                          VkExtent2D swapchainExtent,
                          VkPipeline graphicsPipeline);

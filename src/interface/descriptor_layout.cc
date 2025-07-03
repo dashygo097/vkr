@@ -1,6 +1,6 @@
-#include "interface/descriptor.hpp"
+#include "interface/descriptor_layout.hpp"
 
-Descriptor::Descriptor(VkDevice device) : device(device) {
+DescriptorSetLayout::DescriptorSetLayout(VkDevice device) : device(device) {
   VkDescriptorSetLayoutBinding uboLayoutBinding{};
   uboLayoutBinding.binding = 0;
   uboLayoutBinding.descriptorCount = 1;
@@ -19,9 +19,10 @@ Descriptor::Descriptor(VkDevice device) : device(device) {
   }
 }
 
-Descriptor::Descriptor(const VulkanContext &ctx) : Descriptor(ctx.device) {}
+DescriptorSetLayout::DescriptorSetLayout(const VulkanContext &ctx)
+    : DescriptorSetLayout(ctx.device) {}
 
-Descriptor::~Descriptor() {
+DescriptorSetLayout::~DescriptorSetLayout() {
   if (descriptorSetLayout != VK_NULL_HANDLE) {
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
     descriptorSetLayout = VK_NULL_HANDLE;
