@@ -25,7 +25,7 @@ private:
   VkQueue graphicsQueue;
 
   // dependencies
-  std::vector<uint16_t> indices;
-  VkBuffer indexBuffer;
-  VkDeviceMemory memory;
+  std::vector<uint16_t> indices{};
+  VkBuffer indexBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory memory = VK_NULL_HANDLE;
 };

@@ -15,7 +15,7 @@ UniformBuffers::UniformBuffers(const UniformBufferObject &object,
 UniformBuffers::~UniformBuffers() { destroy(); }
 
 void UniformBuffers::create() {
-  VkDeviceSize bufferSize = sizeof(UniformBuffers);
+  VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
   uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
   memories.resize(MAX_FRAMES_IN_FLIGHT);
@@ -51,8 +51,13 @@ void UniformBuffers::destroy() {
   uniformBuffers.clear();
 }
 
-void UniformBuffers::update(const UniformBufferObject &newObject) {
-  object = newObject;
-  destroy();
-  create();
+void UniformBuffers::update(uint32_t currentFrame,
+                            const UniformBufferObject &object) {
+  if (currentFrame >= MAX_FRAMES_IN_FLIGHT) {
+    throw std::out_of_range("currentFrame exceeds MAX_FRAMES_IN_FLIGHT");
+  }
+  if (mapped[currentFrame] == nullptr) {
+    throw std::runtime_error("Mapped memory is null for current frame");
+  }
+  memcpy(mapped[currentFrame], &object, sizeof(UniformBufferObject));
 }

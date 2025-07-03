@@ -30,10 +30,13 @@ CommandBuffers::~CommandBuffers() {
   commandBuffers.clear();
 }
 
-void recordCommandBuffer(uint32_t imageIndex, std::vector<Vertex> vertices,
+void recordCommandBuffer(uint32_t imageIndex, uint32_t currentFrame,
+                         std::vector<Vertex> vertices,
                          std::vector<uint16_t> indices, VkBuffer indexBuffer,
                          VkBuffer vertexBuffer, VkCommandBuffer commandBuffer,
                          VkRenderPass renderPass,
+                         VkPipelineLayout pipelineLayout,
+                         std::vector<VkDescriptorSet> descriptorSets,
                          std::vector<VkFramebuffer> swapchainFrameBuffers,
                          VkExtent2D swapchainExtent,
                          VkPipeline graphicsPipeline) {
@@ -80,6 +83,11 @@ void recordCommandBuffer(uint32_t imageIndex, std::vector<Vertex> vertices,
   vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
   vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+  vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          pipelineLayout, 0, 1, &descriptorSets[currentFrame],
+                          0, nullptr);
+
   vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0,
                    0, 0);
 

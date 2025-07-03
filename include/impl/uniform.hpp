@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ctx.hpp"
 
 #include <glm/glm.hpp>
@@ -18,7 +20,8 @@ public:
 
   void create();
   void destroy();
-  void update(const UniformBufferObject &object);
+  void update(uint32_t currentFrame, const UniformBufferObject &object);
+  ;
 
   std::vector<VkBuffer> getVkBuffers() const { return uniformBuffers; }
   std::vector<VkDeviceMemory> getVkBuffersMemory() const { return memories; }
@@ -32,7 +35,7 @@ private:
   // componets
   UniformBufferObject object;
 
-  std::vector<VkBuffer> uniformBuffers;
-  std::vector<VkDeviceMemory> memories;
-  std::vector<void *> mapped;
+  std::vector<VkBuffer> uniformBuffers{};
+  std::vector<VkDeviceMemory> memories{};
+  std::vector<void *> mapped{};
 };

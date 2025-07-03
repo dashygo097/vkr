@@ -53,8 +53,8 @@ private:
     renderPass = std::make_unique<RenderPass>(ctx);
     ctx.renderPass = renderPass->getVkRenderPass();
 
-    descriptor = std::make_unique<Descriptor>(ctx);
-    ctx.descriptorSetLayout = descriptor->getVkDescriptorSetLayout();
+    descriptorSetLayout = std::make_unique<DescriptorSetLayout>(ctx);
+    ctx.descriptorSetLayout = descriptorSetLayout->getVkDescriptorSetLayout();
 
     ctx.vertexShaderPath = "shaders/uniform/vert.spv";
     ctx.fragmentShaderPath = "shaders/uniform/frag.spv";
@@ -81,6 +81,10 @@ private:
     ctx.uniformBuffers = uniformBuffers->getVkBuffers();
     ctx.uniformBuffersMemory = uniformBuffers->getVkBuffersMemory();
     ctx.uniformBuffersMapped = uniformBuffers->getMapped();
+
+    descriptorSet = std::make_unique<DescriptorSet>(ctx);
+    ctx.descriptorSets = descriptorSet->getVkDescriptorSets();
+    ctx.descriptorPool = descriptorSet->getVkDescriptorPool();
 
     commandBuffers = std::make_unique<CommandBuffers>(ctx);
     ctx.commandBuffers = commandBuffers->getVkCommandBuffersRef();
@@ -140,7 +144,7 @@ private:
       throw std::runtime_error("failed to acquire swap chain image!");
     }
 
-    updateUniformBuffer(imageIndex);
+    updateUniformBuffer(ctx.currentFrame);
 
     vkResetFences(device->getVkDevice(), 1,
                   &syncObjects->getInFlightFences()[ctx.currentFrame]);
@@ -149,13 +153,14 @@ private:
         commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
         /*VkCommandBufferResetFlagBits*/ 0);
 
-    recordCommandBuffer(imageIndex, vertices, indices,
-                        indexBuffer->getVkBuffer(), vertexBuffer->getVkBuffer(),
-                        commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
-                        renderPass->getVkRenderPass(),
-                        swapchainFramebuffers->getVkFramebuffers(),
-                        swapchain->getVkExtent2D(),
-                        graphicsPipeline->getVkPipeline());
+    recordCommandBuffer(
+        imageIndex, ctx.currentFrame, vertices, indices,
+        indexBuffer->getVkBuffer(), vertexBuffer->getVkBuffer(),
+        commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
+        renderPass->getVkRenderPass(), graphicsPipeline->getVkPipelineLayout(),
+        descriptorSet->getVkDescriptorSets(),
+        swapchainFramebuffers->getVkFramebuffers(), swapchain->getVkExtent2D(),
+        graphicsPipeline->getVkPipeline());
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -227,7 +232,7 @@ private:
                                 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
 
-    memcpy(ctx.uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+    uniformBuffers->update(currentImage, ubo);
   }
 };
 

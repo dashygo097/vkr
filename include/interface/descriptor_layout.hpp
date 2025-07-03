@@ -1,12 +1,14 @@
+#pragma once
+
 #include <vulkan/vulkan.hpp>
 
 #include "ctx.hpp"
 
-class Descriptor {
+class DescriptorSetLayout {
 public:
-  Descriptor(VkDevice device);
-  Descriptor(const VulkanContext &ctx);
-  ~Descriptor();
+  DescriptorSetLayout(VkDevice device);
+  DescriptorSetLayout(const VulkanContext &ctx);
+  ~DescriptorSetLayout();
 
   VkDescriptorSetLayout getVkDescriptorSetLayout() const {
     return descriptorSetLayout;
