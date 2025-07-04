@@ -10,6 +10,9 @@ public:
   DescriptorSetLayout(const VulkanContext &ctx);
   ~DescriptorSetLayout();
 
+  DescriptorSetLayout(const DescriptorSetLayout &) = delete;
+  DescriptorSetLayout &operator=(const DescriptorSetLayout &) = delete;
+
   VkDescriptorSetLayout getVkDescriptorSetLayout() const {
     return descriptorSetLayout;
   }

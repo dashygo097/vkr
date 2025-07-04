@@ -17,6 +17,9 @@ IndexBuffer::IndexBuffer(const std::vector<uint16_t> &indices,
 IndexBuffer::~IndexBuffer() { destroy(); }
 
 void IndexBuffer::create() {
+  if (indices.empty()) {
+    return;
+  }
   VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
   VkBuffer stagingBuffer;
@@ -55,7 +58,8 @@ void IndexBuffer::destroy() {
 }
 
 void IndexBuffer::update(const std::vector<uint16_t> &newIndices) {
-  indices = newIndices;
   destroy();
+
+  indices = newIndices;
   create();
 }

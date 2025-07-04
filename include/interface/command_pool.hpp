@@ -11,6 +11,9 @@ public:
   CommandPool(const VulkanContext &ctx);
   ~CommandPool();
 
+  CommandPool(const CommandPool &) = delete;
+  CommandPool &operator=(const CommandPool &) = delete;
+
   VkCommandPool getVkCommandPool() const { return commandPool; }
 
 private:

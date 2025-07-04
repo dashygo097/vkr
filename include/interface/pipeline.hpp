@@ -14,6 +14,9 @@ public:
   GraphicsPipeline(const VulkanContext &ctx);
   ~GraphicsPipeline();
 
+  GraphicsPipeline(const GraphicsPipeline &) = delete;
+  GraphicsPipeline &operator=(const GraphicsPipeline &) = delete;
+
   VkPipelineLayout getVkPipelineLayout() const { return pipelineLayout; }
   VkPipeline getVkPipeline() const { return graphicsPipeline; }
 

@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
+#include "camera.hpp"
 #include "ctx.hpp"
 #include "impl/index.hpp"
 #include "impl/uniform.hpp"
@@ -24,16 +25,32 @@
 class VulkanApplication {
 public:
   VulkanApplication();
-  virtual ~VulkanApplication();
+  ~VulkanApplication();
 
-  virtual void run() {
+  VulkanApplication(const VulkanApplication &) = delete;
+  VulkanApplication &operator=(const VulkanApplication &) = delete;
+
+  // Frame-Level methods
+  virtual void mainLoop();
+  virtual void updateUniformBuffer(uint32_t currentImage);
+  virtual void drawFrame();
+  void recreateSwapchain();
+
+  // Application Lifecycle methods
+  void run() {
+    configure();
     initVulkan();
+    setting();
+
     mainLoop();
+
     cleanup();
   }
 
   VulkanContext ctx;
+
   std::unique_ptr<Window> window;
+  std::unique_ptr<Camera> camera;
   std::unique_ptr<Instance> instance;
   std::unique_ptr<Surface> surface;
   std::unique_ptr<Device> device;
@@ -55,8 +72,17 @@ public:
   std::unique_ptr<SyncObjects> syncObjects;
 
 private:
-  virtual void mainLoop();
-  virtual void initVulkan();
-  virtual void cleanup();
-  virtual void drawFrame();
+  // Initialization methods
+  virtual void configure();
+  virtual void setting();
+
+  void initVulkan();
+  void cleanup();
 };
+
+static void framebufferResizeCallback(GLFWwindow *window, int width,
+                                      int height) {
+  auto app =
+      reinterpret_cast<VulkanApplication *>(glfwGetWindowUserPointer(window));
+  app->ctx.framebufferResized = true;
+}

@@ -20,6 +20,9 @@ public:
            const std::vector<const char *> &validationLayers);
   Instance(const VulkanContext &ctx);
 
+  Instance(const Instance &) = delete;
+  Instance &operator=(const Instance &) = delete;
+
   ~Instance();
 
   VkInstance getVkInstance() const { return instance; }

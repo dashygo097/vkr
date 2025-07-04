@@ -7,23 +7,33 @@
 #include <vulkan/vulkan_beta.h>
 
 struct VulkanContext {
+
   // --- App/Engine Info ---
-  std::string appName = "VulkanApp";
-  std::string engineName = "No Engine";
-  uint32_t appVersion = VK_MAKE_VERSION(1, 0, 0);
-  uint32_t engineVersion = VK_MAKE_VERSION(1, 0, 0);
+  std::string appName;
+  std::string engineName;
+  uint32_t appVersion;
+  uint32_t engineVersion;
 
   // --- Window Info ---
-  uint32_t width = 800;
-  uint32_t height = 600;
-  std::string title = "Vulkan (Default Title)";
-  GLFWwindow *window = nullptr;
+  uint32_t width;
+  uint32_t height;
+  std::string title;
+
+  // --- Camera Info ---
+  bool cameraEnabled;
+  float cameraMovementSpeed;
+  float cameraMouseSensitivity;
+  float cameraFov;
+  float cameraAspectRatio;
+  float cameraNearPlane;
+  float cameraFarPlane;
 
   // --- Shader paths ---
-  std::string vertexShaderPath = "shaders/vert.spv";
-  std::string fragmentShaderPath = "shaders/frag.spv";
+  std::string vertexShaderPath;
+  std::string fragmentShaderPath;
 
   // --- Vulkan Core Objects ---
+  GLFWwindow *window = nullptr;
   VkInstance instance = VK_NULL_HANDLE;
   VkSurfaceKHR surface = VK_NULL_HANDLE;
   VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;

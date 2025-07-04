@@ -11,6 +11,9 @@ public:
   SyncObjects(const VulkanContext &ctx);
   ~SyncObjects();
 
+  SyncObjects(const SyncObjects &) = delete;
+  SyncObjects &operator=(const SyncObjects &) = delete;
+
   std::vector<VkSemaphore> getImageAvailableSemaphores() const {
     return imageAvailableSemaphores;
   }

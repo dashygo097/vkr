@@ -10,6 +10,9 @@ public:
   DebugMessenger(const VulkanContext &ctx);
   ~DebugMessenger();
 
+  DebugMessenger(const DebugMessenger &) = delete;
+  DebugMessenger &operator=(const DebugMessenger &) = delete;
+
   static void
   populateCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
 
