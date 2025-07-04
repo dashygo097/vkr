@@ -14,6 +14,7 @@ endif()
 # 3rdparty
 add_subdirectory(3rdparty/glfw EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glm EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/imgui EXCLUDE_FROM_ALL)
 include_directories(3rdparty)
 
 set(GLFW_BUILD_DOCS
@@ -63,7 +64,7 @@ file(GLOB_RECURSE HEADER_FILES include/*.h include/*.hpp)
 
 add_library(vkr ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(vkr PUBLIC include)
-target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan glm::glm-header-only)
+target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan glm::glm-header-only imgui)
 
 target_link_libraries(vkr PUBLIC
   "-framework Metal"
