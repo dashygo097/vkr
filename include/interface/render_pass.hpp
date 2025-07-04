@@ -10,6 +10,9 @@ public:
   RenderPass(const VulkanContext &ctx);
   ~RenderPass();
 
+  RenderPass(const RenderPass &) = delete;
+  RenderPass &operator=(const RenderPass &) = delete;
+
   VkRenderPass getVkRenderPass() const { return renderPass; }
 
 private:

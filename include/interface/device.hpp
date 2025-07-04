@@ -13,6 +13,9 @@ public:
   Device(const VulkanContext &ctx);
   ~Device();
 
+  Device(const Device &) = delete;
+  Device &operator=(const Device &) = delete;
+
   void waitIdle();
 
   VkDevice getVkDevice() const { return device; }

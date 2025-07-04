@@ -8,6 +8,9 @@ public:
   ShaderModule(VkDevice device, const std::string &filepath);
   ~ShaderModule();
 
+  ShaderModule(const ShaderModule &) = delete;
+  ShaderModule &operator=(const ShaderModule &) = delete;
+
   VkShaderModule getModule() const { return shaderModule; }
 
 private:

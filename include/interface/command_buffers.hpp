@@ -14,6 +14,9 @@ public:
   CommandBuffers(const VulkanContext &ctx);
   ~CommandBuffers();
 
+  CommandBuffers(const CommandBuffers &) = delete;
+  CommandBuffers &operator=(const CommandBuffers &) = delete;
+
   std::vector<VkCommandBuffer> getVkCommandBuffers() const {
     return commandBuffers;
   }

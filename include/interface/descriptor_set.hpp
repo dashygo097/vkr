@@ -9,6 +9,9 @@ public:
   DescriptorSet(const VulkanContext &ctx);
   ~DescriptorSet();
 
+  DescriptorSet(const DescriptorSet &) = delete;
+  DescriptorSet &operator=(const DescriptorSet &) = delete;
+
   std::vector<VkDescriptorSet> getVkDescriptorSets() const {
     return descriptorSets;
   }

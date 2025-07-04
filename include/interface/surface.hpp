@@ -12,6 +12,9 @@ public:
   Surface(const VulkanContext &ctx);
   ~Surface();
 
+  Surface(const Surface &) = delete;
+  Surface &operator=(const Surface &) = delete;
+
   VkSurfaceKHR getVkSurface() const { return surface; }
 
 private:

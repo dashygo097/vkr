@@ -20,6 +20,9 @@ VertexBuffer::VertexBuffer(const std::vector<Vertex> &vertices,
 VertexBuffer::~VertexBuffer() { destroy(); }
 
 void VertexBuffer::create() {
+  if (vertices.empty()) {
+    return;
+  }
   VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
   VkBuffer stagingBuffer;
@@ -58,7 +61,8 @@ void VertexBuffer::destroy() {
 }
 
 void VertexBuffer::update(const std::vector<Vertex> &newVertices) {
-  vertices = newVertices;
   destroy();
+
+  vertices = newVertices;
   create();
 }

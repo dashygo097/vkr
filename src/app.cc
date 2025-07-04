@@ -4,9 +4,22 @@
 VulkanApplication::VulkanApplication() {}
 VulkanApplication::~VulkanApplication() { cleanup(); }
 
+void VulkanApplication::configure() {}
+
 void VulkanApplication::initVulkan() {
   window = std::make_unique<Window>(ctx);
   ctx.window = window->getGLFWWindow();
+  glfwSetWindowUserPointer(window->getGLFWWindow(), this);
+  glfwSetFramebufferSizeCallback(window->getGLFWWindow(),
+                                 framebufferResizeCallback);
+
+  camera = std::make_unique<Camera>(ctx);
+  ctx.cameraMovementSpeed = camera->getMovementSpeed();
+  ctx.cameraMouseSensitivity = camera->getMouseSensitivity();
+  ctx.cameraFov = camera->getFov();
+  ctx.cameraAspectRatio = camera->getAspectRatio();
+  ctx.cameraNearPlane = camera->getNearPlane();
+  ctx.cameraFarPlane = camera->getFarPlane();
 
   instance = std::make_unique<Instance>(ctx);
   ctx.instance = instance->getVkInstance();
@@ -69,9 +82,14 @@ void VulkanApplication::initVulkan() {
   ctx.inFlightFences = syncObjects->getInFlightFences();
 }
 
+void VulkanApplication::setting() {}
+
 void VulkanApplication::mainLoop() {
   while (!window->shouldClose()) {
     window->pollEvents();
+    if (ctx.cameraEnabled) {
+      camera->track();
+    }
     drawFrame();
   }
 
@@ -94,7 +112,30 @@ void VulkanApplication::cleanup() {
   device.reset();
   surface.reset();
   instance.reset();
+  camera.reset();
   window.reset();
+}
+
+void VulkanApplication::recreateSwapchain() {
+  int width = 0, height = 0;
+  glfwGetFramebufferSize(window->getGLFWWindow(), &width, &height);
+  while (width == 0 || height == 0) {
+    glfwGetFramebufferSize(window->getGLFWWindow(), &width, &height);
+    glfwWaitEvents();
+  }
+
+  swapchain->recreate();
+  swapchainFramebuffers->destroy();
+  swapchainFramebuffers->create();
+}
+
+void VulkanApplication::updateUniformBuffer(uint32_t currentImage) {
+  UniformBufferObject ubo{};
+  ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+  ubo.view = camera->getView();
+  ubo.proj = camera->getProjection();
+
+  uniformBuffers->update(currentImage, ubo);
 }
 
 void VulkanApplication::drawFrame() {

@@ -16,6 +16,9 @@ public:
   Window(const VulkanContext &ctx);
   ~Window();
 
+  Window(const Window &) = delete;
+  Window &operator=(const Window &) = delete;
+
   bool shouldClose() const;
   void pollEvents() const;
 

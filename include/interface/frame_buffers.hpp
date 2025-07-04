@@ -13,6 +13,9 @@ public:
   Framebuffers(const VulkanContext &ctx);
   ~Framebuffers();
 
+  Framebuffers(const Framebuffers &) = delete;
+  Framebuffers &operator=(const Framebuffers &) = delete;
+
   void create();
   void destroy();
 

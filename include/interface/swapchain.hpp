@@ -27,6 +27,9 @@ public:
   Swapchain(const VulkanContext &ctx);
   ~Swapchain();
 
+  Swapchain(const Swapchain &) = delete;
+  Swapchain &operator=(const Swapchain &) = delete;
+
   VkSwapchainKHR getVkSwapchain() const { return swapchain; }
   std::vector<VkImage> getVkImages() const { return images; }
   std::vector<VkImageView> getVkImageViews() const { return imageViews; }
