@@ -80,6 +80,9 @@ void VulkanApplication::initVulkan() {
   ctx.imageAvailableSemaphores = syncObjects->getImageAvailableSemaphores();
   ctx.renderFinishedSemaphores = syncObjects->getRenderFinishedSemaphores();
   ctx.inFlightFences = syncObjects->getInFlightFences();
+
+  fps_counter = std::make_unique<FPSCounter>();
+  ui = std::make_unique<UI>(ctx);
 }
 
 void VulkanApplication::setting() {}
@@ -97,6 +100,8 @@ void VulkanApplication::mainLoop() {
 }
 
 void VulkanApplication::cleanup() {
+  ui.reset();
+  fps_counter.reset();
   syncObjects.reset();
   commandBuffers.reset();
   descriptorSet.reset();

@@ -1,7 +1,5 @@
-#include <vector>
-
-#include "vkr/buffers/vertex.hpp"
 #include "vkr/interface/pipeline.hpp"
+#include "vkr/buffers/vertex.hpp"
 #include "vkr/interface/shader_module.hpp"
 
 GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,

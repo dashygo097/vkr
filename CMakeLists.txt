@@ -63,7 +63,7 @@ file(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.c src/*.cc)
 file(GLOB_RECURSE HEADER_FILES include/*.h include/*.hpp)
 
 add_library(vkr ${SOURCE_FILES} ${HEADER_FILES})
-target_include_directories(vkr PUBLIC include)
+target_include_directories(vkr PUBLIC include include/vkr)
 target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan glm::glm-header-only imgui)
 
 target_link_libraries(vkr PUBLIC

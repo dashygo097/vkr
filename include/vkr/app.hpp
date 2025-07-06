@@ -21,6 +21,8 @@
 #include "./interface/swapchain.hpp"
 #include "./interface/sync_objects.hpp"
 #include "./interface/window.hpp"
+#include "ui/ui.hpp"
+#include "vkr/fps_counter.hpp"
 
 class VulkanApplication {
 public:
@@ -70,6 +72,9 @@ public:
   std::unique_ptr<CommandBuffers> commandBuffers;
 
   std::unique_ptr<SyncObjects> syncObjects;
+
+  std::unique_ptr<FPSCounter> fps_counter;
+  std::unique_ptr<UI> ui;
 
 private:
   // Initialization methods
