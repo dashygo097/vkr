@@ -1,5 +1,5 @@
-#include "impl/vertex.hpp"
-#include "impl/universal_buffer.hpp"
+#include "vkr/buffers/vertex.hpp"
+#include "vkr/buffers/universal.hpp"
 
 Vertex::Vertex(glm::vec2 pos, glm::vec3 color) : pos(pos), color(color) {}
 Vertex::~Vertex() {}

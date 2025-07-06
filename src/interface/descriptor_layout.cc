@@ -1,4 +1,4 @@
-#include "interface/descriptor_layout.hpp"
+#include "vkr/interface/descriptor_layout.hpp"
 
 DescriptorSetLayout::DescriptorSetLayout(VkDevice device) : device(device) {
   VkDescriptorSetLayoutBinding uboLayoutBinding{};

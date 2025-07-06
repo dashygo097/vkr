@@ -1,6 +1,6 @@
-#include "impl/uniform.hpp"
-#include "impl/universal_buffer.hpp"
-#include "interface/command_buffers.hpp"
+#include "vkr/buffers/uniform.hpp"
+#include "vkr/buffers/command.hpp"
+#include "vkr/buffers/universal.hpp"
 
 UniformBuffers::UniformBuffers(const UniformBufferObject &object,
                                VkDevice device, VkPhysicalDevice physicalDevice)

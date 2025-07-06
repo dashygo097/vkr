@@ -5,8 +5,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-#include "app.hpp"
-#include "impl/vertex.hpp"
+#include "vkr/app.hpp"
 
 class UniformBufferTestApplication : public VulkanApplication {
 private:
@@ -44,92 +43,6 @@ private:
 
     vertexBuffer->update(vertices);
     indexBuffer->update(indices);
-  }
-
-  void drawFrame() {
-    vkWaitForFences(device->getVkDevice(), 1,
-                    &syncObjects->getInFlightFences()[ctx.currentFrame],
-                    VK_TRUE, UINT64_MAX);
-
-    uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(
-        device->getVkDevice(), swapchain->getVkSwapchain(), UINT64_MAX,
-        syncObjects->getImageAvailableSemaphores()[ctx.currentFrame],
-        VK_NULL_HANDLE, &imageIndex);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-      recreateSwapchain();
-      return;
-    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-      throw std::runtime_error("failed to acquire swap chain image!");
-    }
-
-    updateUniformBuffer(ctx.currentFrame);
-
-    vkResetFences(device->getVkDevice(), 1,
-                  &syncObjects->getInFlightFences()[ctx.currentFrame]);
-
-    vkResetCommandBuffer(
-        commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
-        /*VkCommandBufferResetFlagBits*/ 0);
-
-    recordCommandBuffer(
-        imageIndex, ctx.currentFrame, vertices, indices,
-        indexBuffer->getVkBuffer(), vertexBuffer->getVkBuffer(),
-        commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
-        renderPass->getVkRenderPass(), graphicsPipeline->getVkPipelineLayout(),
-        descriptorSet->getVkDescriptorSets(),
-        swapchainFramebuffers->getVkFramebuffers(), swapchain->getVkExtent2D(),
-        graphicsPipeline->getVkPipeline());
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkSemaphore waitSemaphores[] = {
-        syncObjects->getImageAvailableSemaphores()[ctx.currentFrame]};
-    VkPipelineStageFlags waitStages[] = {
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
-
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers =
-        &commandBuffers->getVkCommandBuffersRef()[ctx.currentFrame];
-
-    VkSemaphore signalSemaphores[] = {
-        syncObjects->getRenderFinishedSemaphores()[imageIndex]};
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-    if (vkQueueSubmit(device->getGraphicsQueue(), 1, &submitInfo,
-                      syncObjects->getInFlightFences()[ctx.currentFrame]) !=
-        VK_SUCCESS) {
-      throw std::runtime_error("failed to submit draw command buffer!");
-    }
-
-    VkPresentInfoKHR presentInfo{};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores;
-
-    VkSwapchainKHR swapchains[] = {swapchain->getVkSwapchain()};
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = swapchains;
-
-    presentInfo.pImageIndices = &imageIndex;
-
-    result = vkQueuePresentKHR(device->getPresentQueue(), &presentInfo);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-        ctx.framebufferResized) {
-      ctx.framebufferResized = false;
-      recreateSwapchain();
-    } else if (result != VK_SUCCESS) {
-      throw std::runtime_error("failed to present swap chain image!");
-    }
-    ctx.currentFrame = (ctx.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
   }
 };
 

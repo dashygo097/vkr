@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ctx.hpp"
+#include "../ctx.hpp"
 
 class IndexBuffer {
 public:
@@ -14,6 +14,7 @@ public:
   void destroy();
   void update(const std::vector<uint16_t> &indices);
 
+  std::vector<uint16_t> getIndices() const { return indices; }
   VkBuffer getVkBuffer() const { return indexBuffer; }
   VkDeviceMemory getVkBufferMemory() const { return memory; }
 

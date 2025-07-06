@@ -4,7 +4,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "ctx.hpp"
+#include "../ctx.hpp"
 
 class Surface {
 public:

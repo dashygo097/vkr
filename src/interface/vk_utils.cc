@@ -1,7 +1,7 @@
 #include <GLFW/glfw3.h>
 
-#include "interface/instance.hpp"
-#include "interface/vk_utils.hpp"
+#include "vkr/interface/instance.hpp"
+#include "vkr/interface/vk_utils.hpp"
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,
                                      VkSurfaceKHR surface) {

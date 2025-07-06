@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ctx.hpp"
+#include "../ctx.hpp"
 
 #include <glm/glm.hpp>
 #include <vector>

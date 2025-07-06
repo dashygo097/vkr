@@ -1,6 +1,6 @@
-#include "interface/descriptor_set.hpp"
-#include "impl/uniform.hpp"
-#include "interface/command_buffers.hpp"
+#include "vkr/interface/descriptor_set.hpp"
+#include "vkr/buffers/command.hpp"
+#include "vkr/buffers/uniform.hpp"
 
 DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
                              std::vector<VkBuffer> uniformBuffers)

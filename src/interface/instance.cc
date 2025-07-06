@@ -1,5 +1,5 @@
-#include "interface/instance.hpp"
-#include "interface/vk_utils.hpp"
+#include "vkr/interface/instance.hpp"
+#include "vkr/interface/vk_utils.hpp"
 
 Instance::Instance(const std::string appName, const std::string engineName,
                    uint32_t appVersion, uint32_t engineVersion,
