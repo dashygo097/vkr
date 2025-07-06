@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "interface/debug_messenger.hpp"
+#include "vkr/interface/debug_messenger.hpp"
 
 DebugMessenger::DebugMessenger(VkInstance instance) : instance(instance) {
   VkDebugUtilsMessengerCreateInfoEXT createInfo{};

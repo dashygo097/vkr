@@ -1,6 +1,6 @@
 #include <chrono>
 
-#include "camera.hpp"
+#include "vkr/camera.hpp"
 
 Camera::Camera(GLFWwindow *window) : window(window) {}
 Camera::Camera(GLFWwindow *window, float movementSpeed, float mouseSensitivity,

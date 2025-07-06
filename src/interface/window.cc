@@ -1,7 +1,7 @@
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 
-#include "interface/window.hpp"
+#include "vkr/interface/window.hpp"
 
 Window::Window(uint32_t width, uint32_t height, const std::string title) {
   this->width = width;

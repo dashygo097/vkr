@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "ctx.hpp"
-#include "interface/debug_messenger.hpp"
+#include "../ctx.hpp"
+#include "./debug_messenger.hpp"
 
 #ifdef NDEBUG
 const bool ENABLE_VALIDATION_LAYERS = false;

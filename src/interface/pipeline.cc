@@ -1,8 +1,8 @@
 #include <vector>
 
-#include "impl/vertex.hpp"
-#include "interface/pipeline.hpp"
-#include "interface/shader_module.hpp"
+#include "vkr/buffers/vertex.hpp"
+#include "vkr/interface/pipeline.hpp"
+#include "vkr/interface/shader_module.hpp"
 
 GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
                                    VkDescriptorSetLayout descriptorSetLayout,

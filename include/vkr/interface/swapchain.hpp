@@ -4,7 +4,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-#include "ctx.hpp"
+#include "../ctx.hpp"
 
 struct SwapchainSupportDetails {
   VkSurfaceCapabilitiesKHR capabilities;

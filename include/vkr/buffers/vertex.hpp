@@ -3,7 +3,7 @@
 #include <array>
 #include <glm/glm.hpp>
 
-#include "ctx.hpp"
+#include "../ctx.hpp"
 
 class Vertex {
 public:

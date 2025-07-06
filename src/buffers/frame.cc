@@ -1,4 +1,4 @@
-#include "interface/frame_buffers.hpp"
+#include "vkr/buffers/frame.hpp"
 
 Framebuffers::Framebuffers(VkDevice device, VkRenderPass renderPass,
                            std::vector<VkImageView> swapchainImageViews,

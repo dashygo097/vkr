@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "interface/surface.hpp"
+#include "vkr/interface/surface.hpp"
 
 Surface::Surface(VkInstance instance, GLFWwindow *window)
     : instance(instance), window(window) {

@@ -1,5 +1,5 @@
-#include "interface/sync_objects.hpp"
-#include "interface/command_buffers.hpp"
+#include "vkr/interface/sync_objects.hpp"
+#include "vkr/buffers/command.hpp"
 
 SyncObjects::SyncObjects(VkDevice device, std::vector<VkImage> swapchainImages)
     : device(device), swapchainImages(swapchainImages) {

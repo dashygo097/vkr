@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "impl/universal_buffer.hpp"
+#include "vkr/buffers/universal.hpp"
 
 uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties,
                         VkPhysicalDevice physicalDevice) {

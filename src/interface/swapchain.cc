@@ -1,5 +1,5 @@
-#include "interface/swapchain.hpp"
-#include "interface/vk_utils.hpp"
+#include "vkr/interface/swapchain.hpp"
+#include "vkr/interface/vk_utils.hpp"
 
 Swapchain::Swapchain(GLFWwindow *window, VkPhysicalDevice physicalDevice,
                      VkDevice device, VkSurfaceKHR surface)

@@ -1,8 +1,8 @@
 #include <set>
 
-#include "interface/device.hpp"
-#include "interface/instance.hpp"
-#include "interface/vk_utils.hpp"
+#include "vkr/interface/device.hpp"
+#include "vkr/interface/instance.hpp"
+#include "vkr/interface/vk_utils.hpp"
 
 Device::Device(VkInstance instance, VkSurfaceKHR surface,
                const std::vector<const char *> &deviceExtensions,

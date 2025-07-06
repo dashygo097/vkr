@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <string>
 
-#include "ctx.hpp"
+#include "../ctx.hpp"
 
 class Window {
 public:

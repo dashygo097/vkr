@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "interface/command_buffers.hpp"
+#include "vkr/buffers/command.hpp"
 
 CommandBuffers::CommandBuffers(VkDevice device, VkCommandPool commandPool)
     : device(device), commandPool(commandPool) {

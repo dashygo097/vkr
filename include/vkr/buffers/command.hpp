@@ -3,8 +3,8 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-#include "ctx.hpp"
-#include "impl/vertex.hpp"
+#include "../ctx.hpp"
+#include "./vertex.hpp"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 

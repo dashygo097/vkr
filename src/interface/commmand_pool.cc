@@ -1,5 +1,5 @@
-#include "interface/command_pool.hpp"
-#include "interface/vk_utils.hpp"
+#include "vkr/interface/command_pool.hpp"
+#include "vkr/interface/vk_utils.hpp"
 
 CommandPool::CommandPool(VkPhysicalDevice physicalDevice, VkDevice device,
                          VkSurfaceKHR surface)
