@@ -7,5 +7,5 @@ public:
   FPSPanel(const FPSPanel &) = delete;
   FPSPanel &operator=(const FPSPanel &) = delete;
 
-  void draw(float fps);
+  void render(float fps);
 };

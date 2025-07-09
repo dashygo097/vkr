@@ -36,7 +36,6 @@ public:
   virtual void mainLoop();
   virtual void updateUniformBuffer(uint32_t currentImage);
   virtual void drawFrame();
-  void recreateSwapchain();
 
   // Application Lifecycle methods
   void run() {
@@ -81,6 +80,7 @@ private:
   virtual void configure();
   virtual void setting();
 
+  void recreateSwapchain();
   void initVulkan();
   void cleanup();
 };
