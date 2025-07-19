@@ -1,5 +1,6 @@
 #pragma once
 
+namespace vkr {
 class FPSPanel {
 public:
   FPSPanel() = default;
@@ -9,3 +10,4 @@ public:
 
   void render(float fps);
 };
+} // namespace vkr

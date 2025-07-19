@@ -1,6 +1,8 @@
 #include "vkr/interface/render_pass.hpp"
 #include <stdexcept>
 
+namespace vkr {
+
 RenderPass::RenderPass(VkDevice device, VkFormat swapchainImageFormat)
     : device(device) {
   VkAttachmentDescription colorAttachment{};
@@ -44,3 +46,4 @@ RenderPass::~RenderPass() {
     renderPass = VK_NULL_HANDLE;
   }
 }
+} // namespace vkr

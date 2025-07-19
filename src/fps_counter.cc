@@ -1,5 +1,7 @@
 #include "vkr/fps_counter.hpp"
 
+namespace vkr {
+
 FPSCounter::FPSCounter() {}
 
 FPSCounter::~FPSCounter() {}
@@ -28,3 +30,4 @@ void FPSCounter::reset() {
   frame_count = 0;
   fps = 0.0f;
 }
+} // namespace vkr

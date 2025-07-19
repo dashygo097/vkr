@@ -1,6 +1,7 @@
 #include "vkr/buffers/index.hpp"
 #include "vkr/buffers/universal.hpp"
 
+namespace vkr {
 IndexBuffer::IndexBuffer(const std::vector<uint16_t> &indices, VkDevice device,
                          VkPhysicalDevice physicalDevice,
                          VkCommandPool commandPool, VkQueue graphicsQueue)
@@ -54,7 +55,9 @@ void IndexBuffer::destroy() {
   if (indexBuffer != VK_NULL_HANDLE) {
     vkDestroyBuffer(device, indexBuffer, nullptr);
   }
-  indices.clear();
+  if (!indices.empty()) {
+    indices.clear();
+  }
 }
 
 void IndexBuffer::update(const std::vector<uint16_t> &newIndices) {
@@ -63,3 +66,4 @@ void IndexBuffer::update(const std::vector<uint16_t> &newIndices) {
   indices = newIndices;
   create();
 }
+} // namespace vkr

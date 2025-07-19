@@ -6,6 +6,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class Window {
 public:
   uint32_t width;
@@ -28,3 +30,4 @@ private:
   // components
   GLFWwindow *window{nullptr};
 };
+} // namespace vkr

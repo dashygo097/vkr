@@ -2,6 +2,7 @@
 
 #include "vkr/interface/window.hpp"
 
+namespace vkr {
 Window::Window(uint32_t width, uint32_t height, const std::string title) {
   this->width = width;
   this->height = height;
@@ -32,3 +33,4 @@ Window::~Window() {
 bool Window::shouldClose() const { return glfwWindowShouldClose(window); }
 void Window::pollEvents() const { glfwPollEvents(); }
 GLFWwindow *Window::getGLFWWindow() const { return window; }
+} // namespace vkr

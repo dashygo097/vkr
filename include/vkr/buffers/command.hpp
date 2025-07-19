@@ -4,10 +4,12 @@
 #include <vulkan/vulkan.h>
 
 #include "../ctx.hpp"
+#include "./index.hpp"
 #include "./vertex.hpp"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
+namespace vkr {
 class CommandBuffers {
 public:
   CommandBuffers(VkDevice device, VkCommandPool commandPool);
@@ -43,3 +45,13 @@ void recordCommandBuffer(uint32_t imageIndex, uint32_t currentFrame,
                          std::vector<VkFramebuffer> swapchainFrameBuffers,
                          VkExtent2D swapchainExtent,
                          VkPipeline graphicsPipeline);
+
+void recordCommandBuffer(
+    uint32_t imageIndex, uint32_t currentFrame, VkCommandBuffer commandBuffer,
+    VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
+    std::vector<VkDescriptorSet> descriptorSets,
+    std::vector<VkFramebuffer> swapchainFrameBuffers,
+    VkExtent2D swapchainExtent, VkPipeline graphicsPipeline,
+    const std::vector<std::unique_ptr<VertexBuffer>> &vertexBuffers,
+    const std::vector<std::unique_ptr<IndexBuffer>> &indexBuffers);
+} // namespace vkr

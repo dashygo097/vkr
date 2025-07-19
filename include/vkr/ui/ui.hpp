@@ -3,6 +3,7 @@
 #include "../ctx.hpp"
 #include "./fps.hpp"
 
+namespace vkr {
 class UI {
 public:
   UI(GLFWwindow *window, VkInstance instance, VkSurfaceKHR surface,
@@ -34,3 +35,4 @@ private:
   // components
   std::unique_ptr<FPSPanel> fps_panel;
 };
+} // namespace vkr

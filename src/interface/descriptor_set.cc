@@ -2,6 +2,8 @@
 #include "vkr/buffers/command.hpp"
 #include "vkr/buffers/uniform.hpp"
 
+namespace vkr {
+
 DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
                              std::vector<VkBuffer> uniformBuffers)
     : device(device), layout(layout), uniformBuffers(uniformBuffers) {
@@ -65,3 +67,4 @@ DescriptorSet::~DescriptorSet() {
   }
   descriptorSets.clear();
 }
+} // namespace vkr

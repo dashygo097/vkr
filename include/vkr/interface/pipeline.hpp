@@ -5,6 +5,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class GraphicsPipeline {
 public:
   GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
@@ -30,3 +32,4 @@ private:
   VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
   VkPipeline graphicsPipeline{VK_NULL_HANDLE};
 };
+} // namespace vkr

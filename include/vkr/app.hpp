@@ -24,6 +24,7 @@
 #include "ui/ui.hpp"
 #include "vkr/fps_counter.hpp"
 
+namespace vkr {
 class VulkanApplication {
 public:
   VulkanApplication();
@@ -64,8 +65,8 @@ public:
   std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 
   std::unique_ptr<CommandPool> commandPool;
-  std::unique_ptr<VertexBuffer> vertexBuffer;
-  std::unique_ptr<IndexBuffer> indexBuffer;
+  std::unique_ptr<std::vector<std::unique_ptr<VertexBuffer>>> vertexBuffers;
+  std::unique_ptr<std::vector<std::unique_ptr<IndexBuffer>>> indexBuffers;
   std::unique_ptr<UniformBuffers> uniformBuffers;
   std::unique_ptr<DescriptorSet> descriptorSet;
   std::unique_ptr<CommandBuffers> commandBuffers;
@@ -90,4 +91,5 @@ static void framebufferResizeCallback(GLFWwindow *window, int width,
   auto app =
       reinterpret_cast<VulkanApplication *>(glfwGetWindowUserPointer(window));
   app->ctx.framebufferResized = true;
-}
+};
+} // namespace vkr

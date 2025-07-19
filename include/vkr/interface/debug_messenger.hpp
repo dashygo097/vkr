@@ -4,6 +4,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class DebugMessenger {
 public:
   DebugMessenger(VkInstance instance);
@@ -29,3 +31,4 @@ private:
                 const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
                 void *pUserData);
 };
+} // namespace vkr

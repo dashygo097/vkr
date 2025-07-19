@@ -3,6 +3,8 @@
 #include <string>
 #include <vulkan/vulkan.h>
 
+namespace vkr {
+
 class ShaderModule {
 public:
   ShaderModule(VkDevice device, const std::string &filepath);
@@ -19,3 +21,4 @@ private:
   // components
   VkShaderModule shaderModule{VK_NULL_HANDLE};
 };
+} // namespace vkr

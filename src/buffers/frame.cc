@@ -1,5 +1,7 @@
 #include "vkr/buffers/frame.hpp"
 
+namespace vkr {
+
 Framebuffers::Framebuffers(VkDevice device, VkRenderPass renderPass,
                            std::vector<VkImageView> swapchainImageViews,
                            VkExtent2D swapchainExtend)
@@ -48,3 +50,4 @@ void Framebuffers::destroy() {
   }
   framebuffers.clear();
 }
+} // namespace vkr

@@ -2,6 +2,8 @@
 #include "vkr/buffers/command.hpp"
 #include "vkr/buffers/universal.hpp"
 
+namespace vkr {
+
 UniformBuffers::UniformBuffers(const UniformBufferObject &object,
                                VkDevice device, VkPhysicalDevice physicalDevice)
     : object(object), device(device), physicalDevice(physicalDevice) {
@@ -61,3 +63,4 @@ void UniformBuffers::update(uint32_t currentFrame,
   }
   memcpy(mapped[currentFrame], &object, sizeof(UniformBufferObject));
 }
+} // namespace vkr

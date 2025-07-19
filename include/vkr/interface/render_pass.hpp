@@ -4,6 +4,7 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
 class RenderPass {
 public:
   RenderPass(VkDevice device, VkFormat swapchainFormat);
@@ -23,3 +24,4 @@ private:
   // components
   VkRenderPass renderPass{VK_NULL_HANDLE};
 };
+} // namespace vkr

@@ -1,5 +1,6 @@
 #include "vkr/interface/descriptor_layout.hpp"
 
+namespace vkr {
 DescriptorSetLayout::DescriptorSetLayout(VkDevice device) : device(device) {
   VkDescriptorSetLayoutBinding uboLayoutBinding{};
   uboLayoutBinding.binding = 0;
@@ -28,3 +29,4 @@ DescriptorSetLayout::~DescriptorSetLayout() {
     descriptorSetLayout = VK_NULL_HANDLE;
   }
 }
+} // namespace vkr

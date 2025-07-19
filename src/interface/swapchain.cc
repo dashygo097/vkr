@@ -1,6 +1,8 @@
 #include "vkr/interface/swapchain.hpp"
 #include "vkr/interface/vk_utils.hpp"
 
+namespace vkr {
+
 Swapchain::Swapchain(GLFWwindow *window, VkPhysicalDevice physicalDevice,
                      VkDevice device, VkSurfaceKHR surface)
     : window(window), physicalDevice(physicalDevice), device(device),
@@ -192,3 +194,4 @@ SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device,
 
   return details;
 }
+} // namespace vkr

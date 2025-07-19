@@ -2,6 +2,8 @@
 
 #include "vkr/camera.hpp"
 
+namespace vkr {
+
 Camera::Camera(GLFWwindow *window) : window(window) {}
 Camera::Camera(GLFWwindow *window, float movementSpeed, float mouseSensitivity,
                float aspectRatio, float fov, float nearPlane, float farPlane)
@@ -65,3 +67,4 @@ void Camera::track() {
     mouseMove(xoffset, yoffset);
   }
 }
+} // namespace vkr

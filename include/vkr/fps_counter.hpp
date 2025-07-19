@@ -1,5 +1,7 @@
 #include <chrono>
 
+namespace vkr {
+
 class FPSCounter {
 public:
   FPSCounter();
@@ -17,3 +19,4 @@ private:
   int frame_count;
   float fps;
 };
+} // namespace vkr

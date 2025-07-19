@@ -2,6 +2,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class IndexBuffer {
 public:
   IndexBuffer(const std::vector<uint16_t> &indices, VkDevice device,
@@ -9,6 +11,12 @@ public:
               VkQueue graphicsQueue);
   IndexBuffer(const std::vector<uint16_t> &indices, const VulkanContext &ctx);
   ~IndexBuffer();
+
+  IndexBuffer(const IndexBuffer &) = delete;
+  IndexBuffer &operator=(const IndexBuffer &) = delete;
+
+  IndexBuffer(IndexBuffer &&other) noexcept;
+  IndexBuffer &operator=(IndexBuffer &&other) noexcept;
 
   void create();
   void destroy();
@@ -30,3 +38,4 @@ private:
   VkBuffer indexBuffer = VK_NULL_HANDLE;
   VkDeviceMemory memory = VK_NULL_HANDLE;
 };
+} // namespace vkr

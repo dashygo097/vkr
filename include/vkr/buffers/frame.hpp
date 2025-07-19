@@ -5,6 +5,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class Framebuffers {
 public:
   Framebuffers(VkDevice device, VkRenderPass renderPass,
@@ -32,3 +34,4 @@ private:
   std::vector<VkFramebuffer> framebuffers{};
   bool frameBufferResized{false};
 };
+} // namespace vkr

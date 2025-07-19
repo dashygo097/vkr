@@ -4,6 +4,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class DescriptorSetLayout {
 public:
   DescriptorSetLayout(VkDevice device);
@@ -24,3 +26,4 @@ private:
   // components
   VkDescriptorSetLayout descriptorSetLayout;
 };
+} // namespace vkr

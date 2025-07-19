@@ -3,18 +3,25 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <vector>
+#include <vkr.hpp>
 #include <vulkan/vulkan.h>
 
-#include "vkr/app.hpp"
-
-class UniformBufferTestApplication : public VulkanApplication {
+class UniformBufferTestApplication : public vkr::VulkanApplication {
 private:
-  const std::vector<Vertex> vertices = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                                        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                                        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                                        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+  const std::vector<vkr::Vertex> vertices1 = {
+      {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+      {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+      {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+      {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
 
-  const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
+  const std::vector<vkr::Vertex> vertices2 = {
+      {{-1.5f, -1.5f}, {1.0f, 0.0f, 0.0f}},
+      {{-0.5f, -1.5f}, {0.0f, 1.0f, 0.0f}},
+      {{-0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}},
+      {{-1.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}};
+
+  const std::vector<uint16_t> indices1 = {0, 1, 2, 2, 3, 0};
+  const std::vector<uint16_t> indices2 = {0, 1, 2, 2, 3, 0};
 
   void configure() {
 
@@ -41,8 +48,12 @@ private:
 
   void setting() {
 
-    vertexBuffer->update(vertices);
-    indexBuffer->update(indices);
+    vertexBuffers->push_back(
+        std::make_unique<vkr::VertexBuffer>(vertices1, ctx));
+    vertexBuffers->push_back(
+        std::make_unique<vkr::VertexBuffer>(vertices2, ctx));
+    indexBuffers->push_back(std::make_unique<vkr::IndexBuffer>(indices1, ctx));
+    indexBuffers->push_back(std::make_unique<vkr::IndexBuffer>(indices2, ctx));
   }
 };
 
