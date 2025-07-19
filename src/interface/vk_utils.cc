@@ -1,6 +1,7 @@
 #include "vkr/interface/vk_utils.hpp"
 #include "vkr/interface/instance.hpp"
 
+namespace vkr {
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,
                                      VkSurfaceKHR surface) {
   QueueFamilyIndices indices;
@@ -70,3 +71,4 @@ bool checkValidationLayerSupport(std::vector<const char *> validationLayers) {
 
   return true;
 };
+} // namespace vkr

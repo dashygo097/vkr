@@ -2,6 +2,8 @@
 
 #include "vkr/buffers/universal.hpp"
 
+namespace vkr {
+
 uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties,
                         VkPhysicalDevice physicalDevice) {
   VkPhysicalDeviceMemoryProperties memProperties;
@@ -82,3 +84,4 @@ void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size,
 
   vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
+} // namespace vkr

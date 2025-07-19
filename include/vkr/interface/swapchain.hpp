@@ -6,6 +6,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 struct SwapchainSupportDetails {
   VkSurfaceCapabilitiesKHR capabilities;
   std::vector<VkSurfaceFormatKHR> formats;
@@ -55,3 +57,4 @@ private:
   VkFormat format{VK_FORMAT_UNDEFINED};
   VkExtent2D extent{};
 };
+} // namespace vkr

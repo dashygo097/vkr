@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include <vector>
 
+namespace vkr {
+
 struct UniformBufferObject {
   glm::mat4 model;
   glm::mat4 view;
@@ -17,6 +19,9 @@ public:
                  VkPhysicalDevice physicalDevice);
   UniformBuffers(const UniformBufferObject &object, const VulkanContext &ctx);
   ~UniformBuffers();
+
+  UniformBuffers(const UniformBuffers &) = delete;
+  UniformBuffers &operator=(const UniformBuffers &) = delete;
 
   void create();
   void destroy();
@@ -39,3 +44,4 @@ private:
   std::vector<VkDeviceMemory> memories{};
   std::vector<void *> mapped{};
 };
+} // namespace vkr

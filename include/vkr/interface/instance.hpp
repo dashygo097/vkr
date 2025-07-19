@@ -12,6 +12,8 @@ const bool ENABLE_VALIDATION_LAYERS = false;
 const bool ENABLE_VALIDATION_LAYERS = true;
 #endif
 
+namespace vkr {
+
 class Instance {
 public:
   Instance(const std::string appName, const std::string engineName,
@@ -32,3 +34,4 @@ private:
   VkInstance instance{VK_NULL_HANDLE};
   std::unique_ptr<DebugMessenger> debugMessenger;
 };
+} // namespace vkr

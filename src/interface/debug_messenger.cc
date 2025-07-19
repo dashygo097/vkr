@@ -2,6 +2,8 @@
 
 #include "vkr/interface/debug_messenger.hpp"
 
+namespace vkr {
+
 DebugMessenger::DebugMessenger(VkInstance instance) : instance(instance) {
   VkDebugUtilsMessengerCreateInfoEXT createInfo{};
   populateCreateInfo(createInfo);
@@ -49,3 +51,4 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugMessenger::debugCallback(
   std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
   return VK_FALSE;
 }
+} // namespace vkr

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
-
 #include "../ctx.hpp"
+
+namespace vkr {
 
 class CommandPool {
 public:
@@ -25,3 +25,4 @@ private:
   // components
   VkCommandPool commandPool{VK_NULL_HANDLE};
 };
+} // namespace vkr

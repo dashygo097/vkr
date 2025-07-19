@@ -5,6 +5,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class Vertex {
 public:
   Vertex(glm::vec2 pos, glm::vec3 color);
@@ -47,6 +49,12 @@ public:
   VertexBuffer(const std::vector<Vertex> &vertices, const VulkanContext &ctx);
   ~VertexBuffer();
 
+  VertexBuffer(const VertexBuffer &) = delete;
+  VertexBuffer &operator=(const VertexBuffer &) = delete;
+
+  VertexBuffer(VertexBuffer &&other) noexcept;
+  VertexBuffer &operator=(VertexBuffer &&other) noexcept;
+
   void create();
   void destroy();
   void update(const std::vector<Vertex> &newVertices);
@@ -67,3 +75,4 @@ private:
   VkBuffer vertexBuffer = VK_NULL_HANDLE;
   VkDeviceMemory memory = VK_NULL_HANDLE;
 };
+} // namespace vkr

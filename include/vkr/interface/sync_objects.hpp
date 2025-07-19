@@ -5,6 +5,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class SyncObjects {
 public:
   SyncObjects(VkDevice device, std::vector<VkImage> swapchainImages);
@@ -32,3 +34,4 @@ private:
   std::vector<VkSemaphore> renderFinishedSemaphores{};
   std::vector<VkFence> inFlightFences{};
 };
+} // namespace vkr

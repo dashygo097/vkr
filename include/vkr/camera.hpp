@@ -7,6 +7,7 @@
 
 #include "./ctx.hpp"
 
+namespace vkr {
 class Camera {
 public:
   Camera(GLFWwindow *window);
@@ -101,3 +102,4 @@ private:
   float lastX{0.0f};
   float lastY{0.0f};
 };
+} // namespace vkr

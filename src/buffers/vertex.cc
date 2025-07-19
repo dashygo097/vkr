@@ -1,6 +1,8 @@
 #include "vkr/buffers/vertex.hpp"
 #include "vkr/buffers/universal.hpp"
 
+namespace vkr {
+
 Vertex::Vertex(glm::vec2 pos, glm::vec3 color) : pos(pos), color(color) {}
 Vertex::~Vertex() {}
 
@@ -57,7 +59,9 @@ void VertexBuffer::destroy() {
   if (vertexBuffer != VK_NULL_HANDLE) {
     vkDestroyBuffer(device, vertexBuffer, nullptr);
   }
-  vertices.clear();
+  if (!vertices.empty()) {
+    vertices.clear();
+  }
 }
 
 void VertexBuffer::update(const std::vector<Vertex> &newVertices) {
@@ -66,3 +70,4 @@ void VertexBuffer::update(const std::vector<Vertex> &newVertices) {
   vertices = newVertices;
   create();
 }
+} // namespace vkr

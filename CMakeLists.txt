@@ -3,12 +3,26 @@ project(vkr LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Prequisites
-find_package(Vulkan REQUIRED COMPONENTS MoltenVK)
+# Prerequisites
+if (APPLE)
+    find_package(Vulkan REQUIRED COMPONENTS MoltenVK)
+    message(STATUS "Vulkan support for macOS enabled")
 
-# MoltenVK
-if (NOT Vulkan_MOLTENVK_LIBRARY)
-    set(Vulkan_MOLTENVK_LIBRARY "${Vulkan_INCLUDE_DIRS}/../lib/libMoltenVK.dylib")
+    # MoltenVK setup
+    if (NOT Vulkan_MOLTENVK_LIBRARY)
+        set(Vulkan_MOLTENVK_LIBRARY "${Vulkan_INCLUDE_DIRS}/../lib/libMoltenVK.dylib")
+    endif()
+
+    message(STATUS "MoltenVK library: ${Vulkan_MOLTENVK_LIBRARY}")
+
+elseif(WIN32)
+    find_package(Vulkan REQUIRED)
+    message(STATUS "Vulkan support for Windows enabled")
+
+elseif(UNIX)
+    find_package(Vulkan REQUIRED)
+    message(STATUS "Vulkan support for Linux enabled")
+
 endif()
 
 # 3rdparty
@@ -49,6 +63,26 @@ function(make_paths_relative out_var)
     set(${out_var} "${result}" PARENT_SCOPE)
 endfunction()
 
+function(make_preview_string LIST_VAR N)
+  set(preview "")
+
+  list(LENGTH ${LIST_VAR} list_length)
+
+  foreach(item IN LISTS ${LIST_VAR})
+    list(APPEND preview "${item}")
+    if("${preview}" MATCHES "^.*;.*;.*$")
+      break()
+    endif()
+  endforeach()
+
+  if(list_length GREATER N)
+    math(EXPR remaining_items "${list_length} - ${N}")
+    list(APPEND preview "; …(+${remaining_items} more)")
+  endif()
+
+  set(PREVIOUS_SCOPE_VAR "${preview}" PARENT_SCOPE)
+endfunction()
+
 print_info("――――――――――――――――――LIB SCOPE――――――――――――――――――" "0")
 
 # Add targets
@@ -63,26 +97,33 @@ file(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.c src/*.cc)
 file(GLOB_RECURSE HEADER_FILES include/*.h include/*.hpp)
 
 add_library(vkr ${SOURCE_FILES} ${HEADER_FILES})
-target_include_directories(vkr PUBLIC include include/vkr)
+target_include_directories(vkr PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan glm::glm-header-only imgui)
 
-target_link_libraries(vkr PUBLIC
-  "-framework Metal"
-  "-framework Foundation"
-  "-framework IOSurface"
-)
+if (APPLE) 
+    target_link_libraries(vkr PUBLIC
+    "-framework Metal"
+    "-framework Foundation"
+    "-framework IOSurface"
+    )
+endif()
 
 set_target_properties(vkr PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY src
-    LIBRARY_OUTPUT_DIRECTORY src
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 )
 
 # stastics
 make_paths_relative(REL_HEADER_FILES HEADER_FILES)
 make_paths_relative(REL_SOURCE_FILES SOURCE_FILES)
+make_preview_string(REL_HEADER_FILES 3)
+make_preview_string(REL_SOURCE_FILES 3)
 
-print_info("[TRACE] Header files: ${REL_HEADER_FILES}" "95")
-print_info("[TRACE] Source files: ${REL_SOURCE_FILES}" "96")
+print_info("[TRACE] Header files: ${PREVIOUS_SCOPE_VAR}" "94")
+print_info("[TRACE] Source files: ${PREVIOUS_SCOPE_VAR}" "96")
 
 # Apps
 enable_testing()

@@ -5,6 +5,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class Device {
 public:
   Device(VkInstance instance, VkSurfaceKHR surface,
@@ -40,3 +42,4 @@ private:
 
   bool isSuitable(VkPhysicalDevice pDevice);
 };
+} // namespace vkr

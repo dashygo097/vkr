@@ -2,6 +2,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class DescriptorSet {
 public:
   DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
@@ -27,3 +29,4 @@ private:
   std::vector<VkDescriptorSet> descriptorSets{};
   VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 };
+} // namespace vkr

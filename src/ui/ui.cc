@@ -3,6 +3,8 @@
 #include "imgui_impl_vulkan.h"
 #include "vkr/interface/vk_utils.hpp"
 
+namespace vkr {
+
 UI::UI(GLFWwindow *window, VkInstance instance, VkSurfaceKHR surface,
        VkPhysicalDevice physicalDevice, VkDevice device,
        VkRenderPass renderPass, VkQueue graphicsQueue,
@@ -20,3 +22,4 @@ UI::UI(const VulkanContext &ctx)
 UI::~UI() {}
 
 void UI::render(float fps) { fps_panel->render(fps); }
+} // namespace vkr

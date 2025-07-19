@@ -1,11 +1,11 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
-#include <iostream>
 #include <memory>
 
 #include "vkr/app.hpp"
 
+namespace vkr {
 VulkanApplication::VulkanApplication() {}
 VulkanApplication::~VulkanApplication() { cleanup(); }
 
@@ -61,13 +61,9 @@ void VulkanApplication::initVulkan() {
   commandPool = std::make_unique<CommandPool>(ctx);
   ctx.commandPool = commandPool->getVkCommandPool();
 
-  vertexBuffer = std::make_unique<VertexBuffer>(std::vector<Vertex>{}, ctx);
-  ctx.vertexBuffer = vertexBuffer->getVkBuffer();
-  ctx.vertexBufferMemory = vertexBuffer->getVkBufferMemory();
-
-  indexBuffer = std::make_unique<IndexBuffer>(std::vector<uint16_t>{}, ctx);
-  ctx.indexBuffer = indexBuffer->getVkBuffer();
-  ctx.indexBufferMemory = indexBuffer->getVkBufferMemory();
+  vertexBuffers =
+      std::make_unique<std::vector<std::unique_ptr<VertexBuffer>>>();
+  indexBuffers = std::make_unique<std::vector<std::unique_ptr<IndexBuffer>>>();
 
   uniformBuffers = std::make_unique<UniformBuffers>(UniformBufferObject{}, ctx);
   ctx.uniformBuffers = uniformBuffers->getVkBuffers();
@@ -111,8 +107,8 @@ void VulkanApplication::cleanup() {
   commandBuffers.reset();
   descriptorSet.reset();
   uniformBuffers.reset();
-  indexBuffer.reset();
-  vertexBuffer.reset();
+  indexBuffers.reset();
+  vertexBuffers.reset();
   commandPool.reset();
   graphicsPipeline.reset();
   descriptorSetLayout.reset();
@@ -175,14 +171,12 @@ void VulkanApplication::drawFrame() {
                        /*VkCommandBufferResetFlagBits*/ 0);
 
   recordCommandBuffer(
-      imageIndex, ctx.currentFrame, vertexBuffer->getVertices(),
-      indexBuffer->getIndices(), indexBuffer->getVkBuffer(),
-      vertexBuffer->getVkBuffer(),
+      imageIndex, ctx.currentFrame,
       commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
       renderPass->getVkRenderPass(), graphicsPipeline->getVkPipelineLayout(),
       descriptorSet->getVkDescriptorSets(),
       swapchainFramebuffers->getVkFramebuffers(), swapchain->getVkExtent2D(),
-      graphicsPipeline->getVkPipeline());
+      graphicsPipeline->getVkPipeline(), *vertexBuffers, *indexBuffers);
 
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -233,3 +227,4 @@ void VulkanApplication::drawFrame() {
   }
   ctx.currentFrame = (ctx.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
+} // namespace vkr

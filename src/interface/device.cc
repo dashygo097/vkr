@@ -4,6 +4,8 @@
 #include "vkr/interface/instance.hpp"
 #include "vkr/interface/vk_utils.hpp"
 
+namespace vkr {
+
 Device::Device(VkInstance instance, VkSurfaceKHR surface,
                const std::vector<const char *> &deviceExtensions,
                const std::vector<const char *> &validationLayers)
@@ -108,3 +110,4 @@ bool Device::isSuitable(VkPhysicalDevice pDevice) {
   QueueFamilyIndices indices = findQueueFamilies(pDevice, surface);
   return indices.isComplete();
 }
+} // namespace vkr

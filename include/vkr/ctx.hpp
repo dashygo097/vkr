@@ -6,6 +6,8 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_beta.h>
 
+namespace vkr {
+
 struct VulkanContext {
 
   // --- App/Engine Info ---
@@ -59,14 +61,6 @@ struct VulkanContext {
   // --- CommandPool ---
   VkCommandPool commandPool = VK_NULL_HANDLE;
 
-  // --- Vertex Buffers ---
-  VkBuffer vertexBuffer = VK_NULL_HANDLE;
-  VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
-
-  // --- Index Buffers ---
-  VkBuffer indexBuffer = VK_NULL_HANDLE;
-  VkDeviceMemory indexBufferMemory = VK_NULL_HANDLE;
-
   // --- Uniform Buffers ---
   std::vector<VkBuffer> uniformBuffers = {};
   std::vector<VkDeviceMemory> uniformBuffersMemory = {};
@@ -108,3 +102,4 @@ struct VulkanContext {
 #endif
   }
 };
+} // namespace vkr

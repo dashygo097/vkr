@@ -6,6 +6,8 @@
 
 #include "../ctx.hpp"
 
+namespace vkr {
+
 class Surface {
 public:
   Surface(VkInstance instance, GLFWwindow *window);
@@ -25,3 +27,4 @@ private:
   // components
   VkSurfaceKHR surface{VK_NULL_HANDLE};
 };
+} // namespace vkr

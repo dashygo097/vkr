@@ -1,6 +1,7 @@
 #include "vkr/interface/shader_module.hpp"
 #include "vkr/utils.hpp"
 
+namespace vkr {
 ShaderModule::ShaderModule(VkDevice device, const std::string &filepath)
     : device(device) {
   auto code = readFile(filepath);
@@ -20,3 +21,4 @@ ShaderModule::~ShaderModule() {
     vkDestroyShaderModule(device, shaderModule, nullptr);
   }
 }
+} // namespace vkr
