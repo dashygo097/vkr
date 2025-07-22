@@ -10,6 +10,7 @@
 #include "./buffers/vertex.hpp"
 #include "./camera.hpp"
 #include "./ctx.hpp"
+#include "./fps_counter.hpp"
 #include "./interface/command_pool.hpp"
 #include "./interface/descriptor_layout.hpp"
 #include "./interface/descriptor_set.hpp"
@@ -21,8 +22,7 @@
 #include "./interface/swapchain.hpp"
 #include "./interface/sync_objects.hpp"
 #include "./interface/window.hpp"
-#include "ui/ui.hpp"
-#include "vkr/fps_counter.hpp"
+#include "./ui/ui.hpp"
 
 namespace vkr {
 class VulkanApplication {
@@ -73,6 +73,7 @@ public:
 
   std::unique_ptr<SyncObjects> syncObjects;
 
+  std::unique_ptr<FPSCounter> fpsCounter;
   std::unique_ptr<UI> ui;
 
 private:
