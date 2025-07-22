@@ -7,19 +7,36 @@ namespace vkr {
 DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
                              std::vector<VkBuffer> uniformBuffers)
     : device(device), layout(layout), uniformBuffers(uniformBuffers) {
-  VkDescriptorPoolSize poolSize{};
-  poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+  std::vector<VkDescriptorPoolSize> poolSizes{};
+
+  VkDescriptorPoolSize uniformPoolSize{};
+  uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  uniformPoolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+  poolSizes.push_back(uniformPoolSize);
+
+  VkDescriptorPoolSize samplerPoolSize{};
+  samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  samplerPoolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+  poolSizes.push_back(samplerPoolSize);
+
+  VkDescriptorPoolSize storagePoolSize{};
+  storagePoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  storagePoolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+  poolSizes.push_back(storagePoolSize);
 
   VkDescriptorPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.poolSizeCount = 1;
-  poolInfo.pPoolSizes = &poolSize;
-  poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+  poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+  poolInfo.pPoolSizes = poolSizes.data();
+  poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 2);
 
-  if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) !=
-      VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
+  VkResult result =
+      vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
+  if (result != VK_SUCCESS) {
+    throw std::runtime_error("Failed to create descriptor pool. VkResult: " +
+                             std::to_string(result));
   }
 
   std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, layout);
@@ -30,20 +47,20 @@ DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
   allocInfo.pSetLayouts = layouts.data();
 
   descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-  if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) !=
-      VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate descriptor sets!");
+  result = vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data());
+  if (result != VK_SUCCESS) {
+    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+    descriptorPool = VK_NULL_HANDLE;
+    throw std::runtime_error("Failed to allocate descriptor sets. VkResult: " +
+                             std::to_string(result));
   }
 
-  std::vector<VkDescriptorBufferInfo> bufferInfos(MAX_FRAMES_IN_FLIGHT);
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    bufferInfos[i].buffer = uniformBuffers[i];
-    bufferInfos[i].offset = 0;
     VkDescriptorBufferInfo bufferInfo{};
-    bufferInfos[i].range = sizeof(UniformBufferObject);
-  }
+    bufferInfo.buffer = uniformBuffers[i];
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(UniformBufferObject);
 
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
     VkWriteDescriptorSet descriptorWrite{};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptorWrite.dstSet = descriptorSets[i];
@@ -51,7 +68,7 @@ DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
     descriptorWrite.dstArrayElement = 0;
     descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pBufferInfo = &bufferInfos[i];
+    descriptorWrite.pBufferInfo = &bufferInfo;
 
     vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
   }

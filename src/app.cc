@@ -82,7 +82,6 @@ void VulkanApplication::initVulkan() {
   ctx.renderFinishedSemaphores = syncObjects->getRenderFinishedSemaphores();
   ctx.inFlightFences = syncObjects->getInFlightFences();
 
-  fps_counter = std::make_unique<FPSCounter>();
   ui = std::make_unique<UI>(ctx);
 }
 
@@ -102,7 +101,6 @@ void VulkanApplication::mainLoop() {
 
 void VulkanApplication::cleanup() {
   ui.reset();
-  fps_counter.reset();
   syncObjects.reset();
   commandBuffers.reset();
   descriptorSet.reset();
@@ -170,13 +168,14 @@ void VulkanApplication::drawFrame() {
   vkResetCommandBuffer(commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
                        /*VkCommandBufferResetFlagBits*/ 0);
 
+  // FIXME: This func is BAD.
   recordCommandBuffer(
       imageIndex, ctx.currentFrame,
       commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
       renderPass->getVkRenderPass(), graphicsPipeline->getVkPipelineLayout(),
       descriptorSet->getVkDescriptorSets(),
       swapchainFramebuffers->getVkFramebuffers(), swapchain->getVkExtent2D(),
-      graphicsPipeline->getVkPipeline(), *vertexBuffers, *indexBuffers);
+      graphicsPipeline->getVkPipeline(), *vertexBuffers, *indexBuffers, *ui);
 
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
