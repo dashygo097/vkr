@@ -110,7 +110,7 @@ void recordCommandBuffer(
     std::vector<VkFramebuffer> swapchainFrameBuffers,
     VkExtent2D swapchainExtent, VkPipeline graphicsPipeline,
     const std::vector<std::unique_ptr<VertexBuffer>> &vertexBuffers,
-    const std::vector<std::unique_ptr<IndexBuffer>> &indexBuffers) {
+    const std::vector<std::unique_ptr<IndexBuffer>> &indexBuffers, UI &ui) {
 
   VkCommandBufferBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -172,6 +172,8 @@ void recordCommandBuffer(
           0);
     }
   }
+
+  ui.render(commandBuffer);
 
   vkCmdEndRenderPass(commandBuffer);
 

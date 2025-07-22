@@ -16,7 +16,7 @@ public:
   UI(const UI &) = delete;
   UI &operator=(const UI &) = delete;
 
-  void render(float fps);
+  void render(VkCommandBuffer commandBuffer);
 
   VkDescriptorPool getVkDescriptorPool() const { return descriptorPool; }
 

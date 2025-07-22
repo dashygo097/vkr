@@ -73,7 +73,6 @@ public:
 
   std::unique_ptr<SyncObjects> syncObjects;
 
-  std::unique_ptr<FPSCounter> fps_counter;
   std::unique_ptr<UI> ui;
 
 private:

@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 #include "../ctx.hpp"
+#include "../ui/ui.hpp"
 #include "./index.hpp"
 #include "./vertex.hpp"
 
@@ -53,5 +54,13 @@ void recordCommandBuffer(
     std::vector<VkFramebuffer> swapchainFrameBuffers,
     VkExtent2D swapchainExtent, VkPipeline graphicsPipeline,
     const std::vector<std::unique_ptr<VertexBuffer>> &vertexBuffers,
-    const std::vector<std::unique_ptr<IndexBuffer>> &indexBuffers);
+    const std::vector<std::unique_ptr<IndexBuffer>> &indexBuffers, UI &ui);
+
+VkCommandBuffer beginSingleTimeCommands(VkDevice device,
+                                        VkCommandPool commandPool);
+
+void endSingleTimeCommands(VkDevice device, VkQueue queue,
+                           VkCommandPool commandPool,
+                           VkCommandBuffer commandBuffer);
+
 } // namespace vkr
