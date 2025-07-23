@@ -44,12 +44,12 @@ Instance::Instance(const std::string appName, const std::string engineName,
     createInfo.pNext = nullptr;
   }
 
-  if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+  if (vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS) {
     throw std::runtime_error("failed to create instance!");
   }
 
   if (ENABLE_VALIDATION_LAYERS) {
-    debugMessenger = std::make_unique<DebugMessenger>(instance);
+    _debugMessenger = std::make_unique<DebugMessenger>(_instance);
   }
 }
 
@@ -59,9 +59,9 @@ Instance::Instance(const VulkanContext &ctx)
 
 Instance::~Instance() {
   if (ENABLE_VALIDATION_LAYERS) {
-    debugMessenger.reset();
+    _debugMessenger.reset();
   }
-  vkDestroyInstance(instance, nullptr);
-  instance = VK_NULL_HANDLE;
+  vkDestroyInstance(_instance, nullptr);
+  _instance = VK_NULL_HANDLE;
 }
 } // namespace vkr

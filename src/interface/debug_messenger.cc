@@ -11,7 +11,7 @@ DebugMessenger::DebugMessenger(VkInstance instance) : instance(instance) {
   auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
       instance, "vkCreateDebugUtilsMessengerEXT");
 
-  if (func && func(instance, &createInfo, nullptr, &messenger) != VK_SUCCESS) {
+  if (func && func(instance, &createInfo, nullptr, &_messenger) != VK_SUCCESS) {
     throw std::runtime_error("failed to create debug messenger!");
   }
 }
@@ -23,10 +23,10 @@ DebugMessenger::~DebugMessenger() {
   auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
       instance, "vkDestroyDebugUtilsMessengerEXT");
 
-  if (func && messenger != VK_NULL_HANDLE) {
-    func(instance, messenger, nullptr);
+  if (func && _messenger != VK_NULL_HANDLE) {
+    func(instance, _messenger, nullptr);
   }
-  messenger = VK_NULL_HANDLE;
+  _messenger = VK_NULL_HANDLE;
 }
 
 void DebugMessenger::populateCreateInfo(

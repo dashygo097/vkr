@@ -3,18 +3,16 @@
 #include "vkr/interface/window.hpp"
 
 namespace vkr {
-Window::Window(uint32_t width, uint32_t height, const std::string title) {
-  this->width = width;
-  this->height = height;
-  this->title = title.c_str();
+Window::Window(uint32_t width, uint32_t height, std::string_view title)
+    : _width(width), _height(height), _title(title) {
   if (!glfwInit()) {
     throw std::runtime_error("[ERROR] Failed to initialize GLFW");
   }
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-  window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-  if (!window) {
+  _window = glfwCreateWindow(_width, _height, _title.c_str(), nullptr, nullptr);
+  if (!_window) {
     glfwTerminate();
     throw std::runtime_error("[ERROR] Failed to create GLFW window");
   }
@@ -24,13 +22,12 @@ Window::Window(const VulkanContext &ctx)
     : Window(ctx.width, ctx.height, ctx.title) {}
 
 Window::~Window() {
-  if (window) {
-    glfwDestroyWindow(window);
+  if (_window) {
+    glfwDestroyWindow(_window);
   }
   glfwTerminate();
 }
 
-bool Window::shouldClose() const { return glfwWindowShouldClose(window); }
+bool Window::shouldClose() const { return glfwWindowShouldClose(_window); }
 void Window::pollEvents() const { glfwPollEvents(); }
-GLFWwindow *Window::getGLFWWindow() const { return window; }
 } // namespace vkr
