@@ -1,5 +1,3 @@
-#include <stdexcept>
-
 #include "vkr/buffers/command.hpp"
 
 namespace vkr {

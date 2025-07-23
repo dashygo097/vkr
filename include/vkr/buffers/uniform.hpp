@@ -2,9 +2,6 @@
 
 #include "../ctx.hpp"
 
-#include <glm/glm.hpp>
-#include <vector>
-
 namespace vkr {
 
 struct UniformBufferObject {

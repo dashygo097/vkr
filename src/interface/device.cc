@@ -1,5 +1,3 @@
-#include <set>
-
 #include "vkr/interface/device.hpp"
 #include "vkr/interface/instance.hpp"
 #include "vkr/interface/vk_utils.hpp"

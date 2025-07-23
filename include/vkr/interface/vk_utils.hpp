@@ -1,8 +1,5 @@
 #pragma once
 
-#include <vector>
-#include <vulkan/vulkan.h>
-
 namespace vkr {
 
 struct QueueFamilyIndices {
@@ -17,6 +14,7 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,
                                      VkSurfaceKHR surface);
 
 std::vector<const char *>
-getRequiredExtensions(std::vector<const char *> preExtensions);
-bool checkValidationLayerSupport(std::vector<const char *> validationLayers);
+getRequiredExtensions(const std::vector<const char *> &preExtensions);
+bool checkValidationLayerSupport(
+    const std::vector<const char *> &validationLayers);
 } // namespace vkr

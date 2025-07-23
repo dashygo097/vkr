@@ -29,7 +29,7 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,
 }
 
 std::vector<const char *>
-getRequiredExtensions(std::vector<const char *> preExtensions) {
+getRequiredExtensions(const std::vector<const char *> &preExtensions) {
   uint32_t glfwExtensionCount = 0;
   const char **glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -47,7 +47,8 @@ getRequiredExtensions(std::vector<const char *> preExtensions) {
   return extensions;
 }
 
-bool checkValidationLayerSupport(std::vector<const char *> validationLayers) {
+bool checkValidationLayerSupport(
+    const std::vector<const char *> &validationLayers) {
   uint32_t layerCount;
   vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 

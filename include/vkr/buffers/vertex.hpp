@@ -1,8 +1,5 @@
 #pragma once
 
-#include <array>
-#include <glm/glm.hpp>
-
 #include "../ctx.hpp"
 
 namespace vkr {

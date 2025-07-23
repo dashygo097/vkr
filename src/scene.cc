@@ -1,1 +1,0 @@
-#include "vkr/scene.hpp"

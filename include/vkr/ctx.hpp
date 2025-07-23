@@ -1,10 +1,6 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-#include <string>
-#include <vector>
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_beta.h>
+#include <vkr/pch.hpp>
 
 namespace vkr {
 

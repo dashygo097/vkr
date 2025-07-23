@@ -1,9 +1,6 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
-#include <chrono>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "./ctx.hpp"
 

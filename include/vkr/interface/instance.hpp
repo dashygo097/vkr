@@ -1,8 +1,5 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
 #include "../ctx.hpp"
 #include "./debug_messenger.hpp"
 
@@ -16,11 +13,11 @@ namespace vkr {
 
 class Instance {
 public:
-  Instance(const std::string appName, const std::string engineName,
-           uint32_t appVersion, uint32_t engineVersion,
-           const std::vector<const char *> &preExtensions,
-           const std::vector<const char *> &validationLayers);
-  Instance(const VulkanContext &ctx);
+  explicit Instance(const std::string appName, const std::string engineName,
+                    uint32_t appVersion, uint32_t engineVersion,
+                    const std::vector<const char *> &preExtensions,
+                    const std::vector<const char *> &validationLayers);
+  explicit Instance(const VulkanContext &ctx);
 
   Instance(const Instance &) = delete;
   Instance &operator=(const Instance &) = delete;
