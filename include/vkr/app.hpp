@@ -1,8 +1,5 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-#include <vulkan/vulkan.h>
-
 #include "./buffers/command.hpp"
 #include "./buffers/frame.hpp"
 #include "./buffers/index.hpp"

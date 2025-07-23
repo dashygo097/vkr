@@ -1,5 +1,4 @@
 #include "vkr/geometry/mesh.hpp"
-#include <stdexcept>
 
 namespace vkr::geometry {
 

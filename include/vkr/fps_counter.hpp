@@ -1,4 +1,4 @@
-#include <chrono>
+#pragma once
 
 namespace vkr {
 

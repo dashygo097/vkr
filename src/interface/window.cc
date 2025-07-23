@@ -1,5 +1,3 @@
-#include <stdexcept>
-
 #include "vkr/interface/window.hpp"
 
 namespace vkr {

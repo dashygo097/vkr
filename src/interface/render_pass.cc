@@ -1,5 +1,4 @@
 #include "vkr/interface/render_pass.hpp"
-#include <stdexcept>
 
 namespace vkr {
 

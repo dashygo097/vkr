@@ -1,9 +1,5 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-#include <vector>
-#include <vulkan/vulkan.h>
-
 #include "../ctx.hpp"
 
 namespace vkr {

@@ -1,5 +1,3 @@
-#include <chrono>
-
 #include "vkr/camera.hpp"
 
 namespace vkr {

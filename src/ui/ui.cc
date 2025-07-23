@@ -1,7 +1,4 @@
 #include "vkr/ui/ui.hpp"
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_vulkan.h"
 #include "vkr/interface/vk_utils.hpp"
 
 namespace vkr {

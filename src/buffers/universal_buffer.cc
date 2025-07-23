@@ -1,5 +1,3 @@
-#include <stdexcept>
-
 #include "vkr/buffers/universal.hpp"
 
 namespace vkr {

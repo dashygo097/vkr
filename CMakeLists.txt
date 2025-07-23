@@ -101,6 +101,7 @@ target_include_directories(vkr PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
+target_precompile_headers(vkr PRIVATE include/vkr/pch.hpp)
 target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan glm::glm-header-only imgui)
 
 if (APPLE) 

@@ -1,8 +1,6 @@
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#include <string>
 
 #include "../ctx.hpp"
 
@@ -10,7 +8,7 @@ namespace vkr {
 
 class Window {
 public:
-  Window(uint32_t width, uint32_t height, std::string_view title);
+  explicit Window(uint32_t width, uint32_t height, std::string_view title);
   Window(const VulkanContext &ctx);
   ~Window();
 

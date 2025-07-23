@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "vkr/interface/debug_messenger.hpp"
 
 namespace vkr {
