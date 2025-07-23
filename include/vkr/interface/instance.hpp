@@ -27,11 +27,11 @@ public:
 
   ~Instance();
 
-  VkInstance getVkInstance() const { return instance; }
+  [[nodiscard]] VkInstance instance() const noexcept { return _instance; }
 
 private:
   // components
-  VkInstance instance{VK_NULL_HANDLE};
-  std::unique_ptr<DebugMessenger> debugMessenger;
+  VkInstance _instance{VK_NULL_HANDLE};
+  std::unique_ptr<DebugMessenger> _debugMessenger;
 };
 } // namespace vkr

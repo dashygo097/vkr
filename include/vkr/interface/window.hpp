@@ -10,24 +10,26 @@ namespace vkr {
 
 class Window {
 public:
-  uint32_t width;
-  uint32_t height;
-  const char *title;
-
-  Window(uint32_t width, uint32_t height, const std::string title);
+  Window(uint32_t width, uint32_t height, std::string_view title);
   Window(const VulkanContext &ctx);
   ~Window();
 
   Window(const Window &) = delete;
   Window &operator=(const Window &) = delete;
 
-  bool shouldClose() const;
+  [[nodiscard]] bool shouldClose() const;
   void pollEvents() const;
 
-  GLFWwindow *getGLFWWindow() const;
+  [[nodiscard]] GLFWwindow *glfwWindow() const noexcept { return _window; }
+  [[nodiscard]] uint32_t width() const noexcept { return _width; }
+  [[nodiscard]] uint32_t height() const noexcept { return _height; }
+  [[nodiscard]] std::string title() const noexcept { return _title; }
 
 private:
   // components
-  GLFWwindow *window{nullptr};
+  GLFWwindow *_window{nullptr};
+  uint32_t _width;
+  uint32_t _height;
+  std::string _title;
 };
 } // namespace vkr

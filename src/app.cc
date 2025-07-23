@@ -13,9 +13,9 @@ void VulkanApplication::configure() {}
 
 void VulkanApplication::initVulkan() {
   window = std::make_unique<Window>(ctx);
-  ctx.window = window->getGLFWWindow();
-  glfwSetWindowUserPointer(window->getGLFWWindow(), this);
-  glfwSetFramebufferSizeCallback(window->getGLFWWindow(),
+  ctx.window = window->glfwWindow();
+  glfwSetWindowUserPointer(window->glfwWindow(), this);
+  glfwSetFramebufferSizeCallback(window->glfwWindow(),
                                  framebufferResizeCallback);
 
   camera = std::make_unique<Camera>(ctx);
@@ -27,7 +27,7 @@ void VulkanApplication::initVulkan() {
   ctx.cameraFarPlane = camera->getFarPlane();
 
   instance = std::make_unique<Instance>(ctx);
-  ctx.instance = instance->getVkInstance();
+  ctx.instance = instance->instance();
 
   surface = std::make_unique<Surface>(ctx);
   ctx.surface = surface->getVkSurface();
@@ -124,9 +124,9 @@ void VulkanApplication::cleanup() {
 
 void VulkanApplication::recreateSwapchain() {
   int width = 0, height = 0;
-  glfwGetFramebufferSize(window->getGLFWWindow(), &width, &height);
+  glfwGetFramebufferSize(window->glfwWindow(), &width, &height);
   while (width == 0 || height == 0) {
-    glfwGetFramebufferSize(window->getGLFWWindow(), &width, &height);
+    glfwGetFramebufferSize(window->glfwWindow(), &width, &height);
     glfwWaitEvents();
   }
 
