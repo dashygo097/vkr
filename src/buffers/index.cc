@@ -5,7 +5,7 @@ namespace vkr {
 IndexBuffer::IndexBuffer(const std::vector<uint16_t> &indices, VkDevice device,
                          VkPhysicalDevice physicalDevice,
                          VkCommandPool commandPool, VkQueue graphicsQueue)
-    : indices(indices), device(device), physicalDevice(physicalDevice),
+    : _indices(indices), device(device), physicalDevice(physicalDevice),
       commandPool(commandPool), graphicsQueue(graphicsQueue) {
   create();
 }
@@ -18,10 +18,10 @@ IndexBuffer::IndexBuffer(const std::vector<uint16_t> &indices,
 IndexBuffer::~IndexBuffer() { destroy(); }
 
 void IndexBuffer::create() {
-  if (indices.empty()) {
+  if (_indices.empty()) {
     return;
   }
-  VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+  VkDeviceSize bufferSize = sizeof(_indices[0]) * _indices.size();
 
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
@@ -32,38 +32,38 @@ void IndexBuffer::create() {
 
   void *data;
   vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-  memcpy(data, indices.data(), (size_t)bufferSize);
+  memcpy(data, _indices.data(), (size_t)bufferSize);
   vkUnmapMemory(device, stagingBufferMemory);
 
   createBuffer(bufferSize,
                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, memory, device,
-               physicalDevice);
+               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _indexBuffer, _memory,
+               device, physicalDevice);
 
-  copyBuffer(stagingBuffer, indexBuffer, bufferSize, commandPool, graphicsQueue,
-             device);
+  copyBuffer(stagingBuffer, _indexBuffer, bufferSize, commandPool,
+             graphicsQueue, device);
 
   vkDestroyBuffer(device, stagingBuffer, nullptr);
   vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
 void IndexBuffer::destroy() {
-  if (memory != VK_NULL_HANDLE) {
-    vkFreeMemory(device, memory, nullptr);
+  if (_memory != VK_NULL_HANDLE) {
+    vkFreeMemory(device, _memory, nullptr);
   }
-  if (indexBuffer != VK_NULL_HANDLE) {
-    vkDestroyBuffer(device, indexBuffer, nullptr);
+  if (_indexBuffer != VK_NULL_HANDLE) {
+    vkDestroyBuffer(device, _indexBuffer, nullptr);
   }
-  if (!indices.empty()) {
-    indices.clear();
+  if (!_indices.empty()) {
+    _indices.clear();
   }
 }
 
 void IndexBuffer::update(const std::vector<uint16_t> &newIndices) {
   destroy();
 
-  indices = newIndices;
+  _indices = newIndices;
   create();
 }
 } // namespace vkr

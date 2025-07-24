@@ -17,15 +17,15 @@ Device::Device(const VulkanContext &ctx)
              ctx.validationLayers) {}
 
 Device::~Device() {
-  if (device != VK_NULL_HANDLE) {
-    vkDestroyDevice(device, nullptr);
+  if (_device != VK_NULL_HANDLE) {
+    vkDestroyDevice(_device, nullptr);
   }
-  device = VK_NULL_HANDLE;
+  _device = VK_NULL_HANDLE;
 }
 
 void Device::waitIdle() {
-  if (device != VK_NULL_HANDLE) {
-    vkDeviceWaitIdle(device);
+  if (_device != VK_NULL_HANDLE) {
+    vkDeviceWaitIdle(_device);
   }
 }
 
@@ -43,12 +43,12 @@ void Device::pickPhysicalDevice() {
 
     for (const auto &device : devices) {
       if (isSuitable(device)) {
-        physicalDevice = device;
+        _physicalDevice = device;
         break;
       }
     }
 
-    if (physicalDevice == VK_NULL_HANDLE) {
+    if (_physicalDevice == VK_NULL_HANDLE) {
       throw std::runtime_error("failed to find a suitable GPU!");
     }
   }
@@ -56,7 +56,7 @@ void Device::pickPhysicalDevice() {
 
 void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
                                  std::vector<const char *> validationLayers) {
-  QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+  QueueFamilyIndices indices = findQueueFamilies(_physicalDevice, surface);
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
   std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
@@ -95,13 +95,13 @@ void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
     createInfo.enabledLayerCount = 0;
   }
 
-  if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) !=
+  if (vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create logical device!");
   }
 
-  vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-  vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+  vkGetDeviceQueue(_device, indices.graphicsFamily.value(), 0, &_graphicsQueue);
+  vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_presentQueue);
 }
 
 bool Device::isSuitable(VkPhysicalDevice pDevice) {

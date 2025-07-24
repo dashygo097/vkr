@@ -18,17 +18,19 @@ public:
   void create();
   void destroy();
 
-  std::vector<VkFramebuffer> getVkFramebuffers() const { return framebuffers; }
+  [[nodiscard]] std::vector<VkFramebuffer> framebuffers() const noexcept {
+    return _framebuffers;
+  }
 
 private:
   // dependencies
-  VkDevice device;
-  VkRenderPass renderPass;
-  std::vector<VkImageView> swapchainImageViews;
-  VkExtent2D swapchainExtent;
+  VkDevice device{VK_NULL_HANDLE};
+  VkRenderPass renderPass{VK_NULL_HANDLE};
+  std::vector<VkImageView> swapchainImageViews{VK_NULL_HANDLE};
+  VkExtent2D swapchainExtent{};
 
   // components
-  std::vector<VkFramebuffer> framebuffers{};
+  std::vector<VkFramebuffer> _framebuffers{};
   bool frameBufferResized{false};
 };
 } // namespace vkr

@@ -56,20 +56,22 @@ public:
   void destroy();
   void update(const std::vector<Vertex> &newVertices);
 
-  std::vector<Vertex> getVertices() const { return vertices; }
-  VkBuffer getVkBuffer() const { return vertexBuffer; }
-  VkDeviceMemory getVkBufferMemory() const { return memory; }
+  [[nodiscard]] std::vector<Vertex> vertices() const noexcept {
+    return _vertices;
+  }
+  [[nodiscard]] VkBuffer buffer() const noexcept { return _vertexBuffer; }
+  [[nodiscard]] VkDeviceMemory bufferMemory() const noexcept { return _memory; }
 
 private:
   // dependencies
-  VkDevice device;
-  VkPhysicalDevice physicalDevice;
-  VkCommandPool commandPool;
-  VkQueue graphicsQueue;
+  VkDevice device{VK_NULL_HANDLE};
+  VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
+  VkCommandPool commandPool{VK_NULL_HANDLE};
+  VkQueue graphicsQueue{VK_NULL_HANDLE};
 
   // components
-  std::vector<Vertex> vertices{};
-  VkBuffer vertexBuffer = VK_NULL_HANDLE;
-  VkDeviceMemory memory = VK_NULL_HANDLE;
+  std::vector<Vertex> _vertices{};
+  VkBuffer _vertexBuffer{VK_NULL_HANDLE};
+  VkDeviceMemory _memory{VK_NULL_HANDLE};
 };
 } // namespace vkr

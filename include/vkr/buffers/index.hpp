@@ -22,20 +22,22 @@ public:
   void destroy();
   void update(const std::vector<uint16_t> &indices);
 
-  std::vector<uint16_t> getIndices() const { return indices; }
-  VkBuffer getVkBuffer() const { return indexBuffer; }
-  VkDeviceMemory getVkBufferMemory() const { return memory; }
+  [[nodiscard]] std::vector<uint16_t> indices() const noexcept {
+    return _indices;
+  }
+  [[nodiscard]] VkBuffer buffer() const noexcept { return _indexBuffer; }
+  [[nodiscard]] VkDeviceMemory bufferMemory() const noexcept { return _memory; }
 
 private:
   // components
-  VkDevice device;
-  VkPhysicalDevice physicalDevice;
-  VkCommandPool commandPool;
-  VkQueue graphicsQueue;
+  VkDevice device{VK_NULL_HANDLE};
+  VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
+  VkCommandPool commandPool{VK_NULL_HANDLE};
+  VkQueue graphicsQueue{VK_NULL_HANDLE};
 
   // dependencies
-  std::vector<uint16_t> indices{};
-  VkBuffer indexBuffer = VK_NULL_HANDLE;
-  VkDeviceMemory memory = VK_NULL_HANDLE;
+  std::vector<uint16_t> _indices{};
+  VkBuffer _indexBuffer{VK_NULL_HANDLE};
+  VkDeviceMemory _memory{VK_NULL_HANDLE};
 };
 } // namespace vkr

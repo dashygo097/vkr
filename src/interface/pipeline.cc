@@ -18,14 +18,14 @@ GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
   vertShaderStageInfo.sType =
       VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-  vertShaderStageInfo.module = vertShader.getModule();
+  vertShaderStageInfo.module = vertShader.module();
   vertShaderStageInfo.pName = "main";
 
   VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
   fragShaderStageInfo.sType =
       VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  fragShaderStageInfo.module = fragShader.getModule();
+  fragShaderStageInfo.module = fragShader.module();
   fragShaderStageInfo.pName = "main";
 
   VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,
@@ -103,7 +103,7 @@ GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
   pipelineLayoutInfo.pushConstantRangeCount = 0;
 
   if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
-                             &pipelineLayout) != VK_SUCCESS) {
+                             &_pipelineLayout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
   }
 
@@ -118,13 +118,13 @@ GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
   pipelineInfo.pMultisampleState = &multisampling;
   pipelineInfo.pColorBlendState = &colorBlending;
   pipelineInfo.pDynamicState = &dynamicState;
-  pipelineInfo.layout = pipelineLayout;
+  pipelineInfo.layout = _pipelineLayout;
   pipelineInfo.renderPass = renderPass;
   pipelineInfo.subpass = 0;
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
   if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
-                                nullptr, &graphicsPipeline) != VK_SUCCESS) {
+                                nullptr, &_graphicsPipeline) != VK_SUCCESS) {
     throw std::runtime_error("failed to create graphics pipeline!");
   }
 }
@@ -134,13 +134,13 @@ GraphicsPipeline::GraphicsPipeline(const VulkanContext &ctx)
                        ctx.vertexShaderPath, ctx.fragmentShaderPath) {}
 
 GraphicsPipeline::~GraphicsPipeline() {
-  if (graphicsPipeline != VK_NULL_HANDLE) {
-    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+  if (_graphicsPipeline != VK_NULL_HANDLE) {
+    vkDestroyPipeline(device, _graphicsPipeline, nullptr);
   }
-  graphicsPipeline = VK_NULL_HANDLE;
-  if (pipelineLayout != VK_NULL_HANDLE) {
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+  _graphicsPipeline = VK_NULL_HANDLE;
+  if (_pipelineLayout != VK_NULL_HANDLE) {
+    vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
   }
-  pipelineLayout = VK_NULL_HANDLE;
+  _pipelineLayout = VK_NULL_HANDLE;
 }
 } // namespace vkr

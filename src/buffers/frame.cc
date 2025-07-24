@@ -21,7 +21,7 @@ Framebuffers::Framebuffers(const VulkanContext &ctx)
 Framebuffers::~Framebuffers() { destroy(); }
 
 void Framebuffers::create() {
-  framebuffers.resize(swapchainImageViews.size());
+  _framebuffers.resize(swapchainImageViews.size());
 
   for (size_t i = 0; i < swapchainImageViews.size(); i++) {
     VkImageView attachments[] = {swapchainImageViews[i]};
@@ -36,18 +36,18 @@ void Framebuffers::create() {
     framebufferInfo.layers = 1;
 
     if (vkCreateFramebuffer(device, &framebufferInfo, nullptr,
-                            &framebuffers[i]) != VK_SUCCESS) {
+                            &_framebuffers[i]) != VK_SUCCESS) {
       throw std::runtime_error("failed to create framebuffer!");
     }
   }
 }
 
 void Framebuffers::destroy() {
-  for (auto framebuffer : framebuffers) {
+  for (auto framebuffer : _framebuffers) {
     if (framebuffer != VK_NULL_HANDLE) {
       vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
   }
-  framebuffers.clear();
+  _framebuffers.clear();
 }
 } // namespace vkr

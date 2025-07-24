@@ -17,26 +17,30 @@ public:
 
   void waitIdle();
 
-  VkDevice getVkDevice() const { return device; }
-  VkPhysicalDevice getVkPhysicalDevice() const { return physicalDevice; }
-  VkQueue getGraphicsQueue() const { return graphicsQueue; }
-  VkQueue getPresentQueue() const { return presentQueue; }
+  [[nodiscard]] VkDevice device() const noexcept { return _device; }
+  [[nodiscard]] VkPhysicalDevice physicalDevice() const noexcept {
+    return _physicalDevice;
+  }
+  [[nodiscard]] VkQueue graphicsQueue() const noexcept {
+    return _graphicsQueue;
+  }
+  [[nodiscard]] VkQueue presentQueue() const noexcept { return _presentQueue; }
 
 private:
   // dependencies
-  VkInstance instance;
-  VkSurfaceKHR surface;
+  VkInstance instance{VK_NULL_HANDLE};
+  VkSurfaceKHR surface{VK_NULL_HANDLE};
 
   // components
-  VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
-  VkDevice device{VK_NULL_HANDLE};
-  VkQueue graphicsQueue{VK_NULL_HANDLE};
-  VkQueue presentQueue{VK_NULL_HANDLE};
+  VkPhysicalDevice _physicalDevice{VK_NULL_HANDLE};
+  VkDevice _device{VK_NULL_HANDLE};
+  VkQueue _graphicsQueue{VK_NULL_HANDLE};
+  VkQueue _presentQueue{VK_NULL_HANDLE};
 
   void pickPhysicalDevice();
   void createLogicalDevice(std::vector<const char *> deviceExtensions,
                            std::vector<const char *> validationLayers);
 
-  bool isSuitable(VkPhysicalDevice pDevice);
+  [[nodiscard]] bool isSuitable(VkPhysicalDevice pDevice);
 };
 } // namespace vkr

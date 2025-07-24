@@ -25,57 +25,57 @@ void VulkanApplication::initVulkan() {
   ctx.instance = instance->instance();
 
   surface = std::make_unique<Surface>(ctx);
-  ctx.surface = surface->getVkSurface();
+  ctx.surface = surface->surface();
 
   device = std::make_unique<Device>(ctx);
-  ctx.device = device->getVkDevice();
-  ctx.physicalDevice = device->getVkPhysicalDevice();
-  ctx.graphicsQueue = device->getGraphicsQueue();
-  ctx.presentQueue = device->getPresentQueue();
+  ctx.device = device->device();
+  ctx.physicalDevice = device->physicalDevice();
+  ctx.graphicsQueue = device->graphicsQueue();
+  ctx.presentQueue = device->presentQueue();
 
   swapchain = std::make_unique<Swapchain>(ctx);
-  ctx.swapchain = swapchain->getVkSwapchain();
-  ctx.swapchainImages = swapchain->getVkImages();
-  ctx.swapchainImageViews = swapchain->getVkImageViews();
-  ctx.swapchainImageFormat = swapchain->getVkFormat();
-  ctx.swapchainExtent = swapchain->getVkExtent2D();
+  ctx.swapchain = swapchain->swapchain();
+  ctx.swapchainImages = swapchain->images();
+  ctx.swapchainImageViews = swapchain->imageViews();
+  ctx.swapchainImageFormat = swapchain->format();
+  ctx.swapchainExtent = swapchain->extent2D();
 
   renderPass = std::make_unique<RenderPass>(ctx);
-  ctx.renderPass = renderPass->getVkRenderPass();
+  ctx.renderPass = renderPass->renderPass();
 
   swapchainFramebuffers = std::make_unique<Framebuffers>(ctx);
-  ctx.swapchainFramebuffers = swapchainFramebuffers->getVkFramebuffers();
+  ctx.swapchainFramebuffers = swapchainFramebuffers->framebuffers();
 
   descriptorSetLayout = std::make_unique<DescriptorSetLayout>(ctx);
-  ctx.descriptorSetLayout = descriptorSetLayout->getVkDescriptorSetLayout();
+  ctx.descriptorSetLayout = descriptorSetLayout->descriptorSetLayout();
 
   graphicsPipeline = std::make_unique<GraphicsPipeline>(ctx);
-  ctx.pipelineLayout = graphicsPipeline->getVkPipelineLayout();
-  ctx.graphicsPipeline = graphicsPipeline->getVkPipeline();
+  ctx.pipelineLayout = graphicsPipeline->pipelineLayout();
+  ctx.graphicsPipeline = graphicsPipeline->pipeline();
 
   commandPool = std::make_unique<CommandPool>(ctx);
-  ctx.commandPool = commandPool->getVkCommandPool();
+  ctx.commandPool = commandPool->commandPool();
 
   vertexBuffers =
       std::make_unique<std::vector<std::unique_ptr<VertexBuffer>>>();
   indexBuffers = std::make_unique<std::vector<std::unique_ptr<IndexBuffer>>>();
 
   uniformBuffers = std::make_unique<UniformBuffers>(UniformBufferObject{}, ctx);
-  ctx.uniformBuffers = uniformBuffers->getVkBuffers();
-  ctx.uniformBuffersMemory = uniformBuffers->getVkBuffersMemory();
-  ctx.uniformBuffersMapped = uniformBuffers->getMapped();
+  ctx.uniformBuffers = uniformBuffers->buffers();
+  ctx.uniformBuffersMemory = uniformBuffers->buffersMemory();
+  ctx.uniformBuffersMapped = uniformBuffers->mapped();
 
   descriptorSet = std::make_unique<DescriptorSet>(ctx);
-  ctx.descriptorSets = descriptorSet->getVkDescriptorSets();
-  ctx.descriptorPool = descriptorSet->getVkDescriptorPool();
+  ctx.descriptorSets = descriptorSet->descriptorSets();
+  ctx.descriptorPool = descriptorSet->descriptorPool();
 
   commandBuffers = std::make_unique<CommandBuffers>(ctx);
-  ctx.commandBuffers = commandBuffers->getVkCommandBuffers();
+  ctx.commandBuffers = commandBuffers->commandBuffers();
 
   syncObjects = std::make_unique<SyncObjects>(ctx);
-  ctx.imageAvailableSemaphores = syncObjects->getImageAvailableSemaphores();
-  ctx.renderFinishedSemaphores = syncObjects->getRenderFinishedSemaphores();
-  ctx.inFlightFences = syncObjects->getInFlightFences();
+  ctx.imageAvailableSemaphores = syncObjects->imageAvailableSemaphores();
+  ctx.renderFinishedSemaphores = syncObjects->renderFinishedSemaphores();
+  ctx.inFlightFences = syncObjects->inFlightFences();
 
   fpsCounter = std::make_unique<FPSCounter>();
   ui = std::make_unique<UI>(ctx);
@@ -140,15 +140,15 @@ void VulkanApplication::updateUniformBuffer(uint32_t currentImage) {
 }
 
 void VulkanApplication::drawFrame() {
-  vkWaitForFences(device->getVkDevice(), 1,
-                  &syncObjects->getInFlightFences()[ctx.currentFrame], VK_TRUE,
+  vkWaitForFences(device->device(), 1,
+                  &syncObjects->inFlightFences()[ctx.currentFrame], VK_TRUE,
                   UINT64_MAX);
 
   uint32_t imageIndex;
   VkResult result = vkAcquireNextImageKHR(
-      device->getVkDevice(), swapchain->getVkSwapchain(), UINT64_MAX,
-      syncObjects->getImageAvailableSemaphores()[ctx.currentFrame],
-      VK_NULL_HANDLE, &imageIndex);
+      device->device(), swapchain->swapchain(), UINT64_MAX,
+      syncObjects->imageAvailableSemaphores()[ctx.currentFrame], VK_NULL_HANDLE,
+      &imageIndex);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
     recreateSwapchain();
@@ -159,26 +159,26 @@ void VulkanApplication::drawFrame() {
 
   updateUniformBuffer(ctx.currentFrame);
 
-  vkResetFences(device->getVkDevice(), 1,
-                &syncObjects->getInFlightFences()[ctx.currentFrame]);
+  vkResetFences(device->device(), 1,
+                &syncObjects->inFlightFences()[ctx.currentFrame]);
 
-  vkResetCommandBuffer(commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
+  vkResetCommandBuffer(commandBuffers->commandBuffers()[ctx.currentFrame],
                        /*VkCommandBufferResetFlagBits*/ 0);
 
   // FIXME: This func is BAD.
   recordCommandBuffer(
       imageIndex, ctx.currentFrame,
-      commandBuffers->getVkCommandBuffers()[ctx.currentFrame],
-      renderPass->getVkRenderPass(), graphicsPipeline->getVkPipelineLayout(),
-      descriptorSet->getVkDescriptorSets(),
-      swapchainFramebuffers->getVkFramebuffers(), swapchain->getVkExtent2D(),
-      graphicsPipeline->getVkPipeline(), *vertexBuffers, *indexBuffers, *ui);
+      commandBuffers->commandBuffers()[ctx.currentFrame],
+      renderPass->renderPass(), graphicsPipeline->pipelineLayout(),
+      descriptorSet->descriptorSets(), swapchainFramebuffers->framebuffers(),
+      swapchain->extent2D(), graphicsPipeline->pipeline(), *vertexBuffers,
+      *indexBuffers, *ui);
 
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
   VkSemaphore waitSemaphores[] = {
-      syncObjects->getImageAvailableSemaphores()[ctx.currentFrame]};
+      syncObjects->imageAvailableSemaphores()[ctx.currentFrame]};
   VkPipelineStageFlags waitStages[] = {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
   submitInfo.waitSemaphoreCount = 1;
@@ -187,15 +187,15 @@ void VulkanApplication::drawFrame() {
 
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers =
-      &commandBuffers->getVkCommandBuffersRef()[ctx.currentFrame];
+      &commandBuffers->commandBuffersRef()[ctx.currentFrame];
 
   VkSemaphore signalSemaphores[] = {
-      syncObjects->getRenderFinishedSemaphores()[imageIndex]};
+      syncObjects->renderFinishedSemaphores()[imageIndex]};
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
-  if (vkQueueSubmit(device->getGraphicsQueue(), 1, &submitInfo,
-                    syncObjects->getInFlightFences()[ctx.currentFrame]) !=
+  if (vkQueueSubmit(device->graphicsQueue(), 1, &submitInfo,
+                    syncObjects->inFlightFences()[ctx.currentFrame]) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to submit draw command buffer!");
   }
@@ -206,13 +206,13 @@ void VulkanApplication::drawFrame() {
   presentInfo.waitSemaphoreCount = 1;
   presentInfo.pWaitSemaphores = signalSemaphores;
 
-  VkSwapchainKHR swapchains[] = {swapchain->getVkSwapchain()};
+  VkSwapchainKHR swapchains[] = {swapchain->swapchain()};
   presentInfo.swapchainCount = 1;
   presentInfo.pSwapchains = swapchains;
 
   presentInfo.pImageIndices = &imageIndex;
 
-  result = vkQueuePresentKHR(device->getPresentQueue(), &presentInfo);
+  result = vkQueuePresentKHR(device->presentQueue(), &presentInfo);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
       ctx.framebufferResized) {

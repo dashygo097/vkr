@@ -33,7 +33,7 @@ DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
   poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 2);
 
   VkResult result =
-      vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
+      vkCreateDescriptorPool(device, &poolInfo, nullptr, &_descriptorPool);
   if (result != VK_SUCCESS) {
     throw std::runtime_error("Failed to create descriptor pool. VkResult: " +
                              std::to_string(result));
@@ -42,15 +42,15 @@ DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
   std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, layout);
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  allocInfo.descriptorPool = descriptorPool;
+  allocInfo.descriptorPool = _descriptorPool;
   allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
   allocInfo.pSetLayouts = layouts.data();
 
-  descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-  result = vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data());
+  _descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+  result = vkAllocateDescriptorSets(device, &allocInfo, _descriptorSets.data());
   if (result != VK_SUCCESS) {
-    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-    descriptorPool = VK_NULL_HANDLE;
+    vkDestroyDescriptorPool(device, _descriptorPool, nullptr);
+    _descriptorPool = VK_NULL_HANDLE;
     throw std::runtime_error("Failed to allocate descriptor sets. VkResult: " +
                              std::to_string(result));
   }
@@ -63,7 +63,7 @@ DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
 
     VkWriteDescriptorSet descriptorWrite{};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = descriptorSets[i];
+    descriptorWrite.dstSet = _descriptorSets[i];
     descriptorWrite.dstBinding = 0;
     descriptorWrite.dstArrayElement = 0;
     descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -78,10 +78,10 @@ DescriptorSet::DescriptorSet(const VulkanContext &ctx)
     : DescriptorSet(ctx.device, ctx.descriptorSetLayout, ctx.uniformBuffers) {}
 
 DescriptorSet::~DescriptorSet() {
-  if (device != VK_NULL_HANDLE && descriptorPool != VK_NULL_HANDLE) {
-    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-    descriptorPool = VK_NULL_HANDLE;
+  if (device != VK_NULL_HANDLE && _descriptorPool != VK_NULL_HANDLE) {
+    vkDestroyDescriptorPool(device, _descriptorPool, nullptr);
+    _descriptorPool = VK_NULL_HANDLE;
   }
-  descriptorSets.clear();
+  _descriptorSets.clear();
 }
 } // namespace vkr

@@ -30,7 +30,7 @@ RenderPass::RenderPass(VkDevice device, VkFormat swapchainImageFormat)
   renderPassInfo.subpassCount = 1;
   renderPassInfo.pSubpasses = &subpass;
 
-  if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) !=
+  if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &_renderPass) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create render pass!");
   }
@@ -40,9 +40,9 @@ RenderPass::RenderPass(const VulkanContext &ctx)
     : RenderPass(ctx.device, ctx.swapchainImageFormat) {}
 
 RenderPass::~RenderPass() {
-  if (renderPass != VK_NULL_HANDLE) {
-    vkDestroyRenderPass(device, renderPass, nullptr);
-    renderPass = VK_NULL_HANDLE;
+  if (_renderPass != VK_NULL_HANDLE) {
+    vkDestroyRenderPass(device, _renderPass, nullptr);
+    _renderPass = VK_NULL_HANDLE;
   }
 }
 } // namespace vkr

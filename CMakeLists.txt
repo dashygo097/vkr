@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.24)
 project(vkr LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_C_COMPILER_LAUCHER ccache)
+set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 
 # Prerequisites
 if (APPLE)
@@ -26,20 +28,13 @@ elseif(UNIX)
 endif()
 
 # 3rdparty
+set(GLFW_BUILD_DOCS     OFF CACHE BOOL "Disable GLFW docs" FORCE)
+set(GLFW_BUILD_TESTS    OFF CACHE BOOL "Disable GLFW tests" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Disable GLFW examples" FORCE)
+
 add_subdirectory(3rdparty/glfw EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glm EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/imgui EXCLUDE_FROM_ALL)
-include_directories(3rdparty)
-
-set(GLFW_BUILD_DOCS
-    OFF
-    CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS
-    OFF
-    CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES
-    OFF
-    CACHE BOOL "" FORCE)
 
 if (TARGET glfw)
     get_target_property(GLFW_VERSION_STRING glfw VERSION)
@@ -115,6 +110,7 @@ endif()
 set_target_properties(vkr PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    # UNITY_BUILD ON
 )
 
 # stastics
