@@ -10,12 +10,12 @@ public:
   ShaderModule(const ShaderModule &) = delete;
   ShaderModule &operator=(const ShaderModule &) = delete;
 
-  VkShaderModule getModule() const { return shaderModule; }
+  [[nodiscard]] VkShaderModule module() const noexcept { return _shaderModule; }
 
 private:
   // dependencies
-  VkDevice device;
+  VkDevice device{VK_NULL_HANDLE};
   // components
-  VkShaderModule shaderModule{VK_NULL_HANDLE};
+  VkShaderModule _shaderModule{VK_NULL_HANDLE};
 };
 } // namespace vkr

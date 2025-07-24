@@ -17,20 +17,20 @@ public:
   CommandBuffers(const CommandBuffers &) = delete;
   CommandBuffers &operator=(const CommandBuffers &) = delete;
 
-  std::vector<VkCommandBuffer> getVkCommandBuffers() const {
-    return commandBuffers;
+  [[nodiscard]] std::vector<VkCommandBuffer> commandBuffers() const noexcept {
+    return _commandBuffers;
   }
-  std::vector<VkCommandBuffer> &getVkCommandBuffersRef() {
-    return commandBuffers;
+  [[nodiscard]] std::vector<VkCommandBuffer> &commandBuffersRef() noexcept {
+    return _commandBuffers;
   }
 
 private:
   // dependencies
-  VkDevice device;
-  VkCommandPool commandPool;
+  VkDevice device{VK_NULL_HANDLE};
+  VkCommandPool commandPool{VK_NULL_HANDLE};
 
   // components
-  std::vector<VkCommandBuffer> commandBuffers{};
+  std::vector<VkCommandBuffer> _commandBuffers{};
 };
 
 void recordCommandBuffer(uint32_t imageIndex, uint32_t currentFrame,

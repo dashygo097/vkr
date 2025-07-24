@@ -15,7 +15,7 @@ DescriptorSetLayout::DescriptorSetLayout(VkDevice device) : device(device) {
   layoutInfo.pBindings = &uboLayoutBinding;
 
   if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr,
-                                  &descriptorSetLayout) != VK_SUCCESS) {
+                                  &_descriptorSetLayout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create descriptor set layout!");
   }
 }
@@ -24,9 +24,9 @@ DescriptorSetLayout::DescriptorSetLayout(const VulkanContext &ctx)
     : DescriptorSetLayout(ctx.device) {}
 
 DescriptorSetLayout::~DescriptorSetLayout() {
-  if (descriptorSetLayout != VK_NULL_HANDLE) {
-    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-    descriptorSetLayout = VK_NULL_HANDLE;
+  if (_descriptorSetLayout != VK_NULL_HANDLE) {
+    vkDestroyDescriptorSetLayout(device, _descriptorSetLayout, nullptr);
+    _descriptorSetLayout = VK_NULL_HANDLE;
   }
 }
 } // namespace vkr

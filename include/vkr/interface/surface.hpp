@@ -16,14 +16,14 @@ public:
   Surface(const Surface &) = delete;
   Surface &operator=(const Surface &) = delete;
 
-  VkSurfaceKHR getVkSurface() const { return surface; }
+  [[nodiscard]] VkSurfaceKHR surface() const noexcept { return _surface; }
 
 private:
   // dependencies
-  VkInstance instance;
-  GLFWwindow *window;
+  VkInstance instance{VK_NULL_HANDLE};
+  GLFWwindow *window{nullptr};
 
   // components
-  VkSurfaceKHR surface{VK_NULL_HANDLE};
+  VkSurfaceKHR _surface{VK_NULL_HANDLE};
 };
 } // namespace vkr

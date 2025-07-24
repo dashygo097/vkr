@@ -18,10 +18,11 @@ public:
        const std::vector<uint16_t> &indices) {
     load(vertices, indices);
   }
-  Mesh(const std::string &meshFilePath, const VulkanContext &ctx) : Mesh(ctx) {
+  explicit Mesh(const std::string &meshFilePath, const VulkanContext &ctx)
+      : Mesh(ctx) {
     load(meshFilePath);
   }
-  Mesh(const std::string &meshFilePath) { load(meshFilePath); };
+  explicit Mesh(const std::string &meshFilePath) { load(meshFilePath); };
 
   Mesh(const Mesh &) = delete;
   Mesh &operator=(const Mesh &) = delete;

@@ -3,7 +3,7 @@
 namespace vkr {
 Surface::Surface(VkInstance instance, GLFWwindow *window)
     : instance(instance), window(window) {
-  if (glfwCreateWindowSurface(instance, window, nullptr, &surface) !=
+  if (glfwCreateWindowSurface(instance, window, nullptr, &_surface) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create window surface!");
   }
@@ -12,5 +12,5 @@ Surface::Surface(VkInstance instance, GLFWwindow *window)
 Surface::Surface(const VulkanContext &ctx)
     : Surface(ctx.instance, ctx.window) {}
 
-Surface::~Surface() { vkDestroySurfaceKHR(instance, surface, nullptr); }
+Surface::~Surface() { vkDestroySurfaceKHR(instance, _surface, nullptr); }
 } // namespace vkr

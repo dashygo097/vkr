@@ -18,7 +18,7 @@ void FPSCounter::update() {
     auto elapsed =
         std::chrono::duration_cast<std::chrono::seconds>(now - start_time)
             .count();
-    fps = static_cast<float>(frame_count) / elapsed;
+    _fps = static_cast<float>(frame_count) / elapsed;
     last_time = now;
     frame_count = 0;
   }
@@ -28,6 +28,6 @@ void FPSCounter::reset() {
   start_time = std::chrono::high_resolution_clock::now();
   last_time = std::chrono::steady_clock::now();
   frame_count = 0;
-  fps = 0.0f;
+  _fps = 0.0f;
 }
 } // namespace vkr

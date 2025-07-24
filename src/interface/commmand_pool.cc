@@ -15,7 +15,7 @@ CommandPool::CommandPool(VkPhysicalDevice physicalDevice, VkDevice device,
   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-  if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) !=
+  if (vkCreateCommandPool(device, &poolInfo, nullptr, &_commandPool) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create command pool!");
   }
@@ -25,9 +25,9 @@ CommandPool::CommandPool(const VulkanContext &context)
     : CommandPool(context.physicalDevice, context.device, context.surface) {}
 
 CommandPool::~CommandPool() {
-  if (commandPool != VK_NULL_HANDLE) {
-    vkDestroyCommandPool(device, commandPool, nullptr);
-    commandPool = VK_NULL_HANDLE;
+  if (_commandPool != VK_NULL_HANDLE) {
+    vkDestroyCommandPool(device, _commandPool, nullptr);
+    _commandPool = VK_NULL_HANDLE;
   }
 }
 } // namespace vkr

@@ -70,25 +70,25 @@ void Swapchain::create() {
 
   createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-  if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) !=
+  if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &_swapchain) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create swap chain!");
   }
 
-  vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
-  images.resize(imageCount);
-  vkGetSwapchainImagesKHR(device, swapchain, &imageCount, images.data());
+  vkGetSwapchainImagesKHR(device, _swapchain, &imageCount, nullptr);
+  _images.resize(imageCount);
+  vkGetSwapchainImagesKHR(device, _swapchain, &imageCount, _images.data());
 
-  this->format = surfaceFormat.format;
-  this->extent = extent;
+  this->_format = surfaceFormat.format;
+  this->_extent = extent;
 
-  imageViews.resize(images.size());
-  for (size_t i = 0; i < images.size(); i++) {
+  _imageViews.resize(_images.size());
+  for (size_t i = 0; i < _images.size(); i++) {
     VkImageViewCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    createInfo.image = images[i];
+    createInfo.image = _images[i];
     createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    createInfo.format = format;
+    createInfo.format = _format;
     createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
     createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -99,7 +99,7 @@ void Swapchain::create() {
     createInfo.subresourceRange.baseArrayLayer = 0;
     createInfo.subresourceRange.layerCount = 1;
 
-    if (vkCreateImageView(device, &createInfo, nullptr, &imageViews[i]) !=
+    if (vkCreateImageView(device, &createInfo, nullptr, &_imageViews[i]) !=
         VK_SUCCESS) {
       throw std::runtime_error("failed to create image views!");
     }
@@ -107,16 +107,16 @@ void Swapchain::create() {
 }
 
 void Swapchain::destroy() {
-  for (auto imageView : imageViews) {
+  for (auto imageView : _imageViews) {
     if (imageView != VK_NULL_HANDLE) {
       vkDestroyImageView(device, imageView, nullptr);
     }
   }
-  imageViews.clear();
+  _imageViews.clear();
 
-  if (swapchain != VK_NULL_HANDLE) {
-    vkDestroySwapchainKHR(device, swapchain, nullptr);
-    swapchain = VK_NULL_HANDLE;
+  if (_swapchain != VK_NULL_HANDLE) {
+    vkDestroySwapchainKHR(device, _swapchain, nullptr);
+    _swapchain = VK_NULL_HANDLE;
   }
 }
 

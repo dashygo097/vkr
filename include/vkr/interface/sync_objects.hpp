@@ -13,13 +13,17 @@ public:
   SyncObjects(const SyncObjects &) = delete;
   SyncObjects &operator=(const SyncObjects &) = delete;
 
-  std::vector<VkSemaphore> getImageAvailableSemaphores() const {
-    return imageAvailableSemaphores;
+  [[nodiscard]] std::vector<VkSemaphore>
+  imageAvailableSemaphores() const noexcept {
+    return _imageAvailableSemaphores;
   }
-  std::vector<VkSemaphore> getRenderFinishedSemaphores() const {
-    return renderFinishedSemaphores;
+  [[nodiscard]] std::vector<VkSemaphore>
+  renderFinishedSemaphores() const noexcept {
+    return _renderFinishedSemaphores;
   }
-  std::vector<VkFence> getInFlightFences() const { return inFlightFences; }
+  [[nodiscard]] std::vector<VkFence> inFlightFences() const noexcept {
+    return _inFlightFences;
+  }
 
 private:
   // dependencies
@@ -27,8 +31,8 @@ private:
   std::vector<VkImage> swapchainImages{};
 
   // components
-  std::vector<VkSemaphore> imageAvailableSemaphores{};
-  std::vector<VkSemaphore> renderFinishedSemaphores{};
-  std::vector<VkFence> inFlightFences{};
+  std::vector<VkSemaphore> _imageAvailableSemaphores{};
+  std::vector<VkSemaphore> _renderFinishedSemaphores{};
+  std::vector<VkFence> _inFlightFences{};
 };
 } // namespace vkr

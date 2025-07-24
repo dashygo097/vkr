@@ -4,15 +4,15 @@ namespace vkr {
 
 CommandBuffers::CommandBuffers(VkDevice device, VkCommandPool commandPool)
     : device(device), commandPool(commandPool) {
-  commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+  _commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.commandPool = commandPool;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+  allocInfo.commandBufferCount = (uint32_t)_commandBuffers.size();
 
-  if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) !=
+  if (vkAllocateCommandBuffers(device, &allocInfo, _commandBuffers.data()) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to allocate command buffers!");
   }
@@ -22,12 +22,12 @@ CommandBuffers::CommandBuffers(const VulkanContext &ctx)
     : CommandBuffers(ctx.device, ctx.commandPool) {}
 
 CommandBuffers::~CommandBuffers() {
-  if (!commandBuffers.empty()) {
+  if (!_commandBuffers.empty()) {
     vkFreeCommandBuffers(device, commandPool,
-                         static_cast<uint32_t>(commandBuffers.size()),
-                         commandBuffers.data());
+                         static_cast<uint32_t>(_commandBuffers.size()),
+                         _commandBuffers.data());
   }
-  commandBuffers.clear();
+  _commandBuffers.clear();
 }
 
 void recordCommandBuffer(uint32_t imageIndex, uint32_t currentFrame,
@@ -148,26 +148,25 @@ void recordCommandBuffer(
 
   for (size_t i = 0; i < vertexBuffers.size() && i < indexBuffers.size(); i++) {
     if (vertexBuffers[i] && indexBuffers[i] &&
-        vertexBuffers[i]->getVkBuffer() != VK_NULL_HANDLE &&
-        indexBuffers[i]->getVkBuffer() != VK_NULL_HANDLE &&
-        !vertexBuffers[i]->getVertices().empty() &&
-        !indexBuffers[i]->getIndices().empty()) {
+        vertexBuffers[i]->buffer() != VK_NULL_HANDLE &&
+        indexBuffers[i]->buffer() != VK_NULL_HANDLE &&
+        !vertexBuffers[i]->vertices().empty() &&
+        !indexBuffers[i]->indices().empty()) {
 
-      VkBuffer vertexBuffer = vertexBuffers[i]->getVkBuffer();
+      VkBuffer vertexBuffer = vertexBuffers[i]->buffer();
       VkDeviceSize offsets[] = {0};
       vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, offsets);
 
-      vkCmdBindIndexBuffer(commandBuffer, indexBuffers[i]->getVkBuffer(), 0,
+      vkCmdBindIndexBuffer(commandBuffer, indexBuffers[i]->buffer(), 0,
                            VK_INDEX_TYPE_UINT16);
 
       vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                               pipelineLayout, 0, 1,
                               &descriptorSets[currentFrame], 0, nullptr);
 
-      vkCmdDrawIndexed(
-          commandBuffer,
-          static_cast<uint32_t>(indexBuffers[i]->getIndices().size()), 1, 0, 0,
-          0);
+      vkCmdDrawIndexed(commandBuffer,
+                       static_cast<uint32_t>(indexBuffers[i]->indices().size()),
+                       1, 0, 0, 0);
     }
   }
 

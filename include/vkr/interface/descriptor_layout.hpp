@@ -13,15 +13,15 @@ public:
   DescriptorSetLayout(const DescriptorSetLayout &) = delete;
   DescriptorSetLayout &operator=(const DescriptorSetLayout &) = delete;
 
-  VkDescriptorSetLayout getVkDescriptorSetLayout() const {
-    return descriptorSetLayout;
+  [[nodiscard]] VkDescriptorSetLayout descriptorSetLayout() const noexcept {
+    return _descriptorSetLayout;
   }
 
 private:
   // dependencies
-  VkDevice device;
+  VkDevice device{VK_NULL_HANDLE};
 
   // components
-  VkDescriptorSetLayout descriptorSetLayout;
+  VkDescriptorSetLayout _descriptorSetLayout{VK_NULL_HANDLE};
 };
 } // namespace vkr

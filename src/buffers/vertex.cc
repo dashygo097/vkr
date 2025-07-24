@@ -9,7 +9,7 @@ Vertex::~Vertex() {}
 VertexBuffer::VertexBuffer(const std::vector<Vertex> &vertices, VkDevice device,
                            VkPhysicalDevice physicalDevice,
                            VkCommandPool commandPool, VkQueue graphicsQueue)
-    : vertices(vertices), device(device), physicalDevice(physicalDevice),
+    : _vertices(vertices), device(device), physicalDevice(physicalDevice),
       commandPool(commandPool), graphicsQueue(graphicsQueue) {
   create();
 }
@@ -22,11 +22,10 @@ VertexBuffer::VertexBuffer(const std::vector<Vertex> &vertices,
 VertexBuffer::~VertexBuffer() { destroy(); }
 
 void VertexBuffer::create() {
-  if (vertices.empty()) {
+  if (_vertices.empty()) {
     return;
   }
-  VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
+  VkDeviceSize bufferSize = sizeof(_vertices[0]) * _vertices.size();
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
   createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -36,16 +35,16 @@ void VertexBuffer::create() {
 
   void *data;
   vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-  memcpy(data, vertices.data(), (size_t)bufferSize);
+  memcpy(data, _vertices.data(), (size_t)bufferSize);
   vkUnmapMemory(device, stagingBufferMemory);
 
   createBuffer(bufferSize,
                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, memory,
+               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _vertexBuffer, _memory,
                device, physicalDevice);
 
-  copyBuffer(stagingBuffer, vertexBuffer, bufferSize, commandPool,
+  copyBuffer(stagingBuffer, _vertexBuffer, bufferSize, commandPool,
              graphicsQueue, device);
 
   vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -53,21 +52,21 @@ void VertexBuffer::create() {
 }
 
 void VertexBuffer::destroy() {
-  if (memory != VK_NULL_HANDLE) {
-    vkFreeMemory(device, memory, nullptr);
+  if (_memory != VK_NULL_HANDLE) {
+    vkFreeMemory(device, _memory, nullptr);
   }
-  if (vertexBuffer != VK_NULL_HANDLE) {
-    vkDestroyBuffer(device, vertexBuffer, nullptr);
+  if (_vertexBuffer != VK_NULL_HANDLE) {
+    vkDestroyBuffer(device, _vertexBuffer, nullptr);
   }
-  if (!vertices.empty()) {
-    vertices.clear();
+  if (!_vertices.empty()) {
+    _vertices.clear();
   }
 }
 
 void VertexBuffer::update(const std::vector<Vertex> &newVertices) {
   destroy();
 
-  vertices = newVertices;
+  _vertices = newVertices;
   create();
 }
 } // namespace vkr

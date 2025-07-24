@@ -25,9 +25,13 @@ public:
   void update(uint32_t currentFrame, const UniformBufferObject &object);
   ;
 
-  std::vector<VkBuffer> getVkBuffers() const { return uniformBuffers; }
-  std::vector<VkDeviceMemory> getVkBuffersMemory() const { return memories; }
-  std::vector<void *> getMapped() const { return mapped; }
+  [[nodiscard]] std::vector<VkBuffer> buffers() const noexcept {
+    return _uniformBuffers;
+  }
+  [[nodiscard]] std::vector<VkDeviceMemory> buffersMemory() const noexcept {
+    return _memories;
+  }
+  [[nodiscard]] std::vector<void *> mapped() const noexcept { return _mapped; }
 
 private:
   // dependencies
@@ -37,8 +41,8 @@ private:
   // componets
   UniformBufferObject object;
 
-  std::vector<VkBuffer> uniformBuffers{};
-  std::vector<VkDeviceMemory> memories{};
-  std::vector<void *> mapped{};
+  std::vector<VkBuffer> _uniformBuffers{};
+  std::vector<VkDeviceMemory> _memories{};
+  std::vector<void *> _mapped{};
 };
 } // namespace vkr

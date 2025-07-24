@@ -12,7 +12,7 @@ public:
   RenderPass(const RenderPass &) = delete;
   RenderPass &operator=(const RenderPass &) = delete;
 
-  VkRenderPass getVkRenderPass() const { return renderPass; }
+  [[nodiscard]] VkRenderPass renderPass() const noexcept { return _renderPass; }
 
 private:
   // dependencies
@@ -20,6 +20,6 @@ private:
   VkFormat swapchainImageFormat{VK_FORMAT_UNDEFINED};
 
   // components
-  VkRenderPass renderPass{VK_NULL_HANDLE};
+  VkRenderPass _renderPass{VK_NULL_HANDLE};
 };
 } // namespace vkr
