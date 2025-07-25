@@ -6,6 +6,7 @@
 #include "./buffers/uniform.hpp"
 #include "./buffers/vertex.hpp"
 #include "./camera.hpp"
+#include "./components/ui/ui.hpp"
 #include "./ctx.hpp"
 #include "./fps_counter.hpp"
 #include "./interface/command_pool.hpp"
@@ -19,7 +20,6 @@
 #include "./interface/swapchain.hpp"
 #include "./interface/sync_objects.hpp"
 #include "./interface/window.hpp"
-#include "./ui/ui.hpp"
 
 namespace vkr {
 class VulkanApplication {
