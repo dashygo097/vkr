@@ -165,14 +165,11 @@ void VulkanApplication::drawFrame() {
   vkResetCommandBuffer(commandBuffers->commandBuffers()[ctx.currentFrame],
                        /*VkCommandBufferResetFlagBits*/ 0);
 
-  // FIXME: This func is BAD.
-  recordCommandBuffer(
-      imageIndex, ctx.currentFrame,
-      commandBuffers->commandBuffers()[ctx.currentFrame],
-      renderPass->renderPass(), graphicsPipeline->pipelineLayout(),
-      descriptorSet->descriptorSets(), swapchainFramebuffers->framebuffers(),
-      swapchain->extent2D(), graphicsPipeline->pipeline(), *vertexBuffers,
-      *indexBuffers, *ui);
+  commandBuffers->record(
+      imageIndex, ctx.currentFrame, renderPass->renderPass(),
+      graphicsPipeline->pipelineLayout(), descriptorSet->descriptorSets(),
+      swapchainFramebuffers->framebuffers(), swapchain->extent2D(),
+      graphicsPipeline->pipeline(), *vertexBuffers, *indexBuffers, *ui);
 
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
