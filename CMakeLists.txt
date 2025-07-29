@@ -72,7 +72,7 @@ function(make_preview_string LIST_VAR N)
 
   if(list_length GREATER N)
     math(EXPR remaining_items "${list_length} - ${N}")
-    list(APPEND preview "; …(+${remaining_items} more)")
+    list(APPEND preview "; ...(+${remaining_items} more)")
   endif()
 
   set(PREVIOUS_SCOPE_VAR "${preview}" PARENT_SCOPE)
@@ -116,10 +116,10 @@ set_target_properties(vkr PROPERTIES
 # stastics
 make_paths_relative(REL_HEADER_FILES HEADER_FILES)
 make_paths_relative(REL_SOURCE_FILES SOURCE_FILES)
-make_preview_string(REL_HEADER_FILES 3)
-make_preview_string(REL_SOURCE_FILES 3)
 
+make_preview_string(REL_HEADER_FILES 3)
 print_info("[TRACE] Header files: ${PREVIOUS_SCOPE_VAR}" "94")
+make_preview_string(REL_SOURCE_FILES 3)
 print_info("[TRACE] Source files: ${PREVIOUS_SCOPE_VAR}" "96")
 
 # Apps
