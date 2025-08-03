@@ -1,4 +1,4 @@
-#include "vkr/fps_counter.hpp"
+#include "vkr/components/fps_counter.hpp"
 
 namespace vkr {
 

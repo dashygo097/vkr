@@ -6,6 +6,8 @@
 namespace vkr::geometry {
 class Mesh {
 public:
+  Mesh(VkDevice device, VkPhysicalDevice physicalDevice,
+       VkCommandPool commandPool, VkQueue graphicsQueue);
   Mesh(const VulkanContext &ctx);
   ~Mesh() = default;
 

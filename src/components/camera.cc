@@ -1,4 +1,4 @@
-#include "vkr/camera.hpp"
+#include "vkr/components/camera.hpp"
 
 namespace vkr {
 

@@ -2,6 +2,11 @@
 
 namespace vkr::geometry {
 
+Mesh::Mesh(VkDevice device, VkPhysicalDevice physicalDevice,
+           VkCommandPool commandPool, VkQueue graphicsQueue)
+    : device(device), physicalDevice(physicalDevice), commandPool(commandPool),
+      graphicsQueue(graphicsQueue) {}
+
 Mesh::Mesh(const VulkanContext &ctx)
     : device(ctx.device), physicalDevice(ctx.physicalDevice),
       commandPool(ctx.commandPool), graphicsQueue(ctx.graphicsQueue) {}

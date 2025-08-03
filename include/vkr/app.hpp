@@ -5,10 +5,10 @@
 #include "./buffers/index.hpp"
 #include "./buffers/uniform.hpp"
 #include "./buffers/vertex.hpp"
-#include "./camera.hpp"
+#include "./components/camera.hpp"
+#include "./components/fps_counter.hpp"
 #include "./components/ui/ui.hpp"
 #include "./ctx.hpp"
-#include "./fps_counter.hpp"
 #include "./interface/command_pool.hpp"
 #include "./interface/descriptor_layout.hpp"
 #include "./interface/descriptor_set.hpp"
@@ -65,7 +65,7 @@ public:
   std::unique_ptr<std::vector<std::unique_ptr<VertexBuffer>>> vertexBuffers;
   std::unique_ptr<std::vector<std::unique_ptr<IndexBuffer>>> indexBuffers;
   std::unique_ptr<UniformBuffers> uniformBuffers;
-  std::unique_ptr<DescriptorSet> descriptorSet;
+  std::unique_ptr<DescriptorSets> descriptorSets;
   std::unique_ptr<CommandBuffers> commandBuffers;
 
   std::unique_ptr<SyncObjects> syncObjects;

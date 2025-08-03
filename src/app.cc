@@ -65,9 +65,9 @@ void VulkanApplication::initVulkan() {
   ctx.uniformBuffersMemory = uniformBuffers->buffersMemory();
   ctx.uniformBuffersMapped = uniformBuffers->mapped();
 
-  descriptorSet = std::make_unique<DescriptorSet>(ctx);
-  ctx.descriptorSets = descriptorSet->descriptorSets();
-  ctx.descriptorPool = descriptorSet->descriptorPool();
+  descriptorSets = std::make_unique<DescriptorSets>(ctx);
+  ctx.descriptorSets = descriptorSets->descriptorSets();
+  ctx.descriptorPool = descriptorSets->descriptorPool();
 
   commandBuffers = std::make_unique<CommandBuffers>(ctx);
   ctx.commandBuffers = commandBuffers->commandBuffers();
@@ -100,7 +100,7 @@ void VulkanApplication::cleanup() {
   fpsCounter.reset();
   syncObjects.reset();
   commandBuffers.reset();
-  descriptorSet.reset();
+  descriptorSets.reset();
   uniformBuffers.reset();
   indexBuffers.reset();
   vertexBuffers.reset();
@@ -167,7 +167,7 @@ void VulkanApplication::drawFrame() {
 
   commandBuffers->record(
       imageIndex, ctx.currentFrame, renderPass->renderPass(),
-      graphicsPipeline->pipelineLayout(), descriptorSet->descriptorSets(),
+      graphicsPipeline->pipelineLayout(), descriptorSets->descriptorSets(),
       swapchainFramebuffers->framebuffers(), swapchain->extent2D(),
       graphicsPipeline->pipeline(), *vertexBuffers, *indexBuffers, *ui);
 
