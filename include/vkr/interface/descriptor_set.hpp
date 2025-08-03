@@ -4,20 +4,20 @@
 
 namespace vkr {
 
-class DescriptorSet {
+class DescriptorSets {
 public:
-  DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
-                std::vector<VkBuffer> uniformBuffers);
-  DescriptorSet(const VulkanContext &ctx);
-  ~DescriptorSet();
+  DescriptorSets(VkDevice device, VkDescriptorSetLayout layout,
+                 std::vector<VkBuffer> uniformBuffers);
+  DescriptorSets(const VulkanContext &ctx);
+  ~DescriptorSets();
 
-  DescriptorSet(const DescriptorSet &) = delete;
-  DescriptorSet &operator=(const DescriptorSet &) = delete;
+  DescriptorSets(const DescriptorSets &) = delete;
+  DescriptorSets &operator=(const DescriptorSets &) = delete;
 
   [[nodiscard]] std::vector<VkDescriptorSet> descriptorSets() const noexcept {
     return _descriptorSets;
   }
-  [[nodiscard]] VkDescriptorPool descriptorPool() const {
+  [[nodiscard]] VkDescriptorPool descriptorPool() const noexcept {
     return _descriptorPool;
   }
 

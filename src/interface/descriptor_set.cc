@@ -4,8 +4,8 @@
 
 namespace vkr {
 
-DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
-                             std::vector<VkBuffer> uniformBuffers)
+DescriptorSets::DescriptorSets(VkDevice device, VkDescriptorSetLayout layout,
+                               std::vector<VkBuffer> uniformBuffers)
     : device(device), layout(layout), uniformBuffers(uniformBuffers) {
 
   std::vector<VkDescriptorPoolSize> poolSizes{};
@@ -74,10 +74,10 @@ DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout layout,
   }
 }
 
-DescriptorSet::DescriptorSet(const VulkanContext &ctx)
-    : DescriptorSet(ctx.device, ctx.descriptorSetLayout, ctx.uniformBuffers) {}
+DescriptorSets::DescriptorSets(const VulkanContext &ctx)
+    : DescriptorSets(ctx.device, ctx.descriptorSetLayout, ctx.uniformBuffers) {}
 
-DescriptorSet::~DescriptorSet() {
+DescriptorSets::~DescriptorSets() {
   if (device != VK_NULL_HANDLE && _descriptorPool != VK_NULL_HANDLE) {
     vkDestroyDescriptorPool(device, _descriptorPool, nullptr);
     _descriptorPool = VK_NULL_HANDLE;
