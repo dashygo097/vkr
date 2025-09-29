@@ -1,4 +1,5 @@
 #include "vkr/app.hpp"
+#include <iostream>
 
 namespace vkr {
 VulkanApplication::VulkanApplication() {}
@@ -14,12 +15,12 @@ void VulkanApplication::initVulkan() {
                                  framebufferResizeCallback);
 
   camera = std::make_unique<Camera>(ctx);
-  ctx.cameraMovementSpeed = camera->getMovementSpeed();
-  ctx.cameraMouseSensitivity = camera->getMouseSensitivity();
-  ctx.cameraFov = camera->getFov();
-  ctx.cameraAspectRatio = camera->getAspectRatio();
-  ctx.cameraNearPlane = camera->getNearPlane();
-  ctx.cameraFarPlane = camera->getFarPlane();
+  ctx.cameraMovementSpeed = camera->movementSpeed();
+  ctx.cameraMouseSensitivity = camera->mouseSensitivity();
+  ctx.cameraFov = camera->fov();
+  ctx.cameraAspectRatio = camera->aspectRatio();
+  ctx.cameraNearPlane = camera->nearPlane();
+  ctx.cameraFarPlane = camera->farPlane();
 
   instance = std::make_unique<Instance>(ctx);
   ctx.instance = instance->instance();
@@ -84,14 +85,15 @@ void VulkanApplication::initVulkan() {
 void VulkanApplication::setting() {}
 
 void VulkanApplication::mainLoop() {
+  fpsCounter->start();
   while (!window->shouldClose()) {
     window->pollEvents();
     if (ctx.cameraEnabled) {
       camera->track();
     }
+    fpsCounter->update();
     drawFrame();
   }
-
   device->waitIdle();
 }
 

@@ -18,80 +18,96 @@ public:
 
   void track();
 
-  glm::vec3 getPos() const { return pos; }
+  glm::vec3 pos() const { return _pos; }
 
   // update camera vectors
-  glm::mat4 getView() const { return glm::lookAt(pos, pos + front, up); }
+  glm::mat4 getView() const { return glm::lookAt(_pos, _pos + _front, _up); }
   glm::mat4 getProjection() const {
-    glm::mat4 proj =
-        glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
+    glm::mat4 proj = glm::perspective(glm::radians(_fov), _aspectRatio,
+                                      _nearPlane, _farPlane);
     proj[1][1] *= -1;
     return proj;
   }
 
   void mouseMove(float xOffset, float yOffset) {
-    yaw += xOffset * mouseSensitivity;
-    pitch += yOffset * mouseSensitivity;
-    if (pitch > 89.0f)
-      pitch = 89.0f;
-    if (pitch < -89.0f)
-      pitch = -89.0f;
+    _yaw += xOffset * _mouseSensitivity;
+    _pitch += yOffset * _mouseSensitivity;
+    if (_pitch > 89.0f)
+      _pitch = 89.0f;
+    if (_pitch < -89.0f)
+      _pitch = -89.0f;
 
     glm::vec3 frontTemp;
-    frontTemp.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    frontTemp.y = sin(glm::radians(pitch));
-    frontTemp.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    frontTemp.x = cos(glm::radians(_yaw)) * cos(glm::radians(_pitch));
+    frontTemp.y = sin(glm::radians(_pitch));
+    frontTemp.z = sin(glm::radians(_yaw)) * cos(glm::radians(_pitch));
 
-    front = glm::normalize(frontTemp);
-    right = glm::normalize(glm::cross(front, worldUp));
-    up = glm::normalize(glm::cross(right, front));
+    _front = glm::normalize(frontTemp);
+    _right = glm::normalize(glm::cross(_front, _worldUp));
+    _up = glm::normalize(glm::cross(_right, _front));
   }
 
   // controls
   void moveForward(float deltaTime) {
-    pos += front * movementSpeed * deltaTime;
+    _pos += _front * _movementSpeed * deltaTime;
   }
   void moveBackward(float deltaTime) {
-    pos -= front * movementSpeed * deltaTime;
+    _pos -= _front * _movementSpeed * deltaTime;
   }
-  void moveLeft(float deltaTime) { pos -= right * movementSpeed * deltaTime; }
-  void moveRight(float deltaTime) { pos += right * movementSpeed * deltaTime; }
-  void moveUp(float deltaTime) { pos += worldUp * movementSpeed * deltaTime; }
-  void moveDown(float deltaTime) { pos -= worldUp * movementSpeed * deltaTime; }
+  void moveLeft(float deltaTime) {
+    _pos -= _right * _movementSpeed * deltaTime;
+  }
+  void moveRight(float deltaTime) {
+    _pos += _right * _movementSpeed * deltaTime;
+  }
+  void moveUp(float deltaTime) {
+    _pos += _worldUp * _movementSpeed * deltaTime;
+  }
+  void moveDown(float deltaTime) {
+    _pos -= _worldUp * _movementSpeed * deltaTime;
+  }
 
-  float getMovementSpeed() const { return movementSpeed; }
-  void setMovementSpeed(float speed) { this->movementSpeed = speed; }
-  float getMouseSensitivity() const { return mouseSensitivity; }
-  void setMouseSensitivity(float sensitivity) {
-    this->mouseSensitivity = sensitivity;
+  float movementSpeed() const { return _movementSpeed; }
+  void movementSpeed(float speed) { this->_movementSpeed = speed; }
+  float mouseSensitivity() const { return _mouseSensitivity; }
+  void mouseSensitivity(float sensitivity) {
+    this->_mouseSensitivity = sensitivity;
   }
-  float getFov() const { return fov; }
-  void setFov(float fov) { this->fov = fov; }
-  float getAspectRatio() const { return aspectRatio; }
-  void setAspectRatio(float aspectRatio) { this->aspectRatio = aspectRatio; }
-  float getNearPlane() const { return nearPlane; }
-  void setNearPlane(float nearPlane) { this->nearPlane = nearPlane; }
-  float getFarPlane() const { return farPlane; }
-  void setFarPlane(float farPlane) { this->farPlane = farPlane; }
+
+  [[nodiscard]] float fov() const noexcept { return _fov; }
+  void fov(float fov) { this->_fov = fov; }
+  [[nodiscard]] float aspectRatio() const noexcept { return _aspectRatio; }
+  void aspectRatio(float aspectRatio) { this->_aspectRatio = aspectRatio; }
+  [[nodiscard]] float nearPlane() const noexcept { return _nearPlane; }
+  void nearPlane(float nearPlane) { this->_nearPlane = nearPlane; }
+  [[nodiscard]] float farPlane() const noexcept { return _farPlane; }
+  void farPlane(float farPlane) { this->_farPlane = farPlane; }
+  [[nodiscard]] bool isLocked() const noexcept { return _locked; }
+
+  void toggle_lock();
+  void lock();
+  void unlock();
 
 private:
   // dependencies
   GLFWwindow *window{nullptr};
-  float movementSpeed;
-  float mouseSensitivity;
-  float fov;
-  float aspectRatio;
-  float nearPlane;
-  float farPlane;
 
   // components
-  glm::vec3 pos{glm::vec3(0.0f, 0.0f, 0.0f)};
-  glm::vec3 front{glm::vec3(0.0f, 0.0f, -1.0f)};
-  glm::vec3 up{glm::vec3(0.0f, 1.0f, 0.0f)};
-  glm::vec3 right{glm::vec3(1.0f, 0.0f, 0.0f)};
-  glm::vec3 worldUp{glm::vec3(0.0f, 1.0f, 0.0f)};
-  float yaw{-90.0f};
-  float pitch{0.0f};
+  float _movementSpeed;
+  float _mouseSensitivity;
+  float _fov;
+  float _aspectRatio;
+  float _nearPlane;
+  float _farPlane;
+  glm::vec3 _pos{glm::vec3(0.0f, 0.0f, 0.0f)};
+  glm::vec3 _front{glm::vec3(0.0f, 0.0f, -1.0f)};
+  glm::vec3 _up{glm::vec3(0.0f, 1.0f, 0.0f)};
+  glm::vec3 _right{glm::vec3(1.0f, 0.0f, 0.0f)};
+  glm::vec3 _worldUp{glm::vec3(0.0f, 1.0f, 0.0f)};
+  float _yaw{-90.0f};
+  float _pitch{0.0f};
+
+  bool _locked{false};
 
   // timing
   std::chrono::high_resolution_clock::time_point lastTimeStamp;
