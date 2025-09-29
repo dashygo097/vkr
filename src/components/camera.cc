@@ -11,11 +11,15 @@ Camera::Camera(GLFWwindow *window, float movementSpeed, float mouseSensitivity,
 Camera::Camera(const VulkanContext &ctx)
     : Camera(ctx.window, ctx.cameraMovementSpeed, ctx.cameraMouseSensitivity,
              ctx.cameraAspectRatio, ctx.cameraFov, ctx.cameraNearPlane,
-             ctx.cameraFarPlane) {}
+             ctx.cameraFarPlane) {
+  _locked = ctx.cameraLocked;
+}
 
 Camera::~Camera() {}
 
 void Camera::track() {
+  if (_locked)
+    return;
   auto now = std::chrono::high_resolution_clock::now();
   if (lastTimeStamp.time_since_epoch().count() == 0) {
     lastTimeStamp = now;
@@ -64,8 +68,5 @@ void Camera::track() {
     mouseMove(xoffset, yoffset);
   }
 }
-void Camera::lock() { _locked = true; }
-void Camera::unlock() { _locked = false; }
-void Camera::toggle_lock() { _locked = !_locked; }
 
 } // namespace vkr

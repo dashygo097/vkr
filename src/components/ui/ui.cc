@@ -58,6 +58,8 @@ UI::~UI() {
 }
 
 void UI::render(VkCommandBuffer commandBuffer) {
+  if (!_visible)
+    return;
   ImGui_ImplVulkan_NewFrame();
 
   ImGui_ImplGlfw_NewFrame();

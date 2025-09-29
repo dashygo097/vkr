@@ -83,10 +83,11 @@ public:
   [[nodiscard]] float farPlane() const noexcept { return _farPlane; }
   void farPlane(float farPlane) { this->_farPlane = farPlane; }
   [[nodiscard]] bool isLocked() const noexcept { return _locked; }
+  void lock(bool lock) { _locked = lock; }
 
-  void toggle_lock();
-  void lock();
-  void unlock();
+  void doLock() { _locked = true; }
+  void doUnlock() { _locked = false; }
+  void toggle_lock() { _locked = !_locked; }
 
 private:
   // dependencies

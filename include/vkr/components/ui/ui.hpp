@@ -18,6 +18,12 @@ public:
 
   void render(VkCommandBuffer commandBuffer);
 
+  bool isVisible() const noexcept { return _visible; }
+
+  void visible() { _visible = true; }
+  void invisible() { _visible = false; }
+  void toggleVisibility() { _visible = !_visible; }
+
 private:
   // dependencies
   GLFWwindow *window{nullptr};
@@ -32,5 +38,7 @@ private:
 
   // components
   std::unique_ptr<FPSPanel> fps_panel;
+
+  bool _visible{false};
 };
 } // namespace vkr
