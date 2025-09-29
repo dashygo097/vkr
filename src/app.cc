@@ -82,30 +82,32 @@ void VulkanApplication::initVulkan() {
 
   fpsCounter = std::make_unique<FPSCounter>();
   ui = std::make_unique<UI>(ctx);
-  ctx.uiVisibility = ui->isVisible();
 }
 
 void VulkanApplication::setting() {}
 
 void VulkanApplication::mainLoop() {
   fpsCounter->start();
+  bool isLastTabKeyPressed = false, isNowTabKeyPressed = false;
 
   while (!window->shouldClose()) {
     window->pollEvents();
-    ctx.isNowTabKeyPressed =
+
+    bool isNowTabKeyPressed =
         glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
 
     if (ctx.cameraEnabled) {
       camera->track();
       camera->lock(ui->isVisible());
-      if (ctx.isNowTabKeyPressed && !ctx.isLastTabKeyPressed) {
+      if (isNowTabKeyPressed && !isLastTabKeyPressed) {
         ui->toggleVisibility();
       }
       fpsCounter->update();
       drawFrame();
     }
 
-    ctx.isLastTabKeyPressed = ctx.isNowTabKeyPressed;
+    isLastTabKeyPressed = isNowTabKeyPressed;
+
     device->waitIdle();
   }
 }

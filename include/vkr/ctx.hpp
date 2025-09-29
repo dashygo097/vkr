@@ -15,13 +15,6 @@ struct VulkanContext {
   uint32_t appVersion;
   uint32_t engineVersion;
 
-  // --- UI Info ---
-  bool uiVisibility;
-
-  // --- Input Info ---
-  bool isLastTabKeyPressed;
-  bool isNowTabKeyPressed;
-
   // --- Window Info ---
   uint32_t width;
   uint32_t height;
