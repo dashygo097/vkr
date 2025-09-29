@@ -1,13 +1,12 @@
 #include "vkr/components/camera.hpp"
 
 namespace vkr {
-
 Camera::Camera(GLFWwindow *window) : window(window) {}
 Camera::Camera(GLFWwindow *window, float movementSpeed, float mouseSensitivity,
                float aspectRatio, float fov, float nearPlane, float farPlane)
-    : window(window), movementSpeed(movementSpeed),
-      mouseSensitivity(mouseSensitivity), fov(fov), aspectRatio(aspectRatio),
-      nearPlane(nearPlane), farPlane(farPlane) {}
+    : window(window), _movementSpeed(movementSpeed),
+      _mouseSensitivity(mouseSensitivity), _fov(fov), _aspectRatio(aspectRatio),
+      _nearPlane(nearPlane), _farPlane(farPlane) {}
 
 Camera::Camera(const VulkanContext &ctx)
     : Camera(ctx.window, ctx.cameraMovementSpeed, ctx.cameraMouseSensitivity,
@@ -65,4 +64,8 @@ void Camera::track() {
     mouseMove(xoffset, yoffset);
   }
 }
+void Camera::lock() { _locked = true; }
+void Camera::unlock() { _locked = false; }
+void Camera::toggle_lock() { _locked = !_locked; }
+
 } // namespace vkr

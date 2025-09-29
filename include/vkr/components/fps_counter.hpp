@@ -16,7 +16,6 @@ public:
 private:
   std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
   std::chrono::time_point<std::chrono::steady_clock> last_time;
-  int frame_count;
   float _fps;
 };
 } // namespace vkr

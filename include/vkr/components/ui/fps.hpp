@@ -8,6 +8,6 @@ public:
   FPSPanel(const FPSPanel &) = delete;
   FPSPanel &operator=(const FPSPanel &) = delete;
 
-  void render(float fps);
+  void render();
 };
 } // namespace vkr

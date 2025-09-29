@@ -2,7 +2,6 @@
 #include "vkr/interface/vk_utils.hpp"
 
 namespace vkr {
-
 static void check_vk_result(VkResult err) {
   if (err == 0)
     return;
@@ -67,6 +66,8 @@ void UI::render(VkCommandBuffer commandBuffer) {
   ImGui::Begin("Hello, Vulkan!");
   ImGui::Text("This is a simple ImGui window.");
   ImGui::End();
+
+  fps_panel->render();
 
   ImGui::Render();
   ImDrawData *draw_data = ImGui::GetDrawData();
