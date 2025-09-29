@@ -1,5 +1,6 @@
 #include "vkr/app.hpp"
-#include <iostream>
+#include <GLFW/glfw3.h>
+#include <unistd.h>
 
 namespace vkr {
 VulkanApplication::VulkanApplication() {}
@@ -15,6 +16,7 @@ void VulkanApplication::initVulkan() {
                                  framebufferResizeCallback);
 
   camera = std::make_unique<Camera>(ctx);
+  ctx.cameraLocked = camera->isLocked();
   ctx.cameraMovementSpeed = camera->movementSpeed();
   ctx.cameraMouseSensitivity = camera->mouseSensitivity();
   ctx.cameraFov = camera->fov();
@@ -80,21 +82,32 @@ void VulkanApplication::initVulkan() {
 
   fpsCounter = std::make_unique<FPSCounter>();
   ui = std::make_unique<UI>(ctx);
+  ctx.uiVisibility = ui->isVisible();
 }
 
 void VulkanApplication::setting() {}
 
 void VulkanApplication::mainLoop() {
   fpsCounter->start();
+
   while (!window->shouldClose()) {
     window->pollEvents();
+    ctx.isNowTabKeyPressed =
+        glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
+
     if (ctx.cameraEnabled) {
       camera->track();
+      camera->lock(ui->isVisible());
+      if (ctx.isNowTabKeyPressed && !ctx.isLastTabKeyPressed) {
+        ui->toggleVisibility();
+      }
+      fpsCounter->update();
+      drawFrame();
     }
-    fpsCounter->update();
-    drawFrame();
+
+    ctx.isLastTabKeyPressed = ctx.isNowTabKeyPressed;
+    device->waitIdle();
   }
-  device->waitIdle();
 }
 
 void VulkanApplication::cleanup() {
@@ -222,4 +235,5 @@ void VulkanApplication::drawFrame() {
   }
   ctx.currentFrame = (ctx.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
+
 } // namespace vkr
