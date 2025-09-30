@@ -1,4 +1,4 @@
-#include "vkr/components/camera.hpp"
+#include "vkr/components/camera.hh"
 
 namespace vkr {
 Camera::Camera(GLFWwindow *window) : window(window) {}

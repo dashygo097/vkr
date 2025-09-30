@@ -1,4 +1,4 @@
-#include "vkr/app.hpp"
+#include "vkr/app.hh"
 #include <GLFW/glfw3.h>
 #include <unistd.h>
 

@@ -1,4 +1,4 @@
-#include "vkr/interface/window.hpp"
+#include "vkr/interface/window.hh"
 
 namespace vkr {
 Window::Window(uint32_t width, uint32_t height, std::string_view title)

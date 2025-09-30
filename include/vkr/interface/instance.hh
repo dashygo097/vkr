@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../ctx.hpp"
-#include "./debug_messenger.hpp"
+#include "../ctx.hh"
+#include "./debug_messenger.hh"
 
 #ifdef NDEBUG
 const bool ENABLE_VALIDATION_LAYERS = false;

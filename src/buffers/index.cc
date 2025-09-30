@@ -1,5 +1,5 @@
-#include "vkr/buffers/index.hpp"
-#include "vkr/buffers/universal.hpp"
+#include "vkr/buffers/index.hh"
+#include "vkr/buffers/universal.hh"
 
 namespace vkr {
 IndexBuffer::IndexBuffer(const std::vector<uint16_t> &indices, VkDevice device,

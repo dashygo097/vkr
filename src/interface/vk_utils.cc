@@ -1,5 +1,5 @@
-#include "vkr/interface/vk_utils.hpp"
-#include "vkr/interface/instance.hpp"
+#include "vkr/interface/vk_utils.hh"
+#include "vkr/interface/instance.hh"
 
 namespace vkr {
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,

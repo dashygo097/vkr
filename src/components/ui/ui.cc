@@ -1,5 +1,5 @@
-#include "vkr/components/ui/ui.hpp"
-#include "vkr/interface/vk_utils.hpp"
+#include "vkr/components/ui/ui.hh"
+#include "vkr/interface/vk_utils.hh"
 
 namespace vkr {
 static void check_vk_result(VkResult err) {

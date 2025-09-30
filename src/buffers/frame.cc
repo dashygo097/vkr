@@ -1,4 +1,4 @@
-#include "vkr/buffers/frame.hpp"
+#include "vkr/buffers/frame.hh"
 
 namespace vkr {
 

@@ -2,7 +2,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "../ctx.hpp"
+#include "../ctx.hh"
 
 namespace vkr {
 class Camera {

@@ -1,8 +1,7 @@
-#include "vkr/interface/command_pool.hpp"
-#include "vkr/interface/vk_utils.hpp"
+#include "vkr/interface/command_pool.hh"
+#include "vkr/interface/vk_utils.hh"
 
 namespace vkr {
-
 CommandPool::CommandPool(VkPhysicalDevice physicalDevice, VkDevice device,
                          VkSurfaceKHR surface)
     : physicalDevice(physicalDevice), device(device), surface(surface) {

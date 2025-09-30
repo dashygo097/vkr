@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../components/ui/ui.hpp"
-#include "../ctx.hpp"
-#include "./index.hpp"
-#include "./vertex.hpp"
+#include "../components/ui/ui.hh"
+#include "../ctx.hh"
+#include "./index.hh"
+#include "./vertex.hh"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 

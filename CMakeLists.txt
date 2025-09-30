@@ -96,15 +96,15 @@ if(APPLE)
 endif()
 
 # vkr
-file(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.c src/*.cc)
-file(GLOB_RECURSE HEADER_FILES include/*.h include/*.hpp)
+file(GLOB_RECURSE SOURCE_FILES src/*.c src/*.cc src/*.cpp)
+file(GLOB_RECURSE HEADER_FILES include/*.h include/*.hh include/*.hpp)
 
 add_library(vkr ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(vkr PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
-target_precompile_headers(vkr PRIVATE include/vkr/pch.hpp)
+target_precompile_headers(vkr PRIVATE include/vkr/pch.hh)
 target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan glm::glm-header-only imgui)
 
 if (APPLE) 

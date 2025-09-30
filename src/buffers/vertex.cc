@@ -1,5 +1,5 @@
-#include "vkr/buffers/vertex.hpp"
-#include "vkr/buffers/universal.hpp"
+#include "vkr/buffers/vertex.hh"
+#include "vkr/buffers/universal.hh"
 
 namespace vkr {
 

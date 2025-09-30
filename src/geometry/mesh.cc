@@ -1,7 +1,6 @@
-#include "vkr/geometry/mesh.hpp"
+#include "vkr/geometry/mesh.hh"
 
 namespace vkr::geometry {
-
 Mesh::Mesh(VkDevice device, VkPhysicalDevice physicalDevice,
            VkCommandPool commandPool, VkQueue graphicsQueue)
     : device(device), physicalDevice(physicalDevice), commandPool(commandPool),

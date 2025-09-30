@@ -1,9 +1,7 @@
-#include "vkr/components/fps_counter.hpp"
+#include "vkr/components/fps_counter.hh"
 
 namespace vkr {
-
 FPSCounter::FPSCounter() {}
-
 FPSCounter::~FPSCounter() {}
 
 void FPSCounter::start() {
