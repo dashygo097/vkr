@@ -1,9 +1,8 @@
-#include "vkr/interface/device.hpp"
-#include "vkr/interface/instance.hpp"
-#include "vkr/interface/vk_utils.hpp"
+#include "vkr/interface/device.hh"
+#include "vkr/interface/instance.hh"
+#include "vkr/interface/vk_utils.hh"
 
 namespace vkr {
-
 Device::Device(VkInstance instance, VkSurfaceKHR surface,
                const std::vector<const char *> &deviceExtensions,
                const std::vector<const char *> &validationLayers)

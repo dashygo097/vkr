@@ -1,9 +1,8 @@
-#include "vkr/interface/pipeline.hpp"
-#include "vkr/buffers/vertex.hpp"
-#include "vkr/interface/shader_module.hpp"
+#include "vkr/interface/pipeline.hh"
+#include "vkr/buffers/vertex.hh"
+#include "vkr/interface/shader_module.hh"
 
 namespace vkr {
-
 GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
                                    VkDescriptorSetLayout descriptorSetLayout,
                                    const std::string &vertShaderPath,

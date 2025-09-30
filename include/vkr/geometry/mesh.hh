@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../buffers/index.hpp"
-#include "../buffers/vertex.hpp"
+#include "../buffers/index.hh"
+#include "../buffers/vertex.hh"
 
 namespace vkr::geometry {
 class Mesh {
@@ -39,11 +39,11 @@ public:
     vertexBuffer->update(vertices);
     indexBuffer->update(indices);
   }
-  void update(const std::vector<Vertex> vertices) {
+  void update(const std::vector<Vertex> &vertices) {
     checkDataLoaded();
     vertexBuffer->update(vertices);
   }
-  void update(const std::vector<uint16_t> indices) {
+  void update(const std::vector<uint16_t> &indices) {
     checkDataLoaded();
     indexBuffer->update(indices);
   }

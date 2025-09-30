@@ -1,8 +1,7 @@
-#include "vkr/interface/instance.hpp"
-#include "vkr/interface/vk_utils.hpp"
+#include "vkr/interface/instance.hh"
+#include "vkr/interface/vk_utils.hh"
 
 namespace vkr {
-
 Instance::Instance(const std::string appName, const std::string engineName,
                    uint32_t appVersion, uint32_t engineVersion,
                    const std::vector<const char *> &preExtensions,

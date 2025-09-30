@@ -1,4 +1,4 @@
-#include "vkr/components/ui/fps.hpp"
+#include "vkr/components/ui/fps.hh"
 
 namespace vkr {
 

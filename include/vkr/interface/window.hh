@@ -2,7 +2,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 
-#include "../ctx.hpp"
+#include "../ctx.hh"
 
 namespace vkr {
 

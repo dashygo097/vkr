@@ -1,4 +1,4 @@
-#include "vkr/interface/descriptor_layout.hpp"
+#include "vkr/interface/descriptor_layout.hh"
 
 namespace vkr {
 DescriptorSetLayout::DescriptorSetLayout(VkDevice device) : device(device) {

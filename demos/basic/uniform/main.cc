@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <vector>
-#include <vkr.hpp>
+#include <vkr.hh>
 #include <vulkan/vulkan.h>
 
 class UniformBufferTestApplication : public vkr::VulkanApplication {

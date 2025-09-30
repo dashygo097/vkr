@@ -1,6 +1,6 @@
-#include "vkr/buffers/uniform.hpp"
-#include "vkr/buffers/command.hpp"
-#include "vkr/buffers/universal.hpp"
+#include "vkr/buffers/uniform.hh"
+#include "vkr/buffers/command.hh"
+#include "vkr/buffers/universal.hh"
 
 namespace vkr {
 
