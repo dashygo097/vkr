@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../ctx.hh"
-#include "./fps.hh"
+#include "./fps_panel.hh"
 
 namespace vkr {
 class UI {
