@@ -1,18 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 
-CURRENT_DIR=$(pwd)
-BUILD_DIR=${CURRENT_DIR}/build
+BASE_DIR=$(dirname $(cd "$(dirname "$0")" && pwd))
+BUILD_DIR=${BASE_DIR}/build
 
 # Build script for a CMake project
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
-cmake $CURRENT_DIR
-cd $CURRENT_DIR
+cmake $BASE_DIR
+cd $BASE_DIR
 
 # Compile shader files
 GLSL_COMPILER=$(which glslc)
-SHADER_SRC_ROOT="${CURRENT_DIR}/shaders"
+SHADER_SRC_ROOT="${BASE_DIR}/shaders"
 SHADER_OUT_ROOT="${BUILD_DIR}/outputs/demos/shaders"
 
 [[ -x $GLSL_COMPILER ]] || { echo >&2 "[ERROR] glslc not found"; exit 1; }
