@@ -6,19 +6,19 @@
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
-class UniformBufferTestApplication : public vkr::VulkanApplication {
+class TestApplication : public vkr::VulkanApplication {
 private:
   const std::vector<vkr::Vertex> vertices1 = {
-      {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-      {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-      {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-      {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+      {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+      {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+      {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}};
 
   const std::vector<vkr::Vertex> vertices2 = {
-      {{-1.5f, -1.5f}, {0.0f, 0.0f, 0.0f}},
-      {{-0.5f, -1.5f}, {0.0f, 0.0f, 1.0f}},
-      {{-0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-      {{-1.5f, -0.5f}, {1.0f, 0.0f, 0.0f}}};
+      {{-1.5f, -1.5f, 0.0f}, {0.0f, 0.0f, 0.0f}},
+      {{-0.5f, -1.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+      {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+      {{-1.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}};
 
   const std::vector<uint16_t> indices1 = {0, 1, 2, 2, 3, 0};
   const std::vector<uint16_t> indices2 = {0, 1, 2, 2, 3, 0};
@@ -42,8 +42,8 @@ private:
     ctx.cameraNearPlane = 0.01f;
     ctx.cameraFarPlane = 1000.0f;
 
-    ctx.vertexShaderPath = "shaders/uniform/vert.spv";
-    ctx.fragmentShaderPath = "shaders/uniform/frag.spv";
+    ctx.vertexShaderPath = "shaders/fortest/vert.spv";
+    ctx.fragmentShaderPath = "shaders/fortest/frag.spv";
   }
 
   void setting() {
@@ -57,7 +57,7 @@ private:
 };
 
 int main() {
-  UniformBufferTestApplication app;
+  TestApplication app;
 
   try {
     app.run();

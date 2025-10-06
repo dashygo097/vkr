@@ -6,10 +6,14 @@ namespace vkr {
 
 class Vertex {
 public:
-  Vertex(glm::vec2 pos, glm::vec3 color);
+  Vertex(glm::vec3 pos, glm::vec3 color);
   ~Vertex();
-  glm::vec2 pos;
+  glm::vec3 pos;
   glm::vec3 color;
+
+  bool operator==(const Vertex &other) const {
+    return pos == other.pos && color == other.color;
+  }
 
   static VkVertexInputBindingDescription getBindingDescription() {
     VkVertexInputBindingDescription bindingDescription{};
@@ -26,7 +30,7 @@ public:
 
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
-    attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
     attributeDescriptions[1].binding = 0;
@@ -75,3 +79,29 @@ private:
   VkDeviceMemory _memory{VK_NULL_HANDLE};
 };
 } // namespace vkr
+
+namespace std {
+template <typename T, glm::qualifier Q> struct hash<glm::vec<2, T, Q>> {
+  size_t operator()(const glm::vec<2, T, Q> &vec) const noexcept {
+    size_t h1 = hash<T>{}(vec.x);
+    size_t h2 = hash<T>{}(vec.y);
+    return (h1 ^ (h2 << 1));
+  }
+};
+template <typename T, glm::qualifier Q> struct hash<glm::vec<3, T, Q>> {
+  size_t operator()(const glm::vec<3, T, Q> &vec) const noexcept {
+    size_t h1 = hash<T>{}(vec.x);
+    size_t h2 = hash<T>{}(vec.y);
+    size_t h3 = hash<T>{}(vec.z);
+    return ((h1 ^ (h2 << 1)) >> 1) ^ (h3 << 1);
+  }
+};
+
+template <> struct hash<vkr::Vertex> {
+  size_t operator()(vkr::Vertex const &vertex) const {
+    return ((hash<glm::vec3>()(vertex.pos) ^
+             (hash<glm::vec3>()(vertex.color) << 1)) >>
+            1);
+  }
+};
+} // namespace std

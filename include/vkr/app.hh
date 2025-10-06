@@ -9,17 +9,7 @@
 #include "./components/fps_counter.hh"
 #include "./components/ui/ui.hh"
 #include "./ctx.hh"
-#include "./interface/command_pool.hh"
-#include "./interface/descriptor_layout.hh"
-#include "./interface/descriptor_set.hh"
-#include "./interface/device.hh"
-#include "./interface/instance.hh"
-#include "./interface/pipeline.hh"
-#include "./interface/render_pass.hh"
-#include "./interface/surface.hh"
-#include "./interface/swapchain.hh"
-#include "./interface/sync_objects.hh"
-#include "./interface/window.hh"
+#include "interface/interface.hh"
 
 namespace vkr {
 class VulkanApplication {
