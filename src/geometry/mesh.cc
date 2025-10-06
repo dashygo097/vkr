@@ -1,4 +1,5 @@
 #include "vkr/geometry/mesh.hh"
+#include <tiny_obj_loader.h>
 
 namespace vkr::geometry {
 Mesh::Mesh(VkDevice device, VkPhysicalDevice physicalDevice,
@@ -23,9 +24,6 @@ void Mesh::load(const std::vector<Vertex> &vertices,
   }
 }
 
-void Mesh::load(const std::string &meshFilePath) {
-  checkVulkanContext();
-  std::runtime_error("Mesh loading from file is not implemented yet.");
-}
+void Mesh::load(const std::string &meshFilePath) { checkVulkanContext(); }
 
 } // namespace vkr::geometry

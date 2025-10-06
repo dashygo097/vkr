@@ -43,6 +43,8 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Disable GLFW examples" FORCE)
 add_subdirectory(3rdparty/glfw EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glm EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/imgui EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/stb EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/tinyobjloader EXCLUDE_FROM_ALL)
 
 if (TARGET glfw)
     get_target_property(GLFW_VERSION_STRING glfw VERSION)
@@ -106,6 +108,8 @@ target_include_directories(vkr PUBLIC
 )
 target_precompile_headers(vkr PRIVATE include/vkr/pch.hh)
 target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan glm::glm-header-only imgui)
+# 3rdparty libs to link statically
+target_link_libraries(vkr PRIVATE stb tinyobjloader)
 
 if (APPLE) 
     target_link_libraries(vkr PUBLIC
