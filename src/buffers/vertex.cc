@@ -3,7 +3,7 @@
 
 namespace vkr {
 
-Vertex::Vertex(glm::vec2 pos, glm::vec3 color) : pos(pos), color(color) {}
+Vertex::Vertex(glm::vec3 pos, glm::vec3 color) : pos(pos), color(color) {}
 Vertex::~Vertex() {}
 
 VertexBuffer::VertexBuffer(const std::vector<Vertex> &vertices, VkDevice device,
