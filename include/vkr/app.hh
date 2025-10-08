@@ -52,8 +52,8 @@ public:
   std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 
   std::unique_ptr<CommandPool> commandPool;
-  std::unique_ptr<std::vector<std::unique_ptr<VertexBuffer>>> vertexBuffers;
-  std::unique_ptr<std::vector<std::unique_ptr<IndexBuffer>>> indexBuffers;
+  std::unique_ptr<std::vector<std::shared_ptr<VertexBuffer>>> vertexBuffers;
+  std::unique_ptr<std::vector<std::shared_ptr<IndexBuffer>>> indexBuffers;
   std::unique_ptr<UniformBuffers> uniformBuffers;
   std::unique_ptr<DescriptorSets> descriptorSets;
   std::unique_ptr<CommandBuffers> commandBuffers;

@@ -14,11 +14,11 @@ Mesh::Mesh(const VulkanContext &ctx)
 void Mesh::load(const std::vector<Vertex> &vertices,
                 const std::vector<uint16_t> &indices) {
   checkVulkanContext();
-  if (!vertexBuffer || !indexBuffer) {
-    vertexBuffer = std::make_unique<VertexBuffer>(
+  if (!_vertexBuffer || !_indexBuffer) {
+    _vertexBuffer = std::make_unique<VertexBuffer>(
         vertices, device, physicalDevice, commandPool, graphicsQueue);
-    indexBuffer = std::make_unique<IndexBuffer>(indices, device, physicalDevice,
-                                                commandPool, graphicsQueue);
+    _indexBuffer = std::make_unique<IndexBuffer>(
+        indices, device, physicalDevice, commandPool, graphicsQueue);
   } else {
     update(vertices, indices);
   }
@@ -87,11 +87,11 @@ void Mesh::load(const std::string &meshFilePath) {
     }
   }
 
-  if (!vertexBuffer || !indexBuffer) {
-    vertexBuffer = std::make_unique<VertexBuffer>(
+  if (!_vertexBuffer || !_indexBuffer) {
+    _vertexBuffer = std::make_unique<VertexBuffer>(
         vertices, device, physicalDevice, commandPool, graphicsQueue);
-    indexBuffer = std::make_unique<IndexBuffer>(indices, device, physicalDevice,
-                                                commandPool, graphicsQueue);
+    _indexBuffer = std::make_unique<IndexBuffer>(
+        indices, device, physicalDevice, commandPool, graphicsQueue);
   } else {
     update(vertices, indices);
   }

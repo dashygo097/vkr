@@ -47,12 +47,16 @@ private:
   }
 
   void setting() {
+    vkr::geometry::Mesh tallbox("./assets/tallbox.obj", ctx);
+    vertexBuffers->push_back(tallbox.vertexBuffer());
+    indexBuffers->push_back(tallbox.indexBuffer());
+
     vertexBuffers->push_back(
-        std::make_unique<vkr::VertexBuffer>(vertices1, ctx));
+        std::make_shared<vkr::VertexBuffer>(vertices1, ctx));
     vertexBuffers->push_back(
-        std::make_unique<vkr::VertexBuffer>(vertices2, ctx));
-    indexBuffers->push_back(std::make_unique<vkr::IndexBuffer>(indices1, ctx));
-    indexBuffers->push_back(std::make_unique<vkr::IndexBuffer>(indices2, ctx));
+        std::make_shared<vkr::VertexBuffer>(vertices2, ctx));
+    indexBuffers->push_back(std::make_shared<vkr::IndexBuffer>(indices1, ctx));
+    indexBuffers->push_back(std::make_shared<vkr::IndexBuffer>(indices2, ctx));
   }
 };
 
