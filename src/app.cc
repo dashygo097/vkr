@@ -60,8 +60,8 @@ void VulkanApplication::initVulkan() {
   ctx.commandPool = commandPool->commandPool();
 
   vertexBuffers =
-      std::make_unique<std::vector<std::unique_ptr<VertexBuffer>>>();
-  indexBuffers = std::make_unique<std::vector<std::unique_ptr<IndexBuffer>>>();
+      std::make_unique<std::vector<std::shared_ptr<VertexBuffer>>>();
+  indexBuffers = std::make_unique<std::vector<std::shared_ptr<IndexBuffer>>>();
 
   uniformBuffers = std::make_unique<UniformBuffers>(UniformBufferObject{}, ctx);
   ctx.uniformBuffers = uniformBuffers->buffers();

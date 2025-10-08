@@ -36,8 +36,8 @@ public:
               const std::vector<VkDescriptorSet> &descriptorSets,
               const std::vector<VkFramebuffer> &framebuffers, VkExtent2D extent,
               VkPipeline graphicsPipeline,
-              const std::vector<std::unique_ptr<VertexBuffer>> &vertexBuffers,
-              const std::vector<std::unique_ptr<IndexBuffer>> &indexBuffers,
+              const std::vector<std::shared_ptr<VertexBuffer>> &vertexBuffers,
+              const std::vector<std::shared_ptr<IndexBuffer>> &indexBuffers,
               UI &ui);
 
 private:
@@ -55,8 +55,8 @@ private:
 
   void drawIndexed(uint16_t index, VkPipelineLayout pipelineLayout,
                    VkDescriptorSet descriptorSet,
-                   const std::unique_ptr<VertexBuffer> &vertexBuffer,
-                   const std::unique_ptr<IndexBuffer> &indexBuffer);
+                   const std::shared_ptr<VertexBuffer> &vertexBuffer,
+                   const std::shared_ptr<IndexBuffer> &indexBuffer);
 
   void endRenderPass(uint16_t index);
   void endRecording(uint16_t index);
@@ -79,8 +79,8 @@ void recordCommandBuffer(
     std::vector<VkDescriptorSet> descriptorSets,
     std::vector<VkFramebuffer> swapchainFrameBuffers,
     VkExtent2D swapchainExtent, VkPipeline graphicsPipeline,
-    const std::vector<std::unique_ptr<VertexBuffer>> &vertexBuffers,
-    const std::vector<std::unique_ptr<IndexBuffer>> &indexBuffers, UI &ui);
+    const std::vector<std::shared_ptr<VertexBuffer>> &vertexBuffers,
+    const std::vector<std::shared_ptr<IndexBuffer>> &indexBuffers, UI &ui);
 
 VkCommandBuffer beginSingleTimeCommands(VkDevice device,
                                         VkCommandPool commandPool);
