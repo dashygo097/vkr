@@ -42,14 +42,11 @@ private:
     ctx.cameraNearPlane = 0.01f;
     ctx.cameraFarPlane = 1000.0f;
 
-    ctx.vertexShaderPath = "shaders/fortest/vert.spv";
-    ctx.fragmentShaderPath = "shaders/fortest/frag.spv";
+    ctx.vertexShaderPath = "shaders/albedo/vert.spv";
+    ctx.fragmentShaderPath = "shaders/albedo/frag.spv";
   }
 
   void setting() {
-    vkr::geometry::Mesh tallbox("./assets/tallbox.obj", ctx);
-    vertexBuffers->push_back(tallbox.vertexBuffer());
-    indexBuffers->push_back(tallbox.indexBuffer());
 
     vertexBuffers->push_back(
         std::make_shared<vkr::VertexBuffer>(vertices1, ctx));
