@@ -1,10 +1,6 @@
 #pragma once
 
-#include "./buffers/command.hh"
-#include "./buffers/frame.hh"
-#include "./buffers/index.hh"
-#include "./buffers/uniform.hh"
-#include "./buffers/vertex.hh"
+#include "./buffers/buffer.hh"
 #include "./components/camera.hh"
 #include "./components/fps_counter.hh"
 #include "./components/ui/ui.hh"
