@@ -89,11 +89,13 @@ endfunction()
 print_info("――――――――――――――――――LIB SCOPE――――――――――――――――――" "0")
 
 # Add targets
+print_info("[INFO] Vulkan SDK: ${Vulkan_INCLUDE_DIRS}" "90")
+
 if(APPLE)
-    print_info("[INFO] Vulkan SDK: ${Vulkan_INCLUDE_DIRS}" "90")
     print_info("[INFO] MoltenVK: ${Vulkan_MOLTENVK_LIBRARY}" "90")
-    print_info("[INFO] GLFW version: ${GLFW_VERSION_STRING}" "90")
 endif()
+
+print_info("[INFO] GLFW version: ${GLFW_VERSION_STRING}" "90")
 
 # vkr
 file(GLOB_RECURSE SOURCE_FILES src/*.c src/*.cc src/*.cpp)
