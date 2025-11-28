@@ -1,6 +1,6 @@
 print_info("―――――――――――――――――TEST SCOPE――――――――――――――――――" "0")
 
-set(EXECUTABLE_OUTPUT_PATH ../outputs/tests)
+set(EXECUTABLE_OUTPUT_PATH ../bin)
 add_executable(list_extensions list_extensions.cc)
 target_link_libraries(list_extensions PRIVATE Vulkan::Vulkan)
 add_test(NAME list_extensions_test COMMAND list_extensions)
