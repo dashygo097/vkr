@@ -13,7 +13,7 @@ cd $BASE_DIR
 # Compile shader files
 GLSL_COMPILER=$(which glslc)
 SHADER_SRC_ROOT="${BASE_DIR}/shaders"
-SHADER_OUT_ROOT="${BUILD_DIR}/outputs/demos/shaders"
+SHADER_OUT_ROOT="${BUILD_DIR}/bin/shaders"
 
 [[ -x $GLSL_COMPILER ]] || { echo >&2 "[ERROR] glslc not found"; exit 1; }
 echo "[INFO] Compiling shaders with glslc at $GLSL_COMPILER"

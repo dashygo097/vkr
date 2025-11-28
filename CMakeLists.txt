@@ -137,4 +137,4 @@ print_info("[TRACE] Source files: ${PREVIOUS_SCOPE_VAR}" "96")
 # Apps
 enable_testing()
 add_subdirectory(tests)
-add_subdirectory(demos)
+add_subdirectory(apps)

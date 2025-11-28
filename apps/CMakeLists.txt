@@ -3,13 +3,13 @@ project(demos LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB project ./basic/*)
+file(GLOB project ./*)
 
 print_info("――――――――――――――――――APP SCOPE――――――――――――――――――" "0")
 
 foreach(exec ${project})
   if(IS_DIRECTORY ${exec})
-    set(EXECUTABLE_OUTPUT_PATH ../outputs/demos)
+    set(EXECUTABLE_OUTPUT_PATH ../bin)
     math(EXPR index "${index} + 1" OUTPUT_FORMAT DECIMAL)
     get_filename_component(exec-name ${exec} NAME)
     file(GLOB_RECURSE ${exec}-src ${exec}/*.c ${exec}/*.cc ${exec}/*.cpp)
