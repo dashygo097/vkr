@@ -29,27 +29,25 @@ void Device::waitIdle() {
 }
 
 void Device::pickPhysicalDevice() {
-  {
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+  uint32_t deviceCount = 0;
+  vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
-    if (deviceCount == 0) {
-      throw std::runtime_error("failed to find GPUs with Vulkan support!");
+  if (deviceCount == 0) {
+    throw std::runtime_error("failed to find GPUs with Vulkan support!");
+  }
+
+  std::vector<VkPhysicalDevice> devices(deviceCount);
+  vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+  for (const auto &device : devices) {
+    if (isSuitable(device)) {
+      _physicalDevice = device;
+      break;
     }
+  }
 
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-
-    for (const auto &device : devices) {
-      if (isSuitable(device)) {
-        _physicalDevice = device;
-        break;
-      }
-    }
-
-    if (_physicalDevice == VK_NULL_HANDLE) {
-      throw std::runtime_error("failed to find a suitable GPU!");
-    }
+  if (_physicalDevice == VK_NULL_HANDLE) {
+    throw std::runtime_error("failed to find a suitable GPU!");
   }
 }
 
@@ -107,4 +105,5 @@ bool Device::isSuitable(VkPhysicalDevice pDevice) {
   QueueFamilyIndices indices = findQueueFamilies(pDevice, surface);
   return indices.isComplete();
 }
+
 } // namespace vkr
