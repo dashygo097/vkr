@@ -62,31 +62,4 @@ private:
   void endRecording(uint16_t index);
 };
 
-void recordCommandBuffer(uint32_t imageIndex, uint32_t currentFrame,
-                         std::vector<Vertex> vertices,
-                         std::vector<uint16_t> indices, VkBuffer indexBuffer,
-                         VkBuffer vertexBuffer, VkCommandBuffer commandBuffer,
-                         VkRenderPass renderPass,
-                         VkPipelineLayout pipelineLayout,
-                         std::vector<VkDescriptorSet> descriptorSets,
-                         std::vector<VkFramebuffer> swapchainFrameBuffers,
-                         VkExtent2D swapchainExtent,
-                         VkPipeline graphicsPipeline);
-
-void recordCommandBuffer(
-    uint32_t imageIndex, uint32_t currentFrame, VkCommandBuffer commandBuffer,
-    VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
-    std::vector<VkDescriptorSet> descriptorSets,
-    std::vector<VkFramebuffer> swapchainFrameBuffers,
-    VkExtent2D swapchainExtent, VkPipeline graphicsPipeline,
-    const std::vector<std::shared_ptr<VertexBuffer>> &vertexBuffers,
-    const std::vector<std::shared_ptr<IndexBuffer>> &indexBuffers, UI &ui);
-
-VkCommandBuffer beginSingleTimeCommands(VkDevice device,
-                                        VkCommandPool commandPool);
-
-void endSingleTimeCommands(VkDevice device, VkQueue queue,
-                           VkCommandPool commandPool,
-                           VkCommandBuffer commandBuffer);
-
 } // namespace vkr
