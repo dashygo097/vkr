@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../ctx.hh"
-#include <glm/glm.hpp>
 
 namespace vkr {
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fstream>
+
 namespace vkr {
 
 static std::vector<char> readFile(const std::string &filename) {

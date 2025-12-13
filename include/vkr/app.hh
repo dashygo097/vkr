@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./buffers/buffer.hh"
+#include "./buffers/buffers.hh"
 #include "./components/camera.hh"
 #include "./components/fps_counter.hh"
 #include "./components/ui/ui.hh"

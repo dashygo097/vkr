@@ -1,4 +1,5 @@
 #include "vkr/interface/debug_messenger.hh"
+#include <iostream>
 
 namespace vkr {
 DebugMessenger::DebugMessenger(VkInstance instance) : instance(instance) {
