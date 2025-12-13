@@ -31,6 +31,10 @@ UI::UI(GLFWwindow *window, VkInstance instance, VkSurfaceKHR surface,
 
   ImGui_ImplGlfw_InitForVulkan(window, true);
 
+  ImGui_ImplVulkan_PipelineInfo pipeline_info = {};
+  pipeline_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+  pipeline_info.RenderPass = renderPass;
+
   ImGui_ImplVulkan_InitInfo init_info = {};
   init_info.Instance = instance;
   init_info.PhysicalDevice = physicalDevice;
@@ -43,9 +47,8 @@ UI::UI(GLFWwindow *window, VkInstance instance, VkSurfaceKHR surface,
   init_info.Allocator = nullptr;
   init_info.MinImageCount = 2;
   init_info.ImageCount = 2;
-  init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
   init_info.CheckVkResultFn = check_vk_result;
-  init_info.RenderPass = renderPass;
+  init_info.PipelineInfoMain = pipeline_info;
 
   ImGui_ImplVulkan_Init(&init_info);
 }
