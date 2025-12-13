@@ -1,5 +1,5 @@
 #include "vkr/components/ui/ui.hh"
-#include "vkr/interface/vk_utils.hh"
+#include "vkr/core/vulkan/utils.hh"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
