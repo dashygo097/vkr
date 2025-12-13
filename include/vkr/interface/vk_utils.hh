@@ -1,5 +1,9 @@
 #pragma once
 
+#include <optional>
+#include <vector>
+#include <vulkan/vulkan.h>
+
 namespace vkr {
 
 struct QueueFamilyIndices {

@@ -1,5 +1,8 @@
 #include "vkr/components/ui/ui.hh"
 #include "vkr/interface/vk_utils.hh"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 
 namespace vkr {
 static void check_vk_result(VkResult err) {

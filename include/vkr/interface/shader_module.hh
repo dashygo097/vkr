@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vulkan/vulkan.h>
+
 namespace vkr {
 
 class ShaderModule {
@@ -15,6 +18,7 @@ public:
 private:
   // dependencies
   VkDevice device{VK_NULL_HANDLE};
+
   // components
   VkShaderModule _shaderModule{VK_NULL_HANDLE};
 };

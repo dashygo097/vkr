@@ -1,4 +1,5 @@
 #include "vkr/buffers/universal.hh"
+#include <stdexcept>
 
 namespace vkr {
 

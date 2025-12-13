@@ -6,10 +6,11 @@ target_include_directories(vkr PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-target_precompile_headers(vkr PRIVATE include/vkr/pch.hh)
+# Vulkan
+target_include_directories(vkr PUBLIC ${Vulkan_INCLUDE_DIRS})
+
 # 3rdparty libs to link statically
-target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan glm::glm-header-only imgui)
-target_link_libraries(vkr PRIVATE stb tinyobjloader)
+target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan glm::glm-header-only imgui tinyobjloader)
 
 if (APPLE) 
   target_link_libraries(vkr PUBLIC
