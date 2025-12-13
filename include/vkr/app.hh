@@ -5,7 +5,8 @@
 #include "./components/fps_counter.hh"
 #include "./components/ui/ui.hh"
 #include "./ctx.hh"
-#include "interface/interface.hh"
+#include "./pipeline/pipeline.hh"
+#include "core/vulkan/vulkan.hh"
 
 namespace vkr {
 class VulkanApplication {
