@@ -1,28 +1,69 @@
 cmake_minimum_required(VERSION 3.24)
-project(demos LANGUAGES CXX)
+project(apps LANGUAGES CXX)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB project ./*)
-
-print_info("――――――――――――――――――APP SCOPE――――――――――――――――――" "0")
-
-foreach(exec ${project})
-  if(IS_DIRECTORY ${exec})
-    set(EXECUTABLE_OUTPUT_PATH ../bin)
-    math(EXPR index "${index} + 1" OUTPUT_FORMAT DECIMAL)
-    get_filename_component(exec-name ${exec} NAME)
-    file(GLOB_RECURSE ${exec}-src ${exec}/*.c ${exec}/*.cc ${exec}/*.cpp)
-    file(GLOB_RECURSE ${exec}-hdr ${exec}/*.h ${exec}/*.hh ${exec}/*.hpp)
-
-    add_executable(${exec-name} ${${exec}-src} ${${exec}-hdr})
-    target_link_libraries(${exec-name} PRIVATE vkr)
-
-    print_info("[TRACE] Adding: ${exec-name}" "0")
-
+function(add_app_target APP_NAME APP_DIR)
+  # Collect all source files
+  file(GLOB_RECURSE APP_SOURCES 
+    ${APP_DIR}/*.c 
+    ${APP_DIR}/*.cc 
+    ${APP_DIR}/*.cpp
+  )
+  
+  file(GLOB_RECURSE APP_HEADERS 
+    ${APP_DIR}/*.h 
+    ${APP_DIR}/*.hh 
+    ${APP_DIR}/*.hpp 
+  )
+  
+  # Skip if no sources
+  if(NOT APP_SOURCES)
+    return()
   endif()
-endforeach()
+  
+  # Create executable
+  add_executable(${APP_NAME} ${APP_SOURCES} ${APP_HEADERS})
+  target_link_libraries(${APP_NAME} PRIVATE vkr)
+  
+  # Set output directory
+  set_target_properties(${APP_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+  )
+  
+  print_info("  -- Adding Executable: ${APP_NAME}\n" "92")
+  
+  # Increment counter in parent scope
+  math(EXPR APP_COUNT "${APP_COUNT} + 1")
+  set(APP_COUNT ${APP_COUNT} PARENT_SCOPE)
+endfunction()
 
-print_info("[INFO] CMake configuration completed" "92")
-print_info("[INFO] Total ${index} exec files will be generated" "92")
-print_info("------------END OF CONFIGURATION-------------" "90")
+# Build apps
+set(APP_COUNT 0)
+print_info("\n" "0")
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR})
+  file(GLOB APP_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/*)
+  
+  if(APP_DIRS)
+    foreach(app_dir ${APP_DIRS})
+      if(IS_DIRECTORY ${app_dir})
+        get_filename_component(app_name ${app_dir} NAME)
+        add_app_target("${app_name}" ${app_dir})
+        set(APP_COUNT ${APP_COUNT} PARENT_SCOPE)
+      endif()
+    endforeach()
+  endif()
+endif()
+
+# Summary
+if(APP_COUNT GREATER 0)
+  print_info("  ✓ Total executables: ${APP_COUNT}\n" "92")
+  print_info("  ✓ Output directories:\n" "92")
+  print_info("    -- Apps: ${CMAKE_BINARY_DIR}/bin\n" "90")
+else()
+  print_info("[WARN] No executables found\n" "93")
+endif()
+
+print_info("\n" "0") 
