@@ -1,4 +1,4 @@
-#include "vkr/core/vulkan/debug_messenger.hh"
+#include "vkr/core/debug_messenger.hh"
 #include <iostream>
 
 namespace vkr {

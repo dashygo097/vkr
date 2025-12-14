@@ -6,7 +6,7 @@
 #include "./components/ui/ui.hh"
 #include "./ctx.hh"
 #include "./pipeline/pipeline.hh"
-#include "core/vulkan/vulkan.hh"
+#include "core/core.hh"
 
 namespace vkr {
 class VulkanApplication {

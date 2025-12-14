@@ -1,4 +1,4 @@
-#include "vkr/core/vulkan/window.hh"
+#include "vkr/core/window.hh"
 
 namespace vkr {
 Window::Window(uint32_t width, uint32_t height, std::string_view title)
