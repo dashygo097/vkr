@@ -8,7 +8,8 @@
 #include "./buffers/vertex_buffer.hh"
 
 namespace vkr {
-class ResourceManager {
+
+template <typename UBOType> class ResourceManager {
 public:
   ResourceManager(const VulkanContext &ctx) : ctx(ctx) {}
   ~ResourceManager() = default;
@@ -22,19 +23,6 @@ public:
                           const std::vector<VertexType> &vertices) {
     auto vb = std::make_unique<VertexBuffer>(vertices, ctx);
     _vertexBuffers[name] = std::move(vb);
-  }
-
-  VertexBuffer *getVertexBuffer(const std::string &name) {
-    auto it = _vertexBuffers.find(name);
-    return it != _vertexBuffers.end() ? it->second.get() : nullptr;
-  }
-
-  void updateVertexBuffer(const std::string &name,
-                          const std::vector<Vertex> &newVertices) {
-    auto *vb = getVertexBuffer(name);
-    if (vb) {
-      vb->update(newVertices);
-    }
   }
 
   void destroyVertexBuffer(const std::string &name) {
@@ -53,14 +41,6 @@ public:
     return it != _indexBuffers.end() ? it->second.get() : nullptr;
   }
 
-  void updateIndexBuffer(const std::string &name,
-                         const std::vector<uint16_t> &newIndices) {
-    auto *ib = getIndexBuffer(name);
-    if (ib) {
-      ib->update(newIndices);
-    }
-  }
-
   void destroyIndexBuffer(const std::string &name) {
     _indexBuffers.erase(name);
   }
@@ -71,19 +51,6 @@ public:
   void createFramebuffers(const std::string &name) {
     auto fb = std::make_unique<Framebuffers>(ctx);
     _framebuffers[name] = std::move(fb);
-  }
-
-  void createFramebuffers(const std::string &name, VkRenderPass renderPass,
-                          std::vector<VkImageView> swapchainImageViews,
-                          VkExtent2D swapchainExtent) {
-    auto fb = std::make_unique<Framebuffers>(
-        ctx.device, renderPass, swapchainImageViews, swapchainExtent);
-    _framebuffers[name] = std::move(fb);
-  }
-
-  Framebuffers *getFramebuffers(const std::string &name) {
-    auto it = _framebuffers.find(name);
-    return it != _framebuffers.end() ? it->second.get() : nullptr;
   }
 
   void destroyFramebuffers(const std::string &name) {
@@ -114,10 +81,11 @@ public:
 
 private:
   VulkanContext ctx;
+  UBOType uboType;
 
   std::unordered_map<std::string, std::unique_ptr<VertexBuffer>> _vertexBuffers;
   std::unordered_map<std::string, std::unique_ptr<IndexBuffer>> _indexBuffers;
-  std::unordered_map<std::string, std::unique_ptr<DefaultUniformBuffers>>
+  std::unordered_map<std::string, std::unique_ptr<UniformBufferBase<UBOType>>>
       _uniformBuffers;
   std::unordered_map<std::string, std::unique_ptr<Framebuffers>> _framebuffers;
 };
