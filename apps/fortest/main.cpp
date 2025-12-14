@@ -46,13 +46,10 @@ private:
   }
 
   void setting() {
-
-    vertexBuffers->push_back(
-        std::make_shared<vkr::VertexBuffer>(vertices1, ctx));
-    vertexBuffers->push_back(
-        std::make_shared<vkr::VertexBuffer>(vertices2, ctx));
-    indexBuffers->push_back(std::make_shared<vkr::IndexBuffer>(indices1, ctx));
-    indexBuffers->push_back(std::make_shared<vkr::IndexBuffer>(indices2, ctx));
+    resourceManager->createVertexBuffer("vb1", vertices1);
+    resourceManager->createVertexBuffer("vb2", vertices2);
+    resourceManager->createIndexBuffer("ib1", indices1);
+    resourceManager->createIndexBuffer("ib2", indices2);
   }
 };
 

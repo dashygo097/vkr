@@ -1,15 +1,14 @@
 #pragma once
 
-// buffers
-#include "./buffers/buffer_utils.hh"
 #include "./buffers/frame_buffer.hh"
 #include "./buffers/index_buffer.hh"
 #include "./buffers/uniform_buffer.hh"
 #include "./buffers/vertex_buffer.hh"
+#include <memory>
 
 namespace vkr {
 
-template <typename UBOType> class ResourceManager {
+class ResourceManager {
 public:
   ResourceManager(const VulkanContext &ctx) : ctx(ctx) {}
   ~ResourceManager() = default;
@@ -18,11 +17,15 @@ public:
   ResourceManager &operator=(const ResourceManager &) = delete;
 
   // Vertex Buffer Management
-  template <typename VertexType = Vertex>
   void createVertexBuffer(const std::string &name,
-                          const std::vector<VertexType> &vertices) {
+                          const std::vector<Vertex> &vertices) {
     auto vb = std::make_unique<VertexBuffer>(vertices, ctx);
     _vertexBuffers[name] = std::move(vb);
+  }
+
+  VertexBuffer *getVertexBuffer(const std::string &name) {
+    auto it = _vertexBuffers.find(name);
+    return it != _vertexBuffers.end() ? it->second.get() : nullptr;
   }
 
   void destroyVertexBuffer(const std::string &name) {
@@ -46,11 +49,38 @@ public:
   }
 
   // Uniform Buffer Management
+  void createUniformBuffer(const std::string &name,
+                           const DefaultUniformBufferObject &ubo) {
+    auto ub = std::make_unique<DefaultUniformBuffers>(ubo, ctx);
+    _uniformBuffers[name] = std::move(ub);
+  }
+
+  DefaultUniformBuffers *getUniformBuffer(const std::string &name) {
+    auto it = _uniformBuffers.find(name);
+    return it != _uniformBuffers.end() ? it->second.get() : nullptr;
+  }
+
+  void updateUniformBuffer(const std::string &name, uint32_t currentFrame,
+                           const DefaultUniformBufferObject &newUbo) {
+    auto *ub = getUniformBuffer(name);
+    if (ub) {
+      ub->update(currentFrame, newUbo);
+    }
+  }
+
+  void destroyUniformBuffer(const std::string &name) {
+    _uniformBuffers.erase(name);
+  }
 
   // Framebuffer Management
   void createFramebuffers(const std::string &name) {
     auto fb = std::make_unique<Framebuffers>(ctx);
     _framebuffers[name] = std::move(fb);
+  }
+
+  Framebuffers *getFramebuffers(const std::string &name) {
+    auto it = _framebuffers.find(name);
+    return it != _framebuffers.end() ? it->second.get() : nullptr;
   }
 
   void destroyFramebuffers(const std::string &name) {
@@ -61,9 +91,17 @@ public:
   size_t vertexBufferCount() const { return _vertexBuffers.size(); }
   size_t indexBufferCount() const { return _indexBuffers.size(); }
   size_t uniformBufferCount() const { return _uniformBuffers.size(); }
+  size_t framebufferCount() const { return _framebuffers.size(); }
 
   // List all resources
-  std::vector<std::string> listVertexBuffers() const {
+  std::vector<std::shared_ptr<VertexBuffer>> listVertexBuffers() const {
+    std::vector<std::shared_ptr<VertexBuffer>> buffers;
+    for (const auto &[_, buffer] : _vertexBuffers) {
+      buffers.push_back(buffer);
+    }
+    return buffers;
+  }
+  std::vector<std::string> listVertexBufferName() const {
     std::vector<std::string> names;
     for (const auto &[name, _] : _vertexBuffers) {
       names.push_back(name);
@@ -71,7 +109,14 @@ public:
     return names;
   }
 
-  std::vector<std::string> listIndexBuffers() const {
+  std::vector<std::shared_ptr<IndexBuffer>> listIndexBuffers() const {
+    std::vector<std::shared_ptr<IndexBuffer>> buffers;
+    for (const auto &[_, buffer] : _indexBuffers) {
+      buffers.push_back(buffer);
+    }
+    return buffers;
+  }
+  std::vector<std::string> listIndexBufferName() const {
     std::vector<std::string> names;
     for (const auto &[name, _] : _indexBuffers) {
       names.push_back(name);
@@ -79,14 +124,44 @@ public:
     return names;
   }
 
+  std::vector<std::shared_ptr<DefaultUniformBuffers>>
+  listUniformBuffers() const {
+    std::vector<std::shared_ptr<DefaultUniformBuffers>> buffers;
+    for (const auto &[_, buffer] : _uniformBuffers) {
+      buffers.push_back(buffer);
+    }
+    return buffers;
+  }
+  std::vector<std::string> listUniformBufferName() const {
+    std::vector<std::string> names;
+    for (const auto &[name, _] : _uniformBuffers) {
+      names.push_back(name);
+    }
+    return names;
+  }
+
+  std::vector<std::shared_ptr<Framebuffers>> listFramebuffers() const {
+    std::vector<std::shared_ptr<Framebuffers>> buffers;
+    for (const auto &[_, buffer] : _framebuffers) {
+      buffers.push_back(buffer);
+    }
+    return buffers;
+  }
+  std::vector<std::string> listFramebufferName() const {
+    std::vector<std::string> names;
+    for (const auto &[name, _] : _framebuffers) {
+      names.push_back(name);
+    }
+    return names;
+  }
+
 private:
   VulkanContext ctx;
-  UBOType uboType;
 
-  std::unordered_map<std::string, std::unique_ptr<VertexBuffer>> _vertexBuffers;
-  std::unordered_map<std::string, std::unique_ptr<IndexBuffer>> _indexBuffers;
-  std::unordered_map<std::string, std::unique_ptr<UniformBufferBase<UBOType>>>
+  std::unordered_map<std::string, std::shared_ptr<VertexBuffer>> _vertexBuffers;
+  std::unordered_map<std::string, std::shared_ptr<IndexBuffer>> _indexBuffers;
+  std::unordered_map<std::string, std::shared_ptr<DefaultUniformBuffers>>
       _uniformBuffers;
-  std::unordered_map<std::string, std::unique_ptr<Framebuffers>> _framebuffers;
+  std::unordered_map<std::string, std::shared_ptr<Framebuffers>> _framebuffers;
 };
 } // namespace vkr

@@ -59,10 +59,6 @@ void VulkanApplication::initVulkan() {
   commandPool = std::make_unique<CommandPool>(ctx);
   ctx.commandPool = commandPool->commandPool();
 
-  vertexBuffers =
-      std::make_unique<std::vector<std::shared_ptr<VertexBuffer>>>();
-  indexBuffers = std::make_unique<std::vector<std::shared_ptr<IndexBuffer>>>();
-
   uniformBuffers = std::make_unique<DefaultUniformBuffers>(
       DefaultUniformBufferObject{}, ctx);
   ctx.uniformBuffers = uniformBuffers->buffers();
@@ -75,6 +71,8 @@ void VulkanApplication::initVulkan() {
 
   commandBuffers = std::make_unique<CommandBuffers>(ctx);
   ctx.commandBuffers = commandBuffers->commandBuffers();
+
+  resourceManager = std::make_unique<ResourceManager>(ctx);
 
   syncObjects = std::make_unique<SyncObjects>(ctx);
   ctx.imageAvailableSemaphores = syncObjects->imageAvailableSemaphores();
@@ -117,11 +115,10 @@ void VulkanApplication::cleanup() {
   ui.reset();
   fpsCounter.reset();
   syncObjects.reset();
+  resourceManager.reset();
   commandBuffers.reset();
   descriptorSets.reset();
   uniformBuffers.reset();
-  indexBuffers.reset();
-  vertexBuffers.reset();
   commandPool.reset();
   graphicsPipeline.reset();
   descriptorSetLayout.reset();
@@ -187,7 +184,8 @@ void VulkanApplication::drawFrame() {
       imageIndex, ctx.currentFrame, renderPass->renderPass(),
       graphicsPipeline->pipelineLayout(), descriptorSets->descriptorSets(),
       swapchainFramebuffers->framebuffers(), swapchain->extent2D(),
-      graphicsPipeline->pipeline(), *vertexBuffers, *indexBuffers, *ui);
+      graphicsPipeline->pipeline(), resourceManager->listVertexBuffers(),
+      resourceManager->listIndexBuffers(), *ui);
 
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

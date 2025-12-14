@@ -38,26 +38,26 @@ private:
     vkr::geometry::Mesh tallbox("./assets/tallbox.obj", ctx);
     vkr::geometry::Mesh shortbox("./assets/shortbox.obj", ctx);
 
-    vertexBuffers->clear();
-    indexBuffers->clear();
-
-    vertexBuffers->push_back(light.vertexBuffer());
-    indexBuffers->push_back(light.indexBuffer());
-
-    vertexBuffers->push_back(floor.vertexBuffer());
-    indexBuffers->push_back(floor.indexBuffer());
-
-    vertexBuffers->push_back(left.vertexBuffer());
-    indexBuffers->push_back(left.indexBuffer());
-
-    vertexBuffers->push_back(right.vertexBuffer());
-    indexBuffers->push_back(right.indexBuffer());
-
-    vertexBuffers->push_back(shortbox.vertexBuffer());
-    indexBuffers->push_back(shortbox.indexBuffer());
-
-    vertexBuffers->push_back(tallbox.vertexBuffer());
-    indexBuffers->push_back(tallbox.indexBuffer());
+    resourceManager->createVertexBuffer("light",
+                                        light.vertexBuffer()->vertices());
+    resourceManager->createIndexBuffer("light", light.indexBuffer()->indices());
+    resourceManager->createVertexBuffer("floor",
+                                        floor.vertexBuffer()->vertices());
+    resourceManager->createIndexBuffer("floor", floor.indexBuffer()->indices());
+    resourceManager->createVertexBuffer("left",
+                                        left.vertexBuffer()->vertices());
+    resourceManager->createIndexBuffer("left", left.indexBuffer()->indices());
+    resourceManager->createVertexBuffer("right",
+                                        right.vertexBuffer()->vertices());
+    resourceManager->createIndexBuffer("right", right.indexBuffer()->indices());
+    resourceManager->createVertexBuffer("shortbox",
+                                        shortbox.vertexBuffer()->vertices());
+    resourceManager->createIndexBuffer("shortbox",
+                                       shortbox.indexBuffer()->indices());
+    resourceManager->createVertexBuffer("tallbox",
+                                        tallbox.vertexBuffer()->vertices());
+    resourceManager->createIndexBuffer("tallbox",
+                                       tallbox.indexBuffer()->indices());
   }
 };
 
