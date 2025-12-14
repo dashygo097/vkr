@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../ctx.hh"
+#include "../ctx.hh"
 #include "./debug_messenger.hh"
 
 #ifdef NDEBUG

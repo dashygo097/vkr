@@ -1,4 +1,4 @@
-#include "vkr/buffers/command.hh"
+#include "vkr/core/command_buffer.hh"
 
 namespace vkr {
 

@@ -1,6 +1,6 @@
-#include "vkr/core/vulkan/device.hh"
-#include "vkr/core/vulkan/instance.hh"
-#include "vkr/core/vulkan/utils.hh"
+#include "vkr/core/device.hh"
+#include "vkr/core/instance.hh"
+#include "vkr/core/utils.hh"
 #include <set>
 
 namespace vkr {

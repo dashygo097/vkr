@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../buffers/command.hh"
+#include "../core/command_buffer.hh"
 #include "../ctx.hh"
 #include "./universal.hh"
 

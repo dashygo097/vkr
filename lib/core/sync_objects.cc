@@ -1,5 +1,5 @@
-#include "vkr/core/vulkan/sync_objects.hh"
-#include "vkr/buffers/command.hh"
+#include "vkr/core/sync_objects.hh"
+#include "vkr/core/command_buffer.hh"
 
 namespace vkr {
 SyncObjects::SyncObjects(VkDevice device, std::vector<VkImage> swapchainImages)

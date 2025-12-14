@@ -1,5 +1,5 @@
-#include "vkr/core/vulkan/command_pool.hh"
-#include "vkr/core/vulkan/utils.hh"
+#include "vkr/core/command_pool.hh"
+#include "vkr/core/utils.hh"
 
 namespace vkr {
 CommandPool::CommandPool(VkPhysicalDevice physicalDevice, VkDevice device,

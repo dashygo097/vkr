@@ -1,5 +1,5 @@
-#include "vkr/core/vulkan/instance.hh"
-#include "vkr/core/vulkan/utils.hh"
+#include "vkr/core/instance.hh"
+#include "vkr/core/utils.hh"
 
 namespace vkr {
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,

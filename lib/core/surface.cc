@@ -1,4 +1,4 @@
-#include "vkr/core/vulkan/surface.hh"
+#include "vkr/core/surface.hh"
 
 namespace vkr {
 Surface::Surface(VkInstance instance, GLFWwindow *window)
