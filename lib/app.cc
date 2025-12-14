@@ -48,12 +48,14 @@ void VulkanApplication::initVulkan() {
   ctx.commandBuffers = commandBuffers->commandBuffers();
 
   // sync_objects
+  // TODO: split sync_objects into semaphore and fence
   syncObjects = std::make_unique<SyncObjects>(ctx);
   ctx.imageAvailableSemaphores = syncObjects->imageAvailableSemaphores();
   ctx.renderFinishedSemaphores = syncObjects->renderFinishedSemaphores();
   ctx.inFlightFences = syncObjects->inFlightFences();
 
   // resource manager
+  // TODO: merge uniform_buffers into resource_manager
   resourceManager = std::make_unique<ResourceManager>(ctx);
   resourceManager->createFramebuffers("swapchain");
   ctx.swapchainFramebuffers =
