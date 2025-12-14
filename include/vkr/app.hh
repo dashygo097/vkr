@@ -7,7 +7,6 @@
 #include "./core/core.hh"
 #include "./ctx.hh"
 #include "./pipeline/pipeline.hh"
-#include "./rendering/rendering.hh"
 
 namespace vkr {
 class VulkanApplication {
