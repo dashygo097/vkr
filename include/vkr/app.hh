@@ -4,9 +4,10 @@
 #include "./components/camera.hh"
 #include "./components/fps_counter.hh"
 #include "./components/ui/ui.hh"
+#include "./core/core.hh"
 #include "./ctx.hh"
 #include "./pipeline/pipeline.hh"
-#include "core/core.hh"
+#include "./rendering/rendering.hh"
 
 namespace vkr {
 class VulkanApplication {
