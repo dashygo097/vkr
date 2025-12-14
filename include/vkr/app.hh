@@ -42,7 +42,6 @@ public:
   std::unique_ptr<Device> device;
 
   std::unique_ptr<Swapchain> swapchain;
-  std::unique_ptr<Framebuffers> swapchainFramebuffers;
 
   std::unique_ptr<RenderPass> renderPass;
   std::unique_ptr<DescriptorSetLayout> descriptorSetLayout;
