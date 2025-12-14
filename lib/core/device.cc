@@ -1,6 +1,6 @@
 #include "vkr/core/device.hh"
+#include "vkr/core/core_utils.hh"
 #include "vkr/core/instance.hh"
-#include "vkr/core/utils.hh"
 #include <set>
 
 namespace vkr {

@@ -1,6 +1,6 @@
 #include "vkr/pipeline/descriptor/descriptor_set.hh"
-#include "vkr/buffers/uniform.hh"
 #include "vkr/core/command_buffer.hh"
+#include "vkr/resources/buffers/uniform_buffer.hh"
 
 namespace vkr {
 DescriptorSets::DescriptorSets(VkDevice device, VkDescriptorSetLayout layout,

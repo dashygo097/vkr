@@ -1,5 +1,5 @@
 #include "vkr/core/command_pool.hh"
-#include "vkr/core/utils.hh"
+#include "vkr/core/core_utils.hh"
 
 namespace vkr {
 CommandPool::CommandPool(VkPhysicalDevice physicalDevice, VkDevice device,
