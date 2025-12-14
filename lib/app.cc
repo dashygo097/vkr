@@ -63,7 +63,8 @@ void VulkanApplication::initVulkan() {
       std::make_unique<std::vector<std::shared_ptr<VertexBuffer>>>();
   indexBuffers = std::make_unique<std::vector<std::shared_ptr<IndexBuffer>>>();
 
-  uniformBuffers = std::make_unique<UniformBuffers>(UniformBufferObject{}, ctx);
+  uniformBuffers = std::make_unique<DefaultUniformBuffers>(
+      DefaultUniformBufferObject{}, ctx);
   ctx.uniformBuffers = uniformBuffers->buffers();
   ctx.uniformBuffersMemory = uniformBuffers->buffersMemory();
   ctx.uniformBuffersMapped = uniformBuffers->mapped();
@@ -148,7 +149,7 @@ void VulkanApplication::recreateSwapchain() {
 }
 
 void VulkanApplication::updateUniformBuffer(uint32_t currentImage) {
-  UniformBufferObject ubo{};
+  DefaultUniformBufferObject ubo{};
   ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
   ubo.view = camera->getView();
   ubo.proj = camera->getProjection();

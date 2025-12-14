@@ -92,15 +92,16 @@ protected:
 };
 
 // default uniform buffer object
-struct UniformBufferObject {
+struct DefaultUniformBufferObject {
   glm::mat4 model;
   glm::mat4 view;
   glm::mat4 proj;
 };
 
-class UniformBuffers : public UniformBufferBase<UniformBufferObject> {
+class DefaultUniformBuffers
+    : public UniformBufferBase<DefaultUniformBufferObject> {
 public:
-  using UniformBufferBase<UniformBufferObject>::UniformBufferBase;
+  using UniformBufferBase<DefaultUniformBufferObject>::UniformBufferBase;
 };
 
 // shadertoy uniform buffer object

@@ -6,7 +6,7 @@
 #include "./core/core.hh"
 #include "./ctx.hh"
 #include "./pipeline/pipeline.hh"
-#include "./resources/resources.hh"
+#include "./resources/manager.hh"
 
 namespace vkr {
 class VulkanApplication {
@@ -51,7 +51,7 @@ public:
   std::unique_ptr<CommandPool> commandPool;
   std::unique_ptr<std::vector<std::shared_ptr<VertexBuffer>>> vertexBuffers;
   std::unique_ptr<std::vector<std::shared_ptr<IndexBuffer>>> indexBuffers;
-  std::unique_ptr<UniformBuffers> uniformBuffers;
+  std::unique_ptr<DefaultUniformBuffers> uniformBuffers;
   std::unique_ptr<DescriptorSets> descriptorSets;
   std::unique_ptr<CommandBuffers> commandBuffers;
 
