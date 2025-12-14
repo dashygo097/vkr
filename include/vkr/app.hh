@@ -49,11 +49,11 @@ public:
   std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 
   std::unique_ptr<CommandPool> commandPool;
-  std::unique_ptr<std::vector<std::shared_ptr<VertexBuffer>>> vertexBuffers;
-  std::unique_ptr<std::vector<std::shared_ptr<IndexBuffer>>> indexBuffers;
   std::unique_ptr<DefaultUniformBuffers> uniformBuffers;
   std::unique_ptr<DescriptorSets> descriptorSets;
   std::unique_ptr<CommandBuffers> commandBuffers;
+
+  std::unique_ptr<ResourceManager> resourceManager;
 
   std::unique_ptr<SyncObjects> syncObjects;
 
