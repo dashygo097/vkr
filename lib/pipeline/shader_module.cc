@@ -1,5 +1,5 @@
 #include "vkr/pipeline/shader_module.hh"
-#include "vkr/utils.hh"
+#include "vkr/io_utils.hh"
 
 namespace vkr {
 ShaderModule::ShaderModule(VkDevice device, const std::string &filepath)

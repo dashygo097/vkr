@@ -1,5 +1,5 @@
 #include "vkr/pipeline/pipeline.hh"
-#include "vkr/buffers/vertex.hh"
+#include "vkr/resources/buffers/vertex_buffer.hh"
 
 namespace vkr {
 GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,

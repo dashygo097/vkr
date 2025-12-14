@@ -1,5 +1,5 @@
 #include "vkr/core/instance.hh"
-#include "vkr/core/utils.hh"
+#include "vkr/core/core_utils.hh"
 
 namespace vkr {
 Instance::Instance(const std::string appName, const std::string engineName,

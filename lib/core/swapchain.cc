@@ -1,5 +1,5 @@
 #include "vkr/core/swapchain.hh"
-#include "vkr/core/utils.hh"
+#include "vkr/core/core_utils.hh"
 
 namespace vkr {
 Swapchain::Swapchain(GLFWwindow *window, VkPhysicalDevice physicalDevice,
