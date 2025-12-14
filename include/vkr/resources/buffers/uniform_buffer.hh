@@ -6,15 +6,15 @@
 
 namespace vkr {
 
-template <typename T> class UniformBufferBase {
+template <typename ObjectType> class UniformBufferBase {
 public:
-  UniformBufferBase(const T &object, VkDevice device,
+  UniformBufferBase(const ObjectType &object, VkDevice device,
                     VkPhysicalDevice physicalDevice)
       : object(object), device(device), physicalDevice(physicalDevice) {
     create();
   }
 
-  UniformBufferBase(const T &object, const VulkanContext &ctx)
+  UniformBufferBase(const ObjectType &object, const VulkanContext &ctx)
       : UniformBufferBase(object, ctx.device, ctx.physicalDevice) {}
 
   virtual ~UniformBufferBase() { destroy(); }
@@ -22,14 +22,14 @@ public:
   UniformBufferBase(const UniformBufferBase &) = delete;
   UniformBufferBase &operator=(const UniformBufferBase &) = delete;
 
-  void update(uint32_t currentFrame, const T &newObject) {
+  void update(uint32_t currentFrame, const ObjectType &newObject) {
     if (currentFrame >= MAX_FRAMES_IN_FLIGHT) {
       throw std::out_of_range("currentFrame exceeds MAX_FRAMES_IN_FLIGHT");
     }
     if (_mapped[currentFrame] == nullptr) {
       throw std::runtime_error("Mapped memory is null for current frame");
     }
-    memcpy(_mapped[currentFrame], &newObject, sizeof(T));
+    memcpy(_mapped[currentFrame], &newObject, sizeof(ObjectType));
   }
 
   [[nodiscard]] const std::vector<VkBuffer> &buffers() const noexcept {
@@ -47,7 +47,7 @@ public:
 
 protected:
   void create() {
-    VkDeviceSize bufferSize = sizeof(T);
+    VkDeviceSize bufferSize = sizeof(ObjectType);
     _uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
     _memories.resize(MAX_FRAMES_IN_FLIGHT);
     _mapped.resize(MAX_FRAMES_IN_FLIGHT);
@@ -82,10 +82,12 @@ protected:
   }
 
 protected:
+  // dependencies
   VkDevice device;
   VkPhysicalDevice physicalDevice;
-  T object;
+  ObjectType object;
 
+  // components
   std::vector<VkBuffer> _uniformBuffers{};
   std::vector<VkDeviceMemory> _memories{};
   std::vector<void *> _mapped{};
@@ -102,35 +104,6 @@ class DefaultUniformBuffers
     : public UniformBufferBase<DefaultUniformBufferObject> {
 public:
   using UniformBufferBase<DefaultUniformBufferObject>::UniformBufferBase;
-};
-
-// shadertoy uniform buffer object
-struct ShadertoyUniformObject {
-  glm::vec3 iResolution;
-  float iTime;
-  glm::vec4 iMouse;
-  glm::vec4 iDate;
-  float iTimeDelta;
-  float iFrameRate;
-  int iFrame;
-};
-
-class ShadertoyUniformBuffers
-    : public UniformBufferBase<ShadertoyUniformObject> {
-public:
-  using UniformBufferBase<ShadertoyUniformObject>::UniformBufferBase;
-
-  void updateTime(uint32_t currentFrame, float time) {
-    auto obj = object;
-    obj.iTime = time;
-    update(currentFrame, obj);
-  }
-
-  void updateResolution(uint32_t currentFrame, int width, int height) {
-    auto obj = object;
-    obj.iResolution = glm::vec3(width, height, 1.0f);
-    update(currentFrame, obj);
-  }
 };
 
 } // namespace vkr
