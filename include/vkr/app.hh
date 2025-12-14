@@ -35,27 +35,28 @@ public:
 
   VulkanContext ctx;
 
+  // core
   std::unique_ptr<Window> window;
-  std::unique_ptr<Camera> camera;
   std::unique_ptr<Instance> instance;
   std::unique_ptr<Surface> surface;
   std::unique_ptr<Device> device;
-
   std::unique_ptr<Swapchain> swapchain;
+  std::unique_ptr<CommandPool> commandPool;
+  std::unique_ptr<CommandBuffers> commandBuffers;
+  std::unique_ptr<SyncObjects> syncObjects;
 
+  // resource management
+  std::unique_ptr<ResourceManager> resourceManager;
+  std::unique_ptr<DefaultUniformBuffers> uniformBuffers;
+
+  // pipeline
   std::unique_ptr<RenderPass> renderPass;
   std::unique_ptr<DescriptorSetLayout> descriptorSetLayout;
   std::unique_ptr<GraphicsPipeline> graphicsPipeline;
-
-  std::unique_ptr<CommandPool> commandPool;
-  std::unique_ptr<DefaultUniformBuffers> uniformBuffers;
   std::unique_ptr<DescriptorSets> descriptorSets;
-  std::unique_ptr<CommandBuffers> commandBuffers;
 
-  std::unique_ptr<ResourceManager> resourceManager;
-
-  std::unique_ptr<SyncObjects> syncObjects;
-
+  // components
+  std::unique_ptr<Camera> camera;
   std::unique_ptr<FPSCounter> fpsCounter;
   std::unique_ptr<UI> ui;
 

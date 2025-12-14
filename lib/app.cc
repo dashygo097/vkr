@@ -9,12 +9,82 @@ VulkanApplication::~VulkanApplication() { cleanup(); }
 void VulkanApplication::configure() {}
 
 void VulkanApplication::initVulkan() {
+  // window
   window = std::make_unique<Window>(ctx);
   ctx.window = window->glfwWindow();
   glfwSetWindowUserPointer(window->glfwWindow(), this);
   glfwSetFramebufferSizeCallback(window->glfwWindow(),
                                  framebufferResizeCallback);
 
+  // instance
+  instance = std::make_unique<Instance>(ctx);
+  ctx.instance = instance->instance();
+
+  // surface
+  surface = std::make_unique<Surface>(ctx);
+  ctx.surface = surface->surface();
+
+  // device
+  device = std::make_unique<Device>(ctx);
+  ctx.device = device->device();
+  ctx.physicalDevice = device->physicalDevice();
+  ctx.graphicsQueue = device->graphicsQueue();
+  ctx.presentQueue = device->presentQueue();
+
+  // swapchain
+  swapchain = std::make_unique<Swapchain>(ctx);
+  ctx.swapchain = swapchain->swapchain();
+  ctx.swapchainImages = swapchain->images();
+  ctx.swapchainImageViews = swapchain->imageViews();
+  ctx.swapchainImageFormat = swapchain->format();
+  ctx.swapchainExtent = swapchain->extent2D();
+
+  // command pool
+  commandPool = std::make_unique<CommandPool>(ctx);
+  ctx.commandPool = commandPool->commandPool();
+
+  // command buffers
+  commandBuffers = std::make_unique<CommandBuffers>(ctx);
+  ctx.commandBuffers = commandBuffers->commandBuffers();
+
+  // sync_objects
+  syncObjects = std::make_unique<SyncObjects>(ctx);
+  ctx.imageAvailableSemaphores = syncObjects->imageAvailableSemaphores();
+  ctx.renderFinishedSemaphores = syncObjects->renderFinishedSemaphores();
+  ctx.inFlightFences = syncObjects->inFlightFences();
+
+  // resource manager
+  resourceManager = std::make_unique<ResourceManager>(ctx);
+  resourceManager->createFramebuffers("swapchain");
+  ctx.swapchainFramebuffers =
+      resourceManager->getFramebuffers("swapchain")->framebuffers();
+
+  // uniform buffers
+  uniformBuffers = std::make_unique<DefaultUniformBuffers>(
+      DefaultUniformBufferObject{}, ctx);
+  ctx.uniformBuffers = uniformBuffers->buffers();
+  ctx.uniformBuffersMemory = uniformBuffers->buffersMemory();
+  ctx.uniformBuffersMapped = uniformBuffers->mapped();
+
+  // render pass
+  renderPass = std::make_unique<RenderPass>(ctx);
+  ctx.renderPass = renderPass->renderPass();
+
+  // descriptor set layout
+  descriptorSetLayout = std::make_unique<DescriptorSetLayout>(ctx);
+  ctx.descriptorSetLayout = descriptorSetLayout->descriptorSetLayout();
+
+  // graphics pipeline
+  graphicsPipeline = std::make_unique<GraphicsPipeline>(ctx);
+  ctx.pipelineLayout = graphicsPipeline->pipelineLayout();
+  ctx.graphicsPipeline = graphicsPipeline->pipeline();
+
+  // descriptor sets
+  descriptorSets = std::make_unique<DescriptorSets>(ctx);
+  ctx.descriptorSets = descriptorSets->descriptorSets();
+  ctx.descriptorPool = descriptorSets->descriptorPool();
+
+  // camera
   camera = std::make_unique<Camera>(ctx);
   ctx.cameraLocked = camera->isLocked();
   ctx.cameraMovementSpeed = camera->movementSpeed();
@@ -24,62 +94,10 @@ void VulkanApplication::initVulkan() {
   ctx.cameraNearPlane = camera->nearPlane();
   ctx.cameraFarPlane = camera->farPlane();
 
-  instance = std::make_unique<Instance>(ctx);
-  ctx.instance = instance->instance();
-
-  surface = std::make_unique<Surface>(ctx);
-  ctx.surface = surface->surface();
-
-  device = std::make_unique<Device>(ctx);
-  ctx.device = device->device();
-  ctx.physicalDevice = device->physicalDevice();
-  ctx.graphicsQueue = device->graphicsQueue();
-  ctx.presentQueue = device->presentQueue();
-
-  swapchain = std::make_unique<Swapchain>(ctx);
-  ctx.swapchain = swapchain->swapchain();
-  ctx.swapchainImages = swapchain->images();
-  ctx.swapchainImageViews = swapchain->imageViews();
-  ctx.swapchainImageFormat = swapchain->format();
-  ctx.swapchainExtent = swapchain->extent2D();
-
-  renderPass = std::make_unique<RenderPass>(ctx);
-  ctx.renderPass = renderPass->renderPass();
-
-  descriptorSetLayout = std::make_unique<DescriptorSetLayout>(ctx);
-  ctx.descriptorSetLayout = descriptorSetLayout->descriptorSetLayout();
-
-  graphicsPipeline = std::make_unique<GraphicsPipeline>(ctx);
-  ctx.pipelineLayout = graphicsPipeline->pipelineLayout();
-  ctx.graphicsPipeline = graphicsPipeline->pipeline();
-
-  commandPool = std::make_unique<CommandPool>(ctx);
-  ctx.commandPool = commandPool->commandPool();
-
-  uniformBuffers = std::make_unique<DefaultUniformBuffers>(
-      DefaultUniformBufferObject{}, ctx);
-  ctx.uniformBuffers = uniformBuffers->buffers();
-  ctx.uniformBuffersMemory = uniformBuffers->buffersMemory();
-  ctx.uniformBuffersMapped = uniformBuffers->mapped();
-
-  descriptorSets = std::make_unique<DescriptorSets>(ctx);
-  ctx.descriptorSets = descriptorSets->descriptorSets();
-  ctx.descriptorPool = descriptorSets->descriptorPool();
-
-  commandBuffers = std::make_unique<CommandBuffers>(ctx);
-  ctx.commandBuffers = commandBuffers->commandBuffers();
-
-  resourceManager = std::make_unique<ResourceManager>(ctx);
-  resourceManager->createFramebuffers("swapchain");
-  ctx.swapchainFramebuffers =
-      resourceManager->getFramebuffers("swapchain")->framebuffers();
-
-  syncObjects = std::make_unique<SyncObjects>(ctx);
-  ctx.imageAvailableSemaphores = syncObjects->imageAvailableSemaphores();
-  ctx.renderFinishedSemaphores = syncObjects->renderFinishedSemaphores();
-  ctx.inFlightFences = syncObjects->inFlightFences();
-
+  // fps counter
   fpsCounter = std::make_unique<FPSCounter>();
+
+  // ui
   ui = std::make_unique<UI>(ctx);
 }
 
@@ -114,6 +132,7 @@ void VulkanApplication::mainLoop() {
 void VulkanApplication::cleanup() {
   ui.reset();
   fpsCounter.reset();
+  camera.reset();
   syncObjects.reset();
   resourceManager.reset();
   commandBuffers.reset();
@@ -127,7 +146,6 @@ void VulkanApplication::cleanup() {
   device.reset();
   surface.reset();
   instance.reset();
-  camera.reset();
   window.reset();
 }
 
