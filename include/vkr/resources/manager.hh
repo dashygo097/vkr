@@ -23,9 +23,9 @@ public:
     _vertexBuffers[name] = std::move(vb);
   }
 
-  VertexBuffer *getVertexBuffer(const std::string &name) {
+  std::shared_ptr<VertexBuffer> getVertexBuffer(const std::string &name) {
     auto it = _vertexBuffers.find(name);
-    return it != _vertexBuffers.end() ? it->second.get() : nullptr;
+    return it != _vertexBuffers.end() ? it->second : nullptr;
   }
 
   void destroyVertexBuffer(const std::string &name) {
@@ -39,9 +39,9 @@ public:
     _indexBuffers[name] = std::move(ib);
   }
 
-  IndexBuffer *getIndexBuffer(const std::string &name) {
+  std::shared_ptr<IndexBuffer> getIndexBuffer(const std::string &name) {
     auto it = _indexBuffers.find(name);
-    return it != _indexBuffers.end() ? it->second.get() : nullptr;
+    return it != _indexBuffers.end() ? it->second : nullptr;
   }
 
   void destroyIndexBuffer(const std::string &name) {
@@ -55,17 +55,10 @@ public:
     _uniformBuffers[name] = std::move(ub);
   }
 
-  DefaultUniformBuffers *getUniformBuffer(const std::string &name) {
+  std::shared_ptr<DefaultUniformBuffers>
+  getUniformBuffer(const std::string &name) {
     auto it = _uniformBuffers.find(name);
-    return it != _uniformBuffers.end() ? it->second.get() : nullptr;
-  }
-
-  void updateUniformBuffer(const std::string &name, uint32_t currentFrame,
-                           const DefaultUniformBufferObject &newUbo) {
-    auto *ub = getUniformBuffer(name);
-    if (ub) {
-      ub->update(currentFrame, newUbo);
-    }
+    return it != _uniformBuffers.end() ? it->second : nullptr;
   }
 
   void destroyUniformBuffer(const std::string &name) {
@@ -78,9 +71,9 @@ public:
     _framebuffers[name] = std::move(fb);
   }
 
-  Framebuffers *getFramebuffers(const std::string &name) {
+  std::shared_ptr<Framebuffers> getFramebuffers(const std::string &name) {
     auto it = _framebuffers.find(name);
-    return it != _framebuffers.end() ? it->second.get() : nullptr;
+    return it != _framebuffers.end() ? it->second : nullptr;
   }
 
   void destroyFramebuffers(const std::string &name) {
