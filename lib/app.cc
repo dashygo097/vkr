@@ -46,9 +46,6 @@ void VulkanApplication::initVulkan() {
   renderPass = std::make_unique<RenderPass>(ctx);
   ctx.renderPass = renderPass->renderPass();
 
-  swapchainFramebuffers = std::make_unique<Framebuffers>(ctx);
-  ctx.swapchainFramebuffers = swapchainFramebuffers->framebuffers();
-
   descriptorSetLayout = std::make_unique<DescriptorSetLayout>(ctx);
   ctx.descriptorSetLayout = descriptorSetLayout->descriptorSetLayout();
 
@@ -73,6 +70,9 @@ void VulkanApplication::initVulkan() {
   ctx.commandBuffers = commandBuffers->commandBuffers();
 
   resourceManager = std::make_unique<ResourceManager>(ctx);
+  resourceManager->createFramebuffers("swapchain");
+  ctx.swapchainFramebuffers =
+      resourceManager->getFramebuffers("swapchain")->framebuffers();
 
   syncObjects = std::make_unique<SyncObjects>(ctx);
   ctx.imageAvailableSemaphores = syncObjects->imageAvailableSemaphores();
@@ -122,7 +122,6 @@ void VulkanApplication::cleanup() {
   commandPool.reset();
   graphicsPipeline.reset();
   descriptorSetLayout.reset();
-  swapchainFramebuffers.reset();
   renderPass.reset();
   swapchain.reset();
   device.reset();
@@ -141,8 +140,8 @@ void VulkanApplication::recreateSwapchain() {
   }
 
   swapchain->recreate();
-  swapchainFramebuffers->destroy();
-  swapchainFramebuffers->create();
+  resourceManager->getFramebuffers("swapchain")->destroy();
+  resourceManager->getFramebuffers("swapchain")->create();
 }
 
 void VulkanApplication::updateUniformBuffer(uint32_t currentImage) {
@@ -183,9 +182,10 @@ void VulkanApplication::drawFrame() {
   commandBuffers->record(
       imageIndex, ctx.currentFrame, renderPass->renderPass(),
       graphicsPipeline->pipelineLayout(), descriptorSets->descriptorSets(),
-      swapchainFramebuffers->framebuffers(), swapchain->extent2D(),
-      graphicsPipeline->pipeline(), resourceManager->listVertexBuffers(),
-      resourceManager->listIndexBuffers(), *ui);
+      resourceManager->getFramebuffers("swapchain")->framebuffers(),
+      swapchain->extent2D(), graphicsPipeline->pipeline(),
+      resourceManager->listVertexBuffers(), resourceManager->listIndexBuffers(),
+      *ui);
 
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
