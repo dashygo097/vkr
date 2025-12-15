@@ -58,7 +58,7 @@ DescriptorSets::DescriptorSets(VkDevice device, VkDescriptorSetLayout layout,
     VkDescriptorBufferInfo bufferInfo{};
     bufferInfo.buffer = uniformBuffers[i];
     bufferInfo.offset = 0;
-    bufferInfo.range = sizeof(DefaultUniformBufferObject);
+    bufferInfo.range = sizeof(UniformBufferObject3D);
 
     VkWriteDescriptorSet descriptorWrite{};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
