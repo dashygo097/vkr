@@ -5,5 +5,4 @@
 #include "./shader_module.hh"
 
 // descriptor
-#include "./descriptor/descriptor_set.hh"
-#include "./descriptor/descriptor_set_layout.hh"
+#include "./descriptor/descriptor.hh"
