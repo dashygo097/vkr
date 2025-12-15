@@ -29,6 +29,6 @@ private:
 
   // components
   std::vector<VkDescriptorSet> _descriptorSets{};
-  VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;
+  VkDescriptorPool _descriptorPool{VK_NULL_HANDLE};
 };
 } // namespace vkr
