@@ -11,8 +11,8 @@
 namespace vkr {
 class VulkanApplication {
 public:
-  VulkanApplication();
-  ~VulkanApplication();
+  VulkanApplication() = default;
+  ~VulkanApplication() { cleanup(); }
 
   VulkanApplication(const VulkanApplication &) = delete;
   VulkanApplication &operator=(const VulkanApplication &) = delete;
@@ -47,7 +47,6 @@ public:
 
   // resource management
   std::unique_ptr<ResourceManager> resourceManager;
-  std::unique_ptr<DefaultUniformBuffers> uniformBuffers;
 
   // pipeline
   std::unique_ptr<RenderPass> renderPass;
@@ -68,7 +67,7 @@ private:
   void recreateSwapchain();
   void initVulkan();
   void cleanup();
-};
+}; // namespace vkr
 
 static void framebufferResizeCallback(GLFWwindow *window, int width,
                                       int height) {
