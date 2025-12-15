@@ -51,6 +51,10 @@ void VulkanApplication::initVulkan() {
   ctx.renderFinishedSemaphores = syncObjects->renderFinishedSemaphores();
   ctx.inFlightFences = syncObjects->inFlightFences();
 
+  // render pass
+  renderPass = std::make_unique<RenderPass>(ctx);
+  ctx.renderPass = renderPass->renderPass();
+
   // resource manager
   resourceManager = std::make_unique<ResourceManager>(ctx);
   resourceManager->createFramebuffers("swapchain");
@@ -62,10 +66,6 @@ void VulkanApplication::initVulkan() {
       resourceManager->getUniformBuffer("default")->buffersMemory();
   ctx.uniformBuffersMapped =
       resourceManager->getUniformBuffer("default")->mapped();
-
-  // render pass
-  renderPass = std::make_unique<RenderPass>(ctx);
-  ctx.renderPass = renderPass->renderPass();
 
   // descriptor set layout
   descriptorSetLayout = std::make_unique<DescriptorSetLayout>(ctx);

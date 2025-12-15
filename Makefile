@@ -5,7 +5,7 @@ SHADER_SRC_ROOT = $(PROJECT_DIR)/shaders
 SHADER_OUT_ROOT = $(BUILD_DIR)/bin/shaders
 
 # Build configuration
-BUILD_TYPE ?= Release
+BUILD_TYPE ?= Debug 
 GENERATOR ?= Ninja 
 
 # Detect generator command
