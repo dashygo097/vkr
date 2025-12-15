@@ -67,7 +67,7 @@ void VulkanApplication::initVulkan() {
       resourceManager->getUniformBuffer("default")->mapped();
 
   // descriptor manager
-  descriptorManager = std::make_unique<DescriptorManager>(ctx, 100);
+  descriptorManager = std::make_unique<DescriptorManager>(ctx);
 
   // descriptor bindings
   std::vector<DescriptorBinding> bindings = createDescriptorBindings();
