@@ -19,7 +19,7 @@ public:
   // Vertex Buffer Management
   void createVertexBuffer(const std::string &name,
                           const std::vector<Vertex> &vertices) {
-    auto vb = std::make_unique<VertexBuffer>(vertices, ctx);
+    auto vb = std::make_shared<VertexBuffer>(vertices, ctx);
     _vertexBuffers[name] = std::move(vb);
   }
 
@@ -35,7 +35,7 @@ public:
   // Index Buffer Management
   void createIndexBuffer(const std::string &name,
                          const std::vector<uint16_t> &indices) {
-    auto ib = std::make_unique<IndexBuffer>(indices, ctx);
+    auto ib = std::make_shared<IndexBuffer>(indices, ctx);
     _indexBuffers[name] = std::move(ib);
   }
 
@@ -51,7 +51,7 @@ public:
   // Uniform Buffer Management
   void createUniformBuffer(const std::string &name,
                            const DefaultUniformBufferObject &ubo) {
-    auto ub = std::make_unique<DefaultUniformBuffers>(ubo, ctx);
+    auto ub = std::make_shared<DefaultUniformBuffers>(ubo, ctx);
     _uniformBuffers[name] = std::move(ub);
   }
 
@@ -67,7 +67,7 @@ public:
 
   // Framebuffer Management
   void createFramebuffers(const std::string &name) {
-    auto fb = std::make_unique<Framebuffers>(ctx);
+    auto fb = std::make_shared<Framebuffers>(ctx);
     _framebuffers[name] = std::move(fb);
   }
 

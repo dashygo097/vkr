@@ -17,11 +17,6 @@ public:
   VulkanApplication(const VulkanApplication &) = delete;
   VulkanApplication &operator=(const VulkanApplication &) = delete;
 
-  // Frame-Level methods
-  virtual void mainLoop();
-  virtual void updateUniformBuffer(uint32_t currentImage);
-  virtual void drawFrame();
-
   // Application Lifecycle methods
   void run() {
     configure();
@@ -63,6 +58,11 @@ private:
   // Initialization methods
   virtual void configure();
   virtual void setting();
+
+  // Frame-Level methods
+  virtual void mainLoop();
+  virtual void updateUniformBuffer(uint32_t currentImage);
+  virtual void drawFrame();
 
   void recreateSwapchain();
   void initVulkan();
