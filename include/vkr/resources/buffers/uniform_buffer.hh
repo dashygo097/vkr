@@ -6,7 +6,19 @@
 
 namespace vkr {
 
-template <typename ObjectType> class UniformBufferBase {
+class IUniformBuffer {
+public:
+  virtual ~IUniformBuffer() = default;
+
+  virtual const std::vector<VkBuffer> &buffers() const noexcept = 0;
+  virtual const std::vector<VkDeviceMemory> &buffersMemory() const noexcept = 0;
+  virtual const std::vector<void *> &mapped() const noexcept = 0;
+
+  virtual void updateRaw(uint32_t currentFrame, const void *data,
+                         size_t size) = 0;
+};
+
+template <typename ObjectType> class UniformBufferBase : public IUniformBuffer {
 public:
   UniformBufferBase(const ObjectType &object, VkDevice device,
                     VkPhysicalDevice physicalDevice)
@@ -32,16 +44,24 @@ public:
     memcpy(_mapped[currentFrame], &newObject, sizeof(ObjectType));
   }
 
-  [[nodiscard]] const std::vector<VkBuffer> &buffers() const noexcept {
+  void updateRaw(uint32_t currentFrame, const void *data,
+                 size_t size) override {
+    if (size != sizeof(ObjectType)) {
+      throw std::runtime_error("Size mismatch in uniform buffer update");
+    }
+    update(currentFrame, *static_cast<const ObjectType *>(data));
+  }
+
+  [[nodiscard]] const std::vector<VkBuffer> &buffers() const noexcept override {
     return _uniformBuffers;
   }
 
   [[nodiscard]] const std::vector<VkDeviceMemory> &
-  buffersMemory() const noexcept {
+  buffersMemory() const noexcept override {
     return _memories;
   }
 
-  [[nodiscard]] const std::vector<void *> &mapped() const noexcept {
+  [[nodiscard]] const std::vector<void *> &mapped() const noexcept override {
     return _mapped;
   }
 
@@ -94,16 +114,15 @@ protected:
 };
 
 // default uniform buffer object
-struct DefaultUniformBufferObject {
+struct UniformBufferObject3D {
   glm::mat4 model;
   glm::mat4 view;
   glm::mat4 proj;
 };
 
-class DefaultUniformBuffers
-    : public UniformBufferBase<DefaultUniformBufferObject> {
+class UniformBuffer3D : public UniformBufferBase<UniformBufferObject3D> {
 public:
-  using UniformBufferBase<DefaultUniformBufferObject>::UniformBufferBase;
+  using UniformBufferBase<UniformBufferObject3D>::UniformBufferBase;
 };
 
 } // namespace vkr

@@ -56,7 +56,7 @@ void VulkanApplication::initVulkan() {
   resourceManager->createFramebuffers("swapchain");
   ctx.swapchainFramebuffers =
       resourceManager->getFramebuffers("swapchain")->framebuffers();
-  resourceManager->createUniformBuffer("default", DefaultUniformBufferObject{});
+  resourceManager->createUniformBuffer<UniformBufferObject3D>("default", {});
   ctx.uniformBuffers = resourceManager->getUniformBuffer("default")->buffers();
   ctx.uniformBuffersMemory =
       resourceManager->getUniformBuffer("default")->buffersMemory();
@@ -159,12 +159,13 @@ void VulkanApplication::recreateSwapchain() {
 }
 
 void VulkanApplication::updateUniformBuffer(uint32_t currentImage) {
-  DefaultUniformBufferObject ubo{};
+  UniformBufferObject3D ubo{};
   ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
   ubo.view = camera->getView();
   ubo.proj = camera->getProjection();
 
-  resourceManager->getUniformBuffer("default")->update(currentImage, ubo);
+  resourceManager->getUniformBuffer("default")->updateRaw(currentImage, &ubo,
+                                                          sizeof(ubo));
 }
 
 void VulkanApplication::drawFrame() {

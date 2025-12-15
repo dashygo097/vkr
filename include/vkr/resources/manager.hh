@@ -49,14 +49,13 @@ public:
   }
 
   // Uniform Buffer Management
-  void createUniformBuffer(const std::string &name,
-                           const DefaultUniformBufferObject &ubo) {
-    auto ub = std::make_shared<DefaultUniformBuffers>(ubo, ctx);
+  template <typename UBOType>
+  void createUniformBuffer(const std::string &name, const UBOType &ubo) {
+    auto ub = std::make_shared<UniformBufferBase<UBOType>>(ubo, ctx);
     _uniformBuffers[name] = std::move(ub);
   }
 
-  std::shared_ptr<DefaultUniformBuffers>
-  getUniformBuffer(const std::string &name) {
+  std::shared_ptr<IUniformBuffer> getUniformBuffer(const std::string &name) {
     auto it = _uniformBuffers.find(name);
     return it != _uniformBuffers.end() ? it->second : nullptr;
   }
@@ -117,9 +116,8 @@ public:
     return names;
   }
 
-  std::vector<std::shared_ptr<DefaultUniformBuffers>>
-  listUniformBuffers() const {
-    std::vector<std::shared_ptr<DefaultUniformBuffers>> buffers;
+  std::vector<std::shared_ptr<IUniformBuffer>> listUniformBuffers() const {
+    std::vector<std::shared_ptr<IUniformBuffer>> buffers;
     for (const auto &[_, buffer] : _uniformBuffers) {
       buffers.push_back(buffer);
     }
@@ -153,7 +151,7 @@ private:
 
   std::unordered_map<std::string, std::shared_ptr<VertexBuffer>> _vertexBuffers;
   std::unordered_map<std::string, std::shared_ptr<IndexBuffer>> _indexBuffers;
-  std::unordered_map<std::string, std::shared_ptr<DefaultUniformBuffers>>
+  std::unordered_map<std::string, std::shared_ptr<IUniformBuffer>>
       _uniformBuffers;
   std::unordered_map<std::string, std::shared_ptr<Framebuffers>> _framebuffers;
 };
