@@ -52,9 +52,9 @@ private:
     ctx.engineName = "No Engine";
     ctx.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 
-    ctx.width = 1024;
-    ctx.height = 768;
-    std::string title = "Vulkan (Default Title)";
+    ctx.width = 640;
+    ctx.height = 480;
+    ctx.title = "Fortest";
 
     ctx.cameraEnabled = true;
     ctx.cameraMovementSpeed = 5.0f;
