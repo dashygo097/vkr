@@ -58,9 +58,9 @@ private:
 class DescriptorManager {
 public:
   DescriptorManager(VkDevice device,
-                    uint32_t maxSets = MAX_FRAMES_IN_FLIGHT * 4);
+                    uint32_t maxSets = MAX_FRAMES_IN_FLIGHT * 5);
   DescriptorManager(const VulkanContext &ctx,
-                    uint32_t maxSets = MAX_FRAMES_IN_FLIGHT * 4);
+                    uint32_t maxSets = MAX_FRAMES_IN_FLIGHT * 5);
   ~DescriptorManager() = default;
 
   DescriptorManager(const DescriptorManager &) = delete;
