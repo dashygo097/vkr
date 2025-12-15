@@ -3,8 +3,6 @@
 #include <unistd.h>
 
 namespace vkr {
-void VulkanApplication::configure() {}
-
 void VulkanApplication::initVulkan() {
   // window
   window = std::make_unique<Window>(ctx);
@@ -68,19 +66,26 @@ void VulkanApplication::initVulkan() {
   ctx.uniformBuffersMapped =
       resourceManager->getUniformBuffer("default")->mapped();
 
+  // descriptor manager
+  descriptorManager = std::make_unique<DescriptorManager>(ctx, 100);
+
+  // descriptor bindings
+  std::vector<DescriptorBinding> bindings = createDescriptorBindings();
+
   // descriptor set layout
-  descriptorSetLayout = std::make_unique<DescriptorSetLayout>(ctx);
-  ctx.descriptorSetLayout = descriptorSetLayout->descriptorSetLayout();
+  descriptorSetLayout = descriptorManager->createLayout(bindings);
+  ctx.descriptorSetLayout = descriptorSetLayout->layout();
 
   // graphics pipeline
   graphicsPipeline = std::make_unique<GraphicsPipeline>(ctx);
   ctx.pipelineLayout = graphicsPipeline->pipelineLayout();
   ctx.graphicsPipeline = graphicsPipeline->pipeline();
 
-  // descriptor sets
-  descriptorSets = std::make_unique<DescriptorSets>(ctx);
-  ctx.descriptorSets = descriptorSets->descriptorSets();
-  ctx.descriptorPool = descriptorSets->descriptorPool();
+  // descriptor
+  descriptor = descriptorManager->allocate(*descriptorSetLayout);
+  bindDescriptors();
+  ctx.descriptorSets = descriptor->sets();
+  ctx.descriptorPool = descriptor->pool().pool();
 
   // camera
   camera = std::make_unique<Camera>(ctx);
@@ -98,8 +103,6 @@ void VulkanApplication::initVulkan() {
   // ui
   ui = std::make_unique<UI>(ctx);
 }
-
-void VulkanApplication::setting() {}
 
 void VulkanApplication::mainLoop() {
   fpsCounter->start();
@@ -134,10 +137,11 @@ void VulkanApplication::cleanup() {
   syncObjects.reset();
   resourceManager.reset();
   commandBuffers.reset();
-  descriptorSets.reset();
+  descriptor.reset();
   commandPool.reset();
   graphicsPipeline.reset();
   descriptorSetLayout.reset();
+  descriptorManager.reset();
   renderPass.reset();
   swapchain.reset();
   device.reset();
@@ -157,16 +161,6 @@ void VulkanApplication::recreateSwapchain() {
   swapchain->recreate();
   resourceManager->getFramebuffers("swapchain")->destroy();
   resourceManager->getFramebuffers("swapchain")->create();
-}
-
-void VulkanApplication::updateUniformBuffer(uint32_t currentImage) {
-  UniformBufferObject3D ubo{};
-  ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-  ubo.view = camera->getView();
-  ubo.proj = camera->getProjection();
-
-  resourceManager->getUniformBuffer("default")->updateRaw(currentImage, &ubo,
-                                                          sizeof(ubo));
 }
 
 void VulkanApplication::drawFrame() {
@@ -197,7 +191,7 @@ void VulkanApplication::drawFrame() {
 
   commandBuffers->record(
       imageIndex, ctx.currentFrame, renderPass->renderPass(),
-      graphicsPipeline->pipelineLayout(), descriptorSets->descriptorSets(),
+      graphicsPipeline->pipelineLayout(), descriptor->sets(),
       resourceManager->getFramebuffers("swapchain")->framebuffers(),
       swapchain->extent2D(), graphicsPipeline->pipeline(),
       resourceManager->listVertexBuffers(), resourceManager->listIndexBuffers(),

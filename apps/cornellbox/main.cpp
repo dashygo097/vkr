@@ -7,7 +7,30 @@
 
 class CornellBoxApp : public vkr::VulkanApplication {
 private:
-  void configure() {
+  std::vector<vkr::DescriptorBinding> createDescriptorBindings() override {
+    return {
+        {0, vkr::DescriptorType::UniformBuffer, 1, VK_SHADER_STAGE_VERTEX_BIT}};
+  }
+
+  void bindDescriptors() override {
+    auto defaultUBO = resourceManager->getUniformBuffer("default");
+    if (defaultUBO && descriptor) {
+      descriptor->bindUniformBuffer(0, defaultUBO->buffers(),
+                                    sizeof(vkr::UniformBufferObject3D));
+    }
+  }
+
+  void updateUniformBuffer(uint32_t currentImage) override {
+    vkr::UniformBufferObject3D ubo{};
+    ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    ubo.view = camera->getView();
+    ubo.proj = camera->getProjection();
+
+    resourceManager->getUniformBuffer("default")->updateRaw(currentImage, &ubo,
+                                                            sizeof(ubo));
+  }
+
+  void configure() override {
 
     ctx.appName = "Vulkan App";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -30,7 +53,7 @@ private:
     ctx.fragmentShaderPath = "shaders/albedo/frag.spv";
   }
 
-  void setting() {
+  void setting() override {
     vkr::geometry::Mesh light("./assets/light.obj", ctx);
     vkr::geometry::Mesh floor("./assets/floor.obj", ctx);
     vkr::geometry::Mesh left("./assets/left.obj", ctx);

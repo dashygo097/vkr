@@ -5,6 +5,7 @@
 #include "./components/ui/ui.hh"
 #include "./core/core.hh"
 #include "./ctx.hh"
+#include "./pipeline/descriptor/descriptor.hh"
 #include "./pipeline/pipeline.hh"
 #include "./resources/manager.hh"
 
@@ -12,12 +13,11 @@ namespace vkr {
 class VulkanApplication {
 public:
   VulkanApplication() = default;
-  ~VulkanApplication() { cleanup(); }
+  virtual ~VulkanApplication() { cleanup(); }
 
   VulkanApplication(const VulkanApplication &) = delete;
   VulkanApplication &operator=(const VulkanApplication &) = delete;
 
-  // Application Lifecycle methods
   void run() {
     configure();
     initVulkan();
@@ -45,34 +45,49 @@ public:
 
   // pipeline
   std::unique_ptr<RenderPass> renderPass;
-  std::unique_ptr<DescriptorSetLayout> descriptorSetLayout;
   std::unique_ptr<GraphicsPipeline> graphicsPipeline;
-  std::unique_ptr<DescriptorSets> descriptorSets;
+
+  //  descriptor
+  std::unique_ptr<DescriptorManager> descriptorManager;
+  std::shared_ptr<DescriptorSetLayout> descriptorSetLayout;
+  std::unique_ptr<Descriptor> descriptor;
 
   // components
   std::unique_ptr<Camera> camera;
   std::unique_ptr<FPSCounter> fpsCounter;
   std::unique_ptr<UI> ui;
 
-private:
+protected:
+  virtual std::vector<DescriptorBinding> createDescriptorBindings() {
+    return {};
+  };
+  virtual void bindDescriptors() {};
+
   // Initialization methods
-  virtual void configure();
-  virtual void setting();
+  virtual void configure() {}
+  virtual void setting() {};
 
   // Frame-Level methods
-  virtual void mainLoop();
-  virtual void updateUniformBuffer(uint32_t currentImage);
-  virtual void drawFrame();
+  virtual void updateUniformBuffer(uint32_t currentImage) {};
 
-  void recreateSwapchain();
+private:
+  // Initialization methods
   void initVulkan();
+
+  // Frame-Level methods
+  void mainLoop();
+  void recreateSwapchain();
+  void drawFrame();
+
+  // Cleanup method
   void cleanup();
-}; // namespace vkr
+};
 
 static void framebufferResizeCallback(GLFWwindow *window, int width,
                                       int height) {
   auto app =
       reinterpret_cast<VulkanApplication *>(glfwGetWindowUserPointer(window));
   app->ctx.framebufferResized = true;
-};
+}
+
 } // namespace vkr
