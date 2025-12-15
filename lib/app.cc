@@ -3,9 +3,6 @@
 #include <unistd.h>
 
 namespace vkr {
-VulkanApplication::VulkanApplication() {}
-VulkanApplication::~VulkanApplication() { cleanup(); }
-
 void VulkanApplication::configure() {}
 
 void VulkanApplication::initVulkan() {
@@ -55,18 +52,16 @@ void VulkanApplication::initVulkan() {
   ctx.inFlightFences = syncObjects->inFlightFences();
 
   // resource manager
-  // TODO: merge uniform_buffers into resource_manager
   resourceManager = std::make_unique<ResourceManager>(ctx);
   resourceManager->createFramebuffers("swapchain");
   ctx.swapchainFramebuffers =
       resourceManager->getFramebuffers("swapchain")->framebuffers();
-
-  // uniform buffers
-  uniformBuffers = std::make_unique<DefaultUniformBuffers>(
-      DefaultUniformBufferObject{}, ctx);
-  ctx.uniformBuffers = uniformBuffers->buffers();
-  ctx.uniformBuffersMemory = uniformBuffers->buffersMemory();
-  ctx.uniformBuffersMapped = uniformBuffers->mapped();
+  resourceManager->createUniformBuffer("default", DefaultUniformBufferObject{});
+  ctx.uniformBuffers = resourceManager->getUniformBuffer("default")->buffers();
+  ctx.uniformBuffersMemory =
+      resourceManager->getUniformBuffer("default")->buffersMemory();
+  ctx.uniformBuffersMapped =
+      resourceManager->getUniformBuffer("default")->mapped();
 
   // render pass
   renderPass = std::make_unique<RenderPass>(ctx);
@@ -139,7 +134,6 @@ void VulkanApplication::cleanup() {
   resourceManager.reset();
   commandBuffers.reset();
   descriptorSets.reset();
-  uniformBuffers.reset();
   commandPool.reset();
   graphicsPipeline.reset();
   descriptorSetLayout.reset();
@@ -170,7 +164,7 @@ void VulkanApplication::updateUniformBuffer(uint32_t currentImage) {
   ubo.view = camera->getView();
   ubo.proj = camera->getProjection();
 
-  uniformBuffers->update(currentImage, ubo);
+  resourceManager->getUniformBuffer("default")->update(currentImage, ubo);
 }
 
 void VulkanApplication::drawFrame() {
