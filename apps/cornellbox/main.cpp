@@ -12,6 +12,11 @@ private:
         {0, vkr::DescriptorType::UniformBuffer, 1, VK_SHADER_STAGE_VERTEX_BIT}};
   }
 
+  void createUniforms() override {
+    resourceManager->createUniformBuffer<vkr::UniformBuffer3DObject>("default",
+                                                                     {});
+  }
+
   void bindDescriptorSets() override {
     auto defaultUBO = resourceManager->getUniformBuffer("default");
     if (defaultUBO && descriptorSets) {
