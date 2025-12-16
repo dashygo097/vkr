@@ -3,8 +3,7 @@
 #include <fstream>
 
 namespace vkr {
-
-static std::vector<char> readFile(const std::string &filename) {
+static std::vector<char> read_file(const std::string &filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
   if (!file.is_open()) {
@@ -21,4 +20,5 @@ static std::vector<char> readFile(const std::string &filename) {
 
   return buffer;
 };
+
 } // namespace vkr

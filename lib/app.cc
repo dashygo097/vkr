@@ -201,7 +201,7 @@ void VulkanApplication::drawFrame() {
 
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers =
-      &commandBuffers->commandBuffersRef()[ctx.currentFrame];
+      &commandBuffers->commandBuffers()[ctx.currentFrame];
 
   VkSemaphore signalSemaphores[] = {
       syncObjects->renderFinishedSemaphores()[imageIndex]};
