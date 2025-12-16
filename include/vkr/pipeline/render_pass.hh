@@ -1,12 +1,11 @@
 #pragma once
 
-#include "../ctx.hh"
+#include "../core/core.hh"
 
 namespace vkr {
 class RenderPass {
 public:
-  RenderPass(VkDevice device, VkFormat swapchainFormat);
-  RenderPass(const VulkanContext &ctx);
+  RenderPass(const Device &device, const Swapchain &swapchain);
   ~RenderPass();
 
   RenderPass(const RenderPass &) = delete;
@@ -16,8 +15,8 @@ public:
 
 private:
   // dependencies
-  VkDevice device{VK_NULL_HANDLE};
-  VkFormat swapchainImageFormat{VK_FORMAT_UNDEFINED};
+  const Device &device;
+  const Swapchain &swapchain;
 
   // components
   VkRenderPass _renderPass{VK_NULL_HANDLE};

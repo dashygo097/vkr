@@ -51,7 +51,7 @@ void VulkanApplication::initVulkan() {
   ctx.inFlightFences = syncObjects->inFlightFences();
 
   // render pass
-  renderPass = std::make_unique<RenderPass>(ctx);
+  renderPass = std::make_unique<RenderPass>(*device, *swapchain);
   ctx.renderPass = renderPass->renderPass();
 
   // resource manager

@@ -1,10 +1,10 @@
 #include "vkr/pipeline/render_pass.hh"
 
 namespace vkr {
-RenderPass::RenderPass(VkDevice device, VkFormat swapchainImageFormat)
-    : device(device) {
+RenderPass::RenderPass(const Device &device, const Swapchain &swapchain)
+    : device(device), swapchain(swapchain) {
   VkAttachmentDescription colorAttachment{};
-  colorAttachment.format = swapchainImageFormat;
+  colorAttachment.format = swapchain.format();
   colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
   colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -29,18 +29,15 @@ RenderPass::RenderPass(VkDevice device, VkFormat swapchainImageFormat)
   renderPassInfo.subpassCount = 1;
   renderPassInfo.pSubpasses = &subpass;
 
-  if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &_renderPass) !=
-      VK_SUCCESS) {
+  if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr,
+                         &_renderPass) != VK_SUCCESS) {
     throw std::runtime_error("failed to create render pass!");
   }
 }
 
-RenderPass::RenderPass(const VulkanContext &ctx)
-    : RenderPass(ctx.device, ctx.swapchainImageFormat) {}
-
 RenderPass::~RenderPass() {
   if (_renderPass != VK_NULL_HANDLE) {
-    vkDestroyRenderPass(device, _renderPass, nullptr);
+    vkDestroyRenderPass(device.device(), _renderPass, nullptr);
     _renderPass = VK_NULL_HANDLE;
   }
 }
