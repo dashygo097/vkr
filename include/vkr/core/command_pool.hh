@@ -1,14 +1,13 @@
 #pragma once
 
-#include "../ctx.hh"
+#include "./device.hh"
+#include "surface.hh"
 
 namespace vkr {
 
 class CommandPool {
 public:
-  CommandPool(VkPhysicalDevice physicalDevice, VkDevice device,
-              VkSurfaceKHR surface);
-  CommandPool(const VulkanContext &ctx);
+  explicit CommandPool(const Device &device, const Surface &surface);
   ~CommandPool();
 
   CommandPool(const CommandPool &) = delete;
@@ -20,9 +19,8 @@ public:
 
 private:
   // dependencies
-  VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
-  VkDevice device{VK_NULL_HANDLE};
-  VkSurfaceKHR surface{VK_NULL_HANDLE};
+  const Device &device;
+  const Surface &surface;
 
   // components
   VkCommandPool _commandPool{VK_NULL_HANDLE};
