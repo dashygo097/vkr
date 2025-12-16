@@ -51,7 +51,7 @@ public:
   std::unique_ptr<DescriptorManager> descriptorManager;
   std::shared_ptr<DescriptorSetLayout> descriptorSetLayout;
   std::unique_ptr<DescriptorPool> descriptorPool;
-  std::unique_ptr<Descriptor> descriptor;
+  std::unique_ptr<DescriptorSets> descriptorSets;
 
   // components
   std::unique_ptr<Camera> camera;
@@ -62,7 +62,7 @@ protected:
   virtual std::vector<DescriptorBinding> createDescriptorBindings() {
     return {};
   };
-  virtual void bindDescriptors() {};
+  virtual void bindDescriptorSets() {};
 
   // Initialization methods
   virtual void configure() {}

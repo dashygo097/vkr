@@ -3,20 +3,20 @@
 
 namespace vkr {
 
-Descriptor::Descriptor(VkDevice device, VkDescriptorSetLayout layout,
-                       VkDescriptorPool pool, uint32_t frameCount)
+DescriptorSets::DescriptorSets(VkDevice device, VkDescriptorSetLayout layout,
+                               VkDescriptorPool pool, uint32_t frameCount)
     : device(device), layout(layout), pool(pool), _frameCount(frameCount) {
   allocateSets();
 }
 
-Descriptor::~Descriptor() {
+DescriptorSets::~DescriptorSets() {
   if (!_sets.empty() && pool != VK_NULL_HANDLE && device != VK_NULL_HANDLE) {
     vkFreeDescriptorSets(device, pool, static_cast<uint32_t>(_sets.size()),
                          _sets.data());
   }
 }
 
-void Descriptor::allocateSets() {
+void DescriptorSets::allocateSets() {
   if (layout == VK_NULL_HANDLE) {
     throw std::runtime_error("Descriptor set layout is VK_NULL_HANDLE");
   }
@@ -40,9 +40,9 @@ void Descriptor::allocateSets() {
   }
 }
 
-void Descriptor::bindUniformBuffer(uint32_t binding,
-                                   const std::vector<VkBuffer> &buffers,
-                                   VkDeviceSize size, VkDeviceSize offset) {
+void DescriptorSets::bindUniformBuffer(uint32_t binding,
+                                       const std::vector<VkBuffer> &buffers,
+                                       VkDeviceSize size, VkDeviceSize offset) {
   if (buffers.size() != _frameCount) {
     throw std::runtime_error("Buffer count must match frame count");
   }
@@ -59,9 +59,9 @@ void Descriptor::bindUniformBuffer(uint32_t binding,
   }
 }
 
-void Descriptor::bindStorageBuffer(uint32_t binding,
-                                   const std::vector<VkBuffer> &buffers,
-                                   VkDeviceSize size, VkDeviceSize offset) {
+void DescriptorSets::bindStorageBuffer(uint32_t binding,
+                                       const std::vector<VkBuffer> &buffers,
+                                       VkDeviceSize size, VkDeviceSize offset) {
   if (buffers.size() != _frameCount) {
     throw std::runtime_error("Buffer count must match frame count");
   }
@@ -78,9 +78,9 @@ void Descriptor::bindStorageBuffer(uint32_t binding,
   }
 }
 
-void Descriptor::bindImageSampler(uint32_t binding,
-                                  const std::vector<VkImageView> &imageViews,
-                                  VkSampler sampler, VkImageLayout layout) {
+void DescriptorSets::bindImageSampler(
+    uint32_t binding, const std::vector<VkImageView> &imageViews,
+    VkSampler sampler, VkImageLayout layout) {
   if (imageViews.size() != _frameCount) {
     throw std::runtime_error("Image view count must match frame count");
   }
@@ -98,15 +98,16 @@ void Descriptor::bindImageSampler(uint32_t binding,
   }
 }
 
-void Descriptor::bindToFrame(uint32_t frameIndex, DescriptorWriter &writer) {
+void DescriptorSets::bindToFrame(uint32_t frameIndex,
+                                 DescriptorWriter &writer) {
   if (frameIndex >= _frameCount) {
     throw std::runtime_error("Frame index out of bounds");
   }
   writer.update(device, _sets[frameIndex]);
 }
 
-void Descriptor::bind(VkCommandBuffer cmd, VkPipelineLayout layout,
-                      uint32_t frameIndex, VkPipelineBindPoint bindPoint) {
+void DescriptorSets::bind(VkCommandBuffer cmd, VkPipelineLayout layout,
+                          uint32_t frameIndex, VkPipelineBindPoint bindPoint) {
   if (frameIndex >= _frameCount) {
     throw std::runtime_error("Frame index out of bounds");
   }
@@ -134,10 +135,10 @@ std::shared_ptr<DescriptorSetLayout> DescriptorManager::createLayout(
   return std::make_shared<DescriptorSetLayout>(device, bindings);
 }
 
-std::unique_ptr<Descriptor>
+std::unique_ptr<DescriptorSets>
 DescriptorManager::allocate(VkDescriptorSetLayout layout, VkDescriptorPool pool,
                             uint32_t frameCount) {
-  return std::make_unique<Descriptor>(device, layout, pool, frameCount);
+  return std::make_unique<DescriptorSets>(device, layout, pool, frameCount);
 }
 
 } // namespace vkr
