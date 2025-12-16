@@ -32,7 +32,10 @@ public:
   void reset();
 
 private:
+  // dependencies
   VkDevice device{VK_NULL_HANDLE};
+
+  // components
   VkDescriptorPool _pool{VK_NULL_HANDLE};
   uint32_t _maxSets{0};
   uint32_t _allocatedSets{0};

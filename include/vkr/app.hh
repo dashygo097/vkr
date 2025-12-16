@@ -50,6 +50,7 @@ public:
   //  descriptor
   std::unique_ptr<DescriptorManager> descriptorManager;
   std::shared_ptr<DescriptorSetLayout> descriptorSetLayout;
+  std::unique_ptr<DescriptorPool> descriptorPool;
   std::unique_ptr<Descriptor> descriptor;
 
   // components

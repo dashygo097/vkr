@@ -67,12 +67,15 @@ void VulkanApplication::initVulkan() {
       resourceManager->getUniformBuffer("default")->mapped();
 
   // descriptor manager
-  descriptorManager = std::make_unique<DescriptorManager>(ctx);
+  uint32_t maxSets = MAX_FRAMES_IN_FLIGHT;
+  DescriptorPoolSizes poolSizes =
+      DescriptorManager::calculatePoolSizes(maxSets);
+  descriptorPool = std::make_unique<DescriptorPool>(ctx, maxSets, poolSizes);
+  ctx.descriptorPool = descriptorPool->pool();
 
-  // descriptor bindings
+  descriptorManager = std::make_unique<DescriptorManager>(ctx);
   std::vector<DescriptorBinding> bindings = createDescriptorBindings();
 
-  // descriptor set layout
   descriptorSetLayout = descriptorManager->createLayout(bindings);
   ctx.descriptorSetLayout = descriptorSetLayout->layout();
 
@@ -82,10 +85,10 @@ void VulkanApplication::initVulkan() {
   ctx.graphicsPipeline = graphicsPipeline->pipeline();
 
   // descriptor
-  descriptor = descriptorManager->allocate(*descriptorSetLayout);
+  descriptor = descriptorManager->allocate(descriptorSetLayout->layout(),
+                                           descriptorPool->pool());
   bindDescriptors();
   ctx.descriptorSets = descriptor->sets();
-  ctx.descriptorPool = descriptor->pool().pool();
 
   // camera
   camera = std::make_unique<Camera>(ctx);
