@@ -52,10 +52,6 @@ Instance::Instance(const std::string appName, const std::string engineName,
   }
 }
 
-Instance::Instance(const VulkanContext &ctx)
-    : Instance(ctx.appName, ctx.engineName, ctx.appVersion, ctx.engineVersion,
-               ctx.preExtensions, ctx.validationLayers) {}
-
 Instance::~Instance() {
   if (ENABLE_VALIDATION_LAYERS) {
     _debugMessenger.reset();

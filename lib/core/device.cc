@@ -4,17 +4,13 @@
 #include <set>
 
 namespace vkr {
-Device::Device(VkInstance instance, VkSurfaceKHR surface,
+Device::Device(const Instance &instance, const Surface &surface,
                const std::vector<const char *> &deviceExtensions,
                const std::vector<const char *> &validationLayers)
     : instance(instance), surface(surface) {
   pickPhysicalDevice();
   createLogicalDevice(deviceExtensions, validationLayers);
 }
-
-Device::Device(const VulkanContext &ctx)
-    : Device(ctx.instance, ctx.surface, ctx.deviceExtensions,
-             ctx.validationLayers) {}
 
 Device::~Device() {
   if (_device != VK_NULL_HANDLE) {
@@ -31,14 +27,14 @@ void Device::waitIdle() {
 
 void Device::pickPhysicalDevice() {
   uint32_t deviceCount = 0;
-  vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+  vkEnumeratePhysicalDevices(instance.instance(), &deviceCount, nullptr);
 
   if (deviceCount == 0) {
     throw std::runtime_error("failed to find GPUs with Vulkan support!");
   }
 
   std::vector<VkPhysicalDevice> devices(deviceCount);
-  vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+  vkEnumeratePhysicalDevices(instance.instance(), &deviceCount, devices.data());
 
   for (const auto &device : devices) {
     if (isSuitable(device)) {
@@ -54,7 +50,8 @@ void Device::pickPhysicalDevice() {
 
 void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
                                  std::vector<const char *> validationLayers) {
-  QueueFamilyIndices indices = findQueueFamilies(_physicalDevice, surface);
+  QueueFamilyIndices indices =
+      findQueueFamilies(_physicalDevice, surface.surface());
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
   std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
@@ -103,7 +100,7 @@ void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
 }
 
 bool Device::isSuitable(VkPhysicalDevice pDevice) {
-  QueueFamilyIndices indices = findQueueFamilies(pDevice, surface);
+  QueueFamilyIndices indices = findQueueFamilies(pDevice, surface.surface());
   return indices.isComplete();
 }
 

@@ -6,29 +6,32 @@ namespace vkr {
 
 void VulkanApplication::initVulkan() {
   // window
-  window = std::make_unique<Window>(ctx);
+  window = std::make_unique<Window>(ctx.title, ctx.width, ctx.height);
   ctx.window = window->glfwWindow();
   glfwSetWindowUserPointer(window->glfwWindow(), this);
   glfwSetFramebufferSizeCallback(window->glfwWindow(),
                                  framebufferResizeCallback);
 
   // instance
-  instance = std::make_unique<Instance>(ctx);
+  instance = std::make_unique<Instance>(
+      ctx.appName, ctx.engineName, ctx.appVersion, ctx.engineVersion,
+      ctx.preExtensions, ctx.validationLayers);
   ctx.instance = instance->instance();
 
   // surface
-  surface = std::make_unique<Surface>(ctx);
+  surface = std::make_unique<Surface>(*window, *instance);
   ctx.surface = surface->surface();
 
   // device
-  device = std::make_unique<Device>(ctx);
+  device = std::make_unique<Device>(*instance, *surface, ctx.deviceExtensions,
+                                    ctx.validationLayers);
   ctx.device = device->device();
   ctx.physicalDevice = device->physicalDevice();
   ctx.graphicsQueue = device->graphicsQueue();
   ctx.presentQueue = device->presentQueue();
 
   // swapchain
-  swapchain = std::make_unique<Swapchain>(ctx);
+  swapchain = std::make_unique<Swapchain>(*window, *device, *surface);
   ctx.swapchain = swapchain->swapchain();
   ctx.swapchainImages = swapchain->images();
   ctx.swapchainImageViews = swapchain->imageViews();

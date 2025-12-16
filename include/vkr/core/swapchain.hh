@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../ctx.hh"
+#include "./device.hh"
+#include "./window.hh"
 
 namespace vkr {
 
@@ -21,9 +22,8 @@ VkExtent2D chooseSwapExtent(GLFWwindow *window,
 
 class Swapchain {
 public:
-  Swapchain(GLFWwindow *window, VkPhysicalDevice physicalDevice,
-            VkDevice device, VkSurfaceKHR surface);
-  Swapchain(const VulkanContext &ctx);
+  explicit Swapchain(const Window &window, const Device &device,
+                     const Surface &surface);
   ~Swapchain();
 
   Swapchain(const Swapchain &) = delete;
@@ -43,10 +43,9 @@ public:
 
 private:
   // dependencies
-  GLFWwindow *window{nullptr};
-  VkDevice device{VK_NULL_HANDLE};
-  VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
-  VkSurfaceKHR surface{VK_NULL_HANDLE};
+  const Window &window;
+  const Device &device;
+  const Surface &surface;
 
   // components
   VkSwapchainKHR _swapchain{VK_NULL_HANDLE};

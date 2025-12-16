@@ -1,13 +1,12 @@
 #pragma once
 
-#include "../ctx.hh"
+#include <vulkan/vulkan.h>
 
 namespace vkr {
 
 class DebugMessenger {
 public:
   explicit DebugMessenger(VkInstance instance);
-  explicit DebugMessenger(const VulkanContext &ctx);
   ~DebugMessenger();
 
   DebugMessenger(const DebugMessenger &) = delete;

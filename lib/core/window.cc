@@ -1,7 +1,7 @@
 #include "vkr/core/window.hh"
 
 namespace vkr {
-Window::Window(uint32_t width, uint32_t height, std::string_view title)
+Window::Window(std::string title, uint32_t width, uint32_t height)
     : _width(width), _height(height), _title(title) {
   if (!glfwInit()) {
     throw std::runtime_error("[ERROR] Failed to initialize GLFW");
@@ -15,9 +15,6 @@ Window::Window(uint32_t width, uint32_t height, std::string_view title)
     throw std::runtime_error("[ERROR] Failed to create GLFW window");
   }
 }
-
-Window::Window(const VulkanContext &ctx)
-    : Window(ctx.width, ctx.height, ctx.title) {}
 
 Window::~Window() {
   if (_window) {
