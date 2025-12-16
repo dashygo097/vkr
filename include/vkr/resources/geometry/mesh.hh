@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../resources/buffers/index_buffer.hh"
-#include "../resources/buffers/vertex_buffer.hh"
+#include "../buffers/index_buffer.hh"
+#include "../buffers/vertex_buffer.hh"
 
 namespace vkr::geometry {
 class Mesh {

@@ -1,4 +1,4 @@
-#include "vkr/geometry/mesh.hh"
+#include "vkr/resources/geometry/mesh.hh"
 #include <iostream>
 #include <tiny_obj_loader.h>
 
