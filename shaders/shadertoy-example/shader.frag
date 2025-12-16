@@ -18,27 +18,21 @@ layout(location = 0) out vec4 fragColor;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / ubo.iResolution.xy;
+  uv = uv * 2.0 - 1.0;
+  uv.x *= ubo.iResolution.x / ubo.iResolution.y;
 
-  vec2 centered = uv - 0.5;
+  float dist = length(uv);
 
-  centered.x *= ubo.iResolution.x / ubo.iResolution.y;
-
-  float angle = ubo.iTime;
-  vec2 rotated = vec2(
-      centered.x * cos(angle) - centered.y * sin(angle),
-      centered.x * sin(angle) + centered.y * cos(angle)
-    );
-
-  float dist = length(rotated);
-  float circle = smoothstep(0.3, 0.29, dist);
+  float wave = sin(dist * 10.0 - ubo.iTime * 2.0) * 0.5 + 0.5;
 
   vec3 color = 0.5 + 0.5 * cos(ubo.iTime + uv.xyx + vec3(0, 2, 4));
 
-  fragColor = vec4(color * circle, 1.0);
+  color *= wave;
+
+  fragColor = vec4(color, 1.0);
 }
 
 void main() {
   vec2 pixelCoord = fragCoord * ubo.iResolution.xy;
-
   mainImage(fragColor, pixelCoord);
 }
