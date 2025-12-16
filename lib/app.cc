@@ -82,14 +82,16 @@ void VulkanApplication::initVulkan() {
   descriptorPool = std::make_unique<DescriptorPool>(ctx, maxSets, poolSizes);
   ctx.descriptorPool = descriptorPool->pool();
 
-  descriptorManager = std::make_unique<DescriptorManager>(ctx);
+  descriptorManager = std::make_unique<DescriptorManager>(*device);
   std::vector<DescriptorBinding> bindings = createDescriptorBindings();
 
   descriptorSetLayout = descriptorManager->createLayout(bindings);
   ctx.descriptorSetLayout = descriptorSetLayout->layout();
 
   // graphics pipeline
-  graphicsPipeline = std::make_unique<GraphicsPipeline>(ctx);
+  graphicsPipeline = std::make_unique<GraphicsPipeline>(
+      *device, *renderPass, *descriptorSetLayout, ctx.vertexShaderPath,
+      ctx.fragmentShaderPath);
   ctx.pipelineLayout = graphicsPipeline->pipelineLayout();
   ctx.graphicsPipeline = graphicsPipeline->pipeline();
 

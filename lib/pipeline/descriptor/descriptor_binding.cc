@@ -4,8 +4,8 @@
 namespace vkr {
 
 DescriptorSetLayout::DescriptorSetLayout(
-    VkDevice device, const std::vector<DescriptorBinding> &bindings)
-    : device(device), _bindings(bindings) {
+    const Device &device, const std::vector<DescriptorBinding> &bindings)
+    : device(device), bindings(bindings) {
 
   std::vector<VkDescriptorSetLayoutBinding> vkBindings;
   vkBindings.reserve(bindings.size());
@@ -25,8 +25,8 @@ DescriptorSetLayout::DescriptorSetLayout(
   layoutInfo.bindingCount = static_cast<uint32_t>(vkBindings.size());
   layoutInfo.pBindings = vkBindings.data();
 
-  VkResult result =
-      vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &_layout);
+  VkResult result = vkCreateDescriptorSetLayout(device.device(), &layoutInfo,
+                                                nullptr, &_layout);
   if (result != VK_SUCCESS) {
     throw std::runtime_error(
         "Failed to create descriptor set layout. VkResult: " +
@@ -34,46 +34,17 @@ DescriptorSetLayout::DescriptorSetLayout(
   }
 }
 
-DescriptorSetLayout::DescriptorSetLayout(
-    const VulkanContext &ctx, const std::vector<DescriptorBinding> &bindings)
-    : DescriptorSetLayout(ctx.device, bindings) {}
-
 DescriptorSetLayout::~DescriptorSetLayout() { cleanup(); }
 
-DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout &&other) noexcept
-    : device(other.device), _layout(other._layout),
-      _bindings(std::move(other._bindings)) {
-  other._layout = VK_NULL_HANDLE;
-  other.device = VK_NULL_HANDLE;
-}
-
-DescriptorSetLayout &
-DescriptorSetLayout::operator=(DescriptorSetLayout &&other) noexcept {
-  if (this != &other) {
-    cleanup();
-    device = other.device;
-    _layout = other._layout;
-    _bindings = std::move(other._bindings);
-    other._layout = VK_NULL_HANDLE;
-    other.device = VK_NULL_HANDLE;
-  }
-  return *this;
-}
-
-DescriptorSetLayout DescriptorSetLayout::createDefault3D(VkDevice device) {
+DescriptorSetLayout DescriptorSetLayout::createDefault3D(const Device &device) {
   std::vector<DescriptorBinding> bindings = {
       {0, DescriptorType::UniformBuffer, 1, VK_SHADER_STAGE_VERTEX_BIT}};
   return DescriptorSetLayout(device, bindings);
 }
 
-DescriptorSetLayout
-DescriptorSetLayout::createDefault3D(const VulkanContext &ctx) {
-  return createDefault3D(ctx.device);
-}
-
 void DescriptorSetLayout::cleanup() {
-  if (device != VK_NULL_HANDLE && _layout != VK_NULL_HANDLE) {
-    vkDestroyDescriptorSetLayout(device, _layout, nullptr);
+  if (_layout != VK_NULL_HANDLE) {
+    vkDestroyDescriptorSetLayout(device.device(), _layout, nullptr);
     _layout = VK_NULL_HANDLE;
   }
 }

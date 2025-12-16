@@ -5,7 +5,7 @@
 namespace vkr {
 class RenderPass {
 public:
-  RenderPass(const Device &device, const Swapchain &swapchain);
+  explicit RenderPass(const Device &device, const Swapchain &swapchain);
   ~RenderPass();
 
   RenderPass(const RenderPass &) = delete;

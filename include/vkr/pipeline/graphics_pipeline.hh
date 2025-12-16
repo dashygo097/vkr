@@ -1,17 +1,17 @@
 #pragma once
 
+#include "../core/device.hh"
+#include "./descriptor/descriptor_binding.hh"
 #include "./render_pass.hh"
-#include "./shader_module.hh"
 
 namespace vkr {
 
 class GraphicsPipeline {
 public:
-  GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
-                   VkDescriptorSetLayout descriptorSetLayout,
-                   const std::string &vertShaderPath,
-                   const std::string &fragShaderPath);
-  GraphicsPipeline(const VulkanContext &ctx);
+  explicit GraphicsPipeline(const Device &device, const RenderPass &renderPass,
+                            DescriptorSetLayout &descriptorSetLayout,
+                            const std::string &vertShaderPath,
+                            const std::string &fragShaderPath);
   ~GraphicsPipeline();
 
   GraphicsPipeline(const GraphicsPipeline &) = delete;
@@ -26,9 +26,9 @@ public:
 
 private:
   // dependencies
-  VkDevice device{VK_NULL_HANDLE};
-  VkRenderPass renderPass{VK_NULL_HANDLE};
-  VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
+  const Device &device;
+  const RenderPass &renderPass;
+  const DescriptorSetLayout &descriptorSetLayout;
 
   // componets
   VkPipelineLayout _pipelineLayout{VK_NULL_HANDLE};
