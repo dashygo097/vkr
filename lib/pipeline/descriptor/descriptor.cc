@@ -3,37 +3,32 @@
 
 namespace vkr {
 
-DescriptorSets::DescriptorSets(VkDevice device, VkDescriptorSetLayout layout,
-                               VkDescriptorPool pool, uint32_t frameCount)
+DescriptorSets::DescriptorSets(const Device &device,
+                               DescriptorSetLayout &layout,
+                               const DescriptorPool &pool, uint32_t frameCount)
     : device(device), layout(layout), pool(pool), _frameCount(frameCount) {
   allocateSets();
 }
 
 DescriptorSets::~DescriptorSets() {
-  if (!_sets.empty() && pool != VK_NULL_HANDLE && device != VK_NULL_HANDLE) {
-    vkFreeDescriptorSets(device, pool, static_cast<uint32_t>(_sets.size()),
-                         _sets.data());
+  if (!_sets.empty()) {
+    vkFreeDescriptorSets(device.device(), pool.pool(),
+                         static_cast<uint32_t>(_sets.size()), _sets.data());
   }
 }
 
 void DescriptorSets::allocateSets() {
-  if (layout == VK_NULL_HANDLE) {
-    throw std::runtime_error("Descriptor set layout is VK_NULL_HANDLE");
-  }
-  if (pool == VK_NULL_HANDLE) {
-    throw std::runtime_error("Descriptor pool is VK_NULL_HANDLE");
-  }
-
-  std::vector<VkDescriptorSetLayout> layouts(_frameCount, layout);
+  std::vector<VkDescriptorSetLayout> layouts(_frameCount, layout.layout());
 
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  allocInfo.descriptorPool = pool;
+  allocInfo.descriptorPool = pool.pool();
   allocInfo.descriptorSetCount = _frameCount;
   allocInfo.pSetLayouts = layouts.data();
 
   _sets.resize(_frameCount);
-  VkResult result = vkAllocateDescriptorSets(device, &allocInfo, _sets.data());
+  VkResult result =
+      vkAllocateDescriptorSets(device.device(), &allocInfo, _sets.data());
   if (result != VK_SUCCESS) {
     throw std::runtime_error("Failed to allocate descriptor sets.  VkResult: " +
                              std::to_string(result));
@@ -53,9 +48,9 @@ void DescriptorSets::bindUniformBuffer(uint32_t binding,
     bufferInfo.offset = offset;
     bufferInfo.range = size;
 
-    DescriptorWriter writer;
+    DescriptorWriter writer(device);
     writer.writeBuffer(binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo);
-    writer.update(device, _sets[i]);
+    writer.update(_sets[i]);
   }
 }
 
@@ -72,9 +67,9 @@ void DescriptorSets::bindStorageBuffer(uint32_t binding,
     bufferInfo.offset = offset;
     bufferInfo.range = size;
 
-    DescriptorWriter writer;
+    DescriptorWriter writer(device);
     writer.writeBuffer(binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
-    writer.update(device, _sets[i]);
+    writer.update(_sets[i]);
   }
 }
 
@@ -91,10 +86,10 @@ void DescriptorSets::bindImageSampler(
     imageInfo.imageView = imageViews[i];
     imageInfo.sampler = sampler;
 
-    DescriptorWriter writer;
+    DescriptorWriter writer(device);
     writer.writeImage(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                       &imageInfo);
-    writer.update(device, _sets[i]);
+    writer.update(_sets[i]);
   }
 }
 
@@ -103,7 +98,7 @@ void DescriptorSets::bindToFrame(uint32_t frameIndex,
   if (frameIndex >= _frameCount) {
     throw std::runtime_error("Frame index out of bounds");
   }
-  writer.update(device, _sets[frameIndex]);
+  writer.update(_sets[frameIndex]);
 }
 
 void DescriptorSets::bind(VkCommandBuffer cmd, VkPipelineLayout layout,
@@ -133,10 +128,9 @@ std::shared_ptr<DescriptorSetLayout> DescriptorManager::createLayout(
 }
 
 std::unique_ptr<DescriptorSets>
-DescriptorManager::allocate(VkDescriptorSetLayout layout, VkDescriptorPool pool,
-                            uint32_t frameCount) {
-  return std::make_unique<DescriptorSets>(device.device(), layout, pool,
-                                          frameCount);
+DescriptorManager::allocate(DescriptorSetLayout &layout,
+                            const DescriptorPool &pool, uint32_t frameCount) {
+  return std::make_unique<DescriptorSets>(device, layout, pool, frameCount);
 }
 
 } // namespace vkr

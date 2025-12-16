@@ -2,6 +2,8 @@
 
 namespace vkr {
 
+DescriptorWriter::DescriptorWriter(const Device &device) : device(device) {}
+
 DescriptorWriter &
 DescriptorWriter::writeBuffer(uint32_t binding, VkDescriptorType type,
                               const VkDescriptorBufferInfo *bufferInfo) {
@@ -75,12 +77,12 @@ DescriptorWriter &DescriptorWriter::writeImageArray(
   return *this;
 }
 
-void DescriptorWriter::update(VkDevice device, VkDescriptorSet set) {
+void DescriptorWriter::update(VkDescriptorSet set) {
   for (auto &write : _writes) {
     write.dstSet = set;
   }
 
-  vkUpdateDescriptorSets(device, static_cast<uint32_t>(_writes.size()),
+  vkUpdateDescriptorSets(device.device(), static_cast<uint32_t>(_writes.size()),
                          _writes.data(), 0, nullptr);
 }
 

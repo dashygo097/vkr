@@ -1,4 +1,5 @@
 #pragma once
+#include "../../core/device.hh"
 #include "../../resources/buffers/uniform_buffer.hh"
 #include "./descriptor_binding.hh"
 #include "./descriptor_pool.hh"
@@ -10,8 +11,8 @@ namespace vkr {
 
 class DescriptorSets {
 public:
-  DescriptorSets(VkDevice device, VkDescriptorSetLayout layout,
-                 VkDescriptorPool pool,
+  DescriptorSets(const Device &device, DescriptorSetLayout &layout,
+                 const DescriptorPool &pool,
                  uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
   ~DescriptorSets();
 
@@ -40,9 +41,9 @@ public:
 
 private:
   // dependencies
-  VkDevice device{VK_NULL_HANDLE};
-  VkDescriptorSetLayout layout{VK_NULL_HANDLE};
-  VkDescriptorPool pool{VK_NULL_HANDLE};
+  const Device &device;
+  DescriptorSetLayout &layout;
+  const DescriptorPool &pool;
 
   // components
   std::vector<VkDescriptorSet> _sets;
@@ -63,7 +64,7 @@ public:
   createLayout(const std::vector<DescriptorBinding> &bindings);
 
   std::unique_ptr<DescriptorSets>
-  allocate(VkDescriptorSetLayout layout, VkDescriptorPool pool,
+  allocate(DescriptorSetLayout &layout, const DescriptorPool &pool,
            uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
 
   static DescriptorPoolSizes calculatePoolSizes(uint32_t maxSets);

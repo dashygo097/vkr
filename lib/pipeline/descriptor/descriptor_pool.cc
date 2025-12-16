@@ -3,7 +3,7 @@
 
 namespace vkr {
 
-DescriptorPool::DescriptorPool(VkDevice device, uint32_t maxSets,
+DescriptorPool::DescriptorPool(const Device &device, uint32_t maxSets,
                                const DescriptorPoolSizes &sizes)
     : device(device), _maxSets(maxSets) {
 
@@ -41,53 +41,30 @@ DescriptorPool::DescriptorPool(VkDevice device, uint32_t maxSets,
   poolInfo.pPoolSizes = poolSizes.data();
   poolInfo.maxSets = maxSets;
 
-  VkResult result = vkCreateDescriptorPool(device, &poolInfo, nullptr, &_pool);
+  VkResult result =
+      vkCreateDescriptorPool(device.device(), &poolInfo, nullptr, &_pool);
   if (result != VK_SUCCESS) {
     throw std::runtime_error("Failed to create descriptor pool. VkResult: " +
                              std::to_string(result));
   }
 }
 
-DescriptorPool::DescriptorPool(const VulkanContext &ctx, uint32_t maxSets,
-                               const DescriptorPoolSizes &sizes)
-    : DescriptorPool(ctx.device, maxSets, sizes) {}
-
 DescriptorPool::~DescriptorPool() { cleanup(); }
-
-DescriptorPool::DescriptorPool(DescriptorPool &&other) noexcept
-    : device(other.device), _pool(other._pool), _maxSets(other._maxSets),
-      _allocatedSets(other._allocatedSets) {
-  other._pool = VK_NULL_HANDLE;
-  other.device = VK_NULL_HANDLE;
-}
-
-DescriptorPool &DescriptorPool::operator=(DescriptorPool &&other) noexcept {
-  if (this != &other) {
-    cleanup();
-    device = other.device;
-    _pool = other._pool;
-    _maxSets = other._maxSets;
-    _allocatedSets = other._allocatedSets;
-    other._pool = VK_NULL_HANDLE;
-    other.device = VK_NULL_HANDLE;
-  }
-  return *this;
-}
 
 bool DescriptorPool::canAllocate() const noexcept {
   return _allocatedSets < _maxSets;
 }
 
 void DescriptorPool::reset() {
-  if (_pool != VK_NULL_HANDLE && device != VK_NULL_HANDLE) {
-    vkResetDescriptorPool(device, _pool, 0);
+  if (_pool != VK_NULL_HANDLE) {
+    vkResetDescriptorPool(device.device(), _pool, 0);
     _allocatedSets = 0;
   }
 }
 
 void DescriptorPool::cleanup() {
-  if (device != VK_NULL_HANDLE && _pool != VK_NULL_HANDLE) {
-    vkDestroyDescriptorPool(device, _pool, nullptr);
+  if (_pool != VK_NULL_HANDLE) {
+    vkDestroyDescriptorPool(device.device(), _pool, nullptr);
     _pool = VK_NULL_HANDLE;
   }
 }
