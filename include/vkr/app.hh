@@ -19,9 +19,9 @@ public:
   VulkanApplication &operator=(const VulkanApplication &) = delete;
 
   void run() {
-    configure();
+    onConfigure();
     initVulkan();
-    setting();
+    onSetup();
 
     mainLoop();
 
@@ -59,17 +59,16 @@ public:
   std::unique_ptr<UI> ui;
 
 protected:
+  virtual void onConfigure() {}
+  virtual void onSetup() {}
+  virtual void onUpdate() {}
+  virtual void onCleanup() {}
+
   virtual std::vector<DescriptorBinding> createDescriptorBindings() {
     return {};
-  };
-  virtual void bindDescriptorSets() {};
-
-  // Initialization methods
-  virtual void configure() {}
-  virtual void setting() {};
-
-  // Frame-Level methods
-  virtual void updateUniformBuffer(uint32_t currentImage) {};
+  }
+  virtual void bindDescriptorSets() {}
+  virtual void updateUniforms(uint32_t frameIndex) {}
 
 private:
   // Initialization methods

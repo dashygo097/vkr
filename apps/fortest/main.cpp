@@ -35,7 +35,7 @@ private:
     }
   }
 
-  void updateUniformBuffer(uint32_t currentImage) override {
+  void updateUniforms(uint32_t currentImage) override {
     vkr::UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     ubo.view = camera->getView();
@@ -45,7 +45,7 @@ private:
                                                             sizeof(ubo));
   }
 
-  void configure() override {
+  void onConfigure() override {
 
     ctx.appName = "Vulkan App";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -68,7 +68,7 @@ private:
     ctx.fragmentShaderPath = "shaders/albedo/frag.spv";
   }
 
-  void setting() override {
+  void onSetup() override {
     resourceManager->createVertexBuffer("vb1", vertices1);
     resourceManager->createVertexBuffer("vb2", vertices2);
     resourceManager->createIndexBuffer("ib1", indices1);
