@@ -10,7 +10,12 @@ target_include_directories(vkr PUBLIC
 target_include_directories(vkr PUBLIC ${Vulkan_INCLUDE_DIRS})
 
 # 3rdparty libs to link statically
-target_link_libraries(vkr PUBLIC glfw Vulkan::Vulkan glm::glm-header-only imgui tinyobjloader)
+target_link_libraries(vkr PUBLIC glfw)
+target_link_libraries(vkr PUBLIC Vulkan::Vulkan)
+target_link_libraries(vkr PUBLIC glm::glm-header-only)
+target_link_libraries(vkr PUBLIC imgui)
+target_link_libraries(vkr PUBLIC tinyobjloader)
+target_link_libraries(vkr PUBLIC nlohmann_json::nlohmann_json)
 
 if (APPLE) 
   target_link_libraries(vkr PUBLIC
