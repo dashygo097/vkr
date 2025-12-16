@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../ctx.hh"
+#include "./device.hh"
 
 namespace vkr {
 
 class SyncObjects {
 public:
-  SyncObjects(VkDevice device, std::vector<VkImage> swapchainImages);
-  SyncObjects(const VulkanContext &ctx);
+  SyncObjects(const Device &device,
+              const std::vector<VkImage> &swapchainImages);
   ~SyncObjects();
 
   SyncObjects(const SyncObjects &) = delete;
@@ -27,8 +27,8 @@ public:
 
 private:
   // dependencies
-  VkDevice device{VK_NULL_HANDLE};
-  std::vector<VkImage> swapchainImages{};
+  const Device &device;
+  const std::vector<VkImage> &swapchainImages;
 
   // components
   std::vector<VkSemaphore> _imageAvailableSemaphores{};

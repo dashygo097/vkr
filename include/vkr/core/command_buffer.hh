@@ -1,17 +1,17 @@
 #pragma once
 
 #include "../components/ui/ui.hh"
-#include "../ctx.hh"
 #include "../resources/buffers/index_buffer.hh"
 #include "../resources/buffers/vertex_buffer.hh"
+#include "./command_pool.hh"
+#include "./device.hh"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 namespace vkr {
 class CommandBuffers {
 public:
-  CommandBuffers(VkDevice device, VkCommandPool commandPool);
-  CommandBuffers(const VulkanContext &ctx);
+  explicit CommandBuffers(const Device &device, const CommandPool &commandPool);
   ~CommandBuffers();
 
   CommandBuffers(const CommandBuffers &) = delete;
@@ -36,8 +36,8 @@ public:
 
 private:
   // dependencies
-  VkDevice device{VK_NULL_HANDLE};
-  VkCommandPool commandPool{VK_NULL_HANDLE};
+  const Device &device;
+  const CommandPool &commandPool;
 
   // components
   std::vector<VkCommandBuffer> _commandBuffers{};

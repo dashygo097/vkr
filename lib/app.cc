@@ -39,16 +39,15 @@ void VulkanApplication::initVulkan() {
   ctx.swapchainExtent = swapchain->extent2D();
 
   // command pool
-  commandPool = std::make_unique<CommandPool>(ctx);
+  commandPool = std::make_unique<CommandPool>(*device, *surface);
   ctx.commandPool = commandPool->commandPool();
 
   // command buffers
-  commandBuffers = std::make_unique<CommandBuffers>(ctx);
+  commandBuffers = std::make_unique<CommandBuffers>(*device, *commandPool);
   ctx.commandBuffers = commandBuffers->commandBuffers();
 
   // sync_objects
-  // TODO: split sync_objects into semaphore and fence
-  syncObjects = std::make_unique<SyncObjects>(ctx);
+  syncObjects = std::make_unique<SyncObjects>(*device, ctx.swapchainImages);
   ctx.imageAvailableSemaphores = syncObjects->imageAvailableSemaphores();
   ctx.renderFinishedSemaphores = syncObjects->renderFinishedSemaphores();
   ctx.inFlightFences = syncObjects->inFlightFences();
