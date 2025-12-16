@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 namespace vkr {
+
 void VulkanApplication::initVulkan() {
   // window
   window = std::make_unique<Window>(ctx);
@@ -124,6 +125,7 @@ void VulkanApplication::mainLoop() {
         ui->toggleVisibility();
       }
       fpsCounter->update();
+      onUpdate();
       drawFrame();
     }
 
@@ -131,27 +133,6 @@ void VulkanApplication::mainLoop() {
 
     device->waitIdle();
   }
-}
-
-void VulkanApplication::cleanup() {
-  ui.reset();
-  fpsCounter.reset();
-  camera.reset();
-  syncObjects.reset();
-  resourceManager.reset();
-  commandBuffers.reset();
-  descriptorSets.reset();
-  commandPool.reset();
-  graphicsPipeline.reset();
-  descriptorSetLayout.reset();
-  descriptorPool.reset();
-  descriptorManager.reset();
-  renderPass.reset();
-  swapchain.reset();
-  device.reset();
-  surface.reset();
-  instance.reset();
-  window.reset();
 }
 
 void VulkanApplication::recreateSwapchain() {
@@ -185,7 +166,7 @@ void VulkanApplication::drawFrame() {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
 
-  updateUniformBuffer(ctx.currentFrame);
+  updateUniforms(ctx.currentFrame);
 
   vkResetFences(device->device(), 1,
                 &syncObjects->inFlightFences()[ctx.currentFrame]);
@@ -249,6 +230,29 @@ void VulkanApplication::drawFrame() {
     throw std::runtime_error("failed to present swap chain image!");
   }
   ctx.currentFrame = (ctx.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void VulkanApplication::cleanup() {
+  onCleanup();
+
+  ui.reset();
+  fpsCounter.reset();
+  camera.reset();
+  syncObjects.reset();
+  resourceManager.reset();
+  commandBuffers.reset();
+  descriptorSets.reset();
+  descriptorSetLayout.reset();
+  descriptorManager.reset();
+  descriptorPool.reset();
+  commandPool.reset();
+  graphicsPipeline.reset();
+  renderPass.reset();
+  swapchain.reset();
+  device.reset();
+  surface.reset();
+  instance.reset();
+  window.reset();
 }
 
 } // namespace vkr
