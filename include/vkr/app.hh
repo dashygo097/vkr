@@ -1,11 +1,8 @@
 #pragma once
 
-#include "./components/camera.hh"
-#include "./components/fps_counter.hh"
-#include "./components/ui/ui.hh"
+#include "./components/components.hh"
 #include "./core/core.hh"
 #include "./ctx.hh"
-#include "./pipeline/descriptor/descriptor.hh"
 #include "./pipeline/pipeline.hh"
 #include "./resources/manager.hh"
 
@@ -55,13 +52,13 @@ public:
 
   // components
   std::unique_ptr<Camera> camera;
-  std::unique_ptr<FPSCounter> fpsCounter;
+  std::unique_ptr<Timer> timer;
   std::unique_ptr<UI> ui;
 
 protected:
   virtual void onConfigure() {}
   virtual void onSetup() {}
-  virtual void onUpdate() {}
+  virtual void onUpdate(float deltaTime) {}
   virtual void onCleanup() {}
 
   virtual std::vector<DescriptorBinding> createDescriptorBindings() {

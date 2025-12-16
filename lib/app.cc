@@ -68,7 +68,7 @@ void VulkanApplication::initVulkan() {
       resourceManager->getUniformBuffer("default")->mapped();
 
   // descriptor manager
-  uint32_t maxSets = MAX_FRAMES_IN_FLIGHT;
+  uint32_t maxSets = MAX_FRAMES_IN_FLIGHT + 1;
   DescriptorPoolSizes poolSizes =
       DescriptorManager::calculatePoolSizes(maxSets);
   descriptorPool = std::make_unique<DescriptorPool>(ctx, maxSets, poolSizes);
@@ -101,15 +101,15 @@ void VulkanApplication::initVulkan() {
   ctx.cameraNearPlane = camera->nearPlane();
   ctx.cameraFarPlane = camera->farPlane();
 
-  // fps counter
-  fpsCounter = std::make_unique<FPSCounter>();
+  // timer
+  timer = std::make_unique<Timer>();
 
   // ui
   ui = std::make_unique<UI>(ctx);
 }
 
 void VulkanApplication::mainLoop() {
-  fpsCounter->start();
+  timer->start();
   bool isLastTabKeyPressed = false, isNowTabKeyPressed = false;
 
   while (!window->shouldClose()) {
@@ -124,8 +124,8 @@ void VulkanApplication::mainLoop() {
       if (isNowTabKeyPressed && !isLastTabKeyPressed) {
         ui->toggleVisibility();
       }
-      fpsCounter->update();
-      onUpdate();
+      timer->update();
+      onUpdate(timer->deltaTime());
       drawFrame();
     }
 
@@ -236,7 +236,7 @@ void VulkanApplication::cleanup() {
   onCleanup();
 
   ui.reset();
-  fpsCounter.reset();
+  timer.reset();
   camera.reset();
   syncObjects.reset();
   resourceManager.reset();
