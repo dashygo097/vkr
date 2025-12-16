@@ -1,13 +1,14 @@
 #pragma once
 
-#include "../ctx.hh"
+#include <GLFW/glfw3.h>
+#include <cstdint>
+#include <string>
 
 namespace vkr {
 
 class Window {
 public:
-  explicit Window(uint32_t width, uint32_t height, std::string_view title);
-  Window(const VulkanContext &ctx);
+  explicit Window(std::string title, uint32_t width, uint32_t height);
   ~Window();
 
   Window(const Window &) = delete;

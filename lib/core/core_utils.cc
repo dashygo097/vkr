@@ -1,5 +1,6 @@
 #include "vkr/core/core_utils.hh"
 #include "vkr/core/instance.hh"
+#include <GLFW/glfw3.h>
 
 namespace vkr {
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,

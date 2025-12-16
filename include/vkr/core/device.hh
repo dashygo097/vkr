@@ -1,15 +1,15 @@
 #pragma once
 
-#include "../ctx.hh"
+#include "./instance.hh"
+#include "./surface.hh"
 
 namespace vkr {
 
 class Device {
 public:
-  Device(VkInstance instance, VkSurfaceKHR surface,
-         const std::vector<const char *> &deviceExtensions,
-         const std::vector<const char *> &validationLayers);
-  Device(const VulkanContext &ctx);
+  explicit Device(const Instance &instance, const Surface &surface,
+                  const std::vector<const char *> &deviceExtensions,
+                  const std::vector<const char *> &validationLayers);
   ~Device();
 
   Device(const Device &) = delete;
@@ -28,8 +28,8 @@ public:
 
 private:
   // dependencies
-  VkInstance instance{VK_NULL_HANDLE};
-  VkSurfaceKHR surface{VK_NULL_HANDLE};
+  const Instance &instance;
+  const Surface &surface;
 
   // components
   VkPhysicalDevice _physicalDevice{VK_NULL_HANDLE};

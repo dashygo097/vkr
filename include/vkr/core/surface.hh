@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../ctx.hh"
+#include "./instance.hh"
+#include "./window.hh"
 
 namespace vkr {
 
 class Surface {
 public:
-  Surface(VkInstance instance, GLFWwindow *window);
-  Surface(const VulkanContext &ctx);
+  explicit Surface(const Window &window, const Instance &instance);
   ~Surface();
 
   Surface(const Surface &) = delete;
@@ -17,8 +17,8 @@ public:
 
 private:
   // dependencies
-  VkInstance instance{VK_NULL_HANDLE};
-  GLFWwindow *window{nullptr};
+  const Instance &instance;
+  const Window &window;
 
   // components
   VkSurfaceKHR _surface{VK_NULL_HANDLE};

@@ -14,9 +14,6 @@ DebugMessenger::DebugMessenger(VkInstance instance) : instance(instance) {
   }
 }
 
-DebugMessenger::DebugMessenger(const VulkanContext &ctx)
-    : DebugMessenger(ctx.instance) {}
-
 DebugMessenger::~DebugMessenger() {
   auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
       instance, "vkDestroyDebugUtilsMessengerEXT");

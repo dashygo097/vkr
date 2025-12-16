@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../ctx.hh"
 #include "./debug_messenger.hh"
+#include <vector>
 
 #ifdef NDEBUG
 const bool ENABLE_VALIDATION_LAYERS = false;
@@ -17,7 +17,6 @@ public:
                     uint32_t appVersion, uint32_t engineVersion,
                     const std::vector<const char *> &preExtensions,
                     const std::vector<const char *> &validationLayers);
-  explicit Instance(const VulkanContext &ctx);
 
   Instance(const Instance &) = delete;
   Instance &operator=(const Instance &) = delete;
