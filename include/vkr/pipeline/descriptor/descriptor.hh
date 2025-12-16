@@ -11,11 +11,8 @@ namespace vkr {
 
 class Descriptor {
 public:
-  Descriptor(VkDevice device, const DescriptorSetLayout &layout,
-             DescriptorPool &pool, uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
-
-  Descriptor(const VulkanContext &ctx, const DescriptorSetLayout &layout,
-             DescriptorPool &pool);
+  Descriptor(VkDevice device, VkDescriptorSetLayout layout,
+             VkDescriptorPool pool, uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
 
   ~Descriptor();
 
@@ -38,7 +35,6 @@ public:
   [[nodiscard]] const std::vector<VkDescriptorSet> &sets() const noexcept {
     return _sets;
   }
-  [[nodiscard]] const DescriptorPool &pool() const noexcept { return *_pool; }
 
   void bind(VkCommandBuffer cmd, VkPipelineLayout layout, uint32_t frameIndex,
             VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -46,21 +42,20 @@ public:
 private:
   // dependencies
   VkDevice device{VK_NULL_HANDLE};
+  VkDescriptorSetLayout layout{VK_NULL_HANDLE};
+  VkDescriptorPool pool{VK_NULL_HANDLE};
 
   // components
-  DescriptorPool *_pool{nullptr};
   std::vector<VkDescriptorSet> _sets;
   uint32_t _frameCount{0};
 
-  void allocateSets(VkDescriptorSetLayout layout);
+  void allocateSets();
 };
 
 class DescriptorManager {
 public:
-  DescriptorManager(VkDevice device,
-                    uint32_t maxSets = MAX_FRAMES_IN_FLIGHT * 5);
-  DescriptorManager(const VulkanContext &ctx,
-                    uint32_t maxSets = MAX_FRAMES_IN_FLIGHT * 5);
+  explicit DescriptorManager(VkDevice device);
+  explicit DescriptorManager(const VulkanContext &ctx);
   ~DescriptorManager() = default;
 
   DescriptorManager(const DescriptorManager &) = delete;
@@ -70,18 +65,14 @@ public:
   createLayout(const std::vector<DescriptorBinding> &bindings);
 
   std::unique_ptr<Descriptor>
-  allocate(const DescriptorSetLayout &layout,
+  allocate(VkDescriptorSetLayout layout, VkDescriptorPool pool,
            uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
 
-  void reset();
-
-  [[nodiscard]] DescriptorPool &pool() noexcept { return _pool; }
+  static DescriptorPoolSizes calculatePoolSizes(uint32_t maxSets);
 
 private:
+  // dependencies
   VkDevice device{VK_NULL_HANDLE};
-  DescriptorPool _pool;
-
-  DescriptorPoolSizes calculatePoolSizes(uint32_t maxSets);
 };
 
 } // namespace vkr
