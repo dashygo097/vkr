@@ -113,7 +113,7 @@ protected:
   std::vector<void *> _mapped{};
 };
 
-// default uniform buffer object
+// uniform buffer for 3d object
 struct UniformBufferObject3D {
   glm::mat4 model;
   glm::mat4 view;

@@ -4,6 +4,7 @@
 #include "./buffers/index_buffer.hh"
 #include "./buffers/uniform_buffer.hh"
 #include "./buffers/vertex_buffer.hh"
+#include "./geometry/mesh.hh"
 #include <memory>
 
 namespace vkr {
