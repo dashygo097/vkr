@@ -79,7 +79,8 @@ void VulkanApplication::initVulkan() {
   uint32_t maxSets = MAX_FRAMES_IN_FLIGHT + 1;
   DescriptorPoolSizes poolSizes =
       DescriptorManager::calculatePoolSizes(maxSets);
-  descriptorPool = std::make_unique<DescriptorPool>(ctx, maxSets, poolSizes);
+  descriptorPool =
+      std::make_unique<DescriptorPool>(*device, maxSets, poolSizes);
   ctx.descriptorPool = descriptorPool->pool();
 
   descriptorManager = std::make_unique<DescriptorManager>(*device);
@@ -96,8 +97,8 @@ void VulkanApplication::initVulkan() {
   ctx.graphicsPipeline = graphicsPipeline->pipeline();
 
   // descriptor sets
-  descriptorSets = descriptorManager->allocate(descriptorSetLayout->layout(),
-                                               descriptorPool->pool());
+  descriptorSets =
+      descriptorManager->allocate(*descriptorSetLayout, *descriptorPool);
   bindDescriptorSets();
   ctx.descriptorSets = descriptorSets->sets();
 

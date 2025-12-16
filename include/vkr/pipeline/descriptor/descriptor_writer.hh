@@ -1,13 +1,12 @@
 #pragma once
-#include "../../ctx.hh"
-#include <memory>
-#include <vector>
+
+#include "../../core/device.hh"
 
 namespace vkr {
 
 class DescriptorWriter {
 public:
-  DescriptorWriter() = default;
+  explicit DescriptorWriter(const Device &device);
 
   DescriptorWriter &writeBuffer(uint32_t binding, VkDescriptorType type,
                                 const VkDescriptorBufferInfo *bufferInfo);
@@ -23,10 +22,14 @@ public:
   writeImageArray(uint32_t binding, VkDescriptorType type,
                   const std::vector<VkDescriptorImageInfo> &imageInfos);
 
-  void update(VkDevice device, VkDescriptorSet set);
+  void update(VkDescriptorSet set);
   void clear();
 
 private:
+  // dependencies
+  const Device &device;
+
+  // components
   std::vector<VkWriteDescriptorSet> _writes;
   std::vector<VkDescriptorBufferInfo> _bufferInfos;
   std::vector<VkDescriptorImageInfo> _imageInfos;
