@@ -85,10 +85,10 @@ void VulkanApplication::initVulkan() {
   ctx.graphicsPipeline = graphicsPipeline->pipeline();
 
   // descriptor
-  descriptor = descriptorManager->allocate(descriptorSetLayout->layout(),
-                                           descriptorPool->pool());
-  bindDescriptors();
-  ctx.descriptorSets = descriptor->sets();
+  descriptorSets = descriptorManager->allocate(descriptorSetLayout->layout(),
+                                               descriptorPool->pool());
+  bindDescriptorSets();
+  ctx.descriptorSets = descriptorSets->sets();
 
   // camera
   camera = std::make_unique<Camera>(ctx);
@@ -140,10 +140,11 @@ void VulkanApplication::cleanup() {
   syncObjects.reset();
   resourceManager.reset();
   commandBuffers.reset();
-  descriptor.reset();
+  descriptorSets.reset();
   commandPool.reset();
   graphicsPipeline.reset();
   descriptorSetLayout.reset();
+  descriptorPool.reset();
   descriptorManager.reset();
   renderPass.reset();
   swapchain.reset();
@@ -194,7 +195,7 @@ void VulkanApplication::drawFrame() {
 
   commandBuffers->record(
       imageIndex, ctx.currentFrame, renderPass->renderPass(),
-      graphicsPipeline->pipelineLayout(), descriptor->sets(),
+      graphicsPipeline->pipelineLayout(), descriptorSets->sets(),
       resourceManager->getFramebuffers("swapchain")->framebuffers(),
       swapchain->extent2D(), graphicsPipeline->pipeline(),
       resourceManager->listVertexBuffers(), resourceManager->listIndexBuffers(),

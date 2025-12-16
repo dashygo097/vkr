@@ -9,15 +9,16 @@
 
 namespace vkr {
 
-class Descriptor {
+class DescriptorSets {
 public:
-  Descriptor(VkDevice device, VkDescriptorSetLayout layout,
-             VkDescriptorPool pool, uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
+  DescriptorSets(VkDevice device, VkDescriptorSetLayout layout,
+                 VkDescriptorPool pool,
+                 uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
 
-  ~Descriptor();
+  ~DescriptorSets();
 
-  Descriptor(const Descriptor &) = delete;
-  Descriptor &operator=(const Descriptor &) = delete;
+  DescriptorSets(const DescriptorSets &) = delete;
+  DescriptorSets &operator=(const DescriptorSets &) = delete;
 
   void bindUniformBuffer(uint32_t binding, const std::vector<VkBuffer> &buffers,
                          VkDeviceSize size, VkDeviceSize offset = 0);
@@ -64,7 +65,7 @@ public:
   std::shared_ptr<DescriptorSetLayout>
   createLayout(const std::vector<DescriptorBinding> &bindings);
 
-  std::unique_ptr<Descriptor>
+  std::unique_ptr<DescriptorSets>
   allocate(VkDescriptorSetLayout layout, VkDescriptorPool pool,
            uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
 
