@@ -1,22 +1,22 @@
 #pragma once
 
-#include "../ctx.hh"
+#include "./device.hh"
 
 namespace vkr {
 class Fence {
 public:
-  Fence(VkDevice device, VkImage image);
-  Fence(const VulkanContext &ctx);
+  explicit Fence(const Device &device, const VkImage &image);
   ~Fence();
 
   Fence(const Fence &) = delete;
   Fence &operator=(const Fence &) = delete;
 
-  [[nodiscard]] VkFence inFlightFences() const noexcept { return _fence; }
+  [[nodiscard]] VkFence fence() const noexcept { return _fence; }
 
 private:
   // dependencies
-  VkDevice device;
+  const Device &device;
+  const VkImage &image;
 
   // components
   VkFence _fence;

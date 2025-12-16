@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../core/core.hh"
+#include "../core/device.hh"
+#include "../core/swapchain.hh"
 
 namespace vkr {
 class RenderPass {

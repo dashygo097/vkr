@@ -1,12 +1,11 @@
 #pragma once
 
-#include "../ctx.hh"
+#include "./device.hh"
 
 namespace vkr {
 class Semaphore {
 public:
-  explicit Semaphore(VkDevice device, VkImage images);
-  Semaphore(const VulkanContext &ctx);
+  explicit Semaphore(const Device &device, const VkImage &image);
 
   ~Semaphore();
   Semaphore(const Semaphore &) = delete;
@@ -16,7 +15,8 @@ public:
 
 private:
   // dependenciesi
-  VkDevice device;
+  const Device &device;
+  const VkImage &image;
 
   // components
   VkSemaphore _semaphore;
