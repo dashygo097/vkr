@@ -17,17 +17,12 @@ public:
   CommandBuffers(const CommandBuffers &) = delete;
   CommandBuffers &operator=(const CommandBuffers &) = delete;
 
-  [[nodiscard]] std::vector<VkCommandBuffer> commandBuffers() const noexcept {
-    return _commandBuffers;
-  }
-  [[nodiscard]] std::vector<VkCommandBuffer> &commandBuffersRef() noexcept {
+  // FIXME: ref return
+  [[nodiscard]] std::vector<VkCommandBuffer> &commandBuffers() noexcept {
     return _commandBuffers;
   }
 
-  [[nodiscard]] VkCommandBuffer commandBuffer(uint32_t index) const noexcept {
-    return _commandBuffers[index];
-  }
-  [[nodiscard]] VkCommandBuffer &commandBufferRef(uint32_t index) noexcept {
+  [[nodiscard]] VkCommandBuffer &commandBuffer(uint32_t index) noexcept {
     return _commandBuffers[index];
   }
 

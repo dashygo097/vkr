@@ -4,7 +4,7 @@
 namespace vkr {
 ShaderModule::ShaderModule(VkDevice device, const std::string &filepath)
     : device(device) {
-  auto code = readFile(filepath);
+  auto code = read_file(filepath);
   VkShaderModuleCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   createInfo.codeSize = code.size();
