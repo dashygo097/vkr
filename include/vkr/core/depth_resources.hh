@@ -1,12 +1,12 @@
 #pragma once
 
-#include "../ctx.hh"
+#include "./device.hh"
 
 namespace vkr {
 class DepthResources {
 public:
-  DepthResources(VkPhysicalDevice physicalDevice, VkExtent2D swapChainExtent);
-  DepthResources(const VulkanContext &ctx);
+  explicit DepthResources(const Device &device,
+                          const VkExtent2D &swapChainExtent);
   ~DepthResources();
 
   DepthResources(const DepthResources &) = delete;
@@ -20,8 +20,8 @@ public:
 
 private:
   // dependencies
-  VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
-  VkExtent2D swapchainExtent{};
+  const Device &device;
+  const VkExtent2D &swapChainExtent;
 
   // components
   VkImage _image{VK_NULL_HANDLE};
@@ -41,7 +41,8 @@ private:
                                VkFormatFeatureFlags features) {
     for (VkFormat format : candidates) {
       VkFormatProperties props;
-      vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+      vkGetPhysicalDeviceFormatProperties(device.physicalDevice(), format,
+                                          &props);
       if (tiling == VK_IMAGE_TILING_LINEAR &&
           (props.linearTilingFeatures & features) == features) {
         return format;

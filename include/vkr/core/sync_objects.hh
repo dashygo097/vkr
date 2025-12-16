@@ -6,8 +6,8 @@ namespace vkr {
 
 class SyncObjects {
 public:
-  SyncObjects(const Device &device,
-              const std::vector<VkImage> &swapchainImages);
+  explicit SyncObjects(const Device &device,
+                       const std::vector<VkImage> &swapchainImages);
   ~SyncObjects();
 
   SyncObjects(const SyncObjects &) = delete;
