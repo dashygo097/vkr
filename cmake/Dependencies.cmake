@@ -35,6 +35,7 @@ set(GLFW_BUILD_DOCS     OFF CACHE BOOL "Disable GLFW docs" FORCE)
 set(GLFW_BUILD_TESTS    OFF CACHE BOOL "Disable GLFW tests" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Disable GLFW examples" FORCE)
 
+add_subdirectory(3rdparty/nlohmann EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glfw EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glm EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/imgui EXCLUDE_FROM_ALL)
