@@ -2,8 +2,9 @@
 #include "vkr/resources/buffers/vertex_buffer.hh"
 
 namespace vkr {
-GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
-                                   VkDescriptorSetLayout descriptorSetLayout,
+GraphicsPipeline::GraphicsPipeline(const Device &device,
+                                   const RenderPass &renderPass,
+                                   DescriptorSetLayout &descriptorSetLayout,
                                    const std::string &vertShaderPath,
                                    const std::string &fragShaderPath)
     : device(device), renderPass(renderPass),
@@ -97,10 +98,10 @@ GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutInfo.setLayoutCount = 1;
-  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout.layout();
   pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-  if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
+  if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr,
                              &_pipelineLayout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
   }
@@ -117,27 +118,24 @@ GraphicsPipeline::GraphicsPipeline(VkDevice device, VkRenderPass renderPass,
   pipelineInfo.pColorBlendState = &colorBlending;
   pipelineInfo.pDynamicState = &dynamicState;
   pipelineInfo.layout = _pipelineLayout;
-  pipelineInfo.renderPass = renderPass;
+  pipelineInfo.renderPass = renderPass.renderPass();
   pipelineInfo.subpass = 0;
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-  if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
-                                nullptr, &_graphicsPipeline) != VK_SUCCESS) {
+  if (vkCreateGraphicsPipelines(device.device(), VK_NULL_HANDLE, 1,
+                                &pipelineInfo, nullptr,
+                                &_graphicsPipeline) != VK_SUCCESS) {
     throw std::runtime_error("failed to create graphics pipeline!");
   }
 }
 
-GraphicsPipeline::GraphicsPipeline(const VulkanContext &ctx)
-    : GraphicsPipeline(ctx.device, ctx.renderPass, ctx.descriptorSetLayout,
-                       ctx.vertexShaderPath, ctx.fragmentShaderPath) {}
-
 GraphicsPipeline::~GraphicsPipeline() {
   if (_graphicsPipeline != VK_NULL_HANDLE) {
-    vkDestroyPipeline(device, _graphicsPipeline, nullptr);
+    vkDestroyPipeline(device.device(), _graphicsPipeline, nullptr);
   }
   _graphicsPipeline = VK_NULL_HANDLE;
   if (_pipelineLayout != VK_NULL_HANDLE) {
-    vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
+    vkDestroyPipelineLayout(device.device(), _pipelineLayout, nullptr);
   }
   _pipelineLayout = VK_NULL_HANDLE;
 }

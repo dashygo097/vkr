@@ -21,6 +21,7 @@ public:
   [[nodiscard]] std::vector<VkCommandBuffer> &commandBuffers() noexcept {
     return _commandBuffers;
   }
+  // FIXME: ref return
   [[nodiscard]] VkCommandBuffer &commandBuffer(uint32_t index) noexcept {
     return _commandBuffers[index];
   }

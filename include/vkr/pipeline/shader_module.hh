@@ -1,13 +1,12 @@
 #pragma once
 
-#include <string>
-#include <vulkan/vulkan.h>
+#include "../core/device.hh"
 
 namespace vkr {
 
 class ShaderModule {
 public:
-  ShaderModule(VkDevice device, const std::string &filepath);
+  explicit ShaderModule(const Device &device, const std::string &filepath);
   ~ShaderModule();
 
   ShaderModule(const ShaderModule &) = delete;
@@ -17,7 +16,7 @@ public:
 
 private:
   // dependencies
-  VkDevice device{VK_NULL_HANDLE};
+  const Device &device;
 
   // components
   VkShaderModule _shaderModule{VK_NULL_HANDLE};

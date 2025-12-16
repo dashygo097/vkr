@@ -1,5 +1,4 @@
 #pragma once
-#include "../../ctx.hh"
 #include "../../resources/buffers/uniform_buffer.hh"
 #include "./descriptor_binding.hh"
 #include "./descriptor_pool.hh"
@@ -14,7 +13,6 @@ public:
   DescriptorSets(VkDevice device, VkDescriptorSetLayout layout,
                  VkDescriptorPool pool,
                  uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
-
   ~DescriptorSets();
 
   DescriptorSets(const DescriptorSets &) = delete;
@@ -55,8 +53,7 @@ private:
 
 class DescriptorManager {
 public:
-  explicit DescriptorManager(VkDevice device);
-  explicit DescriptorManager(const VulkanContext &ctx);
+  explicit DescriptorManager(const Device &device);
   ~DescriptorManager() = default;
 
   DescriptorManager(const DescriptorManager &) = delete;
@@ -73,7 +70,7 @@ public:
 
 private:
   // dependencies
-  VkDevice device{VK_NULL_HANDLE};
+  const Device &device;
 };
 
 } // namespace vkr

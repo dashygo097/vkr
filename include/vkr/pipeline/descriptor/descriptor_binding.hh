@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../ctx.hh"
+#include "../../core/device.hh"
 #include <vector>
 
 namespace vkr {
@@ -38,33 +38,25 @@ struct DescriptorBinding {
 
 class DescriptorSetLayout {
 public:
-  DescriptorSetLayout(VkDevice device,
-                      const std::vector<DescriptorBinding> &bindings);
-  DescriptorSetLayout(const VulkanContext &ctx,
-                      const std::vector<DescriptorBinding> &bindings);
+  explicit DescriptorSetLayout(const Device &device,
+                               const std::vector<DescriptorBinding> &bindings);
   ~DescriptorSetLayout();
 
   DescriptorSetLayout(const DescriptorSetLayout &) = delete;
   DescriptorSetLayout &operator=(const DescriptorSetLayout &) = delete;
-  DescriptorSetLayout(DescriptorSetLayout &&other) noexcept;
-  DescriptorSetLayout &operator=(DescriptorSetLayout &&other) noexcept;
 
-  [[nodiscard]] VkDescriptorSetLayout layout() const noexcept {
-    return _layout;
-  }
+  // FIXME: ref return
+  [[nodiscard]] VkDescriptorSetLayout &layout() noexcept { return _layout; }
 
-  [[nodiscard]] const std::vector<DescriptorBinding> &
-  bindings() const noexcept {
-    return _bindings;
-  }
-
-  static DescriptorSetLayout createDefault3D(VkDevice device);
-  static DescriptorSetLayout createDefault3D(const VulkanContext &ctx);
+  static DescriptorSetLayout createDefault3D(const Device &device);
 
 private:
-  VkDevice device{VK_NULL_HANDLE};
+  // dependencies
+  const Device &device;
+  const std::vector<DescriptorBinding> &bindings;
+
+  // components
   VkDescriptorSetLayout _layout{VK_NULL_HANDLE};
-  std::vector<DescriptorBinding> _bindings;
 
   void cleanup();
 };

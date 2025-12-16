@@ -2,7 +2,7 @@
 #include "vkr/io_utils.hh"
 
 namespace vkr {
-ShaderModule::ShaderModule(VkDevice device, const std::string &filepath)
+ShaderModule::ShaderModule(const Device &device, const std::string &filepath)
     : device(device) {
   auto code = read_file(filepath);
   VkShaderModuleCreateInfo createInfo{};
@@ -10,15 +10,15 @@ ShaderModule::ShaderModule(VkDevice device, const std::string &filepath)
   createInfo.codeSize = code.size();
   createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
-  if (vkCreateShaderModule(device, &createInfo, nullptr, &_shaderModule) !=
-      VK_SUCCESS) {
+  if (vkCreateShaderModule(device.device(), &createInfo, nullptr,
+                           &_shaderModule) != VK_SUCCESS) {
     throw std::runtime_error("failed to create shader module!");
   }
 }
 
 ShaderModule::~ShaderModule() {
   if (_shaderModule != VK_NULL_HANDLE) {
-    vkDestroyShaderModule(device, _shaderModule, nullptr);
+    vkDestroyShaderModule(device.device(), _shaderModule, nullptr);
   }
 }
 } // namespace vkr

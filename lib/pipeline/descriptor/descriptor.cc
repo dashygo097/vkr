@@ -115,10 +115,7 @@ void DescriptorSets::bind(VkCommandBuffer cmd, VkPipelineLayout layout,
                           nullptr);
 }
 
-DescriptorManager::DescriptorManager(VkDevice device) : device(device) {}
-
-DescriptorManager::DescriptorManager(const VulkanContext &ctx)
-    : DescriptorManager(ctx.device) {}
+DescriptorManager::DescriptorManager(const Device &device) : device(device) {}
 
 DescriptorPoolSizes DescriptorManager::calculatePoolSizes(uint32_t maxSets) {
   DescriptorPoolSizes sizes;
@@ -138,7 +135,8 @@ std::shared_ptr<DescriptorSetLayout> DescriptorManager::createLayout(
 std::unique_ptr<DescriptorSets>
 DescriptorManager::allocate(VkDescriptorSetLayout layout, VkDescriptorPool pool,
                             uint32_t frameCount) {
-  return std::make_unique<DescriptorSets>(device, layout, pool, frameCount);
+  return std::make_unique<DescriptorSets>(device.device(), layout, pool,
+                                          frameCount);
 }
 
 } // namespace vkr
