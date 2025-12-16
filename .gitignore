@@ -2,6 +2,4 @@
 .cache/
 .vscode/
 
-assets/
-output/
 build/

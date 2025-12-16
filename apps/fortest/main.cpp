@@ -31,12 +31,12 @@ private:
     auto defaultUBO = resourceManager->getUniformBuffer("default");
     if (defaultUBO && descriptor) {
       descriptor->bindUniformBuffer(0, defaultUBO->buffers(),
-                                    sizeof(vkr::UniformBufferObject3D));
+                                    sizeof(vkr::UniformBuffer3DObject));
     }
   }
 
   void updateUniformBuffer(uint32_t currentImage) override {
-    vkr::UniformBufferObject3D ubo{};
+    vkr::UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();

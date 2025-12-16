@@ -58,7 +58,7 @@ void VulkanApplication::initVulkan() {
   resourceManager->createFramebuffers("swapchain");
   ctx.swapchainFramebuffers =
       resourceManager->getFramebuffers("swapchain")->framebuffers();
-  resourceManager->createUniformBuffer<UniformBufferObject3D>("default", {});
+  resourceManager->createUniformBuffer<UniformBuffer3DObject>("default", {});
 
   ctx.uniformBuffers = resourceManager->getUniformBuffer("default")->buffers();
   ctx.uniformBuffersMemory =
