@@ -61,6 +61,7 @@ protected:
   virtual void onUpdate(float deltaTime) {}
   virtual void onCleanup() {}
 
+  virtual void createUniforms() {}
   virtual std::vector<DescriptorBinding> createDescriptorBindings() {
     return {};
   }

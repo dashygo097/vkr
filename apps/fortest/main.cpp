@@ -22,6 +22,11 @@ private:
   const std::vector<uint16_t> indices1 = {0, 1, 2, 2, 3, 0};
   const std::vector<uint16_t> indices2 = {0, 1, 2, 2, 3, 0};
 
+  void createUniforms() override {
+    resourceManager->createUniformBuffer<vkr::UniformBuffer3DObject>("default",
+                                                                     {});
+  }
+
   std::vector<vkr::DescriptorBinding> createDescriptorBindings() override {
     return {
         {0, vkr::DescriptorType::UniformBuffer, 1, VK_SHADER_STAGE_VERTEX_BIT}};
