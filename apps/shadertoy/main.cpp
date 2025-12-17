@@ -16,26 +16,7 @@ private:
   glm::vec4 mouseState{0.0f};
   bool mousePressed{false};
 
-  void onConfigure() override {
-    ctx.appName = "ShaderToy";
-    ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
-    ctx.engineName = "No Engine";
-    ctx.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-
-    ctx.width = 640;
-    ctx.height = 480;
-    ctx.title = "ShaderToy Viewer";
-
-    ctx.cameraEnabled = false;
-
-    ctx.vertexShaderPath = "shaders/shadertoy-example/vert.spv";
-    ctx.fragmentShaderPath = "shaders/shadertoy-example/frag.spv";
-
-    startTime = std::chrono::high_resolution_clock::now();
-    lastFrameTime = startTime;
-  }
-
-  void onSetup() override {
+  void createUniforms() override {
     resourceManager->createUniformBuffer<vkr::UniformBufferShaderToyObject>(
         "shadertoy", {});
   }
@@ -104,6 +85,32 @@ private:
                                              now->tm_min * 60 + now->tm_sec));
 
     shadertoyUBO->updateRaw(currentImage, &ubo, sizeof(ubo));
+  }
+
+  void onConfigure() override {
+    ctx.appName = "ShaderToy";
+    ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
+    ctx.engineName = "No Engine";
+    ctx.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+
+    ctx.width = 640;
+    ctx.height = 480;
+    ctx.title = "ShaderToy Viewer";
+
+    ctx.cameraEnabled = false;
+
+    ctx.vertexShaderPath = "shaders/shadertoy-example/vert.spv";
+    ctx.fragmentShaderPath = "shaders/shadertoy-example/frag.spv";
+
+    startTime = std::chrono::high_resolution_clock::now();
+    lastFrameTime = startTime;
+
+    ctx.pipelineMode = vkr::PipelineMode::NoVertex;
+  }
+
+  void onSetup() override {
+    resourceManager->createUniformBuffer<vkr::UniformBufferShaderToyObject>(
+        "shadertoy", {});
   }
 };
 

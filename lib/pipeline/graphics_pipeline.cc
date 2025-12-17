@@ -2,11 +2,13 @@
 #include "vkr/resources/buffers/vertex_buffer.hh"
 
 namespace vkr {
+
 GraphicsPipeline::GraphicsPipeline(const Device &device,
                                    const RenderPass &renderPass,
                                    DescriptorSetLayout &descriptorSetLayout,
                                    const std::string &vertShaderPath,
-                                   const std::string &fragShaderPath)
+                                   const std::string &fragShaderPath,
+                                   PipelineMode mode)
     : device(device), renderPass(renderPass),
       descriptorSetLayout(descriptorSetLayout) {
 
@@ -34,14 +36,24 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
   vertexInputInfo.sType =
       VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-  auto bindingDescription = Vertex::getBindingDescription();
-  auto attributeDescriptions = Vertex::getAttributeDescriptions();
+  VkVertexInputBindingDescription bindingDescription;
+  std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions;
 
-  vertexInputInfo.vertexBindingDescriptionCount = 1;
-  vertexInputInfo.vertexAttributeDescriptionCount =
-      static_cast<uint32_t>(attributeDescriptions.size());
-  vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-  vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+  if (mode == PipelineMode::Default) {
+    bindingDescription = Vertex::getBindingDescription();
+    attributeDescriptions = Vertex::getAttributeDescriptions();
+
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+  } else {
+    vertexInputInfo.vertexBindingDescriptionCount = 0;
+    vertexInputInfo.pVertexBindingDescriptions = nullptr;
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+  }
 
   VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
   inputAssembly.sType =
@@ -83,10 +95,6 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
   colorBlending.logicOp = VK_LOGIC_OP_COPY;
   colorBlending.attachmentCount = 1;
   colorBlending.pAttachments = &colorBlendAttachment;
-  colorBlending.blendConstants[0] = 0.0f;
-  colorBlending.blendConstants[1] = 0.0f;
-  colorBlending.blendConstants[2] = 0.0f;
-  colorBlending.blendConstants[3] = 0.0f;
 
   std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT,
                                                VK_DYNAMIC_STATE_SCISSOR};
@@ -99,7 +107,6 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutInfo.setLayoutCount = 1;
   pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout.layout();
-  pipelineLayoutInfo.pushConstantRangeCount = 0;
 
   if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr,
                              &_pipelineLayout) != VK_SUCCESS) {
@@ -120,7 +127,6 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
   pipelineInfo.layout = _pipelineLayout;
   pipelineInfo.renderPass = renderPass.renderPass();
   pipelineInfo.subpass = 0;
-  pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
   if (vkCreateGraphicsPipelines(device.device(), VK_NULL_HANDLE, 1,
                                 &pipelineInfo, nullptr,
@@ -132,11 +138,12 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
 GraphicsPipeline::~GraphicsPipeline() {
   if (_graphicsPipeline != VK_NULL_HANDLE) {
     vkDestroyPipeline(device.device(), _graphicsPipeline, nullptr);
+    _graphicsPipeline = VK_NULL_HANDLE;
   }
-  _graphicsPipeline = VK_NULL_HANDLE;
   if (_pipelineLayout != VK_NULL_HANDLE) {
     vkDestroyPipelineLayout(device.device(), _pipelineLayout, nullptr);
+    _pipelineLayout = VK_NULL_HANDLE;
   }
-  _pipelineLayout = VK_NULL_HANDLE;
 }
+
 } // namespace vkr

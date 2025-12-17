@@ -11,7 +11,7 @@ CommandBuffers::CommandBuffers(const Device &device,
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.commandPool = commandPool.commandPool();
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandBufferCount = (uint32_t)_commandBuffers.size();
+  allocInfo.commandBufferCount = static_cast<uint32_t>(_commandBuffers.size());
 
   if (vkAllocateCommandBuffers(device.device(), &allocInfo,
                                _commandBuffers.data()) != VK_SUCCESS) {
@@ -36,24 +36,33 @@ void CommandBuffers::record(
     VkPipeline graphicsPipeline,
     const std::vector<std::shared_ptr<VertexBuffer>> &vertexBuffers,
     const std::vector<std::shared_ptr<IndexBuffer>> &indexBuffers, UI &ui) {
+
   beginRecording(currentFrame);
   beginRenderPass(currentFrame, renderPass, framebuffers[imageIndex], extent);
+
   vkCmdBindPipeline(_commandBuffers[currentFrame],
                     VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
   setViewportAndScissor(currentFrame, extent);
 
-  for (size_t i = 0; i < vertexBuffers.size() && i < indexBuffers.size(); ++i) {
-    if (vertexBuffers[i] && indexBuffers[i] &&
-        vertexBuffers[i]->buffer() != VK_NULL_HANDLE &&
-        indexBuffers[i]->buffer() != VK_NULL_HANDLE &&
-        !vertexBuffers[i]->vertices().empty() &&
-        !indexBuffers[i]->indices().empty()) {
+  if (!descriptorSets.empty()) {
+    vkCmdBindDescriptorSets(_commandBuffers[currentFrame],
+                            VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0,
+                            1, &descriptorSets[currentFrame], 0, nullptr);
+  }
+
+  if (vertexBuffers.empty() || indexBuffers.empty()) {
+    vkCmdDraw(_commandBuffers[currentFrame], 3, 1, 0, 0);
+  } else {
+    for (size_t i = 0; i < vertexBuffers.size() && i < indexBuffers.size();
+         ++i) {
       drawIndexed(currentFrame, pipelineLayout, descriptorSets[currentFrame],
                   vertexBuffers[i], indexBuffers[i]);
     }
   }
 
   ui.render(_commandBuffers[currentFrame]);
+
   endRenderPass(currentFrame);
   endRecording(currentFrame);
 }
@@ -85,22 +94,6 @@ void CommandBuffers::beginRenderPass(uint16_t index, VkRenderPass renderPass,
                        VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void CommandBuffers::setViewportAndScissor(uint16_t index, VkExtent2D extent) {
-  VkViewport viewport{};
-  viewport.x = 0.0f;
-  viewport.y = 0.0f;
-  viewport.width = static_cast<float>(extent.width);
-  viewport.height = static_cast<float>(extent.height);
-  viewport.minDepth = 0.0f;
-  viewport.maxDepth = 1.0f;
-  vkCmdSetViewport(_commandBuffers[index], 0, 1, &viewport);
-
-  VkRect2D scissor{};
-  scissor.offset = {0, 0};
-  scissor.extent = extent;
-  vkCmdSetScissor(_commandBuffers[index], 0, 1, &scissor);
-}
-
 void CommandBuffers::drawIndexed(
     uint16_t index, VkPipelineLayout pipelineLayout,
     VkDescriptorSet descriptorSet,
@@ -120,6 +113,22 @@ void CommandBuffers::drawIndexed(
   vkCmdDrawIndexed(_commandBuffers[index],
                    static_cast<uint32_t>(indexBuffer->indices().size()), 1, 0,
                    0, 0);
+}
+
+void CommandBuffers::setViewportAndScissor(uint16_t index, VkExtent2D extent) {
+  VkViewport viewport{};
+  viewport.x = 0.0f;
+  viewport.y = 0.0f;
+  viewport.width = static_cast<float>(extent.width);
+  viewport.height = static_cast<float>(extent.height);
+  viewport.minDepth = 0.0f;
+  viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(_commandBuffers[index], 0, 1, &viewport);
+
+  VkRect2D scissor{};
+  scissor.offset = {0, 0};
+  scissor.extent = extent;
+  vkCmdSetScissor(_commandBuffers[index], 0, 1, &scissor);
 }
 
 void CommandBuffers::endRenderPass(uint16_t index) {
