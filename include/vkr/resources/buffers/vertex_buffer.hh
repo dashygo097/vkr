@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../../ctx.hh"
+#include "../../core/command_pool.hh"
+#include "../../core/device.hh"
+#include <glm/glm.hpp>
 
 namespace vkr {
 
@@ -44,17 +46,12 @@ public:
 
 class VertexBuffer {
 public:
-  VertexBuffer(const std::vector<Vertex> &vertices, VkDevice device,
-               VkPhysicalDevice physicalDevice, VkCommandPool commandPool,
-               VkQueue graphicsQueue);
-  VertexBuffer(const std::vector<Vertex> &vertices, const VulkanContext &ctx);
+  explicit VertexBuffer(const Device &device, const CommandPool &commandPool,
+                        const std::vector<Vertex> &vertices);
   ~VertexBuffer();
 
   VertexBuffer(const VertexBuffer &) = delete;
   VertexBuffer &operator=(const VertexBuffer &) = delete;
-
-  VertexBuffer(VertexBuffer &&other) noexcept;
-  VertexBuffer &operator=(VertexBuffer &&other) noexcept;
 
   void create();
   void destroy();
@@ -68,10 +65,8 @@ public:
 
 private:
   // dependencies
-  VkDevice device{VK_NULL_HANDLE};
-  VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
-  VkCommandPool commandPool{VK_NULL_HANDLE};
-  VkQueue graphicsQueue{VK_NULL_HANDLE};
+  const Device &device;
+  const CommandPool &commandPool;
 
   // components
   std::vector<Vertex> _vertices{};

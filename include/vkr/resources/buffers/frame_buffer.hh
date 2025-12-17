@@ -1,15 +1,15 @@
 #pragma once
 
-#include "../../ctx.hh"
+#include "../../core/device.hh"
+#include "../../core/swapchain.hh"
+#include "../../pipeline/render_pass.hh"
 
 namespace vkr {
 
 class Framebuffers {
 public:
-  Framebuffers(VkDevice device, VkRenderPass renderPass,
-               std::vector<VkImageView> swapchainImageViews,
-               VkExtent2D swapchainExtend);
-  Framebuffers(const VulkanContext &ctx);
+  explicit Framebuffers(const Device &device, const RenderPass &renderPass,
+                        const Swapchain &swapchain);
   ~Framebuffers();
 
   Framebuffers(const Framebuffers &) = delete;
@@ -24,10 +24,9 @@ public:
 
 private:
   // dependencies
-  VkDevice device{VK_NULL_HANDLE};
-  VkRenderPass renderPass{VK_NULL_HANDLE};
-  std::vector<VkImageView> swapchainImageViews{VK_NULL_HANDLE};
-  VkExtent2D swapchainExtent{};
+  const Device &device;
+  const RenderPass &renderPass;
+  const Swapchain &swapchain;
 
   // components
   std::vector<VkFramebuffer> _framebuffers{};

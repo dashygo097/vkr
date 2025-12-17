@@ -2,40 +2,30 @@
 
 namespace vkr {
 
-Framebuffers::Framebuffers(VkDevice device, VkRenderPass renderPass,
-                           std::vector<VkImageView> swapchainImageViews,
-                           VkExtent2D swapchainExtend)
-    : device(device), renderPass(renderPass),
-      swapchainImageViews(swapchainImageViews),
-      swapchainExtent(swapchainExtend) {
-  create();
-}
-
-Framebuffers::Framebuffers(const VulkanContext &ctx)
-    : device(ctx.device), renderPass(ctx.renderPass),
-      swapchainImageViews(ctx.swapchainImageViews),
-      swapchainExtent(ctx.swapchainExtent) {
+Framebuffers::Framebuffers(const Device &device, const RenderPass &renderPass,
+                           const Swapchain &swapchain)
+    : device(device), renderPass(renderPass), swapchain(swapchain) {
   create();
 }
 
 Framebuffers::~Framebuffers() { destroy(); }
 
 void Framebuffers::create() {
-  _framebuffers.resize(swapchainImageViews.size());
+  _framebuffers.resize(swapchain.imageViews().size());
 
-  for (size_t i = 0; i < swapchainImageViews.size(); i++) {
-    VkImageView attachments[] = {swapchainImageViews[i]};
+  for (size_t i = 0; i < swapchain.imageViews().size(); i++) {
+    VkImageView attachments[] = {swapchain.imageViews()[i]};
 
     VkFramebufferCreateInfo framebufferInfo{};
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass = renderPass;
+    framebufferInfo.renderPass = renderPass.renderPass();
     framebufferInfo.attachmentCount = 1;
     framebufferInfo.pAttachments = attachments;
-    framebufferInfo.width = swapchainExtent.width;
-    framebufferInfo.height = swapchainExtent.height;
+    framebufferInfo.width = swapchain.extent2D().width;
+    framebufferInfo.height = swapchain.extent2D().height;
     framebufferInfo.layers = 1;
 
-    if (vkCreateFramebuffer(device, &framebufferInfo, nullptr,
+    if (vkCreateFramebuffer(device.device(), &framebufferInfo, nullptr,
                             &_framebuffers[i]) != VK_SUCCESS) {
       throw std::runtime_error("failed to create framebuffer!");
     }
@@ -45,7 +35,7 @@ void Framebuffers::create() {
 void Framebuffers::destroy() {
   for (auto framebuffer : _framebuffers) {
     if (framebuffer != VK_NULL_HANDLE) {
-      vkDestroyFramebuffer(device, framebuffer, nullptr);
+      vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
     }
   }
   _framebuffers.clear();

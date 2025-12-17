@@ -2,18 +2,11 @@
 #include "vkr/resources/buffers/index_buffer.hh"
 
 namespace vkr {
-IndexBuffer::IndexBuffer(const std::vector<uint16_t> &indices, VkDevice device,
-                         VkPhysicalDevice physicalDevice,
-                         VkCommandPool commandPool, VkQueue graphicsQueue)
-    : _indices(indices), device(device), physicalDevice(physicalDevice),
-      commandPool(commandPool), graphicsQueue(graphicsQueue) {
+IndexBuffer::IndexBuffer(const Device &device, const CommandPool &commandPool,
+                         const std::vector<uint16_t> &indices)
+    : _indices(indices), device(device), commandPool(commandPool) {
   create();
 }
-
-IndexBuffer::IndexBuffer(const std::vector<uint16_t> &indices,
-                         const VulkanContext &ctx)
-    : IndexBuffer(indices, ctx.device, ctx.physicalDevice, ctx.commandPool,
-                  ctx.graphicsQueue) {}
 
 IndexBuffer::~IndexBuffer() { destroy(); }
 
@@ -28,32 +21,33 @@ void IndexBuffer::create() {
   createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-               stagingBuffer, stagingBufferMemory, device, physicalDevice);
+               stagingBuffer, stagingBufferMemory, device.device(),
+               device.physicalDevice());
 
   void *data;
-  vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+  vkMapMemory(device.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
   memcpy(data, _indices.data(), (size_t)bufferSize);
-  vkUnmapMemory(device, stagingBufferMemory);
+  vkUnmapMemory(device.device(), stagingBufferMemory);
 
   createBuffer(bufferSize,
                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _indexBuffer, _memory,
-               device, physicalDevice);
+               device.device(), device.physicalDevice());
 
-  copyBuffer(stagingBuffer, _indexBuffer, bufferSize, commandPool,
-             graphicsQueue, device);
+  copyBuffer(stagingBuffer, _indexBuffer, bufferSize, commandPool.commandPool(),
+             device.graphicsQueue(), device.device());
 
-  vkDestroyBuffer(device, stagingBuffer, nullptr);
-  vkFreeMemory(device, stagingBufferMemory, nullptr);
+  vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+  vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 }
 
 void IndexBuffer::destroy() {
   if (_memory != VK_NULL_HANDLE) {
-    vkFreeMemory(device, _memory, nullptr);
+    vkFreeMemory(device.device(), _memory, nullptr);
   }
   if (_indexBuffer != VK_NULL_HANDLE) {
-    vkDestroyBuffer(device, _indexBuffer, nullptr);
+    vkDestroyBuffer(device.device(), _indexBuffer, nullptr);
   }
   if (!_indices.empty()) {
     _indices.clear();
