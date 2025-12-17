@@ -114,7 +114,8 @@ void VulkanApplication::initVulkan() {
   timer = std::make_unique<Timer>();
 
   // ui
-  ui = std::make_unique<UI>(ctx);
+  ui = std::make_unique<UI>(*window, *instance, *surface, *device, *renderPass,
+                            *descriptorPool, *commandPool);
 }
 
 void VulkanApplication::mainLoop() {

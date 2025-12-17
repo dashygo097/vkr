@@ -13,13 +13,11 @@ static void check_vk_result(VkResult err) {
     abort();
 }
 
-UI::UI(GLFWwindow *window, VkInstance instance, VkSurfaceKHR surface,
-       VkPhysicalDevice physicalDevice, VkDevice device,
-       VkRenderPass renderPass, VkQueue graphicsQueue,
-       VkDescriptorPool descriptorPool, VkCommandPool commandPool)
-    : window(window), instance(instance), surface(surface),
-      physicalDevice(physicalDevice), device(device), renderPass(renderPass),
-      graphicsQueue(graphicsQueue), descriptorPool(descriptorPool),
+UI::UI(const Window &window, const Instance &instance, const Surface &surface,
+       const Device &device, const RenderPass &renderPass,
+       const DescriptorPool &descriptorPool, const CommandPool &commandPool)
+    : window(window), instance(instance), surface(surface), device(device),
+      renderPass(renderPass), descriptorPool(descriptorPool),
       commandPool(commandPool) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -29,21 +27,22 @@ UI::UI(GLFWwindow *window, VkInstance instance, VkSurfaceKHR surface,
 
   ImGui::StyleColorsDark();
 
-  ImGui_ImplGlfw_InitForVulkan(window, true);
+  ImGui_ImplGlfw_InitForVulkan(window.glfwWindow(), true);
 
   ImGui_ImplVulkan_PipelineInfo pipeline_info = {};
   pipeline_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-  pipeline_info.RenderPass = renderPass;
+  pipeline_info.RenderPass = renderPass.renderPass();
 
   ImGui_ImplVulkan_InitInfo init_info = {};
-  init_info.Instance = instance;
-  init_info.PhysicalDevice = physicalDevice;
-  init_info.Device = device;
+  init_info.Instance = instance.instance();
+  init_info.PhysicalDevice = device.physicalDevice();
+  init_info.Device = device.device();
   init_info.QueueFamily =
-      findQueueFamilies(physicalDevice, surface).graphicsFamily.value();
-  init_info.Queue = graphicsQueue;
+      findQueueFamilies(device.physicalDevice(), surface.surface())
+          .graphicsFamily.value();
+  init_info.Queue = device.graphicsQueue();
   init_info.PipelineCache = VK_NULL_HANDLE;
-  init_info.DescriptorPool = descriptorPool;
+  init_info.DescriptorPool = descriptorPool.pool();
   init_info.Allocator = nullptr;
   init_info.MinImageCount = 2;
   init_info.ImageCount = 2;
@@ -53,10 +52,6 @@ UI::UI(GLFWwindow *window, VkInstance instance, VkSurfaceKHR surface,
   ImGui_ImplVulkan_Init(&init_info);
 }
 
-UI::UI(const VulkanContext &ctx)
-    : UI(ctx.window, ctx.instance, ctx.surface, ctx.physicalDevice, ctx.device,
-         ctx.renderPass, ctx.graphicsQueue, ctx.descriptorPool,
-         ctx.commandPool) {}
 UI::~UI() {
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
