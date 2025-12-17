@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../core/command_buffer.hh"
-#include "../../ctx.hh"
+#include "../../core/device.hh"
 #include "./buffer_utils.hh"
 
 namespace vkr {
@@ -20,14 +20,10 @@ public:
 
 template <typename ObjectType> class UniformBufferBase : public IUniformBuffer {
 public:
-  UniformBufferBase(const ObjectType &object, VkDevice device,
-                    VkPhysicalDevice physicalDevice)
-      : object(object), device(device), physicalDevice(physicalDevice) {
+  explicit UniformBufferBase(const Device &device, const ObjectType &object)
+      : object(object), device(device) {
     create();
   }
-
-  UniformBufferBase(const ObjectType &object, const VulkanContext &ctx)
-      : UniformBufferBase(object, ctx.device, ctx.physicalDevice) {}
 
   virtual ~UniformBufferBase() { destroy(); }
 
@@ -76,23 +72,24 @@ protected:
       createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                   _uniformBuffers[i], _memories[i], device, physicalDevice);
-      vkMapMemory(device, _memories[i], 0, bufferSize, 0, &_mapped[i]);
+                   _uniformBuffers[i], _memories[i], device.device(),
+                   device.physicalDevice());
+      vkMapMemory(device.device(), _memories[i], 0, bufferSize, 0, &_mapped[i]);
     }
   }
 
   void destroy() {
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
       if (_mapped[i]) {
-        vkUnmapMemory(device, _memories[i]);
+        vkUnmapMemory(device.device(), _memories[i]);
         _mapped[i] = nullptr;
       }
       if (_memories[i] != VK_NULL_HANDLE) {
-        vkFreeMemory(device, _memories[i], nullptr);
+        vkFreeMemory(device.device(), _memories[i], nullptr);
         _memories[i] = VK_NULL_HANDLE;
       }
       if (_uniformBuffers[i] != VK_NULL_HANDLE) {
-        vkDestroyBuffer(device, _uniformBuffers[i], nullptr);
+        vkDestroyBuffer(device.device(), _uniformBuffers[i], nullptr);
         _uniformBuffers[i] = VK_NULL_HANDLE;
       }
     }
@@ -103,8 +100,7 @@ protected:
 
 protected:
   // dependencies
-  VkDevice device;
-  VkPhysicalDevice physicalDevice;
+  const Device &device;
   ObjectType object;
 
   // components

@@ -6,18 +6,11 @@ namespace vkr {
 Vertex::Vertex(glm::vec3 pos, glm::vec3 color) : pos(pos), color(color) {}
 Vertex::~Vertex() {}
 
-VertexBuffer::VertexBuffer(const std::vector<Vertex> &vertices, VkDevice device,
-                           VkPhysicalDevice physicalDevice,
-                           VkCommandPool commandPool, VkQueue graphicsQueue)
-    : _vertices(vertices), device(device), physicalDevice(physicalDevice),
-      commandPool(commandPool), graphicsQueue(graphicsQueue) {
+VertexBuffer::VertexBuffer(const Device &device, const CommandPool &commandPool,
+                           const std::vector<Vertex> &vertices)
+    : _vertices(vertices), device(device), commandPool(commandPool) {
   create();
 }
-
-VertexBuffer::VertexBuffer(const std::vector<Vertex> &vertices,
-                           const VulkanContext &ctx)
-    : VertexBuffer(vertices, ctx.device, ctx.physicalDevice, ctx.commandPool,
-                   ctx.graphicsQueue) {}
 
 VertexBuffer::~VertexBuffer() { destroy(); }
 
@@ -31,32 +24,34 @@ void VertexBuffer::create() {
   createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-               stagingBuffer, stagingBufferMemory, device, physicalDevice);
+               stagingBuffer, stagingBufferMemory, device.device(),
+               device.physicalDevice());
 
   void *data;
-  vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+  vkMapMemory(device.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
   memcpy(data, _vertices.data(), (size_t)bufferSize);
-  vkUnmapMemory(device, stagingBufferMemory);
+  vkUnmapMemory(device.device(), stagingBufferMemory);
 
   createBuffer(bufferSize,
                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _vertexBuffer, _memory,
-               device, physicalDevice);
+               device.device(), device.physicalDevice());
 
-  copyBuffer(stagingBuffer, _vertexBuffer, bufferSize, commandPool,
-             graphicsQueue, device);
+  copyBuffer(stagingBuffer, _vertexBuffer, bufferSize,
+             commandPool.commandPool(), device.graphicsQueue(),
+             device.device());
 
-  vkDestroyBuffer(device, stagingBuffer, nullptr);
-  vkFreeMemory(device, stagingBufferMemory, nullptr);
+  vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+  vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 }
 
 void VertexBuffer::destroy() {
   if (_memory != VK_NULL_HANDLE) {
-    vkFreeMemory(device, _memory, nullptr);
+    vkFreeMemory(device.device(), _memory, nullptr);
   }
   if (_vertexBuffer != VK_NULL_HANDLE) {
-    vkDestroyBuffer(device, _vertexBuffer, nullptr);
+    vkDestroyBuffer(device.device(), _vertexBuffer, nullptr);
   }
   if (!_vertices.empty()) {
     _vertices.clear();

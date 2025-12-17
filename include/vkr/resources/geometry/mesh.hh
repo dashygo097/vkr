@@ -1,30 +1,15 @@
 #pragma once
 
+#include "../../core/command_pool.hh"
+#include "../../core/device.hh"
 #include "../buffers/index_buffer.hh"
 #include "../buffers/vertex_buffer.hh"
 
 namespace vkr::geometry {
 class Mesh {
 public:
-  Mesh(VkDevice device, VkPhysicalDevice physicalDevice,
-       VkCommandPool commandPool, VkQueue graphicsQueue);
-  Mesh(const VulkanContext &ctx);
+  explicit Mesh(const Device &device, const CommandPool &commandPool);
   ~Mesh() = default;
-
-  Mesh(const std::vector<Vertex> &vertices,
-       const std::vector<uint16_t> &indices, const VulkanContext &ctx)
-      : Mesh(ctx) {
-    load(vertices, indices);
-  }
-  Mesh(const std::vector<Vertex> &vertices,
-       const std::vector<uint16_t> &indices) {
-    load(vertices, indices);
-  }
-  explicit Mesh(const std::string &meshFilePath, const VulkanContext &ctx)
-      : Mesh(ctx) {
-    load(meshFilePath);
-  }
-  explicit Mesh(const std::string &meshFilePath) { load(meshFilePath); };
 
   Mesh(const Mesh &) = delete;
   Mesh &operator=(const Mesh &) = delete;
@@ -58,21 +43,13 @@ public:
 
 private:
   // dependencies
-  VkDevice device;
-  VkPhysicalDevice physicalDevice;
-  VkCommandPool commandPool;
-  VkQueue graphicsQueue;
+  const Device &device;
+  const CommandPool &commandPool;
 
   // components
   std::shared_ptr<VertexBuffer> _vertexBuffer;
   std::shared_ptr<IndexBuffer> _indexBuffer;
 
-  void checkVulkanContext() {
-    if (device == VK_NULL_HANDLE || physicalDevice == VK_NULL_HANDLE ||
-        commandPool == VK_NULL_HANDLE || graphicsQueue == VK_NULL_HANDLE) {
-      throw std::runtime_error("Vulkan context is not initialized");
-    }
-  }
   void checkDataLoaded() {
     if (!_vertexBuffer || !_indexBuffer) {
       throw std::runtime_error("Vertex or index buffer is not initialized");

@@ -57,7 +57,8 @@ void VulkanApplication::initVulkan() {
   ctx.renderPass = renderPass->renderPass();
 
   // resource manager
-  resourceManager = std::make_unique<ResourceManager>(ctx);
+  resourceManager = std::make_unique<ResourceManager>(*device, *commandPool,
+                                                      *renderPass, *swapchain);
   resourceManager->createFramebuffers("swapchain");
   ctx.swapchainFramebuffers =
       resourceManager->getFramebuffers("swapchain")->framebuffers();

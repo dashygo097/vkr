@@ -1,15 +1,14 @@
 #pragma once
 
-#include "../../ctx.hh"
+#include "../../core/command_pool.hh"
+#include "../../core/device.hh"
 
 namespace vkr {
 
 class IndexBuffer {
 public:
-  IndexBuffer(const std::vector<uint16_t> &indices, VkDevice device,
-              VkPhysicalDevice physicalDevice, VkCommandPool commandPool,
-              VkQueue graphicsQueue);
-  IndexBuffer(const std::vector<uint16_t> &indices, const VulkanContext &ctx);
+  explicit IndexBuffer(const Device &device, const CommandPool &commandPool,
+                       const std::vector<uint16_t> &indices);
   ~IndexBuffer();
 
   IndexBuffer(const IndexBuffer &) = delete;
@@ -30,10 +29,8 @@ public:
 
 private:
   // components
-  VkDevice device{VK_NULL_HANDLE};
-  VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
-  VkCommandPool commandPool{VK_NULL_HANDLE};
-  VkQueue graphicsQueue{VK_NULL_HANDLE};
+  const Device &device;
+  const CommandPool &commandPool;
 
   // dependencies
   std::vector<uint16_t> _indices{};

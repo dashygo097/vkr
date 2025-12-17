@@ -11,7 +11,10 @@ namespace vkr {
 
 class ResourceManager {
 public:
-  ResourceManager(const VulkanContext &ctx) : ctx(ctx) {}
+  ResourceManager(const Device &device, const CommandPool &commandPool,
+                  const RenderPass &renderPass, const Swapchain &swapchain)
+      : device(device), commandPool(commandPool), renderPass(renderPass),
+        swapchain(swapchain) {}
   ~ResourceManager() = default;
 
   ResourceManager(const ResourceManager &) = delete;
@@ -20,7 +23,7 @@ public:
   // Vertex Buffer Management
   void createVertexBuffer(const std::string &name,
                           const std::vector<Vertex> &vertices) {
-    auto vb = std::make_shared<VertexBuffer>(vertices, ctx);
+    auto vb = std::make_shared<VertexBuffer>(device, commandPool, vertices);
     _vertexBuffers[name] = std::move(vb);
   }
 
@@ -36,7 +39,7 @@ public:
   // Index Buffer Management
   void createIndexBuffer(const std::string &name,
                          const std::vector<uint16_t> &indices) {
-    auto ib = std::make_shared<IndexBuffer>(indices, ctx);
+    auto ib = std::make_shared<IndexBuffer>(device, commandPool, indices);
     _indexBuffers[name] = std::move(ib);
   }
 
@@ -52,7 +55,7 @@ public:
   // Uniform Buffer Management
   template <typename UBOType>
   void createUniformBuffer(const std::string &name, const UBOType &ubo) {
-    auto ub = std::make_shared<UniformBufferBase<UBOType>>(ubo, ctx);
+    auto ub = std::make_shared<UniformBufferBase<UBOType>>(device, ubo);
     _uniformBuffers[name] = std::move(ub);
   }
 
@@ -67,7 +70,7 @@ public:
 
   // Framebuffer Management
   void createFramebuffers(const std::string &name) {
-    auto fb = std::make_shared<Framebuffers>(ctx);
+    auto fb = std::make_shared<Framebuffers>(device, renderPass, swapchain);
     _framebuffers[name] = std::move(fb);
   }
 
@@ -148,8 +151,13 @@ public:
   }
 
 private:
-  VulkanContext ctx;
+  // dependencies
+  const Device &device;
+  const CommandPool &commandPool;
+  const RenderPass &renderPass;
+  const Swapchain &swapchain;
 
+  // components
   std::unordered_map<std::string, std::shared_ptr<VertexBuffer>> _vertexBuffers;
   std::unordered_map<std::string, std::shared_ptr<IndexBuffer>> _indexBuffers;
   std::unordered_map<std::string, std::shared_ptr<IUniformBuffer>>

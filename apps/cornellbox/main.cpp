@@ -59,12 +59,18 @@ private:
   }
 
   void onSetup() override {
-    vkr::geometry::Mesh light("./assets/light.obj", ctx);
-    vkr::geometry::Mesh floor("./assets/floor.obj", ctx);
-    vkr::geometry::Mesh left("./assets/left.obj", ctx);
-    vkr::geometry::Mesh right("./assets/left.obj", ctx);
-    vkr::geometry::Mesh tallbox("./assets/tallbox.obj", ctx);
-    vkr::geometry::Mesh shortbox("./assets/shortbox.obj", ctx);
+    vkr::geometry::Mesh light(*device, *commandPool);
+    light.load("./assets/light.obj");
+    vkr::geometry::Mesh floor(*device, *commandPool);
+    floor.load("./assets/floor.obj");
+    vkr::geometry::Mesh left(*device, *commandPool);
+    left.load("./assets/left.obj");
+    vkr::geometry::Mesh right(*device, *commandPool);
+    right.load("./assets/right.obj");
+    vkr::geometry::Mesh tallbox(*device, *commandPool);
+    tallbox.load("./assets/tallbox.obj");
+    vkr::geometry::Mesh shortbox(*device, *commandPool);
+    shortbox.load("./assets/shortbox.obj");
 
     resourceManager->createVertexBuffer("light",
                                         light.vertexBuffer()->vertices());
