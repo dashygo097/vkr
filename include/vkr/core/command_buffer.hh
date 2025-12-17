@@ -48,11 +48,6 @@ private:
                        VkFramebuffer framebuffer, VkExtent2D extent2d);
   void setViewportAndScissor(uint16_t index, VkExtent2D extent);
 
-  void drawIndexed(uint16_t index, VkPipelineLayout pipelineLayout,
-                   VkDescriptorSet descriptorSet,
-                   const std::shared_ptr<VertexBuffer> &vertexBuffer,
-                   const std::shared_ptr<IndexBuffer> &indexBuffer);
-
   void endRenderPass(uint16_t index);
   void endRecording(uint16_t index);
 };

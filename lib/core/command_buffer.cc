@@ -56,8 +56,26 @@ void CommandBuffers::record(
   } else {
     for (size_t i = 0; i < vertexBuffers.size() && i < indexBuffers.size();
          ++i) {
-      drawIndexed(currentFrame, pipelineLayout, descriptorSets[currentFrame],
-                  vertexBuffers[i], indexBuffers[i]);
+      if (vertexBuffers[i] && indexBuffers[i] &&
+          vertexBuffers[i]->buffer() != VK_NULL_HANDLE &&
+          indexBuffers[i]->buffer() != VK_NULL_HANDLE &&
+          !vertexBuffers[i]->vertices().empty() &&
+          !indexBuffers[i]->indices().empty()) {
+
+        VkBuffer vb = vertexBuffers[i]->buffer();
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(_commandBuffers[currentFrame], 0, 1, &vb,
+                               offsets);
+
+        vkCmdBindIndexBuffer(_commandBuffers[currentFrame],
+                             indexBuffers[i]->buffer(), 0,
+                             VK_INDEX_TYPE_UINT16);
+
+        vkCmdDrawIndexed(
+            _commandBuffers[currentFrame],
+            static_cast<uint32_t>(indexBuffers[i]->indices().size()), 1, 0, 0,
+            0);
+      }
     }
   }
 
@@ -92,27 +110,6 @@ void CommandBuffers::beginRenderPass(uint16_t index, VkRenderPass renderPass,
 
   vkCmdBeginRenderPass(_commandBuffers[index], &renderPassInfo,
                        VK_SUBPASS_CONTENTS_INLINE);
-}
-
-void CommandBuffers::drawIndexed(
-    uint16_t index, VkPipelineLayout pipelineLayout,
-    VkDescriptorSet descriptorSet,
-    const std::shared_ptr<VertexBuffer> &vertexBuffer,
-    const std::shared_ptr<IndexBuffer> &indexBuffer) {
-  VkBuffer vb = vertexBuffer->buffer();
-  VkDeviceSize offsets[] = {0};
-  vkCmdBindVertexBuffers(_commandBuffers[index], 0, 1, &vb, offsets);
-
-  vkCmdBindIndexBuffer(_commandBuffers[index], indexBuffer->buffer(), 0,
-                       VK_INDEX_TYPE_UINT16);
-
-  vkCmdBindDescriptorSets(_commandBuffers[index],
-                          VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
-                          &descriptorSet, 0, nullptr);
-
-  vkCmdDrawIndexed(_commandBuffers[index],
-                   static_cast<uint32_t>(indexBuffer->indices().size()), 1, 0,
-                   0, 0);
 }
 
 void CommandBuffers::setViewportAndScissor(uint16_t index, VkExtent2D extent) {
