@@ -104,14 +104,11 @@ void VulkanApplication::initVulkan() {
   ctx.descriptorSets = descriptorSets->sets();
 
   // camera
-  camera = std::make_unique<Camera>(ctx);
+  camera = std::make_unique<Camera>(*window, ctx.cameraMovementSpeed,
+                                    ctx.cameraMouseSensitivity, ctx.cameraFov,
+                                    ctx.cameraAspectRatio, ctx.cameraNearPlane,
+                                    ctx.cameraFarPlane);
   ctx.cameraLocked = camera->isLocked();
-  ctx.cameraMovementSpeed = camera->movementSpeed();
-  ctx.cameraMouseSensitivity = camera->mouseSensitivity();
-  ctx.cameraFov = camera->fov();
-  ctx.cameraAspectRatio = camera->aspectRatio();
-  ctx.cameraNearPlane = camera->nearPlane();
-  ctx.cameraFarPlane = camera->farPlane();
 
   // timer
   timer = std::make_unique<Timer>();
