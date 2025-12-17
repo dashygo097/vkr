@@ -100,8 +100,8 @@ private:
 
     ctx.cameraEnabled = false;
 
-    ctx.vertexShaderPath = "shaders/shadertoy-examples/vert.spv";
-    ctx.fragmentShaderPath = "shaders/shadertoy-examples/frag.spv";
+    ctx.vertexShaderPath = "shaders/shadertoy-examples/vert_shadertoy.spv";
+    ctx.fragmentShaderPath = "shaders/shadertoy-examples/frag_example_0.spv";
 
     startTime = std::chrono::high_resolution_clock::now();
     lastFrameTime = startTime;
