@@ -37,8 +37,9 @@ private:
 
   void updateUniforms(uint32_t currentImage) override {
     auto shadertoyUBO = resourceManager->getUniformBuffer("shadertoy");
-    if (!shadertoyUBO)
+    if (!shadertoyUBO) {
       return;
+    }
 
     auto currentTime = std::chrono::high_resolution_clock::now();
     float deltaTime =
@@ -106,11 +107,6 @@ private:
     lastFrameTime = startTime;
 
     ctx.pipelineMode = vkr::PipelineMode::NoVertex;
-  }
-
-  void onSetup() override {
-    resourceManager->createUniformBuffer<vkr::UniformBufferShaderToyObject>(
-        "shadertoy", {});
   }
 };
 

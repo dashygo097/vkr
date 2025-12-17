@@ -120,7 +120,7 @@ void VulkanApplication::initVulkan() {
 
 void VulkanApplication::mainLoop() {
   timer->start();
-  bool isLastTabKeyPressed = false, isNowTabKeyPressed = false;
+  bool isLastTabKeyPressed = false;
 
   while (!window->shouldClose()) {
     window->pollEvents();
@@ -131,16 +131,17 @@ void VulkanApplication::mainLoop() {
     if (ctx.cameraEnabled) {
       camera->track();
       camera->lock(ui->isVisible());
-      if (isNowTabKeyPressed && !isLastTabKeyPressed) {
-        ui->toggleVisibility();
-      }
-      timer->update();
-      onUpdate(timer->deltaTime());
-      drawFrame();
     }
 
-    isLastTabKeyPressed = isNowTabKeyPressed;
+    if (isNowTabKeyPressed && !isLastTabKeyPressed) {
+      ui->toggleVisibility();
+    }
 
+    timer->update();
+    onUpdate(timer->deltaTime());
+    drawFrame();
+
+    isLastTabKeyPressed = isNowTabKeyPressed;
     device->waitIdle();
   }
 }

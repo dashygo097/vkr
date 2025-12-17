@@ -11,7 +11,6 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
                                    PipelineMode mode)
     : device(device), renderPass(renderPass),
       descriptorSetLayout(descriptorSetLayout) {
-
   ShaderModule vertShader(device, vertShaderPath);
   ShaderModule fragShader(device, fragShaderPath);
 
@@ -39,20 +38,19 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
   VkVertexInputBindingDescription bindingDescription;
   std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions;
 
-  if (mode == PipelineMode::Default) {
+  if (mode == PipelineMode::NoVertex) {
+    vertexInputInfo.vertexBindingDescriptionCount = 0;
+    vertexInputInfo.pVertexBindingDescriptions = nullptr;
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+  } else {
     bindingDescription = Vertex::getBindingDescription();
     attributeDescriptions = Vertex::getAttributeDescriptions();
-
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.vertexAttributeDescriptionCount =
         static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-  } else {
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.pVertexBindingDescriptions = nullptr;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
   }
 
   VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
@@ -72,7 +70,8 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
-  rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+  rasterizer.cullMode = mode == PipelineMode::NoVertex ? VK_CULL_MODE_NONE
+                                                       : VK_CULL_MODE_BACK_BIT;
   rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
 
