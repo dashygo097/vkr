@@ -93,7 +93,7 @@ void VulkanApplication::initVulkan() {
   // graphics pipeline
   graphicsPipeline = std::make_unique<GraphicsPipeline>(
       *device, *renderPass, *descriptorSetLayout, ctx.vertexShaderPath,
-      ctx.fragmentShaderPath);
+      ctx.fragmentShaderPath, ctx.pipelineMode);
   ctx.pipelineLayout = graphicsPipeline->pipelineLayout();
   ctx.graphicsPipeline = graphicsPipeline->pipeline();
 

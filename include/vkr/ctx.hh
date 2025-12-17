@@ -1,6 +1,7 @@
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
+#include "./pipeline/graphics_pipeline.hh"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
@@ -43,6 +44,7 @@ struct VulkanContext {
   std::vector<VkFramebuffer> swapchainFramebuffers{};
 
   // --- Rendering ---
+  PipelineMode pipelineMode{PipelineMode::Default};
   VkRenderPass renderPass{VK_NULL_HANDLE};
   VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
   VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};

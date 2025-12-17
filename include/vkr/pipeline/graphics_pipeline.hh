@@ -5,13 +5,18 @@
 #include "./render_pass.hh"
 
 namespace vkr {
+enum class PipelineMode {
+  Default,
+  NoVertex,
+};
 
 class GraphicsPipeline {
 public:
   explicit GraphicsPipeline(const Device &device, const RenderPass &renderPass,
                             DescriptorSetLayout &descriptorSetLayout,
                             const std::string &vertShaderPath,
-                            const std::string &fragShaderPath);
+                            const std::string &fragShaderPath,
+                            PipelineMode mode);
   ~GraphicsPipeline();
 
   GraphicsPipeline(const GraphicsPipeline &) = delete;
