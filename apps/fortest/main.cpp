@@ -69,8 +69,8 @@ private:
     ctx.cameraNearPlane = 0.01f;
     ctx.cameraFarPlane = 1000.0f;
 
-    ctx.vertexShaderPath = "shaders/albedo/vert.spv";
-    ctx.fragmentShaderPath = "shaders/albedo/frag.spv";
+    ctx.vertexShaderPath = "shaders/albedo/vert_albedo.spv";
+    ctx.fragmentShaderPath = "shaders/albedo/frag_albedo.spv";
   }
 
   void onSetup() override {

@@ -46,9 +46,10 @@ shaders:
 		rel="$${src#$(SHADER_SRC_ROOT)/}"; \
 		base="$${rel%.*}"; \
 		ext="$${rel##*.}"; \
+		name="$$(basename "$$base")"; \
 		out_dir="$(SHADER_OUT_ROOT)/$$(dirname "$$rel")"; \
 		mkdir -p "$$out_dir"; \
-		out="$$out_dir/$${ext}.spv"; \
+		out="$$out_dir/$${ext}_$${name}.spv"; \
 		echo "  ✓ Compiling $$src → $$out"; \
 		$(GLSL_COMPILER) -o "$$out" "$$src"; \
 	done || true
