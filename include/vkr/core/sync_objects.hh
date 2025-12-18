@@ -1,13 +1,13 @@
 #pragma once
 
 #include "./device.hh"
+#include "./swapchain.hh"
 
 namespace vkr {
 
 class SyncObjects {
 public:
-  explicit SyncObjects(const Device &device,
-                       const std::vector<VkImage> &swapchainImages);
+  explicit SyncObjects(const Device &device, const Swapchain &swapchain);
   ~SyncObjects();
 
   SyncObjects(const SyncObjects &) = delete;
@@ -28,7 +28,7 @@ public:
 private:
   // dependencies
   const Device &device;
-  const std::vector<VkImage> &swapchainImages;
+  const Swapchain &swapchain;
 
   // components
   std::vector<VkSemaphore> _imageAvailableSemaphores{};

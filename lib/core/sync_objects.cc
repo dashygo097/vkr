@@ -2,13 +2,12 @@
 #include "vkr/core/command_buffer.hh"
 
 namespace vkr {
-SyncObjects::SyncObjects(const Device &device,
-                         const std::vector<VkImage> &swapchainImages)
-    : device(device), swapchainImages(swapchainImages) {
+SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
+    : device(device), swapchain(swapchain) {
   _imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
   _inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
-  _renderFinishedSemaphores.resize(swapchainImages.size());
+  _renderFinishedSemaphores.resize(swapchain.images().size());
 
   VkSemaphoreCreateInfo semaphoreInfo{};
   semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -27,7 +26,7 @@ SyncObjects::SyncObjects(const Device &device,
     }
   }
 
-  for (size_t i = 0; i < swapchainImages.size(); i++) {
+  for (size_t i = 0; i < swapchain.images().size(); i++) {
     if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr,
                           &_renderFinishedSemaphores[i]) != VK_SUCCESS) {
       throw std::runtime_error("failed to create render finished "

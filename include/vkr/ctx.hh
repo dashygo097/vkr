@@ -1,7 +1,7 @@
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
-#include "./pipeline/graphics_pipeline.hh"
+#include "./pipeline/pipeline.hh"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
@@ -25,50 +25,8 @@ struct VulkanContext {
   std::string vertexShaderPath{};
   std::string fragmentShaderPath{};
 
-  // --- Vulkan Core Objects ---
-  GLFWwindow *window{nullptr};
-  VkInstance instance{VK_NULL_HANDLE};
-  VkSurfaceKHR surface{VK_NULL_HANDLE};
-  VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
-  VkDevice device{VK_NULL_HANDLE};
-
-  VkQueue graphicsQueue{VK_NULL_HANDLE};
-  VkQueue presentQueue{VK_NULL_HANDLE};
-
-  // --- Swapchain ---
-  VkSwapchainKHR swapchain{VK_NULL_HANDLE};
-  std::vector<VkImage> swapchainImages{};
-  std::vector<VkImageView> swapchainImageViews{};
-  VkFormat swapchainImageFormat{VK_FORMAT_UNDEFINED};
-  VkExtent2D swapchainExtent{};
-  std::vector<VkFramebuffer> swapchainFramebuffers{};
-
-  // --- Rendering ---
+  // --- Rendering Mode ---
   PipelineMode pipelineMode{PipelineMode::Default};
-  VkRenderPass renderPass{VK_NULL_HANDLE};
-  VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
-  VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-  VkPipeline graphicsPipeline{VK_NULL_HANDLE};
-
-  // --- CommandPool ---
-  VkCommandPool commandPool{VK_NULL_HANDLE};
-
-  // --- Uniform Buffers ---
-  std::vector<VkBuffer> uniformBuffers{};
-  std::vector<VkDeviceMemory> uniformBuffersMemory{};
-  std::vector<void *> uniformBuffersMapped{};
-
-  // --- Descriptor Sets ---
-  VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
-  std::vector<VkDescriptorSet> descriptorSets{};
-
-  // --- Command Buffers ---
-  std::vector<VkCommandBuffer> commandBuffers{};
-
-  // --- Synchronization ---
-  std::vector<VkSemaphore> imageAvailableSemaphores{};
-  std::vector<VkSemaphore> renderFinishedSemaphores{};
-  std::vector<VkFence> inFlightFences{};
 
   // --- Camera Info ---
   bool cameraEnabled{};

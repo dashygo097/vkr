@@ -7,7 +7,6 @@ namespace vkr {
 void VulkanApplication::initVulkan() {
   // window
   window = std::make_unique<Window>(ctx.title, ctx.width, ctx.height);
-  ctx.window = window->glfwWindow();
   glfwSetWindowUserPointer(window->glfwWindow(), this);
   glfwSetFramebufferSizeCallback(window->glfwWindow(),
                                  framebufferResizeCallback);
@@ -16,65 +15,46 @@ void VulkanApplication::initVulkan() {
   instance = std::make_unique<Instance>(
       ctx.appName, ctx.engineName, ctx.appVersion, ctx.engineVersion,
       ctx.preExtensions, ctx.validationLayers);
-  ctx.instance = instance->instance();
 
   // surface
   surface = std::make_unique<Surface>(*window, *instance);
-  ctx.surface = surface->surface();
 
   // device
   device = std::make_unique<Device>(*instance, *surface, ctx.deviceExtensions,
                                     ctx.validationLayers);
-  ctx.device = device->device();
-  ctx.physicalDevice = device->physicalDevice();
-  ctx.graphicsQueue = device->graphicsQueue();
-  ctx.presentQueue = device->presentQueue();
 
   // swapchain
   swapchain = std::make_unique<Swapchain>(*window, *device, *surface);
-  ctx.swapchain = swapchain->swapchain();
-  ctx.swapchainImages = swapchain->images();
-  ctx.swapchainImageViews = swapchain->imageViews();
-  ctx.swapchainImageFormat = swapchain->format();
-  ctx.swapchainExtent = swapchain->extent2D();
 
   // command pool
   commandPool = std::make_unique<CommandPool>(*device, *surface);
-  ctx.commandPool = commandPool->commandPool();
 
   // command buffers
   commandBuffers = std::make_unique<CommandBuffers>(*device, *commandPool);
-  ctx.commandBuffers = commandBuffers->commandBuffers();
 
   // sync_objects
-  syncObjects = std::make_unique<SyncObjects>(*device, ctx.swapchainImages);
-  ctx.imageAvailableSemaphores = syncObjects->imageAvailableSemaphores();
-  ctx.renderFinishedSemaphores = syncObjects->renderFinishedSemaphores();
-  ctx.inFlightFences = syncObjects->inFlightFences();
+  syncObjects = std::make_unique<SyncObjects>(*device, *swapchain);
 
   // render pass
   renderPass = std::make_unique<RenderPass>(*device, *swapchain);
-  ctx.renderPass = renderPass->renderPass();
 
   // resource manager
   resourceManager = std::make_unique<ResourceManager>(*device, *commandPool,
                                                       *renderPass, *swapchain);
   resourceManager->createFramebuffers("swapchain");
-  ctx.swapchainFramebuffers =
-      resourceManager->getFramebuffers("swapchain")->framebuffers();
 
   createUniforms();
-  for (auto uniform : resourceManager->listUniformBuffers()) {
-    for (auto buffer : uniform->buffers()) {
-      ctx.uniformBuffers.push_back(buffer);
-    }
-    for (auto memory : uniform->buffersMemory()) {
-      ctx.uniformBuffersMemory.push_back(memory);
-    }
-    for (auto mapped : uniform->mapped()) {
-      ctx.uniformBuffersMapped.push_back(mapped);
-    }
-  }
+  // for (auto uniform : resourceManager->listUniformBuffers()) {
+  //   for (auto buffer : uniform->buffers()) {
+  //     ctx.uniformBuffers.push_back(buffer);
+  //   }
+  //   for (auto memory : uniform->buffersMemory()) {
+  //     ctx.uniformBuffersMemory.push_back(memory);
+  //   }
+  //   for (auto mapped : uniform->mapped()) {
+  //     ctx.uniformBuffersMapped.push_back(mapped);
+  //   }
+  // }
 
   // descriptor manager
   uint32_t maxSets = MAX_FRAMES_IN_FLIGHT + 1;
@@ -82,26 +62,21 @@ void VulkanApplication::initVulkan() {
       DescriptorManager::calculatePoolSizes(maxSets);
   descriptorPool =
       std::make_unique<DescriptorPool>(*device, maxSets, poolSizes);
-  ctx.descriptorPool = descriptorPool->pool();
 
   descriptorManager = std::make_unique<DescriptorManager>(*device);
   std::vector<DescriptorBinding> bindings = createDescriptorBindings();
 
   descriptorSetLayout = descriptorManager->createLayout(bindings);
-  ctx.descriptorSetLayout = descriptorSetLayout->layout();
 
   // graphics pipeline
   graphicsPipeline = std::make_unique<GraphicsPipeline>(
       *device, *renderPass, *descriptorSetLayout, ctx.vertexShaderPath,
       ctx.fragmentShaderPath, ctx.pipelineMode);
-  ctx.pipelineLayout = graphicsPipeline->pipelineLayout();
-  ctx.graphicsPipeline = graphicsPipeline->pipeline();
 
   // descriptor sets
   descriptorSets =
       descriptorManager->allocate(*descriptorSetLayout, *descriptorPool);
   bindDescriptorSets();
-  ctx.descriptorSets = descriptorSets->sets();
 
   // camera
   camera = std::make_unique<Camera>(*window, ctx.cameraMovementSpeed,
