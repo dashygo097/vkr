@@ -1,12 +1,12 @@
 #pragma once
 
 #include "./device.hh"
+#include "./swapchain.hh"
 
 namespace vkr {
 class DepthResources {
 public:
-  explicit DepthResources(const Device &device,
-                          const VkExtent2D &swapChainExtent);
+  explicit DepthResources(const Device &device, const Swapchain &swapChain);
   ~DepthResources();
 
   DepthResources(const DepthResources &) = delete;
@@ -21,7 +21,7 @@ public:
 private:
   // dependencies
   const Device &device;
-  const VkExtent2D &swapChainExtent;
+  const Swapchain &swapChain;
 
   // components
   VkImage _image{VK_NULL_HANDLE};
