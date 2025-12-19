@@ -31,7 +31,7 @@ public:
               const std::vector<VkDescriptorSet> &descriptorSets,
               const std::vector<VkFramebuffer> &framebuffers, VkExtent2D extent,
               VkPipeline graphicsPipeline,
-              const std::vector<std::shared_ptr<VertexBuffer>> &vertexBuffers,
+              const std::vector<std::shared_ptr<IVertexBuffer>> &vertexBuffers,
               const std::vector<std::shared_ptr<IndexBuffer>> &indexBuffers,
               UI &ui);
 

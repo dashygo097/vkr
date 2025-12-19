@@ -44,17 +44,6 @@ void VulkanApplication::initVulkan() {
   resourceManager->createFramebuffers("swapchain");
 
   createUniforms();
-  // for (auto uniform : resourceManager->listUniformBuffers()) {
-  //   for (auto buffer : uniform->buffers()) {
-  //     ctx.uniformBuffers.push_back(buffer);
-  //   }
-  //   for (auto memory : uniform->buffersMemory()) {
-  //     ctx.uniformBuffersMemory.push_back(memory);
-  //   }
-  //   for (auto mapped : uniform->mapped()) {
-  //     ctx.uniformBuffersMapped.push_back(mapped);
-  //   }
-  // }
 
   // descriptor manager
   uint32_t maxSets = MAX_FRAMES_IN_FLIGHT + 1;
@@ -70,8 +59,8 @@ void VulkanApplication::initVulkan() {
 
   // graphics pipeline
   graphicsPipeline = std::make_unique<GraphicsPipeline>(
-      *device, *renderPass, *descriptorSetLayout, ctx.vertexShaderPath,
-      ctx.fragmentShaderPath, ctx.pipelineMode);
+      *device, *renderPass, *descriptorSetLayout, *resourceManager,
+      ctx.vertexShaderPath, ctx.fragmentShaderPath, ctx.pipelineMode);
 
   // descriptor sets
   descriptorSets =

@@ -3,6 +3,7 @@
 namespace vkr {
 
 CommandBuffers::CommandBuffers(const Device &device,
+
                                const CommandPool &commandPool)
     : device(device), commandPool(commandPool) {
   _commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -34,7 +35,7 @@ void CommandBuffers::record(
     const std::vector<VkDescriptorSet> &descriptorSets,
     const std::vector<VkFramebuffer> &framebuffers, VkExtent2D extent,
     VkPipeline graphicsPipeline,
-    const std::vector<std::shared_ptr<VertexBuffer>> &vertexBuffers,
+    const std::vector<std::shared_ptr<IVertexBuffer>> &vertexBuffers,
     const std::vector<std::shared_ptr<IndexBuffer>> &indexBuffers, UI &ui) {
 
   beginRecording(currentFrame);
@@ -56,12 +57,7 @@ void CommandBuffers::record(
   } else {
     for (size_t i = 0; i < vertexBuffers.size() && i < indexBuffers.size();
          ++i) {
-      if (vertexBuffers[i] && indexBuffers[i] &&
-          vertexBuffers[i]->buffer() != VK_NULL_HANDLE &&
-          indexBuffers[i]->buffer() != VK_NULL_HANDLE &&
-          !vertexBuffers[i]->vertices().empty() &&
-          !indexBuffers[i]->indices().empty()) {
-
+      if (vertexBuffers[i] && indexBuffers[i]) {
         VkBuffer vb = vertexBuffers[i]->buffer();
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(_commandBuffers[currentFrame], 0, 1, &vb,

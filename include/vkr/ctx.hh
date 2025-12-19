@@ -26,7 +26,7 @@ struct VulkanContext {
   std::string fragmentShaderPath{};
 
   // --- Rendering Mode ---
-  PipelineMode pipelineMode{PipelineMode::Default};
+  PipelineMode pipelineMode{PipelineMode::Default3D};
 
   // --- Camera Info ---
   bool cameraEnabled{};

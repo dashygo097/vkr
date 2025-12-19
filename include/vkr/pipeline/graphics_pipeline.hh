@@ -1,19 +1,21 @@
 #pragma once
 
 #include "../core/device.hh"
+#include "../resources/manager.hh"
 #include "./descriptor/descriptor_binding.hh"
 #include "./render_pass.hh"
 
 namespace vkr {
 enum class PipelineMode {
-  Default,
-  NoVertex,
+  Default3D,
+  NoVertices,
 };
 
 class GraphicsPipeline {
 public:
   explicit GraphicsPipeline(const Device &device, const RenderPass &renderPass,
                             DescriptorSetLayout &descriptorSetLayout,
+                            const ResourceManager &resourceManager,
                             const std::string &vertShaderPath,
                             const std::string &fragShaderPath,
                             PipelineMode mode);
@@ -34,6 +36,7 @@ private:
   const Device &device;
   const RenderPass &renderPass;
   const DescriptorSetLayout &descriptorSetLayout;
+  const ResourceManager &resourceManager;
 
   // componets
   VkPipelineLayout _pipelineLayout{VK_NULL_HANDLE};

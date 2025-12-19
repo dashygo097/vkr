@@ -2,25 +2,178 @@
 
 #include "../../core/command_pool.hh"
 #include "../../core/device.hh"
+#include "./buffer_utils.hh"
 #include <glm/glm.hpp>
 
 namespace vkr {
 
-class Vertex {
+class IVertexBuffer {
 public:
-  Vertex(glm::vec3 pos, glm::vec3 color);
-  ~Vertex();
+  virtual ~IVertexBuffer() = default;
+
+  virtual VkBuffer buffer() const noexcept = 0;
+  virtual VkDeviceMemory bufferMemory() const noexcept = 0;
+  virtual size_t vertexCount() const noexcept = 0;
+
+  virtual void updateRaw(const void *data, size_t count) = 0;
+};
+
+template <typename VertexType> class VertexBufferBase : public IVertexBuffer {
+public:
+  explicit VertexBufferBase(const Device &device,
+                            const CommandPool &commandPool,
+                            const std::vector<VertexType> &vertices)
+      : device(device), commandPool(commandPool), _vertices(vertices) {
+    create();
+  }
+
+  virtual ~VertexBufferBase() { destroy(); }
+
+  VertexBufferBase(const VertexBufferBase &) = delete;
+  VertexBufferBase &operator=(const VertexBufferBase &) = delete;
+
+  void update(const std::vector<VertexType> &newVertices) {
+    if (newVertices.empty()) {
+      throw std::runtime_error("Cannot update vertex buffer with no vertices");
+    }
+
+    VkDeviceSize newBufferSize = sizeof(VertexType) * newVertices.size();
+    VkDeviceSize oldBufferSize = sizeof(VertexType) * _vertices.size();
+
+    // If size changed, recreate the buffer
+    if (newBufferSize != oldBufferSize) {
+      destroy();
+      _vertices = newVertices;
+      create();
+      return;
+    }
+
+    // Size is the same, just update the data
+    _vertices = newVertices;
+
+    // Create staging buffer
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(newBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 stagingBuffer, stagingBufferMemory, device.device(),
+                 device.physicalDevice());
+
+    // Copy new vertex data to staging buffer
+    void *data;
+    vkMapMemory(device.device(), stagingBufferMemory, 0, newBufferSize, 0,
+                &data);
+    memcpy(data, _vertices.data(), static_cast<size_t>(newBufferSize));
+    vkUnmapMemory(device.device(), stagingBufferMemory);
+
+    // Copy from staging buffer to vertex buffer
+    copyBuffer(stagingBuffer, _vertexBuffer, newBufferSize,
+               commandPool.commandPool(), device.graphicsQueue(),
+               device.device());
+
+    // Clean up staging buffer
+    vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
+  }
+
+  void updateRaw(const void *data, size_t count) override {
+    const VertexType *vertices = static_cast<const VertexType *>(data);
+    std::vector<VertexType> newVertices(vertices, vertices + count);
+    update(newVertices);
+  }
+
+  [[nodiscard]] VkBuffer buffer() const noexcept override {
+    return _vertexBuffer;
+  }
+
+  [[nodiscard]] VkDeviceMemory bufferMemory() const noexcept override {
+    return _memory;
+  }
+
+  [[nodiscard]] size_t vertexCount() const noexcept override {
+    return _vertices.size();
+  }
+
+  [[nodiscard]] const std::vector<VertexType> &vertices() const noexcept {
+    return _vertices;
+  }
+
+protected:
+  void create() {
+    if (_vertices.empty()) {
+      throw std::runtime_error("Cannot create vertex buffer with no vertices");
+    }
+
+    VkDeviceSize bufferSize = sizeof(VertexType) * _vertices.size();
+
+    // Create staging buffer
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 stagingBuffer, stagingBufferMemory, device.device(),
+                 device.physicalDevice());
+
+    // Copy vertex data to staging buffer
+    void *data;
+    vkMapMemory(device.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, _vertices.data(), static_cast<size_t>(bufferSize));
+    vkUnmapMemory(device.device(), stagingBufferMemory);
+
+    // Create vertex buffer in device local memory
+    createBuffer(bufferSize,
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _vertexBuffer, _memory,
+                 device.device(), device.physicalDevice());
+
+    // Copy from staging buffer to vertex buffer
+    copyBuffer(stagingBuffer, _vertexBuffer, bufferSize,
+               commandPool.commandPool(), device.graphicsQueue(),
+               device.device());
+
+    // Clean up staging buffer
+    vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
+  }
+
+  void destroy() {
+    if (_memory != VK_NULL_HANDLE) {
+      vkFreeMemory(device.device(), _memory, nullptr);
+      _memory = VK_NULL_HANDLE;
+    }
+    if (_vertexBuffer != VK_NULL_HANDLE) {
+      vkDestroyBuffer(device.device(), _vertexBuffer, nullptr);
+      _vertexBuffer = VK_NULL_HANDLE;
+    }
+  }
+
+protected:
+  // dependencies
+  const Device &device;
+  const CommandPool &commandPool;
+
+  // components
+  std::vector<VertexType> _vertices{};
+  VkBuffer _vertexBuffer{VK_NULL_HANDLE};
+  VkDeviceMemory _memory{VK_NULL_HANDLE};
+};
+
+struct Vertex3D {
+public:
   glm::vec3 pos;
   glm::vec3 color;
 
-  bool operator==(const Vertex &other) const {
+  bool operator==(const Vertex3D &other) const {
     return pos == other.pos && color == other.color;
   }
 
   static VkVertexInputBindingDescription getBindingDescription() {
     VkVertexInputBindingDescription bindingDescription{};
     bindingDescription.binding = 0;
-    bindingDescription.stride = sizeof(Vertex);
+    bindingDescription.stride = sizeof(Vertex3D);
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     return bindingDescription;
@@ -33,46 +186,17 @@ public:
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[0].offset = offsetof(Vertex, pos);
+    attributeDescriptions[0].offset = offsetof(Vertex3D, pos);
 
     attributeDescriptions[1].binding = 0;
     attributeDescriptions[1].location = 1;
     attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(Vertex, color);
+    attributeDescriptions[1].offset = offsetof(Vertex3D, color);
 
     return attributeDescriptions;
   }
 };
 
-class VertexBuffer {
-public:
-  explicit VertexBuffer(const Device &device, const CommandPool &commandPool,
-                        const std::vector<Vertex> &vertices);
-  ~VertexBuffer();
-
-  VertexBuffer(const VertexBuffer &) = delete;
-  VertexBuffer &operator=(const VertexBuffer &) = delete;
-
-  void create();
-  void destroy();
-  void update(const std::vector<Vertex> &newVertices);
-
-  [[nodiscard]] std::vector<Vertex> vertices() const noexcept {
-    return _vertices;
-  }
-  [[nodiscard]] VkBuffer buffer() const noexcept { return _vertexBuffer; }
-  [[nodiscard]] VkDeviceMemory bufferMemory() const noexcept { return _memory; }
-
-private:
-  // dependencies
-  const Device &device;
-  const CommandPool &commandPool;
-
-  // components
-  std::vector<Vertex> _vertices{};
-  VkBuffer _vertexBuffer{VK_NULL_HANDLE};
-  VkDeviceMemory _memory{VK_NULL_HANDLE};
-};
 } // namespace vkr
 
 namespace std {
@@ -92,8 +216,8 @@ template <typename T, glm::qualifier Q> struct hash<glm::vec<3, T, Q>> {
   }
 };
 
-template <> struct hash<vkr::Vertex> {
-  size_t operator()(vkr::Vertex const &vertex) const {
+template <> struct hash<vkr::Vertex3D> {
+  size_t operator()(vkr::Vertex3D const &vertex) const {
     return ((hash<glm::vec3>()(vertex.pos) ^
              (hash<glm::vec3>()(vertex.color) << 1)) >>
             1);
