@@ -51,12 +51,13 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
     break;
   }
-  case (PipelineMode::NoVertices):
+  case (PipelineMode::NoVertices): {
     vertexInputInfo.vertexBindingDescriptionCount = 0;
     vertexInputInfo.pVertexBindingDescriptions = nullptr;
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
     vertexInputInfo.pVertexAttributeDescriptions = nullptr;
     break;
+  }
   }
 
   VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
