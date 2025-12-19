@@ -6,11 +6,13 @@ namespace vkr {
 GraphicsPipeline::GraphicsPipeline(const Device &device,
                                    const RenderPass &renderPass,
                                    DescriptorSetLayout &descriptorSetLayout,
+                                   const ResourceManager &resourceManager,
                                    const std::string &vertShaderPath,
                                    const std::string &fragShaderPath,
                                    PipelineMode mode)
     : device(device), renderPass(renderPass),
-      descriptorSetLayout(descriptorSetLayout) {
+      descriptorSetLayout(descriptorSetLayout),
+      resourceManager(resourceManager) {
   ShaderModule vertShader(device, vertShaderPath);
   ShaderModule fragShader(device, fragShaderPath);
 
@@ -38,19 +40,23 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
   VkVertexInputBindingDescription bindingDescription;
   std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions;
 
-  if (mode == PipelineMode::NoVertex) {
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.pVertexBindingDescriptions = nullptr;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-  } else {
-    bindingDescription = Vertex::getBindingDescription();
-    attributeDescriptions = Vertex::getAttributeDescriptions();
+  switch (mode) {
+  case (PipelineMode::Default3D): {
+    bindingDescription = Vertex3D::getBindingDescription();
+    attributeDescriptions = Vertex3D::getAttributeDescriptions();
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.vertexAttributeDescriptionCount =
         static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    break;
+  }
+  case (PipelineMode::NoVertices):
+    vertexInputInfo.vertexBindingDescriptionCount = 0;
+    vertexInputInfo.pVertexBindingDescriptions = nullptr;
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+    break;
   }
 
   VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
@@ -70,8 +76,9 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
-  rasterizer.cullMode = mode == PipelineMode::NoVertex ? VK_CULL_MODE_NONE
-                                                       : VK_CULL_MODE_BACK_BIT;
+  rasterizer.cullMode = mode == PipelineMode::NoVertices
+                            ? VK_CULL_MODE_NONE
+                            : VK_CULL_MODE_BACK_BIT;
   rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
 

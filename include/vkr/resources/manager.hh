@@ -21,13 +21,15 @@ public:
   ResourceManager &operator=(const ResourceManager &) = delete;
 
   // Vertex Buffer Management
+  template <typename VBOType>
   void createVertexBuffer(const std::string &name,
-                          const std::vector<Vertex> &vertices) {
-    auto vb = std::make_shared<VertexBuffer>(device, commandPool, vertices);
+                          const std::vector<VBOType> &vertices) {
+    auto vb = std::make_shared<VertexBufferBase<VBOType>>(device, commandPool,
+                                                          vertices);
     _vertexBuffers[name] = std::move(vb);
   }
 
-  std::shared_ptr<VertexBuffer> getVertexBuffer(const std::string &name) {
+  std::shared_ptr<IVertexBuffer> getVertexBuffer(const std::string &name) {
     auto it = _vertexBuffers.find(name);
     return it != _vertexBuffers.end() ? it->second : nullptr;
   }
@@ -90,8 +92,8 @@ public:
   size_t framebufferCount() const { return _framebuffers.size(); }
 
   // List all resources
-  std::vector<std::shared_ptr<VertexBuffer>> listVertexBuffers() const {
-    std::vector<std::shared_ptr<VertexBuffer>> buffers;
+  std::vector<std::shared_ptr<IVertexBuffer>> listVertexBuffers() const {
+    std::vector<std::shared_ptr<IVertexBuffer>> buffers;
     for (const auto &[_, buffer] : _vertexBuffers) {
       buffers.push_back(buffer);
     }
@@ -158,7 +160,8 @@ private:
   const Swapchain &swapchain;
 
   // components
-  std::unordered_map<std::string, std::shared_ptr<VertexBuffer>> _vertexBuffers;
+  std::unordered_map<std::string, std::shared_ptr<IVertexBuffer>>
+      _vertexBuffers;
   std::unordered_map<std::string, std::shared_ptr<IndexBuffer>> _indexBuffers;
   std::unordered_map<std::string, std::shared_ptr<IUniformBuffer>>
       _uniformBuffers;

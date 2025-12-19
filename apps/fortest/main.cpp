@@ -7,13 +7,13 @@
 
 class TestApplication : public vkr::VulkanApplication {
 private:
-  const std::vector<vkr::Vertex> vertices1 = {
+  const std::vector<vkr::Vertex3D> vertices1 = {
       {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
       {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
       {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
       {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}};
 
-  const std::vector<vkr::Vertex> vertices2 = {
+  const std::vector<vkr::Vertex3D> vertices2 = {
       {{-1.5f, -1.5f, 0.0f}, {0.0f, 0.0f, 0.0f}},
       {{-0.5f, -1.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
       {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},

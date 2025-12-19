@@ -3,21 +3,8 @@
 #include <tiny_obj_loader.h>
 
 namespace vkr::geometry {
-Mesh::Mesh(const Device &device, const CommandPool &commandPool)
-    : device(device), commandPool(commandPool) {}
 
-void Mesh::load(const std::vector<Vertex> &vertices,
-                const std::vector<uint16_t> &indices) {
-  if (!_vertexBuffer || !_indexBuffer) {
-    _vertexBuffer =
-        std::make_unique<VertexBuffer>(device, commandPool, vertices);
-    _indexBuffer = std::make_unique<IndexBuffer>(device, commandPool, indices);
-  } else {
-    update(vertices, indices);
-  }
-}
-
-void Mesh::load(const std::string &meshFilePath) {
+template <> void Mesh<Vertex3D>::load(const std::string &meshFilePath) {
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;
   std::vector<tinyobj::material_t> materials;
@@ -44,10 +31,10 @@ void Mesh::load(const std::string &meshFilePath) {
   }
 
   // Parse loaded data
-  std::vector<Vertex> vertices;
+  std::vector<Vertex3D> vertices;
   std::vector<uint16_t> indices;
 
-  std::unordered_map<Vertex, uint16_t> uniqueVertices;
+  std::unordered_map<Vertex3D, uint16_t> uniqueVertices;
 
   for (const auto &shape : shapes) {
     for (const auto &index : shape.mesh.indices) {
@@ -68,7 +55,9 @@ void Mesh::load(const std::string &meshFilePath) {
       } else {
         color = {1.0f, 1.0f, 1.0f}; // Default white
       }
-      Vertex vertex(pos, color);
+      Vertex3D vertex;
+      vertex.pos = pos;
+      vertex.color = color;
 
       if (uniqueVertices.count(vertex) == 0) {
         uniqueVertices[vertex] = static_cast<uint16_t>(vertices.size());
@@ -80,8 +69,8 @@ void Mesh::load(const std::string &meshFilePath) {
   }
 
   if (!_vertexBuffer || !_indexBuffer) {
-    _vertexBuffer =
-        std::make_unique<VertexBuffer>(device, commandPool, vertices);
+    _vertexBuffer = std::make_unique<VertexBufferBase<Vertex3D>>(
+        device, commandPool, vertices);
     _indexBuffer = std::make_unique<IndexBuffer>(device, commandPool, indices);
   } else {
     update(vertices, indices);
