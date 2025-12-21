@@ -3,13 +3,14 @@
 #include <GLFW/glfw3.h>
 
 namespace vkr {
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice,
                                      VkSurfaceKHR surface) {
   QueueFamilyIndices indices;
   uint32_t queueFamilyCount = 0;
-  vkGetPhysicalDeviceQueueFamilyProperties(pDevice, &queueFamilyCount, nullptr);
+  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount,
+                                           nullptr);
   std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-  vkGetPhysicalDeviceQueueFamilyProperties(pDevice, &queueFamilyCount,
+  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount,
                                            queueFamilies.data());
   int i = 0;
   for (const auto &queueFamily : queueFamilies) {
@@ -17,7 +18,8 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,
       indices.graphicsFamily = i;
     }
     VkBool32 presentSupport = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR(pDevice, i, surface, &presentSupport);
+    vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface,
+                                         &presentSupport);
     if (presentSupport) {
       indices.presentFamily = i;
     }
