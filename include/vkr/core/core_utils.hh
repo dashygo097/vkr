@@ -14,7 +14,7 @@ struct QueueFamilyIndices {
     return graphicsFamily.has_value() && presentFamily.has_value();
   }
 };
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice pDevice,
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice,
                                      VkSurfaceKHR surface);
 
 std::vector<const char *>
