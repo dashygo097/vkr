@@ -7,6 +7,7 @@
 #include "./geometry/mesh.hh"
 #include "./textures/image.hh"
 #include "./textures/image_view.hh"
+#include "./textures/sampler.hh"
 #include <memory>
 
 namespace vkr {

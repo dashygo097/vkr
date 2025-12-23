@@ -1,5 +1,5 @@
 #pragma once
 
 namespace vkr {
-class ImageView {};
+class Sampler {};
 } // namespace vkr
