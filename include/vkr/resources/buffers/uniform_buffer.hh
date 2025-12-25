@@ -20,8 +20,7 @@ public:
 
 template <typename ObjectType> class UniformBufferBase : public IUniformBuffer {
 public:
-  explicit UniformBufferBase(const Device &device, const ObjectType &object)
-      : object(object), device(device) {
+  explicit UniformBufferBase(const Device &device) : device(device) {
     create();
   }
 
@@ -101,9 +100,9 @@ protected:
 protected:
   // dependencies
   const Device &device;
-  ObjectType object;
 
   // components
+  ObjectType _object;
   std::vector<VkBuffer> _uniformBuffers{};
   std::vector<VkDeviceMemory> _memories{};
   std::vector<void *> _mapped{};
