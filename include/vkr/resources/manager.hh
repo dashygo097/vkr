@@ -61,7 +61,8 @@ public:
   // Uniform Buffer Management
   template <typename UBOType>
   void createUniformBuffer(const std::string &name, const UBOType &ubo) {
-    auto ub = std::make_shared<UniformBufferBase<UBOType>>(device, ubo);
+    auto ub = std::make_shared<UniformBufferBase<UBOType>>(device);
+    ub->update(0, ubo);
     _uniformBuffers[name] = std::move(ub);
   }
 
