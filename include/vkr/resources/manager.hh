@@ -27,8 +27,8 @@ public:
   template <typename VBOType>
   void createVertexBuffer(const std::string &name,
                           const std::vector<VBOType> &vertices) {
-    auto vb = std::make_shared<VertexBufferBase<VBOType>>(device, commandPool,
-                                                          vertices);
+    auto vb = std::make_shared<VertexBufferBase<VBOType>>(device, commandPool);
+    vb->update(vertices);
     _vertexBuffers[name] = std::move(vb);
   }
 
@@ -44,7 +44,8 @@ public:
   // Index Buffer Management
   void createIndexBuffer(const std::string &name,
                          const std::vector<uint16_t> &indices) {
-    auto ib = std::make_shared<IndexBuffer>(device, commandPool, indices);
+    auto ib = std::make_shared<IndexBuffer>(device, commandPool);
+    ib->update(indices);
     _indexBuffers[name] = std::move(ib);
   }
 

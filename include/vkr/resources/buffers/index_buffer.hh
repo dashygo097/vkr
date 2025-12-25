@@ -7,8 +7,7 @@ namespace vkr {
 
 class IndexBuffer {
 public:
-  explicit IndexBuffer(const Device &device, const CommandPool &commandPool,
-                       const std::vector<uint16_t> &indices);
+  explicit IndexBuffer(const Device &device, const CommandPool &commandPool);
   ~IndexBuffer();
 
   IndexBuffer(const IndexBuffer &) = delete;

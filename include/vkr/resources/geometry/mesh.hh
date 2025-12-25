@@ -30,8 +30,8 @@ public:
     if (!_vertexBuffer || !_indexBuffer) {
       _vertexBuffer = std::make_unique<VertexBufferBase<VBOType>>(
           device, commandPool, vertices);
-      _indexBuffer =
-          std::make_unique<IndexBuffer>(device, commandPool, indices);
+      _indexBuffer = std::make_unique<IndexBuffer>(device, commandPool);
+      _indexBuffer->update(indices);
     } else {
       update(vertices, indices);
     }

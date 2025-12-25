@@ -21,9 +21,8 @@ public:
 template <typename VertexType> class VertexBufferBase : public IVertexBuffer {
 public:
   explicit VertexBufferBase(const Device &device,
-                            const CommandPool &commandPool,
-                            const std::vector<VertexType> &vertices)
-      : device(device), commandPool(commandPool), _vertices(vertices) {
+                            const CommandPool &commandPool)
+      : device(device), commandPool(commandPool) {
     create();
   }
 
@@ -102,7 +101,7 @@ public:
 protected:
   void create() {
     if (_vertices.empty()) {
-      throw std::runtime_error("Cannot create vertex buffer with no vertices");
+      return;
     }
 
     VkDeviceSize bufferSize = sizeof(VertexType) * _vertices.size();
