@@ -2,7 +2,6 @@
 
 #include "../../core/command_pool.hh"
 #include "../../core/device.hh"
-#include "../buffers/buffer_utils.hh"
 #include <stb_image.h>
 
 namespace vkr {

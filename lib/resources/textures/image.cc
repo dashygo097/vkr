@@ -1,4 +1,5 @@
 #include "vkr/resources/textures/image.hh"
+#include "vkr/resources/buffers/buffer_utils.hh"
 
 namespace vkr {
 
