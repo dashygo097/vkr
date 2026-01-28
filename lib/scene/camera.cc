@@ -1,4 +1,4 @@
-#include "vkr/components/camera.hh"
+#include "vkr/scene/camera.hh"
 
 namespace vkr {
 Camera::Camera(const Window &window, const float &movementSpeed,

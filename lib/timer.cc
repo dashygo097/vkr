@@ -1,4 +1,4 @@
-#include "vkr/components/timer.hh"
+#include "vkr/timer.hh"
 
 namespace vkr {
 

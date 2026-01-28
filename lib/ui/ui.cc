@@ -1,4 +1,4 @@
-#include "vkr/components/ui/ui.hh"
+#include "vkr/ui/ui.hh"
 #include "vkr/core/core_utils.hh"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>

@@ -1,4 +1,4 @@
-#include "vkr/components/ui/fps_panel.hh"
+#include "vkr/ui/fps_panel.hh"
 #include <imgui.h>
 
 namespace vkr {
