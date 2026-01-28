@@ -6,7 +6,18 @@
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
+struct ShaderToyConfig {
+  std::string vertexShaderPath;
+  std::string fragmentShaderPath;
+
+  int width{800};
+  int height{600};
+};
+
 class ShaderToyApplication : public vkr::VulkanApplication {
+public:
+  ShaderToyApplication(const ShaderToyConfig &config) : config(config) {}
+
 private:
   std::chrono::high_resolution_clock::time_point startTime;
   std::chrono::high_resolution_clock::time_point lastFrameTime;
@@ -15,6 +26,8 @@ private:
 
   glm::vec4 mouseState{0.0f};
   bool mousePressed{false};
+
+  ShaderToyConfig config;
 
   void createUniforms() override {
     resourceManager->createUniformBuffer<vkr::UniformBufferShaderToyObject>(
@@ -94,14 +107,14 @@ private:
     ctx.engineName = "No Engine";
     ctx.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 
-    ctx.width = 640;
-    ctx.height = 480;
+    ctx.width = config.width;
+    ctx.height = config.height;
     ctx.title = "ShaderToy Viewer";
 
     ctx.cameraEnabled = false;
 
-    ctx.vertexShaderPath = "shaders/shadertoy-examples/vert_shadertoy.spv";
-    ctx.fragmentShaderPath = "shaders/shadertoy-examples/frag_example_0.spv";
+    ctx.vertexShaderPath = config.vertexShaderPath;
+    ctx.fragmentShaderPath = config.fragmentShaderPath;
 
     startTime = std::chrono::high_resolution_clock::now();
     lastFrameTime = startTime;
@@ -110,9 +123,57 @@ private:
   }
 };
 
-int main() {
-  ShaderToyApplication app;
+void printUsage(const char *programName) {
+  std::cout
+      << "Usage: " << programName << " [options]\n"
+      << "Options:\n"
+      << "  -v, --vert <path>    Path to vertex shader (default: built-in)\n"
+      << "  -f, --frag <path>    Path to fragment shader\n"
+      << "  -w, --width <width>      Window width (default: 640)\n"
+      << "  -h, --height <height>    Window height (default: 480)\n"
+      << "  --help                   Display this help message\n"
+      << std::endl;
+}
 
+ShaderToyConfig parseArgs(int argc, char *argv[]) {
+  ShaderToyConfig config;
+
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+
+    if (arg == "--help") {
+      printUsage(argv[0]);
+      exit(0);
+    } else if ((arg == "-v" || arg == "--vert") && i + 1 < argc) {
+      config.vertexShaderPath = argv[++i];
+    } else if ((arg == "-f" || arg == "--frag") && i + 1 < argc) {
+      config.fragmentShaderPath = argv[++i];
+    } else if ((arg == "-w" || arg == "--width") && i + 1 < argc) {
+      config.width = std::atoi(argv[++i]);
+      if (config.width <= 0) {
+        std::cerr << "Error: Invalid width value\n";
+        exit(EXIT_FAILURE);
+      }
+    } else if ((arg == "-h" || arg == "--height") && i + 1 < argc) {
+      config.height = std::atoi(argv[++i]);
+      if (config.height <= 0) {
+        std::cerr << "Error: Invalid height value\n";
+        exit(EXIT_FAILURE);
+      }
+    } else {
+      std::cerr << "Error: Unknown argument '" << arg << "'\n";
+      printUsage(argv[0]);
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  return config;
+}
+
+int main(int argc, char *argv[]) {
+  ShaderToyConfig config = parseArgs(argc, argv);
+
+  ShaderToyApplication app(config);
   try {
     app.run();
   } catch (const std::exception &e) {

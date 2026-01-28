@@ -6,7 +6,7 @@ namespace vkr {
 
 class ShaderModule {
 public:
-  explicit ShaderModule(const Device &device, const std::string &filepath);
+  explicit ShaderModule(const Device &device, const std::string &filePath);
   ~ShaderModule();
 
   ShaderModule(const ShaderModule &) = delete;

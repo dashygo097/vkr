@@ -18,7 +18,7 @@ public:
                             const ResourceManager &resourceManager,
                             const std::string &vertShaderPath,
                             const std::string &fragShaderPath,
-                            PipelineMode mode);
+                            PipelineMode mode = PipelineMode::Default3D);
   ~GraphicsPipeline();
 
   GraphicsPipeline(const GraphicsPipeline &) = delete;

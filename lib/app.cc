@@ -1,6 +1,8 @@
 #include "vkr/app.hh"
+#include "vkr/io_utils.hh"
 #include <GLFW/glfw3.h>
 #include <unistd.h>
+#include <vulkan/vulkan_core.h>
 
 namespace vkr {
 
