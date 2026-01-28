@@ -1,4 +1,5 @@
-#include "vkr/pipeline/pipeline.hh"
+#include "vkr/pipeline/graphics_pipeline.hh"
+#include "vkr/pipeline/shader_module.hh"
 #include "vkr/resources/buffers/vertex_buffer.hh"
 
 namespace vkr {

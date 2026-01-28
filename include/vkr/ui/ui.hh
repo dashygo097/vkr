@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../../core/command_pool.hh"
-#include "../../core/device.hh"
-#include "../../core/instance.hh"
-#include "../../core/window.hh"
-#include "../../pipeline/descriptor/descriptor_pool.hh"
-#include "../../pipeline/render_pass.hh"
+#include "../core/command_pool.hh"
+#include "../core/device.hh"
+#include "../core/instance.hh"
+#include "../core/window.hh"
+#include "../pipeline/descriptor/descriptor_pool.hh"
+#include "../pipeline/render_pass.hh"
 #include "./fps_panel.hh"
 
 namespace vkr {

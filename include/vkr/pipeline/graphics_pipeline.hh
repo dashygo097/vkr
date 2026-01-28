@@ -2,7 +2,7 @@
 
 #include "../core/device.hh"
 #include "../resources/manager.hh"
-#include "./descriptor/descriptor_binding.hh"
+#include "./descriptor/descriptor.hh"
 #include "./render_pass.hh"
 
 namespace vkr {
