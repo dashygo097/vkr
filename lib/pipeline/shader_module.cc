@@ -2,9 +2,9 @@
 #include "vkr/io_utils.hh"
 
 namespace vkr {
-ShaderModule::ShaderModule(const Device &device, const std::string &filepath)
+ShaderModule::ShaderModule(const Device &device, const std::string &filePath)
     : device(device) {
-  auto code = read_file(filepath);
+  auto code = read_file(filePath);
   VkShaderModuleCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   createInfo.codeSize = code.size();
@@ -21,4 +21,5 @@ ShaderModule::~ShaderModule() {
     vkDestroyShaderModule(device.device(), _shaderModule, nullptr);
   }
 }
+
 } // namespace vkr
