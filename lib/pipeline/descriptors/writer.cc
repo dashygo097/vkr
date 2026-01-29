@@ -1,4 +1,4 @@
-#include "vkr/pipeline/descriptor/descriptor_writer.hh"
+#include "vkr/pipeline/descriptors/writer.hh"
 
 namespace vkr::pipeline {
 

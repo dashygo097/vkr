@@ -1,9 +1,9 @@
 #pragma once
 #include "../../core/device.hh"
 #include "../../resources/buffers/uniform_buffer.hh"
-#include "./descriptor_binding.hh"
-#include "./descriptor_pool.hh"
-#include "./descriptor_writer.hh"
+#include "./binding.hh"
+#include "./pool.hh"
+#include "./writer.hh"
 #include <memory>
 #include <vector>
 

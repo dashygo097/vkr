@@ -1,4 +1,4 @@
-#include "vkr/pipeline/descriptor/descriptor_pool.hh"
+#include "vkr/pipeline/descriptors/pool.hh"
 #include <stdexcept>
 
 namespace vkr::pipeline {
