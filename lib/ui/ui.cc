@@ -22,6 +22,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
       renderPass(renderPass), descriptorPool(descriptorPool),
       commandPool(commandPool) {
   IMGUI_CHECKVERSION();
+
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -83,15 +84,8 @@ void UI::render(VkCommandBuffer commandBuffer) {
     ImGui::Spacing();
 
     // Rendering section
-    if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader("Resources", ImGuiTreeNodeFlags_DefaultOpen)) {
       // Placeholder for rendering controls
-    }
-
-    ImGui::Spacing();
-
-    // Scene section
-    if (ImGui::CollapsingHeader("Scene")) {
-      // Placeholder for scene controls
     }
 
     ImGui::Spacing();

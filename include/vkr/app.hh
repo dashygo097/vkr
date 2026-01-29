@@ -53,6 +53,9 @@ public:
   std::unique_ptr<pipeline::DescriptorPool> descriptorPool;
   std::unique_ptr<pipeline::DescriptorSets> descriptorSets;
 
+  // renderer
+  std::unique_ptr<render::Renderer> renderer;
+
   // components
   std::unique_ptr<scene::Camera> camera;
   std::unique_ptr<Timer> timer;
