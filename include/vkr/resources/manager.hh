@@ -5,6 +5,7 @@
 #include "./buffers/uniform_buffer.hh"
 #include "./buffers/vertex_buffer.hh"
 #include "./geometry/mesh.hh"
+#include "./textures/depth_resources.hh"
 #include "./textures/image.hh"
 #include "./textures/image_view.hh"
 #include "./textures/sampler.hh"

@@ -2,7 +2,7 @@
 
 #include "../core/device.hh"
 #include "../resources/manager.hh"
-#include "./descriptor/descriptor.hh"
+#include "./descriptors/set.hh"
 #include "./render_pass.hh"
 
 namespace vkr::pipeline {

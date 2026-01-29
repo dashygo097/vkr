@@ -1,4 +1,4 @@
-#include "vkr/pipeline/descriptor/descriptor.hh"
+#include "vkr/pipeline/descriptors/set.hh"
 #include <stdexcept>
 
 namespace vkr::pipeline {

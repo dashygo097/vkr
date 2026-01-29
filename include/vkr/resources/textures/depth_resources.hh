@@ -1,12 +1,13 @@
 #pragma once
 
-#include "./device.hh"
-#include "./swapchain.hh"
+#include "../../core/device.hh"
+#include "../../core/swapchain.hh"
 
-namespace vkr::core {
+namespace vkr::resources {
 class DepthResources {
 public:
-  explicit DepthResources(const Device &device, const Swapchain &swapChain);
+  explicit DepthResources(const core::Device &device,
+                          const core::Swapchain &swapChain);
   ~DepthResources();
 
   DepthResources(const DepthResources &) = delete;
@@ -20,8 +21,8 @@ public:
 
 private:
   // dependencies
-  const Device &device;
-  const Swapchain &swapChain;
+  const core::Device &device;
+  const core::Swapchain &swapChain;
 
   // components
   VkImage _image{VK_NULL_HANDLE};
@@ -56,4 +57,4 @@ private:
   }
 };
 
-} // namespace vkr::core
+} // namespace vkr::resources
