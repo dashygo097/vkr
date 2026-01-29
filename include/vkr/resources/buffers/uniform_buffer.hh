@@ -3,6 +3,7 @@
 #include "../../core/command_buffer.hh"
 #include "../../core/device.hh"
 #include "./buffer_utils.hh"
+#include <glm/glm.hpp>
 
 namespace vkr::resource {
 

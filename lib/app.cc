@@ -70,6 +70,11 @@ void VulkanApplication::initVulkan() {
       descriptorManager->allocate(*descriptorSetLayout, *descriptorPool);
   bindDescriptorSets();
 
+  // renderer
+  renderer = std::make_unique<render::Renderer>(*device, *swapchain,
+                                                *commandPool, *syncObjects,
+                                                *resourceManager, *renderPass);
+
   // camera
   camera = std::make_unique<scene::Camera>(
       *window, ctx.cameraMovementSpeed, ctx.cameraMouseSensitivity,
@@ -121,93 +126,27 @@ void VulkanApplication::recreateSwapchain() {
     glfwWaitEvents();
   }
 
-  swapchain->recreate();
-  resourceManager->getFramebuffers("swapchain")->destroy();
-  resourceManager->getFramebuffers("swapchain")->create();
+  renderer->recreateSwapchain();
 }
 
 void VulkanApplication::drawFrame() {
-  vkWaitForFences(device->device(), 1,
-                  &syncObjects->inFlightFences()[ctx.currentFrame], VK_TRUE,
-                  UINT64_MAX);
+  render::FrameData frameData;
 
-  uint32_t imageIndex;
-  VkResult result = vkAcquireNextImageKHR(
-      device->device(), swapchain->swapchain(), UINT64_MAX,
-      syncObjects->imageAvailableSemaphores()[ctx.currentFrame], VK_NULL_HANDLE,
-      &imageIndex);
-
-  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-    recreateSwapchain();
+  if (!renderer->beginFrame(frameData)) {
     return;
-  } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-    throw std::runtime_error("failed to acquire swap chain image!");
   }
 
-  updateUniforms(ctx.currentFrame);
+  updateUniforms(frameData.frameIndex);
 
-  vkResetFences(device->device(), 1,
-                &syncObjects->inFlightFences()[ctx.currentFrame]);
-
-  vkResetCommandBuffer(commandBuffers->commandBuffers()[ctx.currentFrame],
-                       /*VkCommandBufferResetFlagBits*/ 0);
-
-  commandBuffers->record(
-      imageIndex, ctx.currentFrame, renderPass->renderPass(),
-      graphicsPipeline->pipelineLayout(), descriptorSets->sets(),
-      resourceManager->getFramebuffers("swapchain")->framebuffers(),
-      swapchain->extent2D(), graphicsPipeline->pipeline(),
-      resourceManager->listVertexBuffers(), resourceManager->listIndexBuffers(),
-      *ui);
-
-  VkSubmitInfo submitInfo{};
-  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-  VkSemaphore waitSemaphores[] = {
-      syncObjects->imageAvailableSemaphores()[ctx.currentFrame]};
-  VkPipelineStageFlags waitStages[] = {
-      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-  submitInfo.waitSemaphoreCount = 1;
-  submitInfo.pWaitSemaphores = waitSemaphores;
-  submitInfo.pWaitDstStageMask = waitStages;
-
-  submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers =
-      &commandBuffers->commandBuffers()[ctx.currentFrame];
-
-  VkSemaphore signalSemaphores[] = {
-      syncObjects->renderFinishedSemaphores()[imageIndex]};
-  submitInfo.signalSemaphoreCount = 1;
-  submitInfo.pSignalSemaphores = signalSemaphores;
-
-  if (vkQueueSubmit(device->graphicsQueue(), 1, &submitInfo,
-                    syncObjects->inFlightFences()[ctx.currentFrame]) !=
-      VK_SUCCESS) {
-    throw std::runtime_error("failed to submit draw command buffer!");
-  }
-
-  VkPresentInfoKHR presentInfo{};
-  presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-  presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = signalSemaphores;
-
-  VkSwapchainKHR swapchains[] = {swapchain->swapchain()};
-  presentInfo.swapchainCount = 1;
-  presentInfo.pSwapchains = swapchains;
-
-  presentInfo.pImageIndices = &imageIndex;
-
-  result = vkQueuePresentKHR(device->presentQueue(), &presentInfo);
-
-  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-      ctx.framebufferResized) {
-    ctx.framebufferResized = false;
-    recreateSwapchain();
-  } else if (result != VK_SUCCESS) {
-    throw std::runtime_error("failed to present swap chain image!");
-  }
-  ctx.currentFrame = (ctx.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+  renderer->beginRenderPass(frameData);
+  renderer->bindPipeline(frameData, graphicsPipeline->pipeline(),
+                         graphicsPipeline->pipelineLayout(),
+                         descriptorSets->sets());
+  renderer->setViewportAndScissor(frameData);
+  renderer->drawGeometry(frameData);
+  renderer->drawUI(frameData, *ui);
+  renderer->endRenderPass(frameData);
+  renderer->endFrame(frameData);
 }
 
 void VulkanApplication::cleanup() {
@@ -216,6 +155,7 @@ void VulkanApplication::cleanup() {
   ui.reset();
   timer.reset();
   camera.reset();
+  renderer.reset();
   syncObjects.reset();
   resourceManager.reset();
   commandBuffers.reset();
