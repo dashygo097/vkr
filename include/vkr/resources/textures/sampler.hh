@@ -2,10 +2,10 @@
 
 #include "../../core/device.hh"
 
-namespace vkr {
+namespace vkr::resource {
 class Sampler {
 public:
-  explicit Sampler(const Device &device);
+  explicit Sampler(const core::Device &device);
   ~Sampler();
 
   Sampler(const Sampler &) = delete;
@@ -13,8 +13,8 @@ public:
 
 private:
   // dependeies
-  const Device &device;
+  const core::Device &device;
 
   // components
 };
-} // namespace vkr
+} // namespace vkr::resource

@@ -2,11 +2,12 @@
 
 #include "../core/device.hh"
 
-namespace vkr {
+namespace vkr::pipeline {
 
 class ShaderModule {
 public:
-  explicit ShaderModule(const Device &device, const std::string &filePath);
+  explicit ShaderModule(const core::Device &device,
+                        const std::string &filePath);
   ~ShaderModule();
 
   ShaderModule(const ShaderModule &) = delete;
@@ -16,9 +17,9 @@ public:
 
 private:
   // dependencies
-  const Device &device;
+  const core::Device &device;
 
   // components
   VkShaderModule _shaderModule{VK_NULL_HANDLE};
 };
-} // namespace vkr
+} // namespace vkr::pipeline

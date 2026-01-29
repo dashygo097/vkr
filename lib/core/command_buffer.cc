@@ -1,9 +1,8 @@
 #include "vkr/core/command_buffer.hh"
 
-namespace vkr {
+namespace vkr::core {
 
 CommandBuffers::CommandBuffers(const Device &device,
-
                                const CommandPool &commandPool)
     : device(device), commandPool(commandPool) {
   _commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -35,8 +34,9 @@ void CommandBuffers::record(
     const std::vector<VkDescriptorSet> &descriptorSets,
     const std::vector<VkFramebuffer> &framebuffers, VkExtent2D extent,
     VkPipeline graphicsPipeline,
-    const std::vector<std::shared_ptr<IVertexBuffer>> &vertexBuffers,
-    const std::vector<std::shared_ptr<IndexBuffer>> &indexBuffers, UI &ui) {
+    const std::vector<std::shared_ptr<resource::IVertexBuffer>> &vertexBuffers,
+    const std::vector<std::shared_ptr<resource::IndexBuffer>> &indexBuffers,
+    ui::UI &ui) {
 
   beginRecording(currentFrame);
   beginRenderPass(currentFrame, renderPass, framebuffers[imageIndex], extent);
@@ -134,4 +134,4 @@ void CommandBuffers::endRecording(uint16_t index) {
   }
 }
 
-} // namespace vkr
+} // namespace vkr::core

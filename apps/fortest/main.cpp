@@ -7,13 +7,13 @@
 
 class TestApplication : public vkr::VulkanApplication {
 private:
-  const std::vector<vkr::Vertex3D> vertices1 = {
+  const std::vector<vkr::resource::Vertex3D> vertices1 = {
       {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
       {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
       {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
       {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}};
 
-  const std::vector<vkr::Vertex3D> vertices2 = {
+  const std::vector<vkr::resource::Vertex3D> vertices2 = {
       {{-1.5f, -1.5f, 0.0f}, {0.0f, 0.0f, 0.0f}},
       {{-0.5f, -1.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
       {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
@@ -23,25 +23,27 @@ private:
   const std::vector<uint16_t> indices2 = {0, 1, 2, 2, 3, 0};
 
   void createUniforms() override {
-    resourceManager->createUniformBuffer<vkr::UniformBuffer3DObject>("default",
-                                                                     {});
+    resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
+        "default", {});
   }
 
-  std::vector<vkr::DescriptorBinding> createDescriptorBindings() override {
-    return {
-        {0, vkr::DescriptorType::UniformBuffer, 1, VK_SHADER_STAGE_VERTEX_BIT}};
+  std::vector<vkr::pipeline::DescriptorBinding>
+  createDescriptorBindings() override {
+    return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
+             VK_SHADER_STAGE_VERTEX_BIT}};
   }
 
   void bindDescriptorSets() override {
     auto defaultUBO = resourceManager->getUniformBuffer("default");
     if (defaultUBO && descriptorSets) {
-      descriptorSets->bindUniformBuffer(0, defaultUBO->buffers(),
-                                        sizeof(vkr::UniformBuffer3DObject));
+      descriptorSets->bindUniformBuffer(
+          0, defaultUBO->buffers(),
+          sizeof(vkr::resource::UniformBuffer3DObject));
     }
   }
 
   void updateUniforms(uint32_t currentImage) override {
-    vkr::UniformBuffer3DObject ubo{};
+    vkr::resource::UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();

@@ -5,7 +5,7 @@
 #include "./buffer_utils.hh"
 #include <glm/glm.hpp>
 
-namespace vkr {
+namespace vkr::resource {
 
 class IVertexBuffer {
 public:
@@ -20,8 +20,8 @@ public:
 
 template <typename VertexType> class VertexBufferBase : public IVertexBuffer {
 public:
-  explicit VertexBufferBase(const Device &device,
-                            const CommandPool &commandPool)
+  explicit VertexBufferBase(const core::Device &device,
+                            const core::CommandPool &commandPool)
       : device(device), commandPool(commandPool) {
     create();
   }
@@ -151,8 +151,8 @@ protected:
 
 protected:
   // dependencies
-  const Device &device;
-  const CommandPool &commandPool;
+  const core::Device &device;
+  const core::CommandPool &commandPool;
 
   // components
   std::vector<VertexType> _vertices{};
@@ -311,7 +311,7 @@ struct VertexNormalTexture3D {
   }
 };
 
-} // namespace vkr
+} // namespace vkr::resource
 
 namespace std {
 template <typename T, glm::qualifier Q> struct hash<glm::vec<2, T, Q>> {
@@ -330,16 +330,16 @@ template <typename T, glm::qualifier Q> struct hash<glm::vec<3, T, Q>> {
   }
 };
 
-template <> struct hash<vkr::Vertex3D> {
-  size_t operator()(vkr::Vertex3D const &vertex) const {
+template <> struct hash<vkr::resource::Vertex3D> {
+  size_t operator()(vkr::resource::Vertex3D const &vertex) const {
     return ((hash<glm::vec3>()(vertex.pos) ^
              (hash<glm::vec3>()(vertex.color) << 1)) >>
             1);
   }
 };
 
-template <> struct hash<vkr::VertexNormal3D> {
-  size_t operator()(vkr::VertexNormal3D const &vertex) const {
+template <> struct hash<vkr::resource::VertexNormal3D> {
+  size_t operator()(vkr::resource::VertexNormal3D const &vertex) const {
     return (((hash<glm::vec3>()(vertex.pos) ^
               (hash<glm::vec3>()(vertex.color) << 1)) >>
              1) ^
@@ -347,8 +347,8 @@ template <> struct hash<vkr::VertexNormal3D> {
   }
 };
 
-template <> struct hash<vkr::VertexTextured3D> {
-  size_t operator()(vkr::VertexTextured3D const &vertex) const {
+template <> struct hash<vkr::resource::VertexTextured3D> {
+  size_t operator()(vkr::resource::VertexTextured3D const &vertex) const {
     return (((hash<glm::vec3>()(vertex.pos) ^
               (hash<glm::vec3>()(vertex.color) << 1)) >>
              1) ^
@@ -356,8 +356,8 @@ template <> struct hash<vkr::VertexTextured3D> {
   }
 };
 
-template <> struct hash<vkr::VertexNormalTexture3D> {
-  size_t operator()(vkr::VertexNormalTexture3D const &vertex) const {
+template <> struct hash<vkr::resource::VertexNormalTexture3D> {
+  size_t operator()(vkr::resource::VertexNormalTexture3D const &vertex) const {
     return ((((hash<glm::vec3>()(vertex.pos) ^
                (hash<glm::vec3>()(vertex.color) << 1)) >>
               1) ^

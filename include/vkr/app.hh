@@ -3,7 +3,7 @@
 #include "./core/core.hh"
 #include "./ctx.hh"
 #include "./pipeline/graphics_pipeline.hh"
-#include "./rendering/rendering.hh"
+#include "./rendering/renderer.hh"
 #include "./resources/manager.hh"
 #include "./scene/scene.hh"
 #include "./timer.hh"
@@ -31,32 +31,32 @@ public:
   VulkanContext ctx;
 
   // core
-  std::unique_ptr<Window> window;
-  std::unique_ptr<Instance> instance;
-  std::unique_ptr<Surface> surface;
-  std::unique_ptr<Device> device;
-  std::unique_ptr<Swapchain> swapchain;
-  std::unique_ptr<CommandPool> commandPool;
-  std::unique_ptr<CommandBuffers> commandBuffers;
-  std::unique_ptr<SyncObjects> syncObjects;
+  std::unique_ptr<core::Window> window;
+  std::unique_ptr<core::Instance> instance;
+  std::unique_ptr<core::Surface> surface;
+  std::unique_ptr<core::Device> device;
+  std::unique_ptr<core::Swapchain> swapchain;
+  std::unique_ptr<core::CommandPool> commandPool;
+  std::unique_ptr<core::CommandBuffers> commandBuffers;
+  std::unique_ptr<core::SyncObjects> syncObjects;
 
   // resource management
-  std::unique_ptr<ResourceManager> resourceManager;
+  std::unique_ptr<resource::ResourceManager> resourceManager;
 
   // pipeline
-  std::unique_ptr<RenderPass> renderPass;
-  std::unique_ptr<GraphicsPipeline> graphicsPipeline;
+  std::unique_ptr<pipeline::RenderPass> renderPass;
+  std::unique_ptr<pipeline::GraphicsPipeline> graphicsPipeline;
 
-  //  descriptor
-  std::unique_ptr<DescriptorManager> descriptorManager;
-  std::shared_ptr<DescriptorSetLayout> descriptorSetLayout;
-  std::unique_ptr<DescriptorPool> descriptorPool;
-  std::unique_ptr<DescriptorSets> descriptorSets;
+  // descriptor
+  std::unique_ptr<pipeline::DescriptorManager> descriptorManager;
+  std::shared_ptr<pipeline::DescriptorSetLayout> descriptorSetLayout;
+  std::unique_ptr<pipeline::DescriptorPool> descriptorPool;
+  std::unique_ptr<pipeline::DescriptorSets> descriptorSets;
 
   // components
-  std::unique_ptr<Camera> camera;
+  std::unique_ptr<scene::Camera> camera;
   std::unique_ptr<Timer> timer;
-  std::unique_ptr<UI> ui;
+  std::unique_ptr<ui::UI> ui;
 
 protected:
   virtual void onConfigure() {}
@@ -65,7 +65,7 @@ protected:
   virtual void onCleanup() {}
 
   virtual void createUniforms() {}
-  virtual std::vector<DescriptorBinding> createDescriptorBindings() {
+  virtual std::vector<pipeline::DescriptorBinding> createDescriptorBindings() {
     return {};
   }
   virtual void bindDescriptorSets() {}

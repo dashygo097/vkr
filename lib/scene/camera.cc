@@ -1,7 +1,7 @@
 #include "vkr/scene/camera.hh"
 
-namespace vkr {
-Camera::Camera(const Window &window, const float &movementSpeed,
+namespace vkr::scene {
+Camera::Camera(const core::Window &window, const float &movementSpeed,
                const float &mouseSensitivity, const float &fov,
                const float &aspectRatio, const float &nearPlane,
                const float &farPlane)
@@ -68,4 +68,4 @@ void Camera::track() {
   }
 }
 
-} // namespace vkr
+} // namespace vkr::scene

@@ -1,7 +1,7 @@
 #include "vkr/resources/buffers/buffer_utils.hh"
 #include <stdexcept>
 
-namespace vkr {
+namespace vkr::resource {
 
 uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties,
                         VkPhysicalDevice physicalDevice) {
@@ -83,4 +83,4 @@ void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size,
 
   vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
-} // namespace vkr
+} // namespace vkr::resource

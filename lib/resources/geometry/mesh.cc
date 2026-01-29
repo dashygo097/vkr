@@ -2,7 +2,7 @@
 #include <iostream>
 #include <tiny_obj_loader.h>
 
-namespace vkr::geometry {
+namespace vkr::resource {
 
 template <> void Mesh<Vertex3D>::load(const std::string &meshFilePath) {
   tinyobj::attrib_t attrib;
@@ -82,4 +82,4 @@ template <> void Mesh<Vertex3D>::load(const std::string &meshFilePath) {
             << indices.size() << " indices" << std::endl;
 }
 
-} // namespace vkr::geometry
+} // namespace vkr::resource

@@ -1,7 +1,7 @@
 #include "vkr/core/command_pool.hh"
 #include "vkr/core/core_utils.hh"
 
-namespace vkr {
+namespace vkr::core {
 CommandPool::CommandPool(const Device &device, const Surface &surface)
     : device(device), surface(surface) {
 
@@ -25,4 +25,4 @@ CommandPool::~CommandPool() {
     _commandPool = VK_NULL_HANDLE;
   }
 }
-} // namespace vkr
+} // namespace vkr::core

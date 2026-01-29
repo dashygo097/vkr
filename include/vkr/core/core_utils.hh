@@ -4,7 +4,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-namespace vkr {
+namespace vkr::core {
 
 struct QueueFamilyIndices {
   std::optional<uint32_t> graphicsFamily;
@@ -21,4 +21,4 @@ std::vector<const char *>
 getRequiredExtensions(const std::vector<const char *> &preExtensions);
 bool checkValidationLayerSupport(
     const std::vector<const char *> &validationLayers);
-} // namespace vkr
+} // namespace vkr::core

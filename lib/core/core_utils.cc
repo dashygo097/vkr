@@ -2,7 +2,7 @@
 #include "vkr/core/instance.hh"
 #include <GLFW/glfw3.h>
 
-namespace vkr {
+namespace vkr::core {
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice,
                                      VkSurfaceKHR surface) {
   QueueFamilyIndices indices;
@@ -75,4 +75,4 @@ bool checkValidationLayerSupport(
 
   return true;
 };
-} // namespace vkr
+} // namespace vkr::core

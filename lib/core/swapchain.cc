@@ -1,7 +1,7 @@
 #include "vkr/core/swapchain.hh"
 #include "vkr/core/core_utils.hh"
 
-namespace vkr {
+namespace vkr::core {
 Swapchain::Swapchain(const Window &window, const Device &device,
                      const Surface &surface)
     : window(window), device(device), surface(surface) {
@@ -191,4 +191,4 @@ SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice physicalDevice,
 
   return details;
 }
-} // namespace vkr
+} // namespace vkr::core

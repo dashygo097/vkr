@@ -7,60 +7,62 @@ namespace vkr {
 
 void VulkanApplication::initVulkan() {
   // window
-  window = std::make_unique<Window>(ctx.title, ctx.width, ctx.height);
+  window = std::make_unique<core::Window>(ctx.title, ctx.width, ctx.height);
   glfwSetWindowUserPointer(window->glfwWindow(), this);
   glfwSetFramebufferSizeCallback(window->glfwWindow(),
                                  framebufferResizeCallback);
 
   // instance
-  instance = std::make_unique<Instance>(
+  instance = std::make_unique<core::Instance>(
       ctx.appName, ctx.engineName, ctx.appVersion, ctx.engineVersion,
       ctx.preExtensions, ctx.validationLayers);
 
   // surface
-  surface = std::make_unique<Surface>(*window, *instance);
+  surface = std::make_unique<core::Surface>(*window, *instance);
 
   // device
-  device = std::make_unique<Device>(*instance, *surface, ctx.deviceExtensions,
-                                    ctx.validationLayers);
+  device = std::make_unique<core::Device>(
+      *instance, *surface, ctx.deviceExtensions, ctx.validationLayers);
 
   // swapchain
-  swapchain = std::make_unique<Swapchain>(*window, *device, *surface);
+  swapchain = std::make_unique<core::Swapchain>(*window, *device, *surface);
 
   // command pool
-  commandPool = std::make_unique<CommandPool>(*device, *surface);
+  commandPool = std::make_unique<core::CommandPool>(*device, *surface);
 
   // command buffers
-  commandBuffers = std::make_unique<CommandBuffers>(*device, *commandPool);
+  commandBuffers =
+      std::make_unique<core::CommandBuffers>(*device, *commandPool);
 
   // sync_objects
-  syncObjects = std::make_unique<SyncObjects>(*device, *swapchain);
+  syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
   // render pass
-  renderPass = std::make_unique<RenderPass>(*device, *swapchain);
+  renderPass = std::make_unique<pipeline::RenderPass>(*device, *swapchain);
 
   // resource manager
-  resourceManager = std::make_unique<ResourceManager>(*device, *commandPool,
-                                                      *renderPass, *swapchain);
+  resourceManager = std::make_unique<resource::ResourceManager>(
+      *device, *commandPool, *swapchain, *renderPass);
   resourceManager->createFramebuffers("swapchain");
 
   createUniforms();
 
   // descriptor manager
   uint32_t maxSets = MAX_FRAMES_IN_FLIGHT + 1;
-  DescriptorPoolSizes poolSizes =
-      DescriptorManager::calculatePoolSizes(maxSets);
+  pipeline::DescriptorPoolSizes poolSizes =
+      pipeline::DescriptorManager::calculatePoolSizes(maxSets);
   descriptorPool =
-      std::make_unique<DescriptorPool>(*device, maxSets, poolSizes);
+      std::make_unique<pipeline::DescriptorPool>(*device, maxSets, poolSizes);
 
-  descriptorManager = std::make_unique<DescriptorManager>(*device);
-  std::vector<DescriptorBinding> bindings = createDescriptorBindings();
+  descriptorManager = std::make_unique<pipeline::DescriptorManager>(*device);
+  std::vector<pipeline::DescriptorBinding> bindings =
+      createDescriptorBindings();
 
   descriptorSetLayout = descriptorManager->createLayout(bindings);
 
   // graphics pipeline
-  graphicsPipeline = std::make_unique<GraphicsPipeline>(
-      *device, *renderPass, *descriptorSetLayout, *resourceManager,
+  graphicsPipeline = std::make_unique<pipeline::GraphicsPipeline>(
+      *device, *resourceManager, *renderPass, *descriptorSetLayout,
       ctx.vertexShaderPath, ctx.fragmentShaderPath, ctx.pipelineMode);
 
   // descriptor sets
@@ -69,18 +71,18 @@ void VulkanApplication::initVulkan() {
   bindDescriptorSets();
 
   // camera
-  camera = std::make_unique<Camera>(*window, ctx.cameraMovementSpeed,
-                                    ctx.cameraMouseSensitivity, ctx.cameraFov,
-                                    ctx.cameraAspectRatio, ctx.cameraNearPlane,
-                                    ctx.cameraFarPlane);
+  camera = std::make_unique<scene::Camera>(
+      *window, ctx.cameraMovementSpeed, ctx.cameraMouseSensitivity,
+      ctx.cameraFov, ctx.cameraAspectRatio, ctx.cameraNearPlane,
+      ctx.cameraFarPlane);
   ctx.cameraLocked = camera->isLocked();
 
   // timer
   timer = std::make_unique<Timer>();
 
   // ui
-  ui = std::make_unique<UI>(*window, *instance, *surface, *device, *renderPass,
-                            *descriptorPool, *commandPool);
+  ui = std::make_unique<ui::UI>(*window, *instance, *surface, *device,
+                                *commandPool, *renderPass, *descriptorPool);
 }
 
 void VulkanApplication::mainLoop() {

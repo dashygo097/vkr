@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
-namespace vkr {
+namespace vkr::core {
 
 class DebugMessenger {
 public:
@@ -32,4 +32,4 @@ private:
                 const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
                 void *pUserData);
 };
-} // namespace vkr
+} // namespace vkr::core

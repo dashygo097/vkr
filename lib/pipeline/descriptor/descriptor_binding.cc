@@ -1,10 +1,10 @@
 #include "vkr/pipeline/descriptor/descriptor_binding.hh"
 #include <stdexcept>
 
-namespace vkr {
+namespace vkr::pipeline {
 
 DescriptorSetLayout::DescriptorSetLayout(
-    const Device &device, const std::vector<DescriptorBinding> &bindings)
+    const core::Device &device, const std::vector<DescriptorBinding> &bindings)
     : device(device), bindings(bindings) {
 
   std::vector<VkDescriptorSetLayoutBinding> vkBindings;
@@ -36,7 +36,8 @@ DescriptorSetLayout::DescriptorSetLayout(
 
 DescriptorSetLayout::~DescriptorSetLayout() { cleanup(); }
 
-DescriptorSetLayout DescriptorSetLayout::createDefault3D(const Device &device) {
+DescriptorSetLayout
+DescriptorSetLayout::createDefault3D(const core::Device &device) {
   std::vector<DescriptorBinding> bindings = {
       {0, DescriptorType::UniformBuffer, 1, VK_SHADER_STAGE_VERTEX_BIT}};
   return DescriptorSetLayout(device, bindings);
@@ -49,4 +50,4 @@ void DescriptorSetLayout::cleanup() {
   }
 }
 
-} // namespace vkr
+} // namespace vkr::pipeline

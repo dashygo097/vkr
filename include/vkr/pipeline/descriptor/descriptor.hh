@@ -7,11 +7,11 @@
 #include <memory>
 #include <vector>
 
-namespace vkr {
+namespace vkr::pipeline {
 
 class DescriptorSets {
 public:
-  DescriptorSets(const Device &device, DescriptorSetLayout &layout,
+  DescriptorSets(const core::Device &device, DescriptorSetLayout &layout,
                  const DescriptorPool &pool,
                  uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
   ~DescriptorSets();
@@ -41,7 +41,7 @@ public:
 
 private:
   // dependencies
-  const Device &device;
+  const core::Device &device;
   DescriptorSetLayout &layout;
   const DescriptorPool &pool;
 
@@ -54,7 +54,7 @@ private:
 
 class DescriptorManager {
 public:
-  explicit DescriptorManager(const Device &device);
+  explicit DescriptorManager(const core::Device &device);
   ~DescriptorManager() = default;
 
   DescriptorManager(const DescriptorManager &) = delete;
@@ -71,7 +71,7 @@ public:
 
 private:
   // dependencies
-  const Device &device;
+  const core::Device &device;
 };
 
-} // namespace vkr
+} // namespace vkr::pipeline

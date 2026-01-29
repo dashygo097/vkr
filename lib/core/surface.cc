@@ -1,6 +1,6 @@
 #include "vkr/core/surface.hh"
 
-namespace vkr {
+namespace vkr::core {
 Surface::Surface(const Window &window, const Instance &instance)
     : instance(instance), window(window) {
   if (glfwCreateWindowSurface(instance.instance(), window.glfwWindow(), nullptr,
@@ -12,4 +12,4 @@ Surface::Surface(const Window &window, const Instance &instance)
 Surface::~Surface() {
   vkDestroySurfaceKHR(instance.instance(), _surface, nullptr);
 }
-} // namespace vkr
+} // namespace vkr::core

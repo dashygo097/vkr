@@ -1,7 +1,8 @@
 #include "vkr/pipeline/render_pass.hh"
 
-namespace vkr {
-RenderPass::RenderPass(const Device &device, const Swapchain &swapchain)
+namespace vkr::pipeline {
+RenderPass::RenderPass(const core::Device &device,
+                       const core::Swapchain &swapchain)
     : device(device), swapchain(swapchain) {
   VkAttachmentDescription colorAttachment{};
   colorAttachment.format = swapchain.format();
@@ -41,4 +42,4 @@ RenderPass::~RenderPass() {
     _renderPass = VK_NULL_HANDLE;
   }
 }
-} // namespace vkr
+} // namespace vkr::pipeline

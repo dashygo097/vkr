@@ -3,7 +3,7 @@
 #include "./instance.hh"
 #include "./surface.hh"
 
-namespace vkr {
+namespace vkr::core {
 
 class Device {
 public:
@@ -43,4 +43,4 @@ private:
 
   [[nodiscard]] bool isSuitable(VkPhysicalDevice pDevice);
 };
-} // namespace vkr
+} // namespace vkr::core

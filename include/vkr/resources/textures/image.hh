@@ -4,10 +4,11 @@
 #include "../../core/device.hh"
 #include <stb_image.h>
 
-namespace vkr {
+namespace vkr::resource {
 class Image {
 public:
-  explicit Image(const Device &device, const CommandPool &commandPool);
+  explicit Image(const core::Device &device,
+                 const core::CommandPool &commandPool);
   ~Image();
 
   Image(const Image &) = delete;
@@ -25,8 +26,8 @@ public:
 
 private:
   // dependencies
-  const Device &device;
-  const CommandPool &commandPool;
+  const core::Device &device;
+  const core::CommandPool &commandPool;
 
   // components
   int _width;
@@ -49,4 +50,4 @@ private:
   VkCommandBuffer beginSingleTimeCommands();
   void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 };
-} // namespace vkr
+} // namespace vkr::resource

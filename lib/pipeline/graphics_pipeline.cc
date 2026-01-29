@@ -2,15 +2,14 @@
 #include "vkr/pipeline/shader_module.hh"
 #include "vkr/resources/buffers/vertex_buffer.hh"
 
-namespace vkr {
+namespace vkr::pipeline {
 
-GraphicsPipeline::GraphicsPipeline(const Device &device,
-                                   const RenderPass &renderPass,
-                                   DescriptorSetLayout &descriptorSetLayout,
-                                   const ResourceManager &resourceManager,
-                                   const std::string &vertShaderPath,
-                                   const std::string &fragShaderPath,
-                                   PipelineMode mode)
+GraphicsPipeline::GraphicsPipeline(
+    const core::Device &device,
+    const resource::ResourceManager &resourceManager,
+    const RenderPass &renderPass, DescriptorSetLayout &descriptorSetLayout,
+    const std::string &vertShaderPath, const std::string &fragShaderPath,
+    PipelineMode mode)
     : device(device), renderPass(renderPass),
       descriptorSetLayout(descriptorSetLayout),
       resourceManager(resourceManager) {
@@ -44,8 +43,8 @@ GraphicsPipeline::GraphicsPipeline(const Device &device,
 
   switch (mode) {
   case (PipelineMode::Default3D): {
-    bindingDescription = Vertex3D::getBindingDescription();
-    attributeDescriptions = Vertex3D::getAttributeDescriptions();
+    bindingDescription = resource::Vertex3D::getBindingDescription();
+    attributeDescriptions = resource::Vertex3D::getAttributeDescriptions();
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.vertexAttributeDescriptionCount =
         static_cast<uint32_t>(attributeDescriptions.size());
@@ -155,4 +154,4 @@ GraphicsPipeline::~GraphicsPipeline() {
   }
 }
 
-} // namespace vkr
+} // namespace vkr::pipeline

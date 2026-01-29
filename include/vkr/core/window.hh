@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <string>
 
-namespace vkr {
+namespace vkr::core {
 
 class Window {
 public:
@@ -29,4 +29,4 @@ private:
   uint32_t _height;
   std::string _title;
 };
-} // namespace vkr
+} // namespace vkr::core

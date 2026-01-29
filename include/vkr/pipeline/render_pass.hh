@@ -3,10 +3,11 @@
 #include "../core/device.hh"
 #include "../core/swapchain.hh"
 
-namespace vkr {
+namespace vkr::pipeline {
 class RenderPass {
 public:
-  explicit RenderPass(const Device &device, const Swapchain &swapchain);
+  explicit RenderPass(const core::Device &device,
+                      const core::Swapchain &swapchain);
   ~RenderPass();
 
   RenderPass(const RenderPass &) = delete;
@@ -16,10 +17,10 @@ public:
 
 private:
   // dependencies
-  const Device &device;
-  const Swapchain &swapchain;
+  const core::Device &device;
+  const core::Swapchain &swapchain;
 
   // components
   VkRenderPass _renderPass{VK_NULL_HANDLE};
 };
-} // namespace vkr
+} // namespace vkr::pipeline

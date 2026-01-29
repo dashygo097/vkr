@@ -1,8 +1,9 @@
 #include "vkr/resources/buffers/index_buffer.hh"
 #include "vkr/resources/buffers/buffer_utils.hh"
 
-namespace vkr {
-IndexBuffer::IndexBuffer(const Device &device, const CommandPool &commandPool)
+namespace vkr::resource {
+IndexBuffer::IndexBuffer(const core::Device &device,
+                         const core::CommandPool &commandPool)
     : device(device), commandPool(commandPool) {
   create();
 }
@@ -59,4 +60,4 @@ void IndexBuffer::update(const std::vector<uint16_t> &newIndices) {
   _indices = newIndices;
   create();
 }
-} // namespace vkr
+} // namespace vkr::resource

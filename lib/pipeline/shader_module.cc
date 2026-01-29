@@ -1,8 +1,9 @@
 #include "vkr/pipeline/shader_module.hh"
 #include "vkr/io_utils.hh"
 
-namespace vkr {
-ShaderModule::ShaderModule(const Device &device, const std::string &filePath)
+namespace vkr::pipeline {
+ShaderModule::ShaderModule(const core::Device &device,
+                           const std::string &filePath)
     : device(device) {
   auto code = read_file(filePath);
   VkShaderModuleCreateInfo createInfo{};
@@ -22,4 +23,4 @@ ShaderModule::~ShaderModule() {
   }
 }
 
-} // namespace vkr
+} // namespace vkr::pipeline

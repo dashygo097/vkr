@@ -2,11 +2,11 @@
 
 #include "../../core/device.hh"
 
-namespace vkr {
+namespace vkr::pipeline {
 
 class DescriptorWriter {
 public:
-  explicit DescriptorWriter(const Device &device);
+  explicit DescriptorWriter(const core::Device &device);
 
   DescriptorWriter &writeBuffer(uint32_t binding, VkDescriptorType type,
                                 const VkDescriptorBufferInfo *bufferInfo);
@@ -27,7 +27,7 @@ public:
 
 private:
   // dependencies
-  const Device &device;
+  const core::Device &device;
 
   // components
   std::vector<VkWriteDescriptorSet> _writes;
@@ -35,4 +35,4 @@ private:
   std::vector<VkDescriptorImageInfo> _imageInfos;
 };
 
-} // namespace vkr
+} // namespace vkr::pipeline

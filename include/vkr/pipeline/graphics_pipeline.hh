@@ -5,7 +5,7 @@
 #include "./descriptor/descriptor.hh"
 #include "./render_pass.hh"
 
-namespace vkr {
+namespace vkr::pipeline {
 enum class PipelineMode {
   Default3D,
   NoVertices,
@@ -13,9 +13,10 @@ enum class PipelineMode {
 
 class GraphicsPipeline {
 public:
-  explicit GraphicsPipeline(const Device &device, const RenderPass &renderPass,
+  explicit GraphicsPipeline(const core::Device &device,
+                            const resource::ResourceManager &resourceManager,
+                            const pipeline::RenderPass &renderPass,
                             DescriptorSetLayout &descriptorSetLayout,
-                            const ResourceManager &resourceManager,
                             const std::string &vertShaderPath,
                             const std::string &fragShaderPath,
                             PipelineMode mode = PipelineMode::Default3D);
@@ -33,13 +34,13 @@ public:
 
 private:
   // dependencies
-  const Device &device;
+  const core::Device &device;
+  const resource::ResourceManager &resourceManager;
   const RenderPass &renderPass;
   const DescriptorSetLayout &descriptorSetLayout;
-  const ResourceManager &resourceManager;
 
   // componets
   VkPipelineLayout _pipelineLayout{VK_NULL_HANDLE};
   VkPipeline _graphicsPipeline{VK_NULL_HANDLE};
 };
-} // namespace vkr
+} // namespace vkr::pipeline

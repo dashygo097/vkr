@@ -3,7 +3,7 @@
 #include "./instance.hh"
 #include "./window.hh"
 
-namespace vkr {
+namespace vkr::core {
 
 class Surface {
 public:
@@ -23,4 +23,4 @@ private:
   // components
   VkSurfaceKHR _surface{VK_NULL_HANDLE};
 };
-} // namespace vkr
+} // namespace vkr::core
