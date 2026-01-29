@@ -3,10 +3,10 @@
 #include "../../core/device.hh"
 #include "./image.hh"
 
-namespace vkr {
+namespace vkr::resource {
 class ImageView {
 public:
-  explicit ImageView(const Device &device);
+  explicit ImageView(const core::Device &device);
   ~ImageView();
 
   ImageView(const ImageView &) = delete;
@@ -21,11 +21,11 @@ public:
 
 private:
   // dependencies
-  const Device &device;
+  const core::Device &device;
 
   // components
   const Image &_image;
   VkFormat _format;
   VkImageView _image_view;
 };
-} // namespace vkr
+} // namespace vkr::resource

@@ -8,12 +8,14 @@
 #include "../pipeline/render_pass.hh"
 #include "./fps_panel.hh"
 
-namespace vkr {
+namespace vkr::ui {
 class UI {
 public:
-  UI(const Window &window, const Instance &instance, const Surface &surface,
-     const Device &device, const RenderPass &renderPass,
-     const DescriptorPool &descriptorPool, const CommandPool &commandPool);
+  UI(const core::Window &window, const core::Instance &instance,
+     const core::Surface &surface, const core::Device &device,
+     const core::CommandPool &commandPool,
+     const pipeline::RenderPass &renderPass,
+     const pipeline::DescriptorPool &descriptorPool);
   ~UI();
 
   UI(const UI &) = delete;
@@ -29,17 +31,17 @@ public:
 
 private:
   // dependencies
-  const Window &window;
-  const Instance &instance;
-  const Surface &surface;
-  const Device &device;
-  const RenderPass &renderPass;
-  const DescriptorPool &descriptorPool;
-  const CommandPool &commandPool;
+  const core::Window &window;
+  const core::Instance &instance;
+  const core::Surface &surface;
+  const core::Device &device;
+  const core::CommandPool &commandPool;
+  const pipeline::RenderPass &renderPass;
+  const pipeline::DescriptorPool &descriptorPool;
 
   // components
   std::unique_ptr<FPSPanel> fps_panel;
 
   bool _visible{false};
 };
-} // namespace vkr
+} // namespace vkr::ui

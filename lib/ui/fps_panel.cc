@@ -1,7 +1,7 @@
 #include "vkr/ui/fps_panel.hh"
 #include <imgui.h>
 
-namespace vkr {
+namespace vkr::ui {
 
 void FPSPanel::render(float fps) {
   static float fps_history[256] = {};
@@ -18,4 +18,4 @@ void FPSPanel::render(float fps) {
   ImGui::EndChild();
   ImGui::PopStyleColor(2);
 }
-} // namespace vkr
+} // namespace vkr::ui

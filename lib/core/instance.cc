@@ -1,7 +1,7 @@
 #include "vkr/core/instance.hh"
 #include "vkr/core/core_utils.hh"
 
-namespace vkr {
+namespace vkr::core {
 Instance::Instance(const std::string appName, const std::string engineName,
                    uint32_t appVersion, uint32_t engineVersion,
                    const std::vector<const char *> &preExtensions,
@@ -59,4 +59,4 @@ Instance::~Instance() {
   vkDestroyInstance(_instance, nullptr);
   _instance = VK_NULL_HANDLE;
 }
-} // namespace vkr
+} // namespace vkr::core

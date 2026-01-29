@@ -1,6 +1,6 @@
 #include "vkr/core/window.hh"
 
-namespace vkr {
+namespace vkr::core {
 Window::Window(std::string title, uint32_t width, uint32_t height)
     : _width(width), _height(height), _title(title) {
   if (!glfwInit()) {
@@ -25,4 +25,4 @@ Window::~Window() {
 
 bool Window::shouldClose() const { return glfwWindowShouldClose(_window); }
 void Window::pollEvents() const { glfwPollEvents(); }
-} // namespace vkr
+} // namespace vkr::core

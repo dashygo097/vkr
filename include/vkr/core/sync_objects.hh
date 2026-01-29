@@ -3,7 +3,7 @@
 #include "./device.hh"
 #include "./swapchain.hh"
 
-namespace vkr {
+namespace vkr::core {
 
 class SyncObjects {
 public:
@@ -35,4 +35,4 @@ private:
   std::vector<VkSemaphore> _renderFinishedSemaphores{};
   std::vector<VkFence> _inFlightFences{};
 };
-} // namespace vkr
+} // namespace vkr::core

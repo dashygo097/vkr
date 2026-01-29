@@ -4,7 +4,7 @@
 #include "../../core/device.hh"
 #include "./buffer_utils.hh"
 
-namespace vkr {
+namespace vkr::resource {
 
 class IUniformBuffer {
 public:
@@ -20,7 +20,7 @@ public:
 
 template <typename ObjectType> class UniformBufferBase : public IUniformBuffer {
 public:
-  explicit UniformBufferBase(const Device &device) : device(device) {
+  explicit UniformBufferBase(const core::Device &device) : device(device) {
     create();
   }
 
@@ -99,7 +99,7 @@ protected:
 
 protected:
   // dependencies
-  const Device &device;
+  const core::Device &device;
 
   // components
   ObjectType _object;
@@ -138,4 +138,4 @@ class ShaderToyUniformBuffer
   using UniformBufferBase<UniformBufferShaderToyObject>::UniformBufferBase;
 };
 
-} // namespace vkr
+} // namespace vkr::resource

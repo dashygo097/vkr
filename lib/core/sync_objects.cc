@@ -1,7 +1,7 @@
 #include "vkr/core/sync_objects.hh"
 #include "vkr/core/command_buffer.hh"
 
-namespace vkr {
+namespace vkr::core {
 SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
     : device(device), swapchain(swapchain) {
   _imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -55,4 +55,4 @@ SyncObjects::~SyncObjects() {
   }
   _renderFinishedSemaphores.clear();
 }
-} // namespace vkr
+} // namespace vkr::core

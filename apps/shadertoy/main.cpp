@@ -30,12 +30,14 @@ private:
   ShaderToyConfig config;
 
   void createUniforms() override {
-    resourceManager->createUniformBuffer<vkr::UniformBufferShaderToyObject>(
-        "shadertoy", {});
+    resourceManager
+        ->createUniformBuffer<vkr::resource::UniformBufferShaderToyObject>(
+            "shadertoy", {});
   }
 
-  std::vector<vkr::DescriptorBinding> createDescriptorBindings() override {
-    return {{0, vkr::DescriptorType::UniformBuffer, 1,
+  std::vector<vkr::pipeline::DescriptorBinding>
+  createDescriptorBindings() override {
+    return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
              VK_SHADER_STAGE_FRAGMENT_BIT}};
   }
 
@@ -44,7 +46,7 @@ private:
     if (shadertoyUBO && descriptorSets) {
       descriptorSets->bindUniformBuffer(
           0, shadertoyUBO->buffers(),
-          sizeof(vkr::UniformBufferShaderToyObject));
+          sizeof(vkr::resource::UniformBufferShaderToyObject));
     }
   }
 
@@ -83,7 +85,7 @@ private:
     std::time_t t = std::time(nullptr);
     std::tm *now = std::localtime(&t);
 
-    vkr::UniformBufferShaderToyObject ubo{};
+    vkr::resource::UniformBufferShaderToyObject ubo{};
     ubo.iResolution = glm::vec3(
         static_cast<float>(ctx.width), static_cast<float>(ctx.height),
         static_cast<float>(ctx.width) / static_cast<float>(ctx.height));
@@ -119,7 +121,7 @@ private:
     startTime = std::chrono::high_resolution_clock::now();
     lastFrameTime = startTime;
 
-    ctx.pipelineMode = vkr::PipelineMode::NoVertices;
+    ctx.pipelineMode = vkr::pipeline::PipelineMode::NoVertices;
   }
 };
 

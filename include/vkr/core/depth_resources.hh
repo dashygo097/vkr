@@ -3,7 +3,7 @@
 #include "./device.hh"
 #include "./swapchain.hh"
 
-namespace vkr {
+namespace vkr::core {
 class DepthResources {
 public:
   explicit DepthResources(const Device &device, const Swapchain &swapChain);
@@ -56,4 +56,4 @@ private:
   }
 };
 
-} // namespace vkr
+} // namespace vkr::core

@@ -8,7 +8,7 @@
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-namespace vkr {
+namespace vkr::core {
 class CommandBuffers {
 public:
   explicit CommandBuffers(const Device &device, const CommandPool &commandPool);
@@ -26,14 +26,16 @@ public:
     return _commandBuffers[index];
   }
 
-  void record(uint32_t imageIndex, uint32_t currentFrame,
-              VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
-              const std::vector<VkDescriptorSet> &descriptorSets,
-              const std::vector<VkFramebuffer> &framebuffers, VkExtent2D extent,
-              VkPipeline graphicsPipeline,
-              const std::vector<std::shared_ptr<IVertexBuffer>> &vertexBuffers,
-              const std::vector<std::shared_ptr<IndexBuffer>> &indexBuffers,
-              UI &ui);
+  void record(
+      uint32_t imageIndex, uint32_t currentFrame, VkRenderPass renderPass,
+      VkPipelineLayout pipelineLayout,
+      const std::vector<VkDescriptorSet> &descriptorSets,
+      const std::vector<VkFramebuffer> &framebuffers, VkExtent2D extent,
+      VkPipeline graphicsPipeline,
+      const std::vector<std::shared_ptr<resource::IVertexBuffer>>
+          &vertexBuffers,
+      const std::vector<std::shared_ptr<resource::IndexBuffer>> &indexBuffers,
+      ui::UI &ui);
 
 private:
   // dependencies
@@ -52,4 +54,4 @@ private:
   void endRecording(uint16_t index);
 };
 
-} // namespace vkr
+} // namespace vkr::core

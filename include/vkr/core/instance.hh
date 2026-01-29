@@ -9,7 +9,7 @@ const bool ENABLE_VALIDATION_LAYERS = false;
 const bool ENABLE_VALIDATION_LAYERS = true;
 #endif
 
-namespace vkr {
+namespace vkr::core {
 
 class Instance {
 public:
@@ -30,4 +30,4 @@ private:
   VkInstance _instance{VK_NULL_HANDLE};
   std::unique_ptr<DebugMessenger> _debugMessenger;
 };
-} // namespace vkr
+} // namespace vkr::core

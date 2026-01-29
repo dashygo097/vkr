@@ -1,8 +1,9 @@
 #include "vkr/pipeline/descriptor/descriptor_writer.hh"
 
-namespace vkr {
+namespace vkr::pipeline {
 
-DescriptorWriter::DescriptorWriter(const Device &device) : device(device) {}
+DescriptorWriter::DescriptorWriter(const core::Device &device)
+    : device(device) {}
 
 DescriptorWriter &
 DescriptorWriter::writeBuffer(uint32_t binding, VkDescriptorType type,
@@ -92,4 +93,4 @@ void DescriptorWriter::clear() {
   _imageInfos.clear();
 }
 
-} // namespace vkr
+} // namespace vkr::pipeline

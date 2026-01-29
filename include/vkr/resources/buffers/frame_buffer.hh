@@ -4,12 +4,13 @@
 #include "../../core/swapchain.hh"
 #include "../../pipeline/render_pass.hh"
 
-namespace vkr {
+namespace vkr::resource {
 
 class Framebuffers {
 public:
-  explicit Framebuffers(const Device &device, const RenderPass &renderPass,
-                        const Swapchain &swapchain);
+  explicit Framebuffers(const core::Device &device,
+                        const core::Swapchain &swapchain,
+                        const pipeline::RenderPass &renderPass);
   ~Framebuffers();
 
   Framebuffers(const Framebuffers &) = delete;
@@ -24,12 +25,12 @@ public:
 
 private:
   // dependencies
-  const Device &device;
-  const RenderPass &renderPass;
-  const Swapchain &swapchain;
+  const core::Device &device;
+  const core::Swapchain &swapchain;
+  const pipeline::RenderPass &renderPass;
 
   // components
   std::vector<VkFramebuffer> _framebuffers{};
   bool frameBufferResized{false};
 };
-} // namespace vkr
+} // namespace vkr::resource

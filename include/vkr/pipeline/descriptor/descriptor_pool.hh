@@ -2,7 +2,7 @@
 
 #include "../../core/device.hh"
 
-namespace vkr {
+namespace vkr::pipeline {
 
 struct DescriptorPoolSizes {
   uint32_t uniformBufferCount{0};
@@ -14,7 +14,7 @@ struct DescriptorPoolSizes {
 
 class DescriptorPool {
 public:
-  explicit DescriptorPool(const Device &device, uint32_t maxSets,
+  explicit DescriptorPool(const core::Device &device, uint32_t maxSets,
                           const DescriptorPoolSizes &sizes);
   ~DescriptorPool();
 
@@ -28,7 +28,7 @@ public:
 
 private:
   // dependencies
-  const Device &device;
+  const core::Device &device;
 
   // components
   VkDescriptorPool _pool{VK_NULL_HANDLE};
@@ -38,4 +38,4 @@ private:
   void cleanup();
 };
 
-} // namespace vkr
+} // namespace vkr::pipeline

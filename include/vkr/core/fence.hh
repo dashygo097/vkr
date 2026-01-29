@@ -2,7 +2,7 @@
 
 #include "./device.hh"
 
-namespace vkr {
+namespace vkr::core {
 class Fence {
 public:
   explicit Fence(const Device &device, const VkImage &image);
@@ -21,4 +21,4 @@ private:
   // components
   VkFence _fence;
 };
-} // namespace vkr
+} // namespace vkr::core

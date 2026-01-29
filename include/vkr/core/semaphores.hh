@@ -2,7 +2,7 @@
 
 #include "./device.hh"
 
-namespace vkr {
+namespace vkr::core {
 class Semaphore {
 public:
   explicit Semaphore(const Device &device, const VkImage &image);
@@ -21,4 +21,4 @@ private:
   // components
   VkSemaphore _semaphore;
 };
-} // namespace vkr
+} // namespace vkr::core

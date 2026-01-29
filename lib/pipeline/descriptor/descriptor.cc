@@ -1,9 +1,9 @@
 #include "vkr/pipeline/descriptor/descriptor.hh"
 #include <stdexcept>
 
-namespace vkr {
+namespace vkr::pipeline {
 
-DescriptorSets::DescriptorSets(const Device &device,
+DescriptorSets::DescriptorSets(const core::Device &device,
                                DescriptorSetLayout &layout,
                                const DescriptorPool &pool, uint32_t frameCount)
     : device(device), layout(layout), pool(pool), _frameCount(frameCount) {
@@ -110,7 +110,8 @@ void DescriptorSets::bind(VkCommandBuffer cmd, VkPipelineLayout layout,
                           nullptr);
 }
 
-DescriptorManager::DescriptorManager(const Device &device) : device(device) {}
+DescriptorManager::DescriptorManager(const core::Device &device)
+    : device(device) {}
 
 DescriptorPoolSizes DescriptorManager::calculatePoolSizes(uint32_t maxSets) {
   DescriptorPoolSizes sizes;
@@ -133,4 +134,4 @@ DescriptorManager::allocate(DescriptorSetLayout &layout,
   return std::make_unique<DescriptorSets>(device, layout, pool, frameCount);
 }
 
-} // namespace vkr
+} // namespace vkr::pipeline

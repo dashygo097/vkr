@@ -5,10 +5,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-namespace vkr {
+namespace vkr::scene {
 class Camera {
 public:
-  explicit Camera(const Window &window, const float &movementSpeed,
+  explicit Camera(const core::Window &window, const float &movementSpeed,
                   const float &mouseSensitivity, const float &fov,
                   const float &aspectRatio, const float &nearPlane,
                   const float &farPlane);
@@ -73,7 +73,7 @@ public:
 
 private:
   // dependencies
-  const Window &window;
+  const core::Window &window;
   const float &movementSpeed;
   const float &mouseSensitivity;
   const float &fov;
@@ -98,4 +98,4 @@ private:
   float lastX{0.0f};
   float lastY{0.0f};
 };
-} // namespace vkr
+} // namespace vkr::scene

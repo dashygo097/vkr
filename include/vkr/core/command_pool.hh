@@ -3,7 +3,7 @@
 #include "./device.hh"
 #include "surface.hh"
 
-namespace vkr {
+namespace vkr::core {
 
 class CommandPool {
 public:
@@ -25,4 +25,4 @@ private:
   // components
   VkCommandPool _commandPool{VK_NULL_HANDLE};
 };
-} // namespace vkr
+} // namespace vkr::core

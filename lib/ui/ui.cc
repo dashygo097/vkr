@@ -4,7 +4,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
-namespace vkr {
+namespace vkr::ui {
 static void check_vk_result(VkResult err) {
   if (err == 0)
     return;
@@ -13,9 +13,11 @@ static void check_vk_result(VkResult err) {
     abort();
 }
 
-UI::UI(const Window &window, const Instance &instance, const Surface &surface,
-       const Device &device, const RenderPass &renderPass,
-       const DescriptorPool &descriptorPool, const CommandPool &commandPool)
+UI::UI(const core::Window &window, const core::Instance &instance,
+       const core::Surface &surface, const core::Device &device,
+       const core::CommandPool &commandPool,
+       const pipeline::RenderPass &renderPass,
+       const pipeline::DescriptorPool &descriptorPool)
     : window(window), instance(instance), surface(surface), device(device),
       renderPass(renderPass), descriptorPool(descriptorPool),
       commandPool(commandPool) {
@@ -38,7 +40,7 @@ UI::UI(const Window &window, const Instance &instance, const Surface &surface,
   init_info.PhysicalDevice = device.physicalDevice();
   init_info.Device = device.device();
   init_info.QueueFamily =
-      findQueueFamilies(device.physicalDevice(), surface.surface())
+      core::findQueueFamilies(device.physicalDevice(), surface.surface())
           .graphicsFamily.value();
   init_info.Queue = device.graphicsQueue();
   init_info.PipelineCache = VK_NULL_HANDLE;
@@ -201,4 +203,4 @@ void UI::render(VkCommandBuffer commandBuffer) {
   ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
 }
 
-} // namespace vkr
+} // namespace vkr::ui

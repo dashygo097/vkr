@@ -7,26 +7,28 @@
 
 class CornellBoxApp : public vkr::VulkanApplication {
 private:
-  std::vector<vkr::DescriptorBinding> createDescriptorBindings() override {
-    return {
-        {0, vkr::DescriptorType::UniformBuffer, 1, VK_SHADER_STAGE_VERTEX_BIT}};
+  std::vector<vkr::pipeline::DescriptorBinding>
+  createDescriptorBindings() override {
+    return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
+             VK_SHADER_STAGE_VERTEX_BIT}};
   }
 
   void createUniforms() override {
-    resourceManager->createUniformBuffer<vkr::UniformBuffer3DObject>("default",
-                                                                     {});
+    resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
+        "default", {});
   }
 
   void bindDescriptorSets() override {
     auto defaultUBO = resourceManager->getUniformBuffer("default");
     if (defaultUBO && descriptorSets) {
-      descriptorSets->bindUniformBuffer(0, defaultUBO->buffers(),
-                                        sizeof(vkr::UniformBuffer3DObject));
+      descriptorSets->bindUniformBuffer(
+          0, defaultUBO->buffers(),
+          sizeof(vkr::resource::UniformBuffer3DObject));
     }
   }
 
   void updateUniforms(uint32_t currentImage) override {
-    vkr::UniformBuffer3DObject ubo{};
+    vkr::resource::UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();
@@ -59,17 +61,18 @@ private:
   }
 
   void onSetup() override {
-    vkr::geometry::Mesh<vkr::Vertex3D> light(*device, *commandPool);
+    vkr::resource::Mesh<vkr::resource::Vertex3D> light(*device, *commandPool);
     light.load("./assets/light.obj");
-    vkr::geometry::Mesh<vkr::Vertex3D> floor(*device, *commandPool);
+    vkr::resource::Mesh<vkr::resource::Vertex3D> floor(*device, *commandPool);
     floor.load("./assets/floor.obj");
-    vkr::geometry::Mesh<vkr::Vertex3D> left(*device, *commandPool);
+    vkr::resource::Mesh<vkr::resource::Vertex3D> left(*device, *commandPool);
     left.load("./assets/left.obj");
-    vkr::geometry::Mesh<vkr::Vertex3D> right(*device, *commandPool);
+    vkr::resource::Mesh<vkr::resource::Vertex3D> right(*device, *commandPool);
     right.load("./assets/right.obj");
-    vkr::geometry::Mesh<vkr::Vertex3D> tallbox(*device, *commandPool);
+    vkr::resource::Mesh<vkr::resource::Vertex3D> tallbox(*device, *commandPool);
     tallbox.load("./assets/tallbox.obj");
-    vkr::geometry::Mesh<vkr::Vertex3D> shortbox(*device, *commandPool);
+    vkr::resource::Mesh<vkr::resource::Vertex3D> shortbox(*device,
+                                                          *commandPool);
     shortbox.load("./assets/shortbox.obj");
 
     resourceManager->createVertexBuffer("light",

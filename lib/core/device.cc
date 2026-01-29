@@ -3,7 +3,7 @@
 #include "vkr/core/instance.hh"
 #include <set>
 
-namespace vkr {
+namespace vkr::core {
 Device::Device(const Instance &instance, const Surface &surface,
                const std::vector<const char *> &deviceExtensions,
                const std::vector<const char *> &validationLayers)
@@ -104,4 +104,4 @@ bool Device::isSuitable(VkPhysicalDevice pDevice) {
   return indices.isComplete();
 }
 
-} // namespace vkr
+} // namespace vkr::core

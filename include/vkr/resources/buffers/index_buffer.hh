@@ -3,11 +3,12 @@
 #include "../../core/command_pool.hh"
 #include "../../core/device.hh"
 
-namespace vkr {
+namespace vkr::resource {
 
 class IndexBuffer {
 public:
-  explicit IndexBuffer(const Device &device, const CommandPool &commandPool);
+  explicit IndexBuffer(const core::Device &device,
+                       const core::CommandPool &commandPool);
   ~IndexBuffer();
 
   IndexBuffer(const IndexBuffer &) = delete;
@@ -28,12 +29,12 @@ public:
 
 private:
   // components
-  const Device &device;
-  const CommandPool &commandPool;
+  const core::Device &device;
+  const core::CommandPool &commandPool;
 
   // dependencies
   std::vector<uint16_t> _indices{};
   VkBuffer _indexBuffer{VK_NULL_HANDLE};
   VkDeviceMemory _memory{VK_NULL_HANDLE};
 };
-} // namespace vkr
+} // namespace vkr::resource

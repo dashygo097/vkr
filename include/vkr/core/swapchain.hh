@@ -3,7 +3,7 @@
 #include "./device.hh"
 #include "./window.hh"
 
-namespace vkr {
+namespace vkr::core {
 
 struct SwapchainSupportDetails {
   VkSurfaceCapabilitiesKHR capabilities;
@@ -54,4 +54,4 @@ private:
   VkFormat _format{VK_FORMAT_UNDEFINED};
   VkExtent2D _extent{};
 };
-} // namespace vkr
+} // namespace vkr::core

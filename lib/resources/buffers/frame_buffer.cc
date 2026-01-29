@@ -1,10 +1,11 @@
 #include "vkr/resources/buffers/frame_buffer.hh"
 
-namespace vkr {
+namespace vkr::resource {
 
-Framebuffers::Framebuffers(const Device &device, const RenderPass &renderPass,
-                           const Swapchain &swapchain)
-    : device(device), renderPass(renderPass), swapchain(swapchain) {
+Framebuffers::Framebuffers(const core::Device &device,
+                           const core::Swapchain &swapchain,
+                           const pipeline::RenderPass &renderPass)
+    : device(device), swapchain(swapchain), renderPass(renderPass) {
   create();
 }
 
@@ -40,4 +41,4 @@ void Framebuffers::destroy() {
   }
   _framebuffers.clear();
 }
-} // namespace vkr
+} // namespace vkr::resource

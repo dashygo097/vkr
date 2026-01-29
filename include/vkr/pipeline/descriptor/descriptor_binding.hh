@@ -3,7 +3,7 @@
 #include "../../core/device.hh"
 #include <vector>
 
-namespace vkr {
+namespace vkr::pipeline {
 enum class DescriptorType {
   UniformBuffer,
   StorageBuffer,
@@ -38,7 +38,7 @@ struct DescriptorBinding {
 
 class DescriptorSetLayout {
 public:
-  explicit DescriptorSetLayout(const Device &device,
+  explicit DescriptorSetLayout(const core::Device &device,
                                const std::vector<DescriptorBinding> &bindings);
   ~DescriptorSetLayout();
 
@@ -48,11 +48,11 @@ public:
   // FIXME: ref return
   [[nodiscard]] VkDescriptorSetLayout &layout() noexcept { return _layout; }
 
-  static DescriptorSetLayout createDefault3D(const Device &device);
+  static DescriptorSetLayout createDefault3D(const core::Device &device);
 
 private:
   // dependencies
-  const Device &device;
+  const core::Device &device;
   const std::vector<DescriptorBinding> &bindings;
 
   // components
@@ -61,4 +61,4 @@ private:
   void cleanup();
 };
 
-} // namespace vkr
+} // namespace vkr::pipeline

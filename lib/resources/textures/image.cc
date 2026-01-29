@@ -1,9 +1,9 @@
 #include "vkr/resources/textures/image.hh"
 #include "vkr/resources/buffers/buffer_utils.hh"
 
-namespace vkr {
+namespace vkr::resource {
 
-Image::Image(const Device &device, const CommandPool &commandPool)
+Image::Image(const core::Device &device, const core::CommandPool &commandPool)
     : device(device), commandPool(commandPool), _width(0), _height(0),
       _channels(0), _image(VK_NULL_HANDLE), _imageMemory(VK_NULL_HANDLE) {}
 
@@ -216,4 +216,4 @@ void Image::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
                        &commandBuffer);
 }
 
-} // namespace vkr
+} // namespace vkr::resource

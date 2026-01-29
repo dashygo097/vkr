@@ -1,9 +1,9 @@
 #include "vkr/pipeline/descriptor/descriptor_pool.hh"
 #include <stdexcept>
 
-namespace vkr {
+namespace vkr::pipeline {
 
-DescriptorPool::DescriptorPool(const Device &device, uint32_t maxSets,
+DescriptorPool::DescriptorPool(const core::Device &device, uint32_t maxSets,
                                const DescriptorPoolSizes &sizes)
     : device(device), _maxSets(maxSets) {
 
@@ -69,4 +69,4 @@ void DescriptorPool::cleanup() {
   }
 }
 
-} // namespace vkr
+} // namespace vkr::pipeline

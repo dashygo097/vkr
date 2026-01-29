@@ -10,14 +10,16 @@
 #include "./textures/sampler.hh"
 #include <memory>
 
-namespace vkr {
+namespace vkr::resource {
 
 class ResourceManager {
 public:
-  ResourceManager(const Device &device, const CommandPool &commandPool,
-                  const RenderPass &renderPass, const Swapchain &swapchain)
-      : device(device), commandPool(commandPool), renderPass(renderPass),
-        swapchain(swapchain) {}
+  ResourceManager(const core::Device &device,
+                  const core::CommandPool &commandPool,
+                  const core::Swapchain &swapchain,
+                  const pipeline::RenderPass &renderPass)
+      : device(device), commandPool(commandPool), swapchain(swapchain),
+        renderPass(renderPass) {}
   ~ResourceManager() = default;
 
   ResourceManager(const ResourceManager &) = delete;
@@ -77,7 +79,7 @@ public:
 
   // Framebuffer Management
   void createFramebuffers(const std::string &name) {
-    auto fb = std::make_shared<Framebuffers>(device, renderPass, swapchain);
+    auto fb = std::make_shared<Framebuffers>(device, swapchain, renderPass);
     _framebuffers[name] = std::move(fb);
   }
 
@@ -159,10 +161,10 @@ public:
 
 private:
   // dependencies
-  const Device &device;
-  const CommandPool &commandPool;
-  const RenderPass &renderPass;
-  const Swapchain &swapchain;
+  const core::Device &device;
+  const core::CommandPool &commandPool;
+  const core::Swapchain &swapchain;
+  const pipeline::RenderPass &renderPass;
 
   // components
   std::unordered_map<std::string, std::shared_ptr<IVertexBuffer>>
@@ -172,4 +174,4 @@ private:
       _uniformBuffers;
   std::unordered_map<std::string, std::shared_ptr<Framebuffers>> _framebuffers;
 };
-} // namespace vkr
+} // namespace vkr::resource

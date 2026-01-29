@@ -5,11 +5,12 @@
 #include "../buffers/index_buffer.hh"
 #include "../buffers/vertex_buffer.hh"
 
-namespace vkr::geometry {
+namespace vkr::resource {
 
 template <typename VBOType> class Mesh {
 public:
-  explicit Mesh(const Device &device, const CommandPool &commandPool)
+  explicit Mesh(const core::Device &device,
+                const core::CommandPool &commandPool)
       : device(device), commandPool(commandPool) {}
   ~Mesh() = default;
 
@@ -55,8 +56,8 @@ public:
 
 private:
   // dependencies
-  const Device &device;
-  const CommandPool &commandPool;
+  const core::Device &device;
+  const core::CommandPool &commandPool;
 
   // components
   std::shared_ptr<VertexBufferBase<VBOType>> _vertexBuffer;
@@ -68,4 +69,4 @@ private:
     }
   }
 };
-} // namespace vkr::geometry
+} // namespace vkr::resource
