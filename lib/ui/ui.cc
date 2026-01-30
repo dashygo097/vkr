@@ -68,6 +68,7 @@ void UI::render(VkCommandBuffer commandBuffer) {
 
   case LayoutMode::Standard:
     renderDockspace();
+    renderMainViewport();
     renderPerformancePanel();
     break;
   }
@@ -141,6 +142,38 @@ void UI::renderDockspace() {
   }
 
   ImGui::End();
+}
+
+void UI::renderMainViewport() {
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
+  ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoMove |
+                                  ImGuiWindowFlags_NoResize |
+                                  ImGuiWindowFlags_NoCollapse;
+
+  if (ImGui::Begin("Viewport", nullptr, window_flags)) {
+    ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+
+    ImGui::Text("Main Rendering Viewport");
+    ImGui::Text("Size: %.0f x %.0f", viewportPanelSize.x, viewportPanelSize.y);
+
+    // ImGui::Image((ImTextureID)m_viewportTextureID, viewportPanelSize);
+
+    ImVec2 windowPos = ImGui::GetWindowPos();
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
+    ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
+
+    _viewportInfo.x = windowPos.x + contentMin.x;
+    _viewportInfo.y = windowPos.y + contentMin.y;
+    _viewportInfo.width = contentMax.x - contentMin.x;
+    _viewportInfo.height = contentMax.y - contentMin.y;
+    _viewportInfo.isFocused = ImGui::IsWindowFocused();
+    _viewportInfo.isHovered = ImGui::IsWindowHovered();
+  }
+  ImGui::End();
+
+  ImGui::PopStyleVar();
 }
 
 void UI::renderPerformancePanel() {
