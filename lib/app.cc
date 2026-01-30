@@ -70,10 +70,14 @@ void VulkanApplication::initVulkan() {
       descriptorManager->allocate(*descriptorSetLayout, *descriptorPool);
   bindDescriptorSets();
 
+  // ui
+  ui = std::make_unique<ui::UI>(*window, *instance, *surface, *device,
+                                *commandPool, *renderPass, *descriptorPool);
+
   // renderer
-  renderer = std::make_unique<render::Renderer>(*device, *swapchain,
-                                                *commandPool, *syncObjects,
-                                                *resourceManager, *renderPass);
+  renderer = std::make_unique<render::Renderer>(
+      *device, *swapchain, *commandPool, *syncObjects, *resourceManager,
+      *renderPass, *ui);
 
   // camera
   camera = std::make_unique<scene::Camera>(
@@ -84,10 +88,6 @@ void VulkanApplication::initVulkan() {
 
   // timer
   timer = std::make_unique<Timer>();
-
-  // ui
-  ui = std::make_unique<ui::UI>(*window, *instance, *surface, *device,
-                                *commandPool, *renderPass, *descriptorPool);
 }
 
 void VulkanApplication::mainLoop() {
@@ -146,7 +146,7 @@ void VulkanApplication::drawFrame() {
                          descriptorSets->sets());
   renderer->setViewportAndScissor(frameData);
   renderer->drawGeometry(frameData);
-  renderer->drawUI(frameData, *ui);
+  renderer->drawUI(frameData);
   renderer->endRenderPass(frameData);
   renderer->endFrame(frameData);
 }

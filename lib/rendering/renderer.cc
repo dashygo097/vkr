@@ -7,10 +7,10 @@ Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
                    const core::CommandPool &commandPool,
                    const core::SyncObjects &syncObjects,
                    resource::ResourceManager &resourceManager,
-                   const pipeline::RenderPass &renderPass)
+                   const pipeline::RenderPass &renderPass, ui::UI &ui)
     : _device(device), _swapchain(swapchain), _commandPool(commandPool),
       _syncObjects(syncObjects), _resourceManager(resourceManager),
-      _renderPass(renderPass) {
+      _renderPass(renderPass), _ui(ui) {
   _commandBuffers = std::make_unique<core::CommandBuffers>(device, commandPool);
 }
 
@@ -93,20 +93,19 @@ void Renderer::bindPipeline(
 
 void Renderer::setViewportAndScissor(const FrameData &frameData) {
   VkExtent2D extent = _swapchain.extent2D();
+  ui::ViewportInfo viewportInfo = _ui.viewportInfo();
 
-  VkViewport viewport{};
-  viewport.x = 0.0f;
-  viewport.y = 0.0f;
-  viewport.width = static_cast<float>(extent.width);
-  viewport.height = static_cast<float>(extent.height);
-  viewport.minDepth = 0.0f;
-  viewport.maxDepth = 1.0f;
-  vkCmdSetViewport(frameData.commandBuffer, 0, 1, &viewport);
+  _viewport.x = viewportInfo.x;
+  _viewport.y = viewportInfo.y;
+  _viewport.width = static_cast<float>(extent.width);
+  _viewport.height = static_cast<float>(extent.height);
+  _viewport.minDepth = 0.0f;
+  _viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(frameData.commandBuffer, 0, 1, &_viewport);
 
-  VkRect2D scissor{};
-  scissor.offset = {0, 0};
-  scissor.extent = extent;
-  vkCmdSetScissor(frameData.commandBuffer, 0, 1, &scissor);
+  _scissor.offset = {0, 0};
+  _scissor.extent = extent;
+  vkCmdSetScissor(frameData.commandBuffer, 0, 1, &_scissor);
 }
 
 void Renderer::drawGeometry(const FrameData &frameData) {
@@ -135,8 +134,8 @@ void Renderer::drawGeometry(const FrameData &frameData) {
   }
 }
 
-void Renderer::drawUI(const FrameData &frameData, ui::UI &ui) {
-  ui.render(frameData.commandBuffer);
+void Renderer::drawUI(const FrameData &frameData) {
+  _ui.render(frameData.commandBuffer);
 }
 
 void Renderer::recreateSwapchain() {

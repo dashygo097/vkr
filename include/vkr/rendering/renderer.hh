@@ -23,7 +23,7 @@ public:
                     const core::CommandPool &commandPool,
                     const core::SyncObjects &syncObjects,
                     resource::ResourceManager &resourceManager,
-                    const pipeline::RenderPass &renderPass);
+                    const pipeline::RenderPass &renderPass, ui::UI &ui);
 
   ~Renderer();
 
@@ -41,7 +41,7 @@ public:
                     const std::vector<VkDescriptorSet> &descriptorSets);
 
   void drawGeometry(const FrameData &frameData);
-  void drawUI(const FrameData &frameData, ui::UI &ui);
+  void drawUI(const FrameData &frameData);
 
   void setViewportAndScissor(const FrameData &frameData);
   void recreateSwapchain();
@@ -58,6 +58,7 @@ private:
   const core::SyncObjects &_syncObjects;
   resource::ResourceManager &_resourceManager;
   const pipeline::RenderPass &_renderPass;
+  ui::UI &_ui;
 
   // components
   std::unique_ptr<core::CommandBuffers> _commandBuffers;
