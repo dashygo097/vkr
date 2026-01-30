@@ -21,7 +21,7 @@ public:
 
 template <typename ObjectType> class UniformBufferBase : public IUniformBuffer {
 public:
-  explicit UniformBufferBase(const core::Device &device) : device(device) {
+  explicit UniformBufferBase(const core::Device &device) : device_(device) {
     create();
   }
 
@@ -34,10 +34,10 @@ public:
     if (currentFrame >= MAX_FRAMES_IN_FLIGHT) {
       throw std::out_of_range("currentFrame exceeds MAX_FRAMES_IN_FLIGHT");
     }
-    if (_mapped[currentFrame] == nullptr) {
+    if (mapped_[currentFrame] == nullptr) {
       throw std::runtime_error("Mapped memory is null for current frame");
     }
-    memcpy(_mapped[currentFrame], &newObject, sizeof(ObjectType));
+    memcpy(mapped_[currentFrame], &newObject, sizeof(ObjectType));
   }
 
   void updateRaw(uint32_t currentFrame, const void *data,
@@ -49,64 +49,65 @@ public:
   }
 
   [[nodiscard]] const std::vector<VkBuffer> &buffers() const noexcept override {
-    return _uniformBuffers;
+    return vk_uniform_buffers_;
   }
 
   [[nodiscard]] const std::vector<VkDeviceMemory> &
   buffersMemory() const noexcept override {
-    return _memories;
+    return vk_memories_;
   }
 
   [[nodiscard]] const std::vector<void *> &mapped() const noexcept override {
-    return _mapped;
+    return mapped_;
   }
 
 protected:
   void create() {
     VkDeviceSize bufferSize = sizeof(ObjectType);
-    _uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    _memories.resize(MAX_FRAMES_IN_FLIGHT);
-    _mapped.resize(MAX_FRAMES_IN_FLIGHT);
+    vk_uniform_buffers_.resize(MAX_FRAMES_IN_FLIGHT);
+    vk_memories_.resize(MAX_FRAMES_IN_FLIGHT);
+    mapped_.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
       createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                   _uniformBuffers[i], _memories[i], device.device(),
-                   device.physicalDevice());
-      vkMapMemory(device.device(), _memories[i], 0, bufferSize, 0, &_mapped[i]);
+                   vk_uniform_buffers_[i], vk_memories_[i], device_.device(),
+                   device_.physicalDevice());
+      vkMapMemory(device_.device(), vk_memories_[i], 0, bufferSize, 0,
+                  &mapped_[i]);
     }
   }
 
   void destroy() {
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-      if (_mapped[i]) {
-        vkUnmapMemory(device.device(), _memories[i]);
-        _mapped[i] = nullptr;
+      if (mapped_[i]) {
+        vkUnmapMemory(device_.device(), vk_memories_[i]);
+        mapped_[i] = nullptr;
       }
-      if (_memories[i] != VK_NULL_HANDLE) {
-        vkFreeMemory(device.device(), _memories[i], nullptr);
-        _memories[i] = VK_NULL_HANDLE;
+      if (vk_memories_[i] != VK_NULL_HANDLE) {
+        vkFreeMemory(device_.device(), vk_memories_[i], nullptr);
+        vk_memories_[i] = VK_NULL_HANDLE;
       }
-      if (_uniformBuffers[i] != VK_NULL_HANDLE) {
-        vkDestroyBuffer(device.device(), _uniformBuffers[i], nullptr);
-        _uniformBuffers[i] = VK_NULL_HANDLE;
+      if (vk_uniform_buffers_[i] != VK_NULL_HANDLE) {
+        vkDestroyBuffer(device_.device(), vk_uniform_buffers_[i], nullptr);
+        vk_uniform_buffers_[i] = VK_NULL_HANDLE;
       }
     }
-    _mapped.clear();
-    _memories.clear();
-    _uniformBuffers.clear();
+    mapped_.clear();
+    vk_memories_.clear();
+    vk_uniform_buffers_.clear();
   }
 
 protected:
   // dependencies
-  const core::Device &device;
+  const core::Device &device_;
 
   // components
   ObjectType _object;
-  std::vector<VkBuffer> _uniformBuffers{};
-  std::vector<VkDeviceMemory> _memories{};
-  std::vector<void *> _mapped{};
+  std::vector<VkBuffer> vk_uniform_buffers_{};
+  std::vector<VkDeviceMemory> vk_memories_{};
+  std::vector<void *> mapped_{};
 };
 
 // uniform buffer for 3d object

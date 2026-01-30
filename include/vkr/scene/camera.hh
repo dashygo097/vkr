@@ -8,7 +8,7 @@
 namespace vkr::scene {
 class Camera {
 public:
-  explicit Camera(const core::Window &window, const float &movementSpeed,
+  explicit Camera(const core::Window &window, const float &movemeneSpeed,
                   const float &mouseSensitivity, const float &fov,
                   const float &aspectRatio, const float &nearPlane,
                   const float &farPlane);
@@ -19,82 +19,86 @@ public:
 
   void track();
 
-  glm::vec3 pos() const { return _pos; }
+  glm::vec3 pos() const { return pos_; }
 
   // update camera vectors
-  glm::mat4 getView() const { return glm::lookAt(_pos, _pos + _front, _up); }
+  glm::mat4 getView() const { return glm::lookAt(pos_, pos_ + front_, up_); }
   glm::mat4 getProjection() const {
-    glm::mat4 proj =
-        glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
+    glm::mat4 proj = glm::perspective(glm::radians(fov_), aspect_ratio_,
+                                      near_plane_, far_plane_);
     proj[1][1] *= -1;
     return proj;
   }
 
   void mouseMove(float xOffset, float yOffset) {
-    _yaw += xOffset * mouseSensitivity;
-    _pitch += yOffset * mouseSensitivity;
-    if (_pitch > 89.0f)
-      _pitch = 89.0f;
-    if (_pitch < -89.0f)
-      _pitch = -89.0f;
+    yaw_ += xOffset * mouse_sensitivity_;
+    pitch_ += yOffset * mouse_sensitivity_;
+    if (pitch_ > 89.0f)
+      pitch_ = 89.0f;
+    if (pitch_ < -89.0f)
+      pitch_ = -89.0f;
 
     glm::vec3 frontTemp;
-    frontTemp.x = cos(glm::radians(_yaw)) * cos(glm::radians(_pitch));
-    frontTemp.y = sin(glm::radians(_pitch));
-    frontTemp.z = sin(glm::radians(_yaw)) * cos(glm::radians(_pitch));
+    frontTemp.x = cos(glm::radians(yaw_)) * cos(glm::radians(pitch_));
+    frontTemp.y = sin(glm::radians(pitch_));
+    frontTemp.z = sin(glm::radians(yaw_)) * cos(glm::radians(pitch_));
 
-    _front = glm::normalize(frontTemp);
-    _right = glm::normalize(glm::cross(_front, _worldUp));
-    _up = glm::normalize(glm::cross(_right, _front));
+    front_ = glm::normalize(frontTemp);
+    right_ = glm::normalize(glm::cross(front_, world_up_));
+    up_ = glm::normalize(glm::cross(right_, front_));
   }
 
   // controls
   void moveForward(float deltaTime) {
-    _pos += _front * movementSpeed * deltaTime;
+    pos_ += front_ * movement_speed_ * deltaTime;
   }
   void moveBackward(float deltaTime) {
-    _pos -= _front * movementSpeed * deltaTime;
+    pos_ -= front_ * movement_speed_ * deltaTime;
   }
-  void moveLeft(float deltaTime) { _pos -= _right * movementSpeed * deltaTime; }
+  void moveLeft(float deltaTime) {
+    pos_ -= right_ * movement_speed_ * deltaTime;
+  }
   void moveRight(float deltaTime) {
-    _pos += _right * movementSpeed * deltaTime;
+    pos_ += right_ * movement_speed_ * deltaTime;
   }
-  void moveUp(float deltaTime) { _pos += _worldUp * movementSpeed * deltaTime; }
+  void moveUp(float deltaTime) {
+    pos_ += world_up_ * movement_speed_ * deltaTime;
+  }
   void moveDown(float deltaTime) {
-    _pos -= _worldUp * movementSpeed * deltaTime;
+    pos_ -= world_up_ * movement_speed_ * deltaTime;
   }
 
-  [[nodiscard]] bool isLocked() const noexcept { return _locked; }
-  void lock(bool lock) { _locked = lock; }
+  [[nodiscard]] bool isLocked() const noexcept { return locked_; }
+  void lock(bool lock) { locked_ = lock; }
 
-  void doLock() { _locked = true; }
-  void doUnlock() { _locked = false; }
-  void toggle_lock() { _locked = !_locked; }
+  void doLock() { locked_ = true; }
+  void doUnlock() { locked_ = false; }
+  void toggleLock() { locked_ = !locked_; }
 
 private:
   // dependencies
-  const core::Window &window;
-  const float &movementSpeed;
-  const float &mouseSensitivity;
-  const float &fov;
-  const float &aspectRatio;
-  const float &nearPlane;
-  const float &farPlane;
+  const core::Window &window_;
+  const float &movement_speed_;
+  const float &mouse_sensitivity_;
+  const float &fov_;
+  const float &aspect_ratio_;
+  const float &near_plane_;
+  const float &far_plane_;
 
   // components
-  glm::vec3 _pos{glm::vec3(0.0f, 0.0f, 0.0f)};
-  glm::vec3 _front{glm::vec3(0.0f, 0.0f, -1.0f)};
-  glm::vec3 _up{glm::vec3(0.0f, 1.0f, 0.0f)};
-  glm::vec3 _right{glm::vec3(1.0f, 0.0f, 0.0f)};
-  glm::vec3 _worldUp{glm::vec3(0.0f, 1.0f, 0.0f)};
-  float _yaw{-90.0f};
-  float _pitch{0.0f};
+  glm::vec3 pos_{glm::vec3(0.0f, 0.0f, 0.0f)};
+  glm::vec3 front_{glm::vec3(0.0f, 0.0f, -1.0f)};
+  glm::vec3 up_{glm::vec3(0.0f, 1.0f, 0.0f)};
+  glm::vec3 right_{glm::vec3(1.0f, 0.0f, 0.0f)};
+  glm::vec3 world_up_{glm::vec3(0.0f, 1.0f, 0.0f)};
+  float yaw_{-90.0f};
+  float pitch_{0.0f};
 
   // state
-  bool _locked{false};
-  std::chrono::high_resolution_clock::time_point lastTimeStamp;
-  float firstMouse{true};
-  float lastX{0.0f};
-  float lastY{0.0f};
+  bool locked_{false};
+  std::chrono::high_resolution_clock::time_point last_time_stamp_;
+  float first_mouse_{true};
+  float last_x_{0.0f};
+  float last_y_{0.0f};
 };
 } // namespace vkr::scene

@@ -13,13 +13,15 @@ public:
   ShaderModule(const ShaderModule &) = delete;
   ShaderModule &operator=(const ShaderModule &) = delete;
 
-  [[nodiscard]] VkShaderModule module() const noexcept { return _shaderModule; }
+  [[nodiscard]] VkShaderModule module() const noexcept {
+    return vk_shader_module_;
+  }
 
 private:
   // dependencies
-  const core::Device &device;
+  const core::Device &device_;
 
   // components
-  VkShaderModule _shaderModule{VK_NULL_HANDLE};
+  VkShaderModule vk_shader_module_{VK_NULL_HANDLE};
 };
 } // namespace vkr::pipeline

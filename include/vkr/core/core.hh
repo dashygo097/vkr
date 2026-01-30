@@ -5,6 +5,7 @@
 #include "./device.hh"
 #include "./fence.hh"
 #include "./instance.hh"
+#include "./queue_families.hh"
 #include "./semaphores.hh"
 #include "./surface.hh"
 #include "./swapchain.hh"

@@ -5,7 +5,7 @@ namespace vkr::pipeline {
 
 DescriptorPool::DescriptorPool(const core::Device &device, uint32_t maxSets,
                                const DescriptorPoolSizes &sizes)
-    : device(device), _maxSets(maxSets) {
+    : device_(device), max_sets_(maxSets) {
 
   std::vector<VkDescriptorPoolSize> poolSizes;
 
@@ -42,7 +42,7 @@ DescriptorPool::DescriptorPool(const core::Device &device, uint32_t maxSets,
   poolInfo.maxSets = maxSets;
 
   VkResult result =
-      vkCreateDescriptorPool(device.device(), &poolInfo, nullptr, &_pool);
+      vkCreateDescriptorPool(device.device(), &poolInfo, nullptr, &pool_);
   if (result != VK_SUCCESS) {
     throw std::runtime_error("Failed to create descriptor pool. VkResult: " +
                              std::to_string(result));
@@ -52,20 +52,20 @@ DescriptorPool::DescriptorPool(const core::Device &device, uint32_t maxSets,
 DescriptorPool::~DescriptorPool() { cleanup(); }
 
 bool DescriptorPool::canAllocate() const noexcept {
-  return _allocatedSets < _maxSets;
+  return allocated_sets_ < max_sets_;
 }
 
 void DescriptorPool::reset() {
-  if (_pool != VK_NULL_HANDLE) {
-    vkResetDescriptorPool(device.device(), _pool, 0);
-    _allocatedSets = 0;
+  if (pool_ != VK_NULL_HANDLE) {
+    vkResetDescriptorPool(device_.device(), pool_, 0);
+    allocated_sets_ = 0;
   }
 }
 
 void DescriptorPool::cleanup() {
-  if (_pool != VK_NULL_HANDLE) {
-    vkDestroyDescriptorPool(device.device(), _pool, nullptr);
-    _pool = VK_NULL_HANDLE;
+  if (pool_ != VK_NULL_HANDLE) {
+    vkDestroyDescriptorPool(device_.device(), pool_, nullptr);
+    pool_ = VK_NULL_HANDLE;
   }
 }
 

@@ -15,24 +15,24 @@ public:
 
   [[nodiscard]] std::vector<VkSemaphore>
   imageAvailableSemaphores() const noexcept {
-    return _imageAvailableSemaphores;
+    return vk_image_available_semaphores;
   }
   [[nodiscard]] std::vector<VkSemaphore>
   renderFinishedSemaphores() const noexcept {
-    return _renderFinishedSemaphores;
+    return vk_render_finished_semaphores;
   }
   [[nodiscard]] std::vector<VkFence> inFlightFences() const noexcept {
-    return _inFlightFences;
+    return vk_in_flight_fences;
   }
 
 private:
   // dependencies
-  const Device &device;
-  const Swapchain &swapchain;
+  const Device &device_;
+  const Swapchain &swapchain_;
 
   // components
-  std::vector<VkSemaphore> _imageAvailableSemaphores{};
-  std::vector<VkSemaphore> _renderFinishedSemaphores{};
-  std::vector<VkFence> _inFlightFences{};
+  std::vector<VkSemaphore> vk_image_available_semaphores{};
+  std::vector<VkSemaphore> vk_render_finished_semaphores{};
+  std::vector<VkFence> vk_in_flight_fences{};
 };
 } // namespace vkr::core

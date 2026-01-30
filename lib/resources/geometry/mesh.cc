@@ -68,12 +68,12 @@ template <> void Mesh<Vertex3D>::load(const std::string &meshFilePath) {
     }
   }
 
-  if (!_vertexBuffer || !_indexBuffer) {
-    _vertexBuffer =
-        std::make_unique<VertexBufferBase<Vertex3D>>(device, commandPool);
-    _vertexBuffer->update(vertices);
-    _indexBuffer = std::make_unique<IndexBuffer>(device, commandPool);
-    _indexBuffer->update(indices);
+  if (!vertex_buffer_ || !index_buffer_) {
+    vertex_buffer_ =
+        std::make_unique<VertexBufferBase<Vertex3D>>(device_, command_pool_);
+    vertex_buffer_->update(vertices);
+    index_buffer_ = std::make_unique<IndexBuffer>(device_, command_pool_);
+    index_buffer_->update(indices);
   } else {
     update(vertices, indices);
   }

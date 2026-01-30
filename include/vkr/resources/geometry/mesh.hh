@@ -11,7 +11,7 @@ template <typename VBOType> class Mesh {
 public:
   explicit Mesh(const core::Device &device,
                 const core::CommandPool &commandPool)
-      : device(device), commandPool(commandPool) {}
+      : device_(device), command_pool_(commandPool) {}
   ~Mesh() = default;
 
   Mesh(const Mesh &) = delete;
@@ -20,19 +20,19 @@ public:
 public:
   [[nodiscard]] std::shared_ptr<VertexBufferBase<VBOType>>
   vertexBuffer() const {
-    return _vertexBuffer;
+    return vertex_buffer_;
   }
   [[nodiscard]] std::shared_ptr<IndexBuffer> indexBuffer() const {
-    return _indexBuffer;
+    return index_buffer_;
   }
 
   void load(const std::vector<VBOType> &vertices,
             const std::vector<uint16_t> &indices) {
-    if (!_vertexBuffer || !_indexBuffer) {
-      _vertexBuffer = std::make_unique<VertexBufferBase<VBOType>>(
-          device, commandPool, vertices);
-      _indexBuffer = std::make_unique<IndexBuffer>(device, commandPool);
-      _indexBuffer->update(indices);
+    if (!vertex_buffer_ || !index_buffer_) {
+      vertex_buffer_ = std::make_unique<VertexBufferBase<VBOType>>(
+          device_, command_pool_, vertices);
+      index_buffer_ = std::make_unique<IndexBuffer>(device_, command_pool_);
+      index_buffer_->update(indices);
     } else {
       update(vertices, indices);
     }
@@ -42,29 +42,29 @@ public:
   void update(const std::vector<VBOType> &vertices,
               const std::vector<uint16_t> &indices) {
     checkDataLoaded();
-    _vertexBuffer->update(vertices);
-    _indexBuffer->update(indices);
+    vertex_buffer_->update(vertices);
+    index_buffer_->update(indices);
   }
   void update(const std::vector<VBOType> &vertices) {
     checkDataLoaded();
-    _vertexBuffer->update(vertices);
+    vertex_buffer_->update(vertices);
   }
   void update(const std::vector<uint16_t> &indices) {
     checkDataLoaded();
-    _indexBuffer->update(indices);
+    index_buffer_->update(indices);
   }
 
 private:
   // dependencies
-  const core::Device &device;
-  const core::CommandPool &commandPool;
+  const core::Device &device_;
+  const core::CommandPool &command_pool_;
 
   // components
-  std::shared_ptr<VertexBufferBase<VBOType>> _vertexBuffer;
-  std::shared_ptr<IndexBuffer> _indexBuffer;
+  std::shared_ptr<VertexBufferBase<VBOType>> vertex_buffer_;
+  std::shared_ptr<IndexBuffer> index_buffer_;
 
   void checkDataLoaded() {
-    if (!_vertexBuffer || !_indexBuffer) {
+    if (!vertex_buffer_ || !index_buffer_) {
       throw std::runtime_error("Vertex or index buffer is not initialized");
     }
   }

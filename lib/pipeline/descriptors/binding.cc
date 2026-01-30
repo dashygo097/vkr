@@ -5,7 +5,7 @@ namespace vkr::pipeline {
 
 DescriptorSetLayout::DescriptorSetLayout(
     const core::Device &device, const std::vector<DescriptorBinding> &bindings)
-    : device(device), bindings(bindings) {
+    : device_(device), bindings_(bindings) {
 
   std::vector<VkDescriptorSetLayoutBinding> vkBindings;
   vkBindings.reserve(bindings.size());
@@ -26,7 +26,7 @@ DescriptorSetLayout::DescriptorSetLayout(
   layoutInfo.pBindings = vkBindings.data();
 
   VkResult result = vkCreateDescriptorSetLayout(device.device(), &layoutInfo,
-                                                nullptr, &_layout);
+                                                nullptr, &layout_);
   if (result != VK_SUCCESS) {
     throw std::runtime_error(
         "Failed to create descriptor set layout. VkResult: " +
@@ -44,9 +44,9 @@ DescriptorSetLayout::createDefault3D(const core::Device &device) {
 }
 
 void DescriptorSetLayout::cleanup() {
-  if (_layout != VK_NULL_HANDLE) {
-    vkDestroyDescriptorSetLayout(device.device(), _layout, nullptr);
-    _layout = VK_NULL_HANDLE;
+  if (layout_ != VK_NULL_HANDLE) {
+    vkDestroyDescriptorSetLayout(device_.device(), layout_, nullptr);
+    layout_ = VK_NULL_HANDLE;
   }
 }
 

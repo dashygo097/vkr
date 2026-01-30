@@ -13,14 +13,16 @@ public:
   RenderPass(const RenderPass &) = delete;
   RenderPass &operator=(const RenderPass &) = delete;
 
-  [[nodiscard]] VkRenderPass renderPass() const noexcept { return _renderPass; }
+  [[nodiscard]] VkRenderPass renderPass() const noexcept {
+    return vk_render_pass_;
+  }
 
 private:
   // dependencies
-  const core::Device &device;
-  const core::Swapchain &swapchain;
+  const core::Device &device_;
+  const core::Swapchain &swapchain_;
 
   // components
-  VkRenderPass _renderPass{VK_NULL_HANDLE};
+  VkRenderPass vk_render_pass_{VK_NULL_HANDLE};
 };
 } // namespace vkr::pipeline

@@ -43,20 +43,20 @@ Instance::Instance(const std::string appName, const std::string engineName,
     createInfo.pNext = nullptr;
   }
 
-  if (vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS) {
+  if (vkCreateInstance(&createInfo, nullptr, &vk_instance_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create instance!");
   }
 
   if (ENABLE_VALIDATION_LAYERS) {
-    _debugMessenger = std::make_unique<DebugMessenger>(_instance);
+    debug_messenger_ = std::make_unique<DebugMessenger>(vk_instance_);
   }
 }
 
 Instance::~Instance() {
   if (ENABLE_VALIDATION_LAYERS) {
-    _debugMessenger.reset();
+    debug_messenger_.reset();
   }
-  vkDestroyInstance(_instance, nullptr);
-  _instance = VK_NULL_HANDLE;
+  vkDestroyInstance(vk_instance_, nullptr);
+  vk_instance_ = VK_NULL_HANDLE;
 }
 } // namespace vkr::core

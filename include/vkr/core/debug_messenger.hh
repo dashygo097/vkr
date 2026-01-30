@@ -16,15 +16,15 @@ public:
   populateCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
 
   [[nodiscard]] VkDebugUtilsMessengerEXT messenger() const {
-    return _messenger;
+    return vk_messenger_;
   }
 
 private:
   // dependencies
-  VkInstance instance{VK_NULL_HANDLE};
+  VkInstance instance_{VK_NULL_HANDLE};
 
   // components
-  VkDebugUtilsMessengerEXT _messenger{VK_NULL_HANDLE};
+  VkDebugUtilsMessengerEXT vk_messenger_{VK_NULL_HANDLE};
 
   static VKAPI_ATTR VkBool32 VKAPI_CALL
   debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

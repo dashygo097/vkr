@@ -29,13 +29,17 @@ public:
   Swapchain(const Swapchain &) = delete;
   Swapchain &operator=(const Swapchain &) = delete;
 
-  [[nodiscard]] VkSwapchainKHR swapchain() const noexcept { return _swapchain; }
-  [[nodiscard]] std::vector<VkImage> images() const noexcept { return _images; }
-  [[nodiscard]] std::vector<VkImageView> imageViews() const noexcept {
-    return _imageViews;
+  [[nodiscard]] VkSwapchainKHR swapchain() const noexcept {
+    return vk_swapchain_;
   }
-  [[nodiscard]] VkFormat format() const noexcept { return _format; }
-  [[nodiscard]] VkExtent2D extent2D() const noexcept { return _extent; }
+  [[nodiscard]] std::vector<VkImage> images() const noexcept {
+    return vk_images_;
+  }
+  [[nodiscard]] std::vector<VkImageView> imageViews() const noexcept {
+    return vk_imageviews_;
+  }
+  [[nodiscard]] VkFormat format() const noexcept { return vk_format_; }
+  [[nodiscard]] VkExtent2D extent2D() const noexcept { return vk_extent_; }
 
   void create();
   void destroy();
@@ -43,15 +47,15 @@ public:
 
 private:
   // dependencies
-  const Window &window;
-  const Device &device;
-  const Surface &surface;
+  const Window &window_;
+  const Device &device_;
+  const Surface &surface_;
 
   // components
-  VkSwapchainKHR _swapchain{VK_NULL_HANDLE};
-  std::vector<VkImage> _images{};
-  std::vector<VkImageView> _imageViews{};
-  VkFormat _format{VK_FORMAT_UNDEFINED};
-  VkExtent2D _extent{};
+  VkSwapchainKHR vk_swapchain_{VK_NULL_HANDLE};
+  std::vector<VkImage> vk_images_{};
+  std::vector<VkImageView> vk_imageviews_{};
+  VkFormat vk_format_{VK_FORMAT_UNDEFINED};
+  VkExtent2D vk_extent_{};
 };
 } // namespace vkr::core

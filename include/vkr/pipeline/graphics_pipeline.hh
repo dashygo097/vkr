@@ -14,9 +14,9 @@ enum class PipelineMode {
 class GraphicsPipeline {
 public:
   explicit GraphicsPipeline(const core::Device &device,
-                            const resource::ResourceManager &resourceManager,
-                            const pipeline::RenderPass &renderPass,
-                            DescriptorSetLayout &descriptorSetLayout,
+                            const resource::ResourceManager &resource_manager_,
+                            const pipeline::RenderPass &render_pass_,
+                            DescriptorSetLayout &descriptor_set_layout_,
                             const std::string &vertShaderPath,
                             const std::string &fragShaderPath,
                             PipelineMode mode = PipelineMode::Default3D);
@@ -26,21 +26,21 @@ public:
   GraphicsPipeline &operator=(const GraphicsPipeline &) = delete;
 
   [[nodiscard]] VkPipelineLayout pipelineLayout() const noexcept {
-    return _pipelineLayout;
+    return vk_pipeline_layout_;
   }
   [[nodiscard]] VkPipeline pipeline() const noexcept {
-    return _graphicsPipeline;
+    return vk_graphics_pipeline;
   }
 
 private:
   // dependencies
-  const core::Device &device;
-  const resource::ResourceManager &resourceManager;
-  const RenderPass &renderPass;
-  const DescriptorSetLayout &descriptorSetLayout;
+  const core::Device &device_;
+  const resource::ResourceManager &resource_manager_;
+  const RenderPass &render_pass_;
+  const DescriptorSetLayout &descriptor_set_layout_;
 
   // componets
-  VkPipelineLayout _pipelineLayout{VK_NULL_HANDLE};
-  VkPipeline _graphicsPipeline{VK_NULL_HANDLE};
+  VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
+  VkPipeline vk_graphics_pipeline{VK_NULL_HANDLE};
 };
 } // namespace vkr::pipeline

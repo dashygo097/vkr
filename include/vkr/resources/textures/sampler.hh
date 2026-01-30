@@ -13,7 +13,7 @@ public:
 
 private:
   // dependeies
-  const core::Device &device;
+  const core::Device &device_;
 
   // components
 };

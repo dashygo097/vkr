@@ -1,28 +1,27 @@
 #include "vkr/core/command_pool.hh"
-#include "vkr/core/core_utils.hh"
+#include "vkr/core/queue_families.hh"
 
 namespace vkr::core {
 CommandPool::CommandPool(const Device &device, const Surface &surface)
-    : device(device), surface(surface) {
+    : device_(device), surface_(surface) {
 
-  QueueFamilyIndices queueFamilyIndices =
-      findQueueFamilies(device.physicalDevice(), surface.surface());
+  QueueFamilyIndices queueFamilyIndices(surface, device.physicalDevice());
 
   VkCommandPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+  poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily().value();
 
-  if (vkCreateCommandPool(device.device(), &poolInfo, nullptr, &_commandPool) !=
-      VK_SUCCESS) {
+  if (vkCreateCommandPool(device.device(), &poolInfo, nullptr,
+                          &vk_command_pool_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create command pool!");
   }
 }
 
 CommandPool::~CommandPool() {
-  if (_commandPool != VK_NULL_HANDLE) {
-    vkDestroyCommandPool(device.device(), _commandPool, nullptr);
-    _commandPool = VK_NULL_HANDLE;
+  if (vk_command_pool_ != VK_NULL_HANDLE) {
+    vkDestroyCommandPool(device_.device(), vk_command_pool_, nullptr);
+    vk_command_pool_ = VK_NULL_HANDLE;
   }
 }
 } // namespace vkr::core

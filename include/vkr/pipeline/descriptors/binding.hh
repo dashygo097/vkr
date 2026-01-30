@@ -46,17 +46,17 @@ public:
   DescriptorSetLayout &operator=(const DescriptorSetLayout &) = delete;
 
   // FIXME: ref return
-  [[nodiscard]] VkDescriptorSetLayout &layout() noexcept { return _layout; }
+  [[nodiscard]] VkDescriptorSetLayout &layout() noexcept { return layout_; }
 
   static DescriptorSetLayout createDefault3D(const core::Device &device);
 
 private:
   // dependencies
-  const core::Device &device;
-  const std::vector<DescriptorBinding> &bindings;
+  const core::Device &device_;
+  const std::vector<DescriptorBinding> &bindings_;
 
   // components
-  VkDescriptorSetLayout _layout{VK_NULL_HANDLE};
+  VkDescriptorSetLayout layout_{VK_NULL_HANDLE};
 
   void cleanup();
 };
