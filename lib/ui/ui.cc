@@ -1,5 +1,6 @@
 #include "vkr/ui/ui.hh"
 #include "vkr/core/core_utils.hh"
+#include "vkr/core/queue_families.hh"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
@@ -11,9 +12,9 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const core::CommandPool &commandPool,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool)
-    : window(window), instance(instance), surface(surface), device(device),
-      renderPass(renderPass), descriptorPool(descriptorPool),
-      commandPool(commandPool) {
+    : window_(window), instance_(instance), surface_(surface), device_(device),
+      render_pass_(renderPass), descriptor_pool_(descriptorPool),
+      command_pool_(commandPool) {
   IMGUI_CHECKVERSION();
 
   ImGui::CreateContext();
@@ -37,8 +38,9 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   init_info.PhysicalDevice = device.physicalDevice();
   init_info.Device = device.device();
   init_info.QueueFamily =
-      core::findQueueFamilies(device.physicalDevice(), surface.surface())
-          .graphicsFamily.value();
+      core::QueueFamilyIndices(surface, device.physicalDevice())
+          .graphicsFamily()
+          .value();
   init_info.Queue = device.graphicsQueue();
   init_info.PipelineCache = VK_NULL_HANDLE;
   init_info.DescriptorPool = descriptorPool.pool();
@@ -62,7 +64,7 @@ void UI::render(VkCommandBuffer commandBuffer) {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
-  switch (_layoutMode) {
+  switch (layout_mode_) {
   case LayoutMode::FullScreen:
     break;
 
@@ -116,12 +118,12 @@ void UI::renderDockspace() {
 
     if (ImGui::BeginMenu("View")) {
       if (ImGui::MenuItem("Full Screen", nullptr,
-                          _layoutMode == LayoutMode::FullScreen)) {
-        _layoutMode = LayoutMode::FullScreen;
+                          layout_mode_ == LayoutMode::FullScreen)) {
+        layout_mode_ = LayoutMode::FullScreen;
       }
       if (ImGui::MenuItem("Standard Layout", nullptr,
-                          _layoutMode == LayoutMode::Standard)) {
-        _layoutMode = LayoutMode::Standard;
+                          layout_mode_ == LayoutMode::Standard)) {
+        layout_mode_ = LayoutMode::Standard;
       }
       ImGui::EndMenu();
     }
@@ -164,12 +166,12 @@ void UI::renderMainViewport() {
     ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
     ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
 
-    _viewportInfo.x = windowPos.x + contentMin.x;
-    _viewportInfo.y = windowPos.y + contentMin.y;
-    _viewportInfo.width = contentMax.x - contentMin.x;
-    _viewportInfo.height = contentMax.y - contentMin.y;
-    _viewportInfo.isFocused = ImGui::IsWindowFocused();
-    _viewportInfo.isHovered = ImGui::IsWindowHovered();
+    viewport_info_.x = windowPos.x + contentMin.x;
+    viewport_info_.y = windowPos.y + contentMin.y;
+    viewport_info_.width = contentMax.x - contentMin.x;
+    viewport_info_.height = contentMax.y - contentMin.y;
+    viewport_info_.isFocused = ImGui::IsWindowFocused();
+    viewport_info_.isHovered = ImGui::IsWindowHovered();
   }
   ImGui::End();
 
@@ -194,8 +196,8 @@ void UI::renderPerformancePanel() {
 
     ImGui::Separator();
 
-    if (fps_panel) {
-      fps_panel->render(fps);
+    if (fps_panel_) {
+      fps_panel_->render(fps);
     }
   }
   ImGui::End();

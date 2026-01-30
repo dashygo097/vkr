@@ -23,11 +23,11 @@ public:
 
   ~Instance();
 
-  [[nodiscard]] VkInstance instance() const noexcept { return _instance; }
+  [[nodiscard]] VkInstance instance() const noexcept { return vk_instance_; }
 
 private:
   // components
-  VkInstance _instance{VK_NULL_HANDLE};
-  std::unique_ptr<DebugMessenger> _debugMessenger;
+  VkInstance vk_instance_{VK_NULL_HANDLE};
+  std::unique_ptr<DebugMessenger> debug_messenger_;
 };
 } // namespace vkr::core

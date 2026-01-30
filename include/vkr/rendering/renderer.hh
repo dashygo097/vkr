@@ -52,18 +52,18 @@ public:
 
 private:
   // dependencies
-  core::Device &_device;
-  core::Swapchain &_swapchain;
-  const core::CommandPool &_commandPool;
-  const core::SyncObjects &_syncObjects;
-  resource::ResourceManager &_resourceManager;
-  const pipeline::RenderPass &_renderPass;
+  core::Device &device_;
+  core::Swapchain &swapchain_;
+  const core::CommandPool &command_pool_;
+  const core::SyncObjects &sync_objects_;
+  resource::ResourceManager &resource_manage_;
+  const pipeline::RenderPass &render_pass_;
   ui::UI &_ui;
 
   // components
-  std::unique_ptr<core::CommandBuffers> _commandBuffers;
-  VkViewport _viewport{};
-  VkRect2D _scissor{};
+  std::unique_ptr<core::CommandBuffers> command_buffers_;
+  VkViewport vk_viewport_{};
+  VkRect2D vk_scissor_{};
 
   // state
   uint32_t _currentFrame = 0;

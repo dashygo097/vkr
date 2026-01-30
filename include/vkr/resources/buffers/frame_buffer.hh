@@ -20,17 +20,17 @@ public:
   void destroy();
 
   [[nodiscard]] std::vector<VkFramebuffer> framebuffers() const noexcept {
-    return _framebuffers;
+    return vk_framebuffers_;
   }
 
 private:
   // dependencies
-  const core::Device &device;
-  const core::Swapchain &swapchain;
-  const pipeline::RenderPass &renderPass;
+  const core::Device &device_;
+  const core::Swapchain &swapchain_;
+  const pipeline::RenderPass &render_pass_;
 
   // components
-  std::vector<VkFramebuffer> _framebuffers{};
-  bool frameBufferResized{false};
+  std::vector<VkFramebuffer> vk_framebuffers_{};
+  bool frame_buffer_resized_{false};
 };
 } // namespace vkr::resource

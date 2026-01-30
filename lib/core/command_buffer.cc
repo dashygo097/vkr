@@ -4,28 +4,29 @@ namespace vkr::core {
 
 CommandBuffers::CommandBuffers(const Device &device,
                                const CommandPool &commandPool)
-    : device(device), commandPool(commandPool) {
-  _commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    : device_(device), commandPool_(commandPool) {
+  vk_command_buffers_.resize(MAX_FRAMES_IN_FLIGHT);
 
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.commandPool = commandPool.commandPool();
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandBufferCount = static_cast<uint32_t>(_commandBuffers.size());
+  allocInfo.commandBufferCount =
+      static_cast<uint32_t>(vk_command_buffers_.size());
 
   if (vkAllocateCommandBuffers(device.device(), &allocInfo,
-                               _commandBuffers.data()) != VK_SUCCESS) {
+                               vk_command_buffers_.data()) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate command buffers!");
   }
 }
 
 CommandBuffers::~CommandBuffers() {
-  if (!_commandBuffers.empty()) {
-    vkFreeCommandBuffers(device.device(), commandPool.commandPool(),
-                         static_cast<uint32_t>(_commandBuffers.size()),
-                         _commandBuffers.data());
+  if (!vk_command_buffers_.empty()) {
+    vkFreeCommandBuffers(device_.device(), commandPool_.commandPool(),
+                         static_cast<uint32_t>(vk_command_buffers_.size()),
+                         vk_command_buffers_.data());
   }
-  _commandBuffers.clear();
+  vk_command_buffers_.clear();
 }
 
 } // namespace vkr::core

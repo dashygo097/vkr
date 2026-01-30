@@ -4,60 +4,61 @@
 namespace vkr::resource {
 IndexBuffer::IndexBuffer(const core::Device &device,
                          const core::CommandPool &commandPool)
-    : device(device), commandPool(commandPool) {
+    : device_(device), command_pool_(commandPool) {
   create();
 }
 
 IndexBuffer::~IndexBuffer() { destroy(); }
 
 void IndexBuffer::create() {
-  if (_indices.empty()) {
+  if (indices_.empty()) {
     return;
   }
-  VkDeviceSize bufferSize = sizeof(_indices[0]) * _indices.size();
+  VkDeviceSize bufferSize = sizeof(indices_[0]) * indices_.size();
 
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
   createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-               stagingBuffer, stagingBufferMemory, device.device(),
-               device.physicalDevice());
+               stagingBuffer, stagingBufferMemory, device_.device(),
+               device_.physicalDevice());
 
   void *data;
-  vkMapMemory(device.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
-  memcpy(data, _indices.data(), (size_t)bufferSize);
-  vkUnmapMemory(device.device(), stagingBufferMemory);
+  vkMapMemory(device_.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
+  memcpy(data, indices_.data(), (size_t)bufferSize);
+  vkUnmapMemory(device_.device(), stagingBufferMemory);
 
   createBuffer(bufferSize,
                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _indexBuffer, _memory,
-               device.device(), device.physicalDevice());
+               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_index_buffer_,
+               vk_memory_, device_.device(), device_.physicalDevice());
 
-  copyBuffer(stagingBuffer, _indexBuffer, bufferSize, commandPool.commandPool(),
-             device.graphicsQueue(), device.device());
+  copyBuffer(stagingBuffer, vk_index_buffer_, bufferSize,
+             command_pool_.commandPool(), device_.graphicsQueue(),
+             device_.device());
 
-  vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
-  vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
+  vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);
+  vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
 }
 
 void IndexBuffer::destroy() {
-  if (_memory != VK_NULL_HANDLE) {
-    vkFreeMemory(device.device(), _memory, nullptr);
+  if (vk_memory_ != VK_NULL_HANDLE) {
+    vkFreeMemory(device_.device(), vk_memory_, nullptr);
   }
-  if (_indexBuffer != VK_NULL_HANDLE) {
-    vkDestroyBuffer(device.device(), _indexBuffer, nullptr);
+  if (vk_index_buffer_ != VK_NULL_HANDLE) {
+    vkDestroyBuffer(device_.device(), vk_index_buffer_, nullptr);
   }
-  if (!_indices.empty()) {
-    _indices.clear();
+  if (!indices_.empty()) {
+    indices_.clear();
   }
 }
 
 void IndexBuffer::update(const std::vector<uint16_t> &newIndices) {
   destroy();
 
-  _indices = newIndices;
+  indices_ = newIndices;
   create();
 }
 } // namespace vkr::resource

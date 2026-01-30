@@ -33,7 +33,7 @@ public:
   void bindToFrame(uint32_t frameIndex, DescriptorWriter &writer);
 
   [[nodiscard]] const std::vector<VkDescriptorSet> &sets() const noexcept {
-    return _sets;
+    return sets_;
   }
 
   void bind(VkCommandBuffer cmd, VkPipelineLayout layout, uint32_t frameIndex,
@@ -41,13 +41,13 @@ public:
 
 private:
   // dependencies
-  const core::Device &device;
-  DescriptorSetLayout &layout;
-  const DescriptorPool &pool;
+  const core::Device &device_;
+  DescriptorSetLayout &layout_;
+  const DescriptorPool &pool_;
+  uint32_t frame_count_{0};
 
   // components
-  std::vector<VkDescriptorSet> _sets;
-  uint32_t _frameCount{0};
+  std::vector<VkDescriptorSet> sets_;
 
   void allocateSets();
 };
@@ -71,7 +71,7 @@ public:
 
 private:
   // dependencies
-  const core::Device &device;
+  const core::Device &device_;
 };
 
 } // namespace vkr::pipeline

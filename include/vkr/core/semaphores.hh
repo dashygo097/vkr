@@ -11,14 +11,14 @@ public:
   Semaphore(const Semaphore &) = delete;
   Semaphore &operator=(const Semaphore &) = delete;
 
-  [[nodiscard]] VkSemaphore semaphore() const noexcept { return _semaphore; }
+  [[nodiscard]] VkSemaphore semaphore() const noexcept { return vk_semaphore_; }
 
 private:
   // dependenciesi
-  const Device &device;
-  const VkImage &image;
+  const Device &device_;
+  const VkImage &image_;
 
   // components
-  VkSemaphore _semaphore;
+  VkSemaphore vk_semaphore_;
 };
 } // namespace vkr::core

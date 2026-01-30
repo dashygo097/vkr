@@ -3,11 +3,11 @@
 
 namespace vkr::core {
 SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
-    : device(device), swapchain(swapchain) {
-  _imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-  _inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    : device_(device), swapchain_(swapchain) {
+  vk_image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+  vk_in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
 
-  _renderFinishedSemaphores.resize(swapchain.images().size());
+  vk_render_finished_semaphores.resize(swapchain.images().size());
 
   VkSemaphoreCreateInfo semaphoreInfo{};
   semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -18,9 +18,9 @@ SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
     if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr,
-                          &_imageAvailableSemaphores[i]) != VK_SUCCESS ||
+                          &vk_image_available_semaphores[i]) != VK_SUCCESS ||
         vkCreateFence(device.device(), &fenceInfo, nullptr,
-                      &_inFlightFences[i]) != VK_SUCCESS) {
+                      &vk_in_flight_fences[i]) != VK_SUCCESS) {
       throw std::runtime_error(
           "failed to create synchronization objects for a frame!");
     }
@@ -28,7 +28,7 @@ SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
 
   for (size_t i = 0; i < swapchain.images().size(); i++) {
     if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr,
-                          &_renderFinishedSemaphores[i]) != VK_SUCCESS) {
+                          &vk_render_finished_semaphores[i]) != VK_SUCCESS) {
       throw std::runtime_error("failed to create render finished "
                                "semaphore for swap chain image!");
     }
@@ -36,23 +36,23 @@ SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
 }
 
 SyncObjects::~SyncObjects() {
-  for (auto &semaphore : _imageAvailableSemaphores) {
+  for (auto &semaphore : vk_image_available_semaphores) {
     if (semaphore != VK_NULL_HANDLE) {
-      vkDestroySemaphore(device.device(), semaphore, nullptr);
+      vkDestroySemaphore(device_.device(), semaphore, nullptr);
     }
   }
-  _imageAvailableSemaphores.clear();
-  for (auto &fence : _inFlightFences) {
+  vk_image_available_semaphores.clear();
+  for (auto &fence : vk_in_flight_fences) {
     if (fence != VK_NULL_HANDLE) {
-      vkDestroyFence(device.device(), fence, nullptr);
+      vkDestroyFence(device_.device(), fence, nullptr);
     }
   }
-  _inFlightFences.clear();
-  for (auto &semaphore : _renderFinishedSemaphores) {
+  vk_in_flight_fences.clear();
+  for (auto &semaphore : vk_render_finished_semaphores) {
     if (semaphore != VK_NULL_HANDLE) {
-      vkDestroySemaphore(device.device(), semaphore, nullptr);
+      vkDestroySemaphore(device_.device(), semaphore, nullptr);
     }
   }
-  _renderFinishedSemaphores.clear();
+  vk_render_finished_semaphores.clear();
 }
 } // namespace vkr::core

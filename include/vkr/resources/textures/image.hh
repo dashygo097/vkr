@@ -21,20 +21,20 @@ public:
   [[nodiscard]] int width() const { return _width; }
   [[nodiscard]] int height() const { return _height; }
   [[nodiscard]] int channels() const { return _channels; }
-  [[nodiscard]] VkImage image() const { return _image; }
-  [[nodiscard]] VkDeviceMemory imageMemory() const { return _imageMemory; }
+  [[nodiscard]] VkImage image() const { return vk_image_; }
+  [[nodiscard]] VkDeviceMemory imageMemory() const { return vk_memory_; }
 
 private:
   // dependencies
-  const core::Device &device;
-  const core::CommandPool &commandPool;
+  const core::Device &device_;
+  const core::CommandPool &command_pool_;
 
   // components
-  int _width;
-  int _height;
-  int _channels;
-  VkImage _image;
-  VkDeviceMemory _imageMemory;
+  int _width{0};
+  int _height{0};
+  int _channels{0};
+  VkImage vk_image_{VK_NULL_HANDLE};
+  VkDeviceMemory vk_memory_{VK_NULL_HANDLE};
 
   void createImage(uint32_t width, uint32_t height, VkFormat format,
                    VkImageTiling tiling, VkImageUsageFlags usage,

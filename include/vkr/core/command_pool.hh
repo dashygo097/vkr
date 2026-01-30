@@ -14,15 +14,15 @@ public:
   CommandPool &operator=(const CommandPool &) = delete;
 
   [[nodiscard]] VkCommandPool commandPool() const noexcept {
-    return _commandPool;
+    return vk_command_pool_;
   }
 
 private:
   // dependencies
-  const Device &device;
-  const Surface &surface;
+  const Device &device_;
+  const Surface &surface_;
 
   // components
-  VkCommandPool _commandPool{VK_NULL_HANDLE};
+  VkCommandPool vk_command_pool_{VK_NULL_HANDLE};
 };
 } // namespace vkr::core

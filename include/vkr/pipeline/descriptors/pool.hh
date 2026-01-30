@@ -21,19 +21,19 @@ public:
   DescriptorPool(const DescriptorPool &) = delete;
   DescriptorPool &operator=(const DescriptorPool &) = delete;
 
-  [[nodiscard]] VkDescriptorPool pool() const noexcept { return _pool; }
+  [[nodiscard]] VkDescriptorPool pool() const noexcept { return pool_; }
   [[nodiscard]] bool canAllocate() const noexcept;
 
   void reset();
 
 private:
   // dependencies
-  const core::Device &device;
+  const core::Device &device_;
+  uint32_t max_sets_{0};
 
   // components
-  VkDescriptorPool _pool{VK_NULL_HANDLE};
-  uint32_t _maxSets{0};
-  uint32_t _allocatedSets{0};
+  VkDescriptorPool pool_{VK_NULL_HANDLE};
+  uint32_t allocated_sets_{0};
 
   void cleanup();
 };

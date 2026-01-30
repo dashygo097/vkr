@@ -13,21 +13,21 @@ public:
   DepthResources(const DepthResources &) = delete;
   DepthResources &operator=(const DepthResources &) = delete;
 
-  [[nodiscard]] VkImage image() const noexcept { return _image; }
+  [[nodiscard]] VkImage image() const noexcept { return vk_image_; }
   [[nodiscard]] VkDeviceMemory imageMemory() const noexcept {
-    return _imageMemory;
+    return vk_memory_;
   }
-  [[nodiscard]] VkImageView imageView() const noexcept { return _imageView; }
+  [[nodiscard]] VkImageView imageView() const noexcept { return vk_imageview_; }
 
 private:
   // dependencies
-  const core::Device &device;
-  const core::Swapchain &swapChain;
+  const core::Device &device_;
+  const core::Swapchain &swapChain_;
 
   // components
-  VkImage _image{VK_NULL_HANDLE};
-  VkDeviceMemory _imageMemory{VK_NULL_HANDLE};
-  VkImageView _imageView{VK_NULL_HANDLE};
+  VkImage vk_image_{VK_NULL_HANDLE};
+  VkDeviceMemory vk_memory_{VK_NULL_HANDLE};
+  VkImageView vk_imageview_{VK_NULL_HANDLE};
 
   VkFormat findDepthFormat() {
     return findSupportedFormat({VK_FORMAT_D32_SFLOAT,
@@ -42,7 +42,7 @@ private:
                                VkFormatFeatureFlags features) {
     for (VkFormat format : candidates) {
       VkFormatProperties props;
-      vkGetPhysicalDeviceFormatProperties(device.physicalDevice(), format,
+      vkGetPhysicalDeviceFormatProperties(device_.physicalDevice(), format,
                                           &props);
       if (tiling == VK_IMAGE_TILING_LINEAR &&
           (props.linearTilingFeatures & features) == features) {

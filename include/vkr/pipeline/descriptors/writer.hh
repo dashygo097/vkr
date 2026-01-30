@@ -27,12 +27,12 @@ public:
 
 private:
   // dependencies
-  const core::Device &device;
+  const core::Device &device_;
 
   // components
-  std::vector<VkWriteDescriptorSet> _writes;
-  std::vector<VkDescriptorBufferInfo> _bufferInfos;
-  std::vector<VkDescriptorImageInfo> _imageInfos;
+  std::vector<VkWriteDescriptorSet> writes_;
+  std::vector<VkDescriptorBufferInfo> buffer_infos_;
+  std::vector<VkDescriptorImageInfo> image_infos_;
 };
 
 } // namespace vkr::pipeline

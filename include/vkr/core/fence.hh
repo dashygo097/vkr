@@ -11,14 +11,14 @@ public:
   Fence(const Fence &) = delete;
   Fence &operator=(const Fence &) = delete;
 
-  [[nodiscard]] VkFence fence() const noexcept { return _fence; }
+  [[nodiscard]] VkFence fence() const noexcept { return vk_fence_; }
 
 private:
   // dependencies
-  const Device &device;
-  const VkImage &image;
+  const Device &device_;
+  const VkImage &image_;
 
   // components
-  VkFence _fence;
+  VkFence vk_fence_;
 };
 } // namespace vkr::core

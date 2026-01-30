@@ -36,40 +36,42 @@ public:
 
   void render(VkCommandBuffer commandBuffer);
 
-  void layoutMode(LayoutMode mode) noexcept { _layoutMode = mode; }
+  void layoutMode(LayoutMode mode) noexcept { layout_mode_ = mode; }
   void switchLayoutMode() noexcept {
-    switch (_layoutMode) {
+    switch (layout_mode_) {
     case LayoutMode::FullScreen:
-      _layoutMode = LayoutMode::Standard;
+      layout_mode_ = LayoutMode::Standard;
       break;
     case LayoutMode::Standard:
-      _layoutMode = LayoutMode::FullScreen;
+      layout_mode_ = LayoutMode::FullScreen;
       break;
     }
   }
-  void viewportInfo(const ViewportInfo &info) noexcept { _viewportInfo = info; }
+  void viewportInfo(const ViewportInfo &info) noexcept {
+    viewport_info_ = info;
+  }
 
-  [[nodiscard]] LayoutMode layoutMode() const noexcept { return _layoutMode; }
+  [[nodiscard]] LayoutMode layoutMode() const noexcept { return layout_mode_; }
   [[nodiscard]] const ViewportInfo &viewportInfo() const noexcept {
-    return _viewportInfo;
+    return viewport_info_;
   }
 
 private:
   // dependencies
-  const core::Window &window;
-  const core::Instance &instance;
-  const core::Surface &surface;
-  const core::Device &device;
-  const core::CommandPool &commandPool;
-  const pipeline::RenderPass &renderPass;
-  const pipeline::DescriptorPool &descriptorPool;
+  const core::Window &window_;
+  const core::Instance &instance_;
+  const core::Surface &surface_;
+  const core::Device &device_;
+  const core::CommandPool &command_pool_;
+  const pipeline::RenderPass &render_pass_;
+  const pipeline::DescriptorPool &descriptor_pool_;
 
   // components
-  std::unique_ptr<FPSPanel> fps_panel;
+  std::unique_ptr<FPSPanel> fps_panel_;
 
   // state
-  LayoutMode _layoutMode{LayoutMode::FullScreen};
-  ViewportInfo _viewportInfo{};
+  LayoutMode layout_mode_{LayoutMode::FullScreen};
+  ViewportInfo viewport_info_{};
 
   // helpers
   void renderDockspace();

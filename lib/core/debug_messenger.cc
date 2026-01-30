@@ -2,26 +2,27 @@
 #include <iostream>
 
 namespace vkr::core {
-DebugMessenger::DebugMessenger(VkInstance instance) : instance(instance) {
+DebugMessenger::DebugMessenger(VkInstance instance) : instance_(instance) {
   VkDebugUtilsMessengerCreateInfoEXT createInfo{};
   populateCreateInfo(createInfo);
 
   auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
       instance, "vkCreateDebugUtilsMessengerEXT");
 
-  if (func && func(instance, &createInfo, nullptr, &_messenger) != VK_SUCCESS) {
+  if (func &&
+      func(instance, &createInfo, nullptr, &vk_messenger_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create debug messenger!");
   }
 }
 
 DebugMessenger::~DebugMessenger() {
   auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-      instance, "vkDestroyDebugUtilsMessengerEXT");
+      instance_, "vkDestroyDebugUtilsMessengerEXT");
 
-  if (func && _messenger != VK_NULL_HANDLE) {
-    func(instance, _messenger, nullptr);
+  if (func && vk_messenger_ != VK_NULL_HANDLE) {
+    func(instance_, vk_messenger_, nullptr);
   }
-  _messenger = VK_NULL_HANDLE;
+  vk_messenger_ = VK_NULL_HANDLE;
 }
 
 void DebugMessenger::populateCreateInfo(

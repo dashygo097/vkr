@@ -15,19 +15,19 @@ public:
   CommandBuffers &operator=(const CommandBuffers &) = delete;
 
   [[nodiscard]] std::vector<VkCommandBuffer> &commandBuffers() noexcept {
-    return _commandBuffers;
+    return vk_command_buffers_;
   }
-  [[nodiscard]] VkCommandBuffer &commandBuffer(uint32_t index) noexcept {
-    return _commandBuffers[index];
+  [[nodiscard]] VkCommandBuffer &commandBuffer(uint32_t index) {
+    return vk_command_buffers_.at(index);
   }
 
 private:
   // dependencies
-  const Device &device;
-  const CommandPool &commandPool;
+  const Device &device_;
+  const CommandPool &commandPool_;
 
   // components
-  std::vector<VkCommandBuffer> _commandBuffers{};
+  std::vector<VkCommandBuffer> vk_command_buffers_{};
 };
 
 } // namespace vkr::core

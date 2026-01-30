@@ -2,14 +2,14 @@
 
 namespace vkr::core {
 Surface::Surface(const Window &window, const Instance &instance)
-    : instance(instance), window(window) {
-  if (glfwCreateWindowSurface(instance.instance(), window.glfwWindow(), nullptr,
-                              &_surface) != VK_SUCCESS) {
+    : instance_(instance), window_(window) {
+  if (glfwCreateWindowSurface(instance_.instance(), window_.glfwWindow(),
+                              nullptr, &surface_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create window surface!");
   }
 }
 
 Surface::~Surface() {
-  vkDestroySurfaceKHR(instance.instance(), _surface, nullptr);
+  vkDestroySurfaceKHR(instance_.instance(), surface_, nullptr);
 }
 } // namespace vkr::core

@@ -17,16 +17,16 @@ public:
   [[nodiscard]] bool shouldClose() const;
   void pollEvents() const;
 
-  [[nodiscard]] GLFWwindow *glfwWindow() const noexcept { return _window; }
-  [[nodiscard]] uint32_t width() const noexcept { return _width; }
-  [[nodiscard]] uint32_t height() const noexcept { return _height; }
-  [[nodiscard]] std::string title() const noexcept { return _title; }
+  [[nodiscard]] GLFWwindow *glfwWindow() const noexcept { return window_; }
+  [[nodiscard]] uint32_t width() const noexcept { return width_; }
+  [[nodiscard]] uint32_t height() const noexcept { return height_; }
+  [[nodiscard]] std::string title() const noexcept { return title_; }
 
 private:
   // components
-  GLFWwindow *_window{nullptr};
-  uint32_t _width;
-  uint32_t _height;
-  std::string _title;
+  GLFWwindow *window_{nullptr};
+  uint32_t width_;
+  uint32_t height_;
+  std::string title_;
 };
 } // namespace vkr::core

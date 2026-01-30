@@ -3,7 +3,7 @@
 namespace vkr::pipeline {
 RenderPass::RenderPass(const core::Device &device,
                        const core::Swapchain &swapchain)
-    : device(device), swapchain(swapchain) {
+    : device_(device), swapchain_(swapchain) {
   VkAttachmentDescription colorAttachment{};
   colorAttachment.format = swapchain.format();
   colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -31,15 +31,15 @@ RenderPass::RenderPass(const core::Device &device,
   renderPassInfo.pSubpasses = &subpass;
 
   if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr,
-                         &_renderPass) != VK_SUCCESS) {
+                         &vk_render_pass_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create render pass!");
   }
 }
 
 RenderPass::~RenderPass() {
-  if (_renderPass != VK_NULL_HANDLE) {
-    vkDestroyRenderPass(device.device(), _renderPass, nullptr);
-    _renderPass = VK_NULL_HANDLE;
+  if (vk_render_pass_ != VK_NULL_HANDLE) {
+    vkDestroyRenderPass(device_.device(), vk_render_pass_, nullptr);
+    vk_render_pass_ = VK_NULL_HANDLE;
   }
 }
 } // namespace vkr::pipeline

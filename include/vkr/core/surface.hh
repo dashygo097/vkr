@@ -13,14 +13,14 @@ public:
   Surface(const Surface &) = delete;
   Surface &operator=(const Surface &) = delete;
 
-  [[nodiscard]] VkSurfaceKHR surface() const noexcept { return _surface; }
+  [[nodiscard]] VkSurfaceKHR surface() const noexcept { return surface_; }
 
 private:
   // dependencies
-  const Instance &instance;
-  const Window &window;
+  const Instance &instance_;
+  const Window &window_;
 
   // components
-  VkSurfaceKHR _surface{VK_NULL_HANDLE};
+  VkSurfaceKHR surface_{VK_NULL_HANDLE};
 };
 } // namespace vkr::core

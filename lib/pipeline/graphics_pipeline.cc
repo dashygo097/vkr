@@ -10,9 +10,8 @@ GraphicsPipeline::GraphicsPipeline(
     const RenderPass &renderPass, DescriptorSetLayout &descriptorSetLayout,
     const std::string &vertShaderPath, const std::string &fragShaderPath,
     PipelineMode mode)
-    : device(device), renderPass(renderPass),
-      descriptorSetLayout(descriptorSetLayout),
-      resourceManager(resourceManager) {
+    : device_(device), resource_manager_(resourceManager),
+      render_pass_(renderPass), descriptor_set_layout_(descriptorSetLayout) {
   ShaderModule vertShader(device, vertShaderPath);
   ShaderModule fragShader(device, fragShaderPath);
 
@@ -117,7 +116,7 @@ GraphicsPipeline::GraphicsPipeline(
   pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout.layout();
 
   if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr,
-                             &_pipelineLayout) != VK_SUCCESS) {
+                             &vk_pipeline_layout_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
   }
 
@@ -132,25 +131,25 @@ GraphicsPipeline::GraphicsPipeline(
   pipelineInfo.pMultisampleState = &multisampling;
   pipelineInfo.pColorBlendState = &colorBlending;
   pipelineInfo.pDynamicState = &dynamicState;
-  pipelineInfo.layout = _pipelineLayout;
+  pipelineInfo.layout = vk_pipeline_layout_;
   pipelineInfo.renderPass = renderPass.renderPass();
   pipelineInfo.subpass = 0;
 
   if (vkCreateGraphicsPipelines(device.device(), VK_NULL_HANDLE, 1,
                                 &pipelineInfo, nullptr,
-                                &_graphicsPipeline) != VK_SUCCESS) {
+                                &vk_graphics_pipeline) != VK_SUCCESS) {
     throw std::runtime_error("failed to create graphics pipeline!");
   }
 }
 
 GraphicsPipeline::~GraphicsPipeline() {
-  if (_graphicsPipeline != VK_NULL_HANDLE) {
-    vkDestroyPipeline(device.device(), _graphicsPipeline, nullptr);
-    _graphicsPipeline = VK_NULL_HANDLE;
+  if (vk_graphics_pipeline != VK_NULL_HANDLE) {
+    vkDestroyPipeline(device_.device(), vk_graphics_pipeline, nullptr);
+    vk_graphics_pipeline = VK_NULL_HANDLE;
   }
-  if (_pipelineLayout != VK_NULL_HANDLE) {
-    vkDestroyPipelineLayout(device.device(), _pipelineLayout, nullptr);
-    _pipelineLayout = VK_NULL_HANDLE;
+  if (vk_pipeline_layout_ != VK_NULL_HANDLE) {
+    vkDestroyPipelineLayout(device_.device(), vk_pipeline_layout_, nullptr);
+    vk_pipeline_layout_ = VK_NULL_HANDLE;
   }
 }
 
