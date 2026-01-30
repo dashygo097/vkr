@@ -36,13 +36,19 @@ public:
 
   void render(VkCommandBuffer commandBuffer);
 
-  void visible() noexcept { _visible = true; }
-  void invisible() noexcept { _visible = false; }
-  void toggleVisibility() noexcept { _visible = !_visible; }
   void layoutMode(LayoutMode mode) noexcept { _layoutMode = mode; }
+  void switchLayoutMode() noexcept {
+    switch (_layoutMode) {
+    case LayoutMode::FullScreen:
+      _layoutMode = LayoutMode::Standard;
+      break;
+    case LayoutMode::Standard:
+      _layoutMode = LayoutMode::FullScreen;
+      break;
+    }
+  }
   void viewportInfo(const ViewportInfo &info) noexcept { _viewportInfo = info; }
 
-  [[nodiscard]] bool isVisible() const noexcept { return _visible; }
   [[nodiscard]] LayoutMode layoutMode() const noexcept { return _layoutMode; }
   [[nodiscard]] const ViewportInfo &viewportInfo() const noexcept {
     return _viewportInfo;
@@ -62,8 +68,7 @@ private:
   std::unique_ptr<FPSPanel> fps_panel;
 
   // state
-  bool _visible{false};
-  LayoutMode _layoutMode{LayoutMode::Standard};
+  LayoutMode _layoutMode{LayoutMode::FullScreen};
   ViewportInfo _viewportInfo{};
 
   // helpers
@@ -72,6 +77,5 @@ private:
   void renderPerformancePanel();
 
   void setupDockingLayout();
-  void updateViewportInfo();
 };
 } // namespace vkr::ui

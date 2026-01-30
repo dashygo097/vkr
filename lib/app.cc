@@ -102,11 +102,11 @@ void VulkanApplication::mainLoop() {
 
     if (ctx.cameraEnabled) {
       camera->track();
-      camera->lock(ui->isVisible());
+      camera->lock(ui->layoutMode() == ui::LayoutMode::Standard);
     }
 
     if (isNowTabKeyPressed && !isLastTabKeyPressed) {
-      ui->toggleVisibility();
+      ui->switchLayoutMode();
     }
 
     timer->update();
@@ -135,6 +135,8 @@ void VulkanApplication::drawFrame() {
   if (!renderer->beginFrame(frameData)) {
     return;
   }
+
+  const auto &viewport = ui->viewportInfo();
 
   updateUniforms(frameData.frameIndex);
 
