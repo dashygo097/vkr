@@ -61,6 +61,8 @@ private:
 
   // components
   std::unique_ptr<core::CommandBuffers> _commandBuffers;
+  VkViewport _viewport{};
+  VkRect2D _scissor{};
 
   // state
   uint32_t _currentFrame = 0;

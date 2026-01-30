@@ -3,16 +3,9 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
+#include <imgui_internal.h>
 
 namespace vkr::ui {
-static void check_vk_result(VkResult err) {
-  if (err == 0)
-    return;
-  fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
-  if (err < 0)
-    abort();
-}
-
 UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool,
@@ -26,7 +19,6 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   ImGuiStyle &style = ImGui::GetStyle();
@@ -53,7 +45,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   init_info.Allocator = nullptr;
   init_info.MinImageCount = 2;
   init_info.ImageCount = 2;
-  init_info.CheckVkResultFn = check_vk_result;
+  init_info.CheckVkResultFn = core::check_vk_result;
   init_info.PipelineInfoMain = pipeline_info;
 
   ImGui_ImplVulkan_Init(&init_info);
@@ -66,139 +58,138 @@ UI::~UI() {
 }
 
 void UI::render(VkCommandBuffer commandBuffer) {
-  if (!_visible)
-    return;
-
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
+  switch (_layoutMode) {
+  case LayoutMode::FullScreen:
+    break;
+
+  case LayoutMode::Standard:
+    renderDockspace();
+    renderPerformancePanel();
+    break;
+  }
+
+  ImGui::Render();
+  ImDrawData *draw_data = ImGui::GetDrawData();
+  ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
+}
+
+void UI::renderDockspace() {
+  static bool dockspaceOpen = true;
+  static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+
+  ImGuiWindowFlags window_flags =
+      ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+
+  const ImGuiViewport *viewport = ImGui::GetMainViewport();
+  ImGui::SetNextWindowPos(viewport->WorkPos);
+  ImGui::SetNextWindowSize(viewport->WorkSize);
+  ImGui::SetNextWindowViewport(viewport->ID);
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+  window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
+  window_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+  window_flags |=
+      ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+  if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode) {
+    window_flags |= ImGuiWindowFlags_NoBackground;
+  }
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+  ImGui::Begin("DockSpace", &dockspaceOpen, window_flags);
+  ImGui::PopStyleVar();
+  ImGui::PopStyleVar(2);
+
+  if (ImGui::BeginMenuBar()) {
+    if (ImGui::BeginMenu("File")) {
+      if (ImGui::MenuItem("Exit")) {
+      }
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("View")) {
+      if (ImGui::MenuItem("Full Screen", nullptr,
+                          _layoutMode == LayoutMode::FullScreen)) {
+        _layoutMode = LayoutMode::FullScreen;
+      }
+      if (ImGui::MenuItem("Standard Layout", nullptr,
+                          _layoutMode == LayoutMode::Standard)) {
+        _layoutMode = LayoutMode::Standard;
+      }
+      ImGui::EndMenu();
+    }
+
+    ImGui::EndMenuBar();
+  }
+
   ImGuiIO &io = ImGui::GetIO();
-  const float padding = 16.0f;
+  if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
+    ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+    ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
-  // Main Settings Panel
-  ImGui::SetNextWindowPos(ImVec2(padding, padding), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(240, 0), ImGuiCond_Always);
+    static bool first_time = true;
+    if (first_time) {
+      first_time = false;
+      setupDockingLayout();
+    }
+  }
 
+  ImGui::End();
+}
+
+void UI::renderPerformancePanel() {
   ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoMove |
                                   ImGuiWindowFlags_NoResize |
                                   ImGuiWindowFlags_NoCollapse;
 
-  if (ImGui::Begin("Engine Controller", nullptr, window_flags)) {
-    ImGui::Spacing();
-
-    // Rendering section
-    if (ImGui::CollapsingHeader("Resources", ImGuiTreeNodeFlags_DefaultOpen)) {
-      // Placeholder for rendering controls
-    }
-
-    ImGui::Spacing();
-
-    ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(1.0f, 1.0f, 1.0f, 0.12f));
-    ImGui::Separator();
-    ImGui::PopStyleColor();
-    ImGui::Spacing();
-
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.95f, 0.95f, 0.95f, 0.18f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-                          ImVec4(1.00f, 1.00f, 1.00f, 0.28f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,
-                          ImVec4(0.85f, 0.85f, 0.85f, 0.40f));
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 0.15f));
-
-    if (ImGui::Button("Take Screenshot", ImVec2(-1, 32))) {
-      // Placeholder for screenshot logic
-    }
-
-    ImGui::PopStyleColor(4);
-  }
-  ImGui::End();
-
-  // Performance Panel
-  ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 260 - padding, padding),
-                          ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(260, 0), ImGuiCond_Always);
-
-  ImGuiWindowFlags performance_flags = ImGuiWindowFlags_NoMove |
-                                       ImGuiWindowFlags_NoResize |
-                                       ImGuiWindowFlags_NoCollapse;
-
-  // Performance Overlay Panel
-  if (ImGui::Begin("Performance", nullptr, performance_flags)) {
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.00f, 0.00f, 0.00f, 0.20f));
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 0.10f));
-    ImGui::BeginChild("PerformanceMetrics", ImVec2(0, 120), true,
-                      ImGuiWindowFlags_NoScrollbar);
+  if (ImGui::Begin("Performance", nullptr, window_flags)) {
+    ImGuiIO &io = ImGui::GetIO();
 
     float fps = io.Framerate;
     ImVec4 fps_color = fps > 60   ? ImVec4(0.60f, 1.00f, 0.80f, 0.85f)
                        : fps > 30 ? ImVec4(1.00f, 0.95f, 0.55f, 0.85f)
                                   : ImVec4(1.00f, 0.60f, 0.60f, 0.85f);
 
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 4.0f));
     ImGui::TextColored(fps_color, "FPS: %.1f", fps);
-    ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.85f, 0.80f),
-                       "Frame Time: %.2f ms", 1000.0f / fps);
-    ImGui::PopStyleVar();
+    ImGui::Text("Frame Time: %.2f ms", 1000.0f / fps);
 
-    if (ImGui::IsItemHovered() || ImGui::IsWindowHovered()) {
-      ImGui::BeginTooltip();
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.95f, 0.95f, 1.0f));
+    ImGui::Separator();
 
-      ImGui::Text("Performance Metrics");
-      ImGui::Separator();
-      ImGui::Spacing();
-
-      static float min_fps = fps;
-      static float max_fps = fps;
-      static float avg_sum = 0.0f;
-      static int avg_count = 0;
-
-      min_fps = (fps < min_fps) ? fps : min_fps;
-      max_fps = (fps > max_fps) ? fps : max_fps;
-      avg_sum += fps;
-      avg_count++;
-      float avg_fps = avg_sum / avg_count;
-
-      static float reset_timer = 0.0f;
-      reset_timer += io.DeltaTime;
-      if (reset_timer > 5.0f) {
-        min_fps = fps;
-        max_fps = fps;
-        avg_sum = fps;
-        avg_count = 1;
-        reset_timer = 0.0f;
-      }
-
-      ImGui::TextColored(ImVec4(0.70f, 1.00f, 0.85f, 1.0f), "Current: %.1f FPS",
-                         fps);
-      ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.85f, 0.90f),
-                         "Average: %.1f FPS", avg_fps);
-      ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.85f, 0.90f), "Min: %.1f FPS",
-                         min_fps);
-      ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.85f, 0.90f), "Max: %.1f FPS",
-                         max_fps);
-      ImGui::Spacing();
-      ImGui::Separator();
-      ImGui::Spacing();
-      ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.85f, 0.80f),
-                         "Frame Time: %.3f ms", 1000.0f / fps);
-      ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.85f, 0.80f),
-                         "Delta Time: %.3f ms", io.DeltaTime * 1000.0f);
-
-      ImGui::PopStyleColor();
-      ImGui::EndTooltip();
+    if (fps_panel) {
+      fps_panel->render(fps);
     }
-    ImGui::Spacing();
-
-    fps_panel->render(fps);
   }
-
   ImGui::End();
+}
 
-  ImGui::Render();
-  ImDrawData *draw_data = ImGui::GetDrawData();
-  ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
+void UI::setupDockingLayout() {
+  ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+  ImGui::DockBuilderRemoveNode(dockspace_id);
+  ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+  ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
+
+  ImGuiID dock_left, dock_right, dock_bottom_right;
+
+  dock_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f,
+                                          nullptr, &dockspace_id);
+
+  dock_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.25f,
+                                           nullptr, &dockspace_id);
+
+  dock_bottom_right = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Down,
+                                                  0.3f, nullptr, &dock_right);
+
+  ImGui::DockBuilderDockWindow("Scene Hierarchy", dock_left);
+  ImGui::DockBuilderDockWindow("Performance", dock_bottom_right);
+  ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
+
+  ImGui::DockBuilderFinish(dockspace_id);
 }
 
 } // namespace vkr::ui
