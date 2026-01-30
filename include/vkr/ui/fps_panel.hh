@@ -1,6 +1,7 @@
 #pragma once
 
 namespace vkr::ui {
+
 class FPSPanel {
 public:
   FPSPanel() = default;
