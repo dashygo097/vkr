@@ -90,9 +90,8 @@ private:
   float _yaw{-90.0f};
   float _pitch{0.0f};
 
+  // state
   bool _locked{false};
-
-  // timing
   std::chrono::high_resolution_clock::time_point lastTimeStamp;
   float firstMouse{true};
   float lastX{0.0f};
