@@ -12,9 +12,11 @@ public:
   ImageView(const ImageView &) = delete;
   ImageView &operator=(const ImageView &) = delete;
 
-  void create(const Image &image, VkFormat format);
+  void create(const Image &image, VkFormat format,
+              VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT);
   void destroy();
-  void update(const Image &image, VkFormat format) {
+  void update(const Image &image, VkFormat format,
+              VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT) {
     destroy();
     create(image, format);
   }

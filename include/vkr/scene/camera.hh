@@ -1,4 +1,6 @@
 #pragma once
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #include "../core/window.hh"
 #include <GLFW/glfw3.h>
