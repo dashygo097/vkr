@@ -16,7 +16,6 @@ target_link_libraries(vkr PUBLIC glm::glm-header-only)
 target_link_libraries(vkr PUBLIC imgui)
 target_link_libraries(vkr PUBLIC tinyobjloader)
 target_link_libraries(vkr PUBLIC stb)
-target_link_libraries(vkr PUBLIC nlohmann_json::nlohmann_json)
 
 if (APPLE) 
   target_link_libraries(vkr PUBLIC
