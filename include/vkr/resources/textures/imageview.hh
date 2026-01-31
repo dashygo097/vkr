@@ -6,7 +6,7 @@
 namespace vkr::resource {
 class ImageView {
 public:
-  explicit ImageView(const core::Device &device, const Image &image);
+  explicit ImageView(const core::Device &device);
   ~ImageView();
 
   ImageView(const ImageView &) = delete;
@@ -14,18 +14,18 @@ public:
 
   void create(const Image &image, VkFormat format);
   void destroy();
-  void update(const Image &image, VkFormat format);
+  void update(const Image &image, VkFormat format) {
+    destroy();
+    create(image, format);
+  }
 
-  [[nodiscard]] VkFormat format() const { return vk_format_; }
-  [[nodiscard]] VkImageView imageView() const { return vk_imageview_; }
+  [[nodiscard]] VkImageView imageView() const noexcept { return vk_imageview_; }
 
 private:
   // dependencies
   const core::Device &device_;
-  const Image &image_;
 
   // components
-  VkFormat vk_format_;
-  VkImageView vk_imageview_;
+  VkImageView vk_imageview_{VK_NULL_HANDLE};
 };
 } // namespace vkr::resource

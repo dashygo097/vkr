@@ -22,7 +22,7 @@ public:
   [[nodiscard]] int height() const { return _height; }
   [[nodiscard]] int channels() const { return _channels; }
   [[nodiscard]] VkImage image() const { return vk_image_; }
-  [[nodiscard]] VkDeviceMemory imageMemory() const { return vk_memory_; }
+  [[nodiscard]] VkDeviceMemory memory() const { return vk_memory_; }
 
 private:
   // dependencies

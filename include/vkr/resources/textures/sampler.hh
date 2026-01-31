@@ -11,10 +11,13 @@ public:
   Sampler(const Sampler &) = delete;
   Sampler &operator=(const Sampler &) = delete;
 
+  [[nodiscard]] VkSampler sampler() const noexcept { return _vk_sampler_; }
+
 private:
   // dependeies
   const core::Device &device_;
 
   // components
+  VkSampler _vk_sampler_{VK_NULL_HANDLE};
 };
 } // namespace vkr::resource

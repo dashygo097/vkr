@@ -94,6 +94,13 @@ public:
     frame_buffers_.erase(name);
   }
 
+  // Mesh Management
+  template <typename VBOType>
+  void createMesh(const std::string &name, const Mesh<VBOType> &mesh) {
+    createVertexBuffer<VBOType>(name, mesh.vertexBuffer()->vertices());
+    createIndexBuffer(name, mesh.indexBuffer()->indices());
+  }
+
   // Utility functions
   size_t vertexBufferCount() const { return vertex_buffers_.size(); }
   size_t indexBufferCount() const { return index_buffers_.size(); }
