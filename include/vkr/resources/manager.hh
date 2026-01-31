@@ -16,12 +16,12 @@ namespace vkr::resource {
 
 class ResourceManager {
 public:
-  ResourceManager(const core::Device &device,
+  ResourceManager(const core::Device &device, const core::Swapchain &swapchain,
                   const core::CommandPool &commandPool,
-                  const core::Swapchain &swapchain,
+                  const DepthResources &depthResources,
                   const pipeline::RenderPass &renderPass)
-      : device_(device), command_pool_(commandPool), swapchain_(swapchain),
-        render_pass_(renderPass) {}
+      : device_(device), swapchain_(swapchain), command_pool_(commandPool),
+        depth_resources_(depthResources), render_pass_(renderPass) {}
   ~ResourceManager() = default;
 
   ResourceManager(const ResourceManager &) = delete;
@@ -82,7 +82,8 @@ public:
 
   // Framebuffer Management
   void createFramebuffers(const std::string &name) {
-    auto fb = std::make_shared<Framebuffers>(device_, swapchain_, render_pass_);
+    auto fb = std::make_shared<Framebuffers>(device_, swapchain_,
+                                             depth_resources_, render_pass_);
     frame_buffers_[name] = std::move(fb);
   }
 
@@ -200,6 +201,7 @@ private:
   const core::Device &device_;
   const core::CommandPool &command_pool_;
   const core::Swapchain &swapchain_;
+  const DepthResources &depth_resources_;
   const pipeline::RenderPass &render_pass_;
 
   // components

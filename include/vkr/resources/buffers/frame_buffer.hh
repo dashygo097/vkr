@@ -3,6 +3,7 @@
 #include "../../core/device.hh"
 #include "../../core/swapchain.hh"
 #include "../../pipeline/render_pass.hh"
+#include "../depth_resources.hh"
 
 namespace vkr::resource {
 
@@ -10,6 +11,7 @@ class Framebuffers {
 public:
   explicit Framebuffers(const core::Device &device,
                         const core::Swapchain &swapchain,
+                        const DepthResources &depthResources,
                         const pipeline::RenderPass &renderPass);
   ~Framebuffers();
 
@@ -27,6 +29,7 @@ private:
   // dependencies
   const core::Device &device_;
   const core::Swapchain &swapchain_;
+  const DepthResources &depth_resources_;
   const pipeline::RenderPass &render_pass_;
 
   // components
