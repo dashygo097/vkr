@@ -41,8 +41,10 @@ void VulkanApplication::initVulkan() {
   renderPass = std::make_unique<pipeline::RenderPass>(*device, *swapchain);
 
   // resource manager
+  depthResources = std::make_unique<resource::DepthResources>(
+      *device, *swapchain, *commandPool);
   resourceManager = std::make_unique<resource::ResourceManager>(
-      *device, *commandPool, *swapchain, *renderPass);
+      *device, *swapchain, *commandPool, *depthResources, *renderPass);
   resourceManager->createFramebuffers("swapchain");
 
   createUniforms();
@@ -160,6 +162,7 @@ void VulkanApplication::cleanup() {
   renderer.reset();
   syncObjects.reset();
   resourceManager.reset();
+  depthResources.reset();
   commandBuffers.reset();
   descriptorSets.reset();
   descriptorSetLayout.reset();

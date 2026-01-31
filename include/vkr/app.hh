@@ -41,6 +41,7 @@ public:
   std::unique_ptr<core::SyncObjects> syncObjects;
 
   // resource management
+  std::unique_ptr<resource::DepthResources> depthResources;
   std::unique_ptr<resource::ResourceManager> resourceManager;
 
   // pipeline

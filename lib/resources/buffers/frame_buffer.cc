@@ -4,8 +4,10 @@ namespace vkr::resource {
 
 Framebuffers::Framebuffers(const core::Device &device,
                            const core::Swapchain &swapchain,
+                           const DepthResources &depthResources,
                            const pipeline::RenderPass &renderPass)
-    : device_(device), swapchain_(swapchain), render_pass_(renderPass) {
+    : device_(device), swapchain_(swapchain), depth_resources_(depthResources),
+      render_pass_(renderPass) {
   create();
 }
 
@@ -15,13 +17,14 @@ void Framebuffers::create() {
   vk_framebuffers_.resize(swapchain_.imageViews().size());
 
   for (size_t i = 0; i < swapchain_.imageViews().size(); i++) {
-    VkImageView attachments[] = {swapchain_.imageViews()[i]};
+    std::array<VkImageView, 2> attachments = {swapchain_.imageViews()[i],
+                                              depth_resources_.imageView()};
 
     VkFramebufferCreateInfo framebufferInfo{};
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebufferInfo.renderPass = render_pass_.renderPass();
-    framebufferInfo.attachmentCount = 1;
-    framebufferInfo.pAttachments = attachments;
+    framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    framebufferInfo.pAttachments = attachments.data();
     framebufferInfo.width = swapchain_.extent2D().width;
     framebufferInfo.height = swapchain_.extent2D().height;
     framebufferInfo.layers = 1;

@@ -13,7 +13,14 @@ private:
       {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
       {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
 
+  const std::vector<vkr::resource::VertexTextured3D> vertices2 = {
+      {{-0.25f, -0.25f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+      {{0.25f, -0.25f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+      {{0.25f, 0.25f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+      {{-0.25f, 0.25f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
+
   const std::vector<uint16_t> indices1 = {0, 1, 2, 2, 3, 0};
+  const std::vector<uint16_t> indices2 = {0, 1, 2, 2, 3, 0};
 
   void createUniforms() override {
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
@@ -85,6 +92,9 @@ private:
     resourceManager->createVertexBuffer<vkr::resource::VertexTextured3D>(
         "vb1", vertices1);
     resourceManager->createIndexBuffer("ib1", indices1);
+    resourceManager->createVertexBuffer<vkr::resource::VertexTextured3D>(
+        "vb2", vertices2);
+    resourceManager->createIndexBuffer("ib2", indices2);
   }
 };
 

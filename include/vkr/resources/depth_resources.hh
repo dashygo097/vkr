@@ -18,6 +18,11 @@ public:
   DepthResources(const DepthResources &) = delete;
   DepthResources &operator=(const DepthResources &) = delete;
 
+  [[nodiscard]] VkImage image() const noexcept { return image_->image(); }
+  [[nodiscard]] VkImageView imageView() const noexcept {
+    return imageview_->imageView();
+  }
+
 private:
   // dependencies
   const core::Device &device_;
