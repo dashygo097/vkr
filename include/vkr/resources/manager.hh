@@ -102,12 +102,16 @@ public:
     createIndexBuffer(name, mesh.indexBuffer()->indices());
   }
 
-  // Texture Managementdevice
-  void createTextureImage(const std::string &name,
-                          const std::string &filePath) {
+  // Texture Management
+  void createTexture(const std::string &name, const std::string &filePath) {
     auto image = std::make_shared<Image>(device_, command_pool_);
+    auto imageview = std::make_shared<ImageView>(device_);
+    auto sampler = std::make_shared<Sampler>(device_);
     image->create(filePath);
+    imageview->create(*image, VK_FORMAT_R8G8B8A8_SRGB);
     texture_images_[name] = std::move(image);
+    texture_imageviews_[name] = std::move(imageview);
+    texture_samplers_[name] = std::move(sampler);
   }
 
   std::shared_ptr<Image> getTextureImage(const std::string &name) {
@@ -115,7 +119,19 @@ public:
     return it != texture_images_.end() ? it->second : nullptr;
   }
 
-  void destroyTextureImage(const std::string &name) {
+  std::shared_ptr<ImageView> getTextureImageView(const std::string &name) {
+    auto it = texture_imageviews_.find(name);
+    return it != texture_imageviews_.end() ? it->second : nullptr;
+  }
+
+  std::shared_ptr<Sampler> getTextureSampler(const std::string &name) {
+    auto it = texture_samplers_.find(name);
+    return it != texture_samplers_.end() ? it->second : nullptr;
+  }
+
+  void destroyTexture(const std::string &name) {
+    texture_samplers_.erase(name);
+    texture_imageviews_.erase(name);
     texture_images_.erase(name);
   }
 
@@ -194,5 +210,8 @@ private:
       uniform_buffers_;
   std::unordered_map<std::string, std::shared_ptr<Framebuffers>> frame_buffers_;
   std::unordered_map<std::string, std::shared_ptr<Image>> texture_images_;
+  std::unordered_map<std::string, std::shared_ptr<ImageView>>
+      texture_imageviews_;
+  std::unordered_map<std::string, std::shared_ptr<Sampler>> texture_samplers_;
 };
 } // namespace vkr::resource

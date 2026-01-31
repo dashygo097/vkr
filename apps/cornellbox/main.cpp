@@ -58,6 +58,8 @@ private:
 
     ctx.vertexShaderPath = "shaders/albedo/vert_albedo.spv";
     ctx.fragmentShaderPath = "shaders/albedo/frag_albedo.spv";
+
+    ctx.pipelineMode = vkr::pipeline::PipelineMode::Default3D;
   }
 
   void onSetup() override {

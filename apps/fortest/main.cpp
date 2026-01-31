@@ -7,25 +7,18 @@
 
 class TestApplication : public vkr::VulkanApplication {
 private:
-  const std::vector<vkr::resource::Vertex3D> vertices1 = {
-      {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-      {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-      {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}};
-
-  const std::vector<vkr::resource::Vertex3D> vertices2 = {
-      {{-1.5f, -1.5f, 0.0f}, {0.0f, 0.0f, 0.0f}},
-      {{-0.5f, -1.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-      {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-      {{-1.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}};
+  const std::vector<vkr::resource::VertexTextured3D> vertices1 = {
+      {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+      {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+      {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
 
   const std::vector<uint16_t> indices1 = {0, 1, 2, 2, 3, 0};
-  const std::vector<uint16_t> indices2 = {0, 1, 2, 2, 3, 0};
 
   void createUniforms() override {
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
-    resourceManager->createTextureImage("image1", "assets/image.jpg");
+    resourceManager->createTexture("image1", "assets/image.jpg");
   }
 
   std::vector<vkr::pipeline::DescriptorBinding>
@@ -39,10 +32,17 @@ private:
   void bindDescriptorSets() override {
     auto defaultUBO = resourceManager->getUniformBuffer("default");
     auto textureImage = resourceManager->getTextureImage("image1");
+    auto textureImageView = resourceManager->getTextureImageView("image1");
+    auto textureSampler = resourceManager->getTextureSampler("image1");
     if (defaultUBO && descriptorSets) {
       descriptorSets->bindUniformBuffer(
           0, defaultUBO->buffers(),
           sizeof(vkr::resource::UniformBuffer3DObject));
+    }
+    if (textureImage && descriptorSets) {
+      descriptorSets->bindImageSampler(
+          1, {textureImageView->imageView(), textureImageView->imageView()},
+          textureSampler->sampler());
     }
   }
 
@@ -75,15 +75,16 @@ private:
     ctx.cameraNearPlane = 0.01f;
     ctx.cameraFarPlane = 1000.0f;
 
-    ctx.vertexShaderPath = "shaders/albedo/vert_albedo.spv";
-    ctx.fragmentShaderPath = "shaders/albedo/frag_albedo.spv";
+    ctx.vertexShaderPath = "shaders/texture/vert_texture.spv";
+    ctx.fragmentShaderPath = "shaders/texture/frag_texture.spv";
+
+    ctx.pipelineMode = vkr::pipeline::PipelineMode::Textured3D;
   }
 
   void onSetup() override {
-    resourceManager->createVertexBuffer("vb1", vertices1);
-    resourceManager->createVertexBuffer("vb2", vertices2);
+    resourceManager->createVertexBuffer<vkr::resource::VertexTextured3D>(
+        "vb1", vertices1);
     resourceManager->createIndexBuffer("ib1", indices1);
-    resourceManager->createIndexBuffer("ib2", indices2);
   }
 };
 

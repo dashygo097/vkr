@@ -38,12 +38,23 @@ GraphicsPipeline::GraphicsPipeline(
       VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
   VkVertexInputBindingDescription bindingDescription;
-  std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions;
+  std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 
   switch (mode) {
   case (PipelineMode::Default3D): {
     bindingDescription = resource::Vertex3D::getBindingDescription();
     attributeDescriptions = resource::Vertex3D::getAttributeDescriptions();
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    break;
+  }
+  case (PipelineMode::Textured3D): {
+    bindingDescription = resource::VertexTextured3D::getBindingDescription();
+    attributeDescriptions =
+        resource::VertexTextured3D::getAttributeDescriptions();
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.vertexAttributeDescriptionCount =
         static_cast<uint32_t>(attributeDescriptions.size());
