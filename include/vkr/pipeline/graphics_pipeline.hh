@@ -8,6 +8,7 @@
 namespace vkr::pipeline {
 enum class PipelineMode {
   Default3D,
+  Textured3D,
   NoVertices,
 };
 

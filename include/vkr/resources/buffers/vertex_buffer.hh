@@ -178,9 +178,10 @@ public:
     return bindingDescription;
   }
 
-  static std::array<VkVertexInputAttributeDescription, 2>
+  static std::vector<VkVertexInputAttributeDescription>
   getAttributeDescriptions() {
-    std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+    attributeDescriptions.resize(2);
 
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
@@ -213,9 +214,11 @@ struct VertexNormal3D {
     return bindingDescription;
   }
 
-  static std::array<VkVertexInputAttributeDescription, 3>
+  static std::vector<VkVertexInputAttributeDescription>
   getAttributeDescriptions() {
-    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+    attributeDescriptions.resize(3);
+
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -228,6 +231,7 @@ struct VertexNormal3D {
     attributeDescriptions[2].location = 2;
     attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
     attributeDescriptions[2].offset = offsetof(VertexNormal3D, normal);
+
     return attributeDescriptions;
   }
 };
@@ -250,9 +254,11 @@ struct VertexTextured3D {
     return bindingDescription;
   }
 
-  static std::array<VkVertexInputAttributeDescription, 3>
+  static std::vector<VkVertexInputAttributeDescription>
   getAttributeDescriptions() {
-    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+    attributeDescriptions.resize(3);
+
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -265,6 +271,7 @@ struct VertexTextured3D {
     attributeDescriptions[2].location = 2;
     attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
     attributeDescriptions[2].offset = offsetof(VertexTextured3D, texCoord);
+
     return attributeDescriptions;
   }
 };
@@ -288,9 +295,11 @@ struct VertexNormalTexture3D {
     return bindingDescription;
   }
 
-  static std::array<VkVertexInputAttributeDescription, 4>
+  static std::vector<VkVertexInputAttributeDescription>
   getAttributeDescriptions() {
-    std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+    attributeDescriptions.resize(4);
+
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -307,6 +316,7 @@ struct VertexNormalTexture3D {
     attributeDescriptions[3].location = 3;
     attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
     attributeDescriptions[3].offset = offsetof(VertexNormalTexture3D, texCoord);
+
     return attributeDescriptions;
   }
 };
