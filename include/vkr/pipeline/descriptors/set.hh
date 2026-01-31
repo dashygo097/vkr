@@ -1,6 +1,8 @@
 #pragma once
 #include "../../core/device.hh"
 #include "../../resources/buffers/uniform_buffer.hh"
+#include "../../resources/textures/imageview.hh"
+#include "../../resources/textures/sampler.hh"
 #include "./binding.hh"
 #include "./pool.hh"
 #include "./writer.hh"
@@ -47,7 +49,7 @@ private:
   uint32_t frame_count_{0};
 
   // components
-  std::vector<VkDescriptorSet> sets_;
+  std::vector<VkDescriptorSet> sets_{};
 
   void allocateSets();
 };

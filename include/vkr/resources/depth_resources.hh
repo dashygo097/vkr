@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../core/device.hh"
-#include "../../core/swapchain.hh"
+#include "../core/device.hh"
+#include "../core/swapchain.hh"
 
 namespace vkr::resources {
 class DepthResources {

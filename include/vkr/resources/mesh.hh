@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../../core/command_pool.hh"
-#include "../../core/device.hh"
-#include "../buffers/index_buffer.hh"
-#include "../buffers/vertex_buffer.hh"
+#include "../core/command_pool.hh"
+#include "../core/device.hh"
+#include "./buffers/index_buffer.hh"
+#include "./buffers/vertex_buffer.hh"
 
 namespace vkr::resource {
 

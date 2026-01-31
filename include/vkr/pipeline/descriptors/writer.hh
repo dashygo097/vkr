@@ -30,9 +30,9 @@ private:
   const core::Device &device_;
 
   // components
-  std::vector<VkWriteDescriptorSet> writes_;
-  std::vector<VkDescriptorBufferInfo> buffer_infos_;
-  std::vector<VkDescriptorImageInfo> image_infos_;
+  std::vector<VkWriteDescriptorSet> writes_{};
+  std::vector<VkDescriptorBufferInfo> buffer_infos_{};
+  std::vector<VkDescriptorImageInfo> image_infos_{};
 };
 
 } // namespace vkr::pipeline
