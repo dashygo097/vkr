@@ -75,26 +75,12 @@ private:
                                                           *commandPool);
     shortbox.load("./assets/shortbox.obj");
 
-    resourceManager->createVertexBuffer("light",
-                                        light.vertexBuffer()->vertices());
-    resourceManager->createIndexBuffer("light", light.indexBuffer()->indices());
-    resourceManager->createVertexBuffer("floor",
-                                        floor.vertexBuffer()->vertices());
-    resourceManager->createIndexBuffer("floor", floor.indexBuffer()->indices());
-    resourceManager->createVertexBuffer("left",
-                                        left.vertexBuffer()->vertices());
-    resourceManager->createIndexBuffer("left", left.indexBuffer()->indices());
-    resourceManager->createVertexBuffer("right",
-                                        right.vertexBuffer()->vertices());
-    resourceManager->createIndexBuffer("right", right.indexBuffer()->indices());
-    resourceManager->createVertexBuffer("shortbox",
-                                        shortbox.vertexBuffer()->vertices());
-    resourceManager->createIndexBuffer("shortbox",
-                                       shortbox.indexBuffer()->indices());
-    resourceManager->createVertexBuffer("tallbox",
-                                        tallbox.vertexBuffer()->vertices());
-    resourceManager->createIndexBuffer("tallbox",
-                                       tallbox.indexBuffer()->indices());
+    resourceManager->createMesh("light", light);
+    resourceManager->createMesh("floor", floor);
+    resourceManager->createMesh("left", left);
+    resourceManager->createMesh("right", right);
+    resourceManager->createMesh("tallbox", tallbox);
+    resourceManager->createMesh("shortbox", shortbox);
   }
 };
 
