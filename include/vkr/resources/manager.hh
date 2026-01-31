@@ -4,12 +4,13 @@
 #include "./buffers/index_buffer.hh"
 #include "./buffers/uniform_buffer.hh"
 #include "./buffers/vertex_buffer.hh"
-#include "./geometry/mesh.hh"
-#include "./textures/depth_resources.hh"
+#include "./depth_resources.hh"
+#include "./mesh.hh"
 #include "./textures/image.hh"
 #include "./textures/imageview.hh"
 #include "./textures/sampler.hh"
 #include <memory>
+#include <vector>
 
 namespace vkr::resource {
 
@@ -101,71 +102,81 @@ public:
     createIndexBuffer(name, mesh.indexBuffer()->indices());
   }
 
+  // Texture Managementdevice
+  void createTextureImage(const std::string &name,
+                          const std::string &filePath) {
+    auto image = std::make_shared<Image>(device_, command_pool_);
+    image->create(filePath);
+    texture_images_[name] = std::move(image);
+  }
+
+  std::shared_ptr<Image> getTextureImage(const std::string &name) {
+    auto it = texture_images_.find(name);
+    return it != texture_images_.end() ? it->second : nullptr;
+  }
+
+  void destroyTextureImage(const std::string &name) {
+    texture_images_.erase(name);
+  }
+
   // Utility functions
   size_t vertexBufferCount() const { return vertex_buffers_.size(); }
   size_t indexBufferCount() const { return index_buffers_.size(); }
   size_t uniformBufferCount() const { return uniform_buffers_.size(); }
   size_t framebufferCount() const { return frame_buffers_.size(); }
+  size_t textureImageCount() const { return texture_images_.size(); }
 
   // List all resources
+  template <typename ResourceType>
+  std::vector<std::shared_ptr<ResourceType>> listResources(
+      const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
+          &resource_map) const {
+    std::vector<std::shared_ptr<ResourceType>> resources;
+    for (const auto &[_, resource] : resource_map) {
+      resources.push_back(resource);
+    }
+    return resources;
+  }
+  template <typename ResourceType>
+  std::vector<std::string> listResourceNames(
+      const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
+          &resource_map) const {
+    std::vector<std::string> names;
+    for (const auto &[name, _] : resource_map) {
+      names.push_back(name);
+    }
+    return names;
+  }
+
   std::vector<std::shared_ptr<IVertexBuffer>> listVertexBuffers() const {
-    std::vector<std::shared_ptr<IVertexBuffer>> buffers;
-    for (const auto &[_, buffer] : vertex_buffers_) {
-      buffers.push_back(buffer);
-    }
-    return buffers;
+    return listResources<IVertexBuffer>(vertex_buffers_);
   }
-  std::vector<std::string> listVertexBufferName() const {
-    std::vector<std::string> names;
-    for (const auto &[name, _] : vertex_buffers_) {
-      names.push_back(name);
-    }
-    return names;
+  std::vector<std::string> listVertexBufferNames() const {
+    return listResourceNames<IVertexBuffer>(vertex_buffers_);
   }
-
   std::vector<std::shared_ptr<IndexBuffer>> listIndexBuffers() const {
-    std::vector<std::shared_ptr<IndexBuffer>> buffers;
-    for (const auto &[_, buffer] : index_buffers_) {
-      buffers.push_back(buffer);
-    }
-    return buffers;
+    return listResources<IndexBuffer>(index_buffers_);
   }
-  std::vector<std::string> listIndexBufferName() const {
-    std::vector<std::string> names;
-    for (const auto &[name, _] : index_buffers_) {
-      names.push_back(name);
-    }
-    return names;
+  std::vector<std::string> listIndexBufferNames() const {
+    return listResourceNames<IndexBuffer>(index_buffers_);
   }
-
   std::vector<std::shared_ptr<IUniformBuffer>> listUniformBuffers() const {
-    std::vector<std::shared_ptr<IUniformBuffer>> buffers;
-    for (const auto &[_, buffer] : uniform_buffers_) {
-      buffers.push_back(buffer);
-    }
-    return buffers;
+    return listResources<IUniformBuffer>(uniform_buffers_);
   }
-  std::vector<std::string> listUniformBufferName() const {
-    std::vector<std::string> names;
-    for (const auto &[name, _] : uniform_buffers_) {
-      names.push_back(name);
-    }
-    return names;
+  std::vector<std::string> listUniformBufferNames() const {
+    return listResourceNames<IUniformBuffer>(uniform_buffers_);
   }
-
   std::vector<std::shared_ptr<Framebuffers>> listFramebuffers() const {
-    std::vector<std::shared_ptr<Framebuffers>> buffers;
-    for (const auto &[_, buffer] : frame_buffers_) {
-      buffers.push_back(buffer);
-    }
-    return buffers;
+    return listResources<Framebuffers>(frame_buffers_);
   }
-  std::vector<std::string> listFramebufferName() const {
-    std::vector<std::string> names;
-    for (const auto &[name, _] : frame_buffers_) {
-      names.push_back(name);
-    }
-    return names;
+  std::vector<std::string> listFramebufferNames() const {
+    return listResourceNames<Framebuffers>(frame_buffers_);
+  }
+  std::vector<std::shared_ptr<Image>> listTextureImages() const {
+    return listResources<Image>(texture_images_);
+  }
+  std::vector<std::string> listTextureImageNames() const {
+    return listResourceNames<Image>(texture_images_);
   }
 
 private:
@@ -182,5 +193,6 @@ private:
   std::unordered_map<std::string, std::shared_ptr<IUniformBuffer>>
       uniform_buffers_;
   std::unordered_map<std::string, std::shared_ptr<Framebuffers>> frame_buffers_;
+  std::unordered_map<std::string, std::shared_ptr<Image>> texture_images_;
 };
 } // namespace vkr::resource

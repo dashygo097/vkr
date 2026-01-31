@@ -25,16 +25,20 @@ private:
   void createUniforms() override {
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
+    resourceManager->createTextureImage("image1", "assets/image.jpg");
   }
 
   std::vector<vkr::pipeline::DescriptorBinding>
   createDescriptorBindings() override {
     return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
-             VK_SHADER_STAGE_VERTEX_BIT}};
+             VK_SHADER_STAGE_VERTEX_BIT},
+            {1, vkr::pipeline::DescriptorType::CombinedImageSampler, 1,
+             VK_SHADER_STAGE_FRAGMENT_BIT}};
   }
 
   void bindDescriptorSets() override {
     auto defaultUBO = resourceManager->getUniformBuffer("default");
+    auto textureImage = resourceManager->getTextureImage("image1");
     if (defaultUBO && descriptorSets) {
       descriptorSets->bindUniformBuffer(
           0, defaultUBO->buffers(),
