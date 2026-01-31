@@ -36,10 +36,10 @@ void Image::create(const std::string &imageFilePath) {
   stbi_image_free(pixels);
 
   // Create the image
-  createImage(static_cast<uint32_t>(_width), static_cast<uint32_t>(_height),
-              VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-              VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_image_, vk_memory_);
+  create(static_cast<uint32_t>(_width), static_cast<uint32_t>(_height),
+         VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   // Transition image layout and copy buffer to image
   transitionImageLayout(vk_image_, VK_FORMAT_R8G8B8A8_SRGB,
@@ -74,10 +74,9 @@ void Image::update(const std::string &imageFilePath) {
   create(imageFilePath);
 }
 
-void Image::createImage(uint32_t width, uint32_t height, VkFormat format,
-                        VkImageTiling tiling, VkImageUsageFlags usage,
-                        VkMemoryPropertyFlags properties, VkImage &image,
-                        VkDeviceMemory &imageMemory) {
+void Image::create(uint32_t width, uint32_t height, VkFormat format,
+                   VkImageTiling tiling, VkImageUsageFlags usage,
+                   VkMemoryPropertyFlags properties) {
   VkImageCreateInfo imageInfo{};
   imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -93,13 +92,13 @@ void Image::createImage(uint32_t width, uint32_t height, VkFormat format,
   imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
   imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-  if (vkCreateImage(device_.device(), &imageInfo, nullptr, &image) !=
+  if (vkCreateImage(device_.device(), &imageInfo, nullptr, &vk_image_) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create image!");
   }
 
   VkMemoryRequirements memRequirements;
-  vkGetImageMemoryRequirements(device_.device(), image, &memRequirements);
+  vkGetImageMemoryRequirements(device_.device(), vk_image_, &memRequirements);
 
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -107,12 +106,12 @@ void Image::createImage(uint32_t width, uint32_t height, VkFormat format,
   allocInfo.memoryTypeIndex = findMemoryType(
       memRequirements.memoryTypeBits, properties, device_.physicalDevice());
 
-  if (vkAllocateMemory(device_.device(), &allocInfo, nullptr, &imageMemory) !=
+  if (vkAllocateMemory(device_.device(), &allocInfo, nullptr, &vk_memory_) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to allocate image memory!");
   }
 
-  vkBindImageMemory(device_.device(), image, imageMemory, 0);
+  vkBindImageMemory(device_.device(), vk_image_, vk_memory_, 0);
 }
 
 void Image::transitionImageLayout(VkImage image, VkFormat format,

@@ -14,6 +14,9 @@ public:
   Image(const Image &) = delete;
   Image &operator=(const Image &) = delete;
 
+  void create(uint32_t width, uint32_t height, VkFormat format,
+              VkImageTiling tiling, VkImageUsageFlags usage,
+              VkMemoryPropertyFlags properties);
   void create(const std::string &imageFilePath);
   void destroy();
   void update(const std::string &imageFilePath);
@@ -35,11 +38,6 @@ private:
   int _channels{0};
   VkImage vk_image_{VK_NULL_HANDLE};
   VkDeviceMemory vk_memory_{VK_NULL_HANDLE};
-
-  void createImage(uint32_t width, uint32_t height, VkFormat format,
-                   VkImageTiling tiling, VkImageUsageFlags usage,
-                   VkMemoryPropertyFlags properties, VkImage &image,
-                   VkDeviceMemory &imageMemory);
 
   void transitionImageLayout(VkImage image, VkFormat format,
                              VkImageLayout oldLayout, VkImageLayout newLayout);
