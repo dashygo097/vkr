@@ -1,5 +1,5 @@
 #include "vkr/pipeline/descriptors/set.hh"
-#include <stdexcept>
+#include "vkr/logger.hh"
 
 namespace vkr::pipeline {
 
@@ -30,8 +30,8 @@ void DescriptorSets::allocateSets() {
   VkResult result =
       vkAllocateDescriptorSets(device_.device(), &allocInfo, sets_.data());
   if (result != VK_SUCCESS) {
-    throw std::runtime_error("Failed to allocate descriptor sets.  VkResult: " +
-                             std::to_string(result));
+    VKR_PIPE_ERROR("Failed to allocate descriptor sets. VkResult: {}",
+                   std::to_string(result));
   }
 }
 
@@ -39,7 +39,8 @@ void DescriptorSets::bindUniformBuffer(uint32_t binding,
                                        const std::vector<VkBuffer> &buffers,
                                        VkDeviceSize size, VkDeviceSize offset) {
   if (buffers.size() != frame_count_) {
-    throw std::runtime_error("Buffer count must match frame count");
+    VKR_PIPE_ERROR("Buffer count must match frame count({} vs {})",
+                   buffers.size(), frame_count_);
   }
 
   for (uint32_t i = 0; i < frame_count_; ++i) {
@@ -58,7 +59,8 @@ void DescriptorSets::bindStorageBuffer(uint32_t binding,
                                        const std::vector<VkBuffer> &buffers,
                                        VkDeviceSize size, VkDeviceSize offset) {
   if (buffers.size() != frame_count_) {
-    throw std::runtime_error("Buffer count must match frame count");
+    VKR_PIPE_ERROR("Buffer count must match frame count({} vs {})",
+                   buffers.size(), frame_count_);
   }
 
   for (uint32_t i = 0; i < frame_count_; ++i) {
@@ -77,7 +79,8 @@ void DescriptorSets::bindImageSampler(
     uint32_t binding, const std::vector<VkImageView> &imageViews,
     VkSampler sampler, VkImageLayout layout) {
   if (imageViews.size() != frame_count_) {
-    throw std::runtime_error("Image view count must match frame count");
+    VKR_PIPE_ERROR("Image view count must match frame count({} vs {})",
+                   imageViews.size(), frame_count_);
   }
 
   for (uint32_t i = 0; i < frame_count_; ++i) {
@@ -96,7 +99,7 @@ void DescriptorSets::bindImageSampler(
 void DescriptorSets::bindToFrame(uint32_t frameIndex,
                                  DescriptorWriter &writer) {
   if (frameIndex >= frame_count_) {
-    throw std::runtime_error("Frame index out of bounds");
+    VKR_PIPE_ERROR("Frame index out of bounds: {}", frameIndex);
   }
   writer.update(sets_[frameIndex]);
 }
@@ -104,7 +107,7 @@ void DescriptorSets::bindToFrame(uint32_t frameIndex,
 void DescriptorSets::bind(VkCommandBuffer cmd, VkPipelineLayout layout,
                           uint32_t frameIndex, VkPipelineBindPoint bindPoint) {
   if (frameIndex >= frame_count_) {
-    throw std::runtime_error("Frame index out of bounds");
+    VKR_PIPE_ERROR("Frame index out of bounds: {}", frameIndex);
   }
   vkCmdBindDescriptorSets(cmd, bindPoint, layout, 0, 1, &sets_[frameIndex], 0,
                           nullptr);

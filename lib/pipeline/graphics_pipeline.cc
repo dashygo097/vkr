@@ -1,4 +1,5 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
+#include "vkr/logger.hh"
 #include "vkr/pipeline/shader_module.hh"
 #include "vkr/resources/buffers/vertex_buffer.hh"
 
@@ -12,6 +13,8 @@ GraphicsPipeline::GraphicsPipeline(
     PipelineMode mode)
     : device_(device), resource_manager_(resourceManager),
       render_pass_(renderPass), descriptor_set_layout_(descriptorSetLayout) {
+  VKR_PIPE_INFO("Creating graphics pipeline...");
+
   ShaderModule vertShader(device, vertShaderPath);
   ShaderModule fragShader(device, fragShaderPath);
 
@@ -49,6 +52,7 @@ GraphicsPipeline::GraphicsPipeline(
         static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    VKR_PIPE_TRACE("Using Default3D vertex input descriptions.");
     break;
   }
   case (PipelineMode::Textured3D): {
@@ -60,6 +64,7 @@ GraphicsPipeline::GraphicsPipeline(
         static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    VKR_PIPE_TRACE("Using Textured3D vertex input descriptions.");
     break;
   }
   case (PipelineMode::NoVertices): {
@@ -67,6 +72,7 @@ GraphicsPipeline::GraphicsPipeline(
     vertexInputInfo.pVertexBindingDescriptions = nullptr;
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
     vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+    VKR_PIPE_TRACE("Using NoVertices pipeline mode.");
     break;
   }
   }
@@ -137,7 +143,7 @@ GraphicsPipeline::GraphicsPipeline(
 
   if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr,
                              &vk_pipeline_layout_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create pipeline layout!");
+    VKR_PIPE_ERROR("Failed to create pipeline layout!");
   }
 
   VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -159,8 +165,10 @@ GraphicsPipeline::GraphicsPipeline(
   if (vkCreateGraphicsPipelines(device.device(), VK_NULL_HANDLE, 1,
                                 &pipelineInfo, nullptr,
                                 &vk_graphics_pipeline) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create graphics pipeline!");
+    VKR_PIPE_ERROR("Failed to create graphics pipeline!");
   }
+
+  VKR_PIPE_INFO("Graphics pipeline created successfully.");
 }
 
 GraphicsPipeline::~GraphicsPipeline() {

@@ -1,4 +1,5 @@
 #include "vkr/pipeline/descriptors/pool.hh"
+#include "vkr/logger.hh"
 #include <stdexcept>
 
 namespace vkr::pipeline {
@@ -6,6 +7,7 @@ namespace vkr::pipeline {
 DescriptorPool::DescriptorPool(const core::Device &device, uint32_t maxSets,
                                const DescriptorPoolSizes &sizes)
     : device_(device), max_sets_(maxSets) {
+  VKR_PIPE_INFO("Creating descriptor pool...(maxSets={})", maxSets);
 
   std::vector<VkDescriptorPoolSize> poolSizes;
 
@@ -44,9 +46,11 @@ DescriptorPool::DescriptorPool(const core::Device &device, uint32_t maxSets,
   VkResult result =
       vkCreateDescriptorPool(device.device(), &poolInfo, nullptr, &pool_);
   if (result != VK_SUCCESS) {
-    throw std::runtime_error("Failed to create descriptor pool. VkResult: " +
-                             std::to_string(result));
+    VKR_PIPE_ERROR("Failed to create descriptor pool. VkResult: {}",
+                   std::to_string(result));
   }
+
+  VKR_PIPE_INFO("Descriptor pool created successfully.");
 }
 
 DescriptorPool::~DescriptorPool() { cleanup(); }

@@ -34,6 +34,30 @@ struct DescriptorBinding {
       return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     }
   }
+
+  [[nodiscard]] std::string toString() const noexcept {
+    std::string typeStr;
+    switch (type) {
+    case DescriptorType::UniformBuffer:
+      typeStr = "uniform";
+      break;
+    case DescriptorType::StorageBuffer:
+      typeStr = "storage";
+      break;
+    case DescriptorType::CombinedImageSampler:
+      typeStr = "combined image sampler";
+    case DescriptorType::StorageImage:
+      typeStr = "storage image";
+      break;
+    case DescriptorType::InputAttachment:
+      typeStr = "input attachment";
+      break;
+    }
+
+    return "layout(binding=" + std::to_string(binding) + ", type=" + typeStr +
+           ", count=" + std::to_string(count) +
+           ", stageFlags=" + std::to_string(stageFlags) + ")";
+  }
 };
 
 class DescriptorSetLayout {
