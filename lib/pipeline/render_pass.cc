@@ -1,10 +1,13 @@
 #include "vkr/pipeline/render_pass.hh"
+#include "vkr/logger.hh"
 #include "vkr/resources/depth_resources.hh"
 
 namespace vkr::pipeline {
 RenderPass::RenderPass(const core::Device &device,
                        const core::Swapchain &swapchain)
     : device_(device), swapchain_(swapchain) {
+  VKR_PIPE_INFO("Creating render pass...");
+
   VkAttachmentDescription colorAttachment{};
   colorAttachment.format = swapchain_.format();
   colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -64,8 +67,10 @@ RenderPass::RenderPass(const core::Device &device,
 
   if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr,
                          &vk_render_pass_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create render pass!");
+    VKR_PIPE_ERROR("Failed to create render pass!");
   }
+
+  VKR_PIPE_INFO("Render pass created successfully.");
 }
 
 RenderPass::~RenderPass() {

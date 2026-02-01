@@ -1,23 +1,27 @@
 #include "vkr/pipeline/descriptors/binding.hh"
-#include <stdexcept>
+#include "vkr/logger.hh"
 
 namespace vkr::pipeline {
 
 DescriptorSetLayout::DescriptorSetLayout(
     const core::Device &device, const std::vector<DescriptorBinding> &bindings)
     : device_(device), bindings_(bindings) {
+  VKR_PIPE_INFO("Creating descriptor set layout({} bindings)", bindings.size());
 
   std::vector<VkDescriptorSetLayoutBinding> vkBindings;
   vkBindings.reserve(bindings.size());
 
   for (const auto &binding : bindings) {
     VkDescriptorSetLayoutBinding vkBinding{};
+
     vkBinding.binding = binding.binding;
     vkBinding.descriptorType = binding.toVkType();
     vkBinding.descriptorCount = binding.count;
     vkBinding.stageFlags = binding.stageFlags;
     vkBinding.pImmutableSamplers = nullptr;
     vkBindings.push_back(vkBinding);
+
+    VKR_PIPE_TRACE("Added binding: {}", binding.toString());
   }
 
   VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -28,10 +32,11 @@ DescriptorSetLayout::DescriptorSetLayout(
   VkResult result = vkCreateDescriptorSetLayout(device.device(), &layoutInfo,
                                                 nullptr, &layout_);
   if (result != VK_SUCCESS) {
-    throw std::runtime_error(
-        "Failed to create descriptor set layout. VkResult: " +
-        std::to_string(result));
+    VKR_PIPE_ERROR("Failed to create descriptor set layout! VkResult: {}",
+                   std::to_string(result));
   }
+
+  VKR_PIPE_INFO("Descriptor set layout created successfully.");
 }
 
 DescriptorSetLayout::~DescriptorSetLayout() { cleanup(); }

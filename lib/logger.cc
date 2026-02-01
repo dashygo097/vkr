@@ -7,6 +7,7 @@ namespace vkr {
 
 std::shared_ptr<spdlog::logger> Logger::core_logger_;
 std::shared_ptr<spdlog::logger> Logger::resource_logger_;
+std::shared_ptr<spdlog::logger> Logger::pipeline_logger_;
 
 void Logger::init() {
   std::vector<spdlog::sink_ptr> sinks;
@@ -30,9 +31,12 @@ void Logger::init() {
       std::make_shared<spdlog::logger>("core", sinks.begin(), sinks.end());
   resource_logger_ =
       std::make_shared<spdlog::logger>("resource", sinks.begin(), sinks.end());
+  pipeline_logger_ =
+      std::make_shared<spdlog::logger>("pipeline", sinks.begin(), sinks.end());
 
   // Set levels
   core_logger_->set_level(spdlog::level::trace);
   resource_logger_->set_level(spdlog::level::trace);
+  pipeline_logger_->set_level(spdlog::level::trace);
 }
 } // namespace vkr

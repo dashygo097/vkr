@@ -53,10 +53,14 @@ public:
   static std::shared_ptr<spdlog::logger> &getResourceLogger() {
     return resource_logger_;
   }
+  static std::shared_ptr<spdlog::logger> &getPipelineLogger() {
+    return pipeline_logger_;
+  }
 
 private:
   static std::shared_ptr<spdlog::logger> core_logger_;
   static std::shared_ptr<spdlog::logger> resource_logger_;
+  static std::shared_ptr<spdlog::logger> pipeline_logger_;
 };
 } // namespace vkr
 
@@ -81,5 +85,19 @@ private:
 #define VKR_RES_ERROR(...)                                                     \
   do {                                                                         \
     ::vkr::Logger::getResourceLogger()->error(__VA_ARGS__);                    \
+    std::abort();                                                              \
+  } while (0);
+
+#define VKR_PIPE_TRACE(...)                                                    \
+  ::vkr::Logger::getPipelineLogger()->trace(__VA_ARGS__);
+#define VKR_PIPE_INFO(...)                                                     \
+  ::vkr::Logger::getPipelineLogger()->info(__VA_ARGS__);
+#define VKR_PIPE_WARN(...)                                                     \
+  ::vkr::Logger::getPipelineLogger()->warn(__VA_ARGS__);
+#define VKR_PIPE_CRIT(...)                                                     \
+  ::vkr::Logger::getPipelineLogger()->critical(__VA_ARGS__);
+#define VKR_PIPE_ERROR(...)                                                    \
+  do {                                                                         \
+    ::vkr::Logger::getPipelineLogger()->error(__VA_ARGS__);                    \
     std::abort();                                                              \
   } while (0);
