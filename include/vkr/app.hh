@@ -2,6 +2,7 @@
 
 #include "./core/core.hh"
 #include "./ctx.hh"
+#include "./logger.hh"
 #include "./pipeline/graphics_pipeline.hh"
 #include "./rendering/renderer.hh"
 #include "./resources/manager.hh"

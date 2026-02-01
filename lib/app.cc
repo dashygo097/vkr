@@ -6,6 +6,7 @@
 namespace vkr {
 
 void VulkanApplication::initVulkan() {
+  Logger::init();
   // window
   window = std::make_unique<core::Window>(ctx.title, ctx.width, ctx.height);
   glfwSetWindowUserPointer(window->glfwWindow(), this);

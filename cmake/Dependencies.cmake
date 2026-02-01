@@ -40,6 +40,7 @@ add_subdirectory(3rdparty/glm EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/imgui EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/stb EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/tinyobjloader EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/spdlog EXCLUDE_FROM_ALL)
 
 if (TARGET glfw)
   set(HAS_GLFW TRUE)
