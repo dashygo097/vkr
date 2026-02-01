@@ -1,4 +1,5 @@
 #include "vkr/resources/buffers/frame_buffer.hh"
+#include "vkr/logger.hh"
 
 namespace vkr::resource {
 
@@ -31,7 +32,7 @@ void Framebuffers::create() {
 
     if (vkCreateFramebuffer(device_.device(), &framebufferInfo, nullptr,
                             &vk_framebuffers_[i]) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create framebuffer!");
+      VKR_RES_ERROR("Failed to create framebuffer!");
     }
   }
 }

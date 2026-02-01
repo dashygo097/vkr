@@ -1,10 +1,11 @@
 #include "vkr/core/command_pool.hh"
 #include "vkr/core/queue_families.hh"
+#include "vkr/logger.hh"
 
 namespace vkr::core {
 CommandPool::CommandPool(const Device &device, const Surface &surface)
     : device_(device), surface_(surface) {
-
+  VKR_CORE_INFO("Creating command pool...");
   QueueFamilyIndices queueFamilyIndices(surface, device.physicalDevice());
 
   VkCommandPoolCreateInfo poolInfo{};
@@ -14,8 +15,10 @@ CommandPool::CommandPool(const Device &device, const Surface &surface)
 
   if (vkCreateCommandPool(device.device(), &poolInfo, nullptr,
                           &vk_command_pool_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create command pool!");
+    VKR_CORE_ERROR("Failed to create command pool!");
   }
+
+  VKR_CORE_INFO("Command pool created successfully.");
 }
 
 CommandPool::~CommandPool() {

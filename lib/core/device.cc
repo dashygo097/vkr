@@ -1,6 +1,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
 #include "vkr/core/queue_families.hh"
+#include "vkr/logger.hh"
 #include <set>
 
 namespace vkr::core {
@@ -8,8 +9,17 @@ Device::Device(const Instance &instance, const Surface &surface,
                const std::vector<const char *> &deviceExtensions,
                const std::vector<const char *> &validationLayers)
     : instance_(instance), surface_(surface) {
+  VKR_CORE_INFO("Creating logical device...");
+
   pickPhysicalDevice();
+
   createLogicalDevice(deviceExtensions, validationLayers);
+
+  for (const auto &ext : deviceExtensions) {
+    VKR_CORE_TRACE("Enabled Extension: {}", ext);
+  }
+
+  VKR_CORE_INFO("Logical device created successfully.");
 }
 
 Device::~Device() {
@@ -28,9 +38,10 @@ void Device::waitIdle() {
 void Device::pickPhysicalDevice() {
   uint32_t deviceCount = 0;
   vkEnumeratePhysicalDevices(instance_.instance(), &deviceCount, nullptr);
+  VKR_CORE_INFO("Found {} Vulkan-compatible device(s): ", deviceCount);
 
   if (deviceCount == 0) {
-    throw std::runtime_error("failed to find GPUs with Vulkan support!");
+    VKR_CORE_ERROR("Failed to find Devices with Vulkan support!");
   }
 
   std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -38,8 +49,24 @@ void Device::pickPhysicalDevice() {
                              devices.data());
 
   for (const auto &device : devices) {
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    VKR_CORE_INFO("--- Device FOUND: {} ---", deviceProperties.deviceName);
+    VKR_CORE_TRACE("  -- API Version: {}.{}.{}",
+                   VK_VERSION_MAJOR(deviceProperties.apiVersion),
+                   VK_VERSION_MINOR(deviceProperties.apiVersion),
+                   VK_VERSION_PATCH(deviceProperties.apiVersion));
+    VKR_CORE_TRACE("  -- Driver Version: {}.{}.{}",
+                   VK_VERSION_MAJOR(deviceProperties.driverVersion),
+                   VK_VERSION_MINOR(deviceProperties.driverVersion),
+                   VK_VERSION_PATCH(deviceProperties.driverVersion));
+    VKR_CORE_TRACE("  -- Vendor ID: {:#06x}", deviceProperties.vendorID);
+    VKR_CORE_TRACE("  -- Device ID: {:#06x}", deviceProperties.deviceID);
+
     if (isSuitable(device)) {
       vk_physical_device_ = device;
+      VKR_CORE_INFO("Selected device: {}", deviceProperties.deviceName);
       break;
     }
   }
@@ -92,7 +119,7 @@ void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
 
   if (vkCreateDevice(vk_physical_device_, &createInfo, nullptr,
                      &vk_logical_device_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create logical device!");
+    VKR_CORE_ERROR("Failed to create logical device!");
   }
 
   vkGetDeviceQueue(vk_logical_device_, indices.graphicsFamily(), 0,

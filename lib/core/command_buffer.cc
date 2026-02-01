@@ -1,10 +1,12 @@
 #include "vkr/core/command_buffer.hh"
+#include "vkr/logger.hh"
 
 namespace vkr::core {
 
 CommandBuffers::CommandBuffers(const Device &device,
                                const CommandPool &commandPool)
     : device_(device), commandPool_(commandPool) {
+  VKR_CORE_INFO("Creating command buffers...");
   vk_command_buffers_.resize(MAX_FRAMES_IN_FLIGHT);
 
   VkCommandBufferAllocateInfo allocInfo{};
@@ -16,8 +18,10 @@ CommandBuffers::CommandBuffers(const Device &device,
 
   if (vkAllocateCommandBuffers(device.device(), &allocInfo,
                                vk_command_buffers_.data()) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate command buffers!");
+    VKR_CORE_ERROR("Failed to allocate command buffers!");
   }
+
+  VKR_CORE_INFO("Command buffers created successfully.");
 }
 
 CommandBuffers::~CommandBuffers() {

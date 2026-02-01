@@ -2,6 +2,7 @@
 
 #include "../core/command_pool.hh"
 #include "../core/device.hh"
+#include "../logger.hh"
 #include "./buffers/index_buffer.hh"
 #include "./buffers/vertex_buffer.hh"
 
@@ -65,7 +66,7 @@ private:
 
   void checkDataLoaded() {
     if (!vertex_buffer_ || !index_buffer_) {
-      throw std::runtime_error("Vertex or index buffer is not initialized");
+      VKR_RES_ERROR("Vertex or index buffer is not initialized!");
     }
   }
 };

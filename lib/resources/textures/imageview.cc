@@ -1,4 +1,5 @@
 #include "vkr/resources/textures/imageview.hh"
+#include "vkr/logger.hh"
 
 namespace vkr::resource {
 ImageView::ImageView(const core::Device &device) : device_(device) {}
@@ -20,7 +21,7 @@ void ImageView::create(const Image &image, VkFormat format,
 
   if (vkCreateImageView(device_.device(), &viewInfo, nullptr, &vk_imageview_) !=
       VK_SUCCESS) {
-    throw std::runtime_error("failed to create image view!");
+    VKR_RES_ERROR("Failed to create image view!");
   }
 }
 void ImageView::destroy() {

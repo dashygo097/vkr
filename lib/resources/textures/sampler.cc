@@ -1,4 +1,5 @@
 #include "vkr/resources/textures/sampler.hh"
+#include "vkr/logger.hh"
 
 namespace vkr::resource {
 
@@ -23,7 +24,7 @@ Sampler::Sampler(const core::Device &device) : device_(device) {
 
   if (vkCreateSampler(device_.device(), &samplerInfo, nullptr, &_vk_sampler_) !=
       VK_SUCCESS) {
-    throw std::runtime_error("failed to create texture sampler!");
+    VKR_RES_ERROR("Failed to create texture sampler!");
   }
 }
 

@@ -1,11 +1,14 @@
 #include "vkr/core/swapchain.hh"
 #include "vkr/core/queue_families.hh"
+#include "vkr/logger.hh"
 
 namespace vkr::core {
 Swapchain::Swapchain(const Window &window, const Device &device,
                      const Surface &surface)
     : window_(window), device_(device), surface_(surface) {
+  VKR_CORE_INFO("Creating initial swapchain...");
   create();
+  VKR_CORE_INFO("Initial swapchain created successfully.");
 }
 
 Swapchain::~Swapchain() { destroy(); }
