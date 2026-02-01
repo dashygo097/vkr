@@ -106,8 +106,6 @@ private:
   void onConfigure() override {
     ctx.appName = "ShaderToy";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
-    ctx.engineName = "No Engine";
-    ctx.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 
     ctx.width = config.width;
     ctx.height = config.height;

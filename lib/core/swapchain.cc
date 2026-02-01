@@ -45,8 +45,8 @@ void Swapchain::create() {
   createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
   QueueFamilyIndices indices(surface_, device_.physicalDevice());
-  uint32_t queueFamilyIndices[] = {indices.graphicsFamily().value(),
-                                   indices.presentFamily().value()};
+  uint32_t queueFamilyIndices[] = {indices.graphicsFamily(),
+                                   indices.presentFamily()};
 
   if (indices.graphicsFamily() != indices.presentFamily()) {
     createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;

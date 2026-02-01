@@ -7,7 +7,7 @@ namespace vkr::core {
 
 class Surface {
 public:
-  explicit Surface(const Window &window, const Instance &instance);
+  explicit Surface(const Instance &instance, const Window &window);
   ~Surface();
 
   Surface(const Surface &) = delete;

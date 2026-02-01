@@ -25,7 +25,7 @@ private:
   void createUniforms() override {
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
-    resourceManager->createTexture("image1", "assets/image.jpg");
+    resourceManager->createTexture("image1", "assets/textures/image.jpg");
   }
 
   std::vector<vkr::pipeline::DescriptorBinding>
@@ -67,8 +67,6 @@ private:
 
     ctx.appName = "Vulkan App";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
-    ctx.engineName = "No Engine";
-    ctx.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 
     ctx.width = 640;
     ctx.height = 480;
