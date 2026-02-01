@@ -1,5 +1,4 @@
 #include "vkr/resources/mesh.hh"
-#include <iostream>
 #include <tiny_obj_loader.h>
 
 namespace vkr::resource {
@@ -19,15 +18,15 @@ template <> void Mesh<Vertex3D>::load(const std::string &meshFilePath) {
                                   meshFilePath.c_str(), basepath, true);
 
   if (!warn.empty()) {
-    std::cout << "OBJ warning: " << warn << std::endl;
+    VKR_RES_WARN("OBJ warning: {}", warn)
   }
 
   if (!err.empty()) {
-    std::cerr << "OBJ error: " << err << std::endl;
+    VKR_RES_ERROR("OBJ error: {}", err);
   }
 
   if (!success) {
-    throw std::runtime_error("Failed to load OBJ file: " + meshFilePath);
+    VKR_RES_ERROR("Failed to load OBJ file: {}", meshFilePath);
   }
 
   // Parse loaded data
@@ -78,8 +77,8 @@ template <> void Mesh<Vertex3D>::load(const std::string &meshFilePath) {
     update(vertices, indices);
   }
 
-  std::cout << "Loaded mesh: " << vertices.size() << " vertices, "
-            << indices.size() << " indices" << std::endl;
+  VKR_RES_INFO("Loaded mesh: {} vertices, {} indices", vertices.size(),
+               indices.size());
 }
 
 } // namespace vkr::resource

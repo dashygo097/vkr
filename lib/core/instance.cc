@@ -1,14 +1,18 @@
 #include "vkr/core/instance.hh"
 #include "vkr/core/core_utils.hh"
+#include "vkr/logger.hh"
 
 namespace vkr::core {
 Instance::Instance(const std::string appName, uint32_t appVersion,
                    const std::vector<const char *> &preExtensions,
                    const std::vector<const char *> &validationLayers) {
+  VKR_CORE_INFO("Creating Vulkan Instance: {} ({}.{}.{})...", appName,
+                VK_VERSION_MAJOR(appVersion), VK_VERSION_MINOR(appVersion),
+                VK_VERSION_PATCH(appVersion));
 
 #ifndef NDEBUG
   if (!checkValidationLayerSupport(validationLayers)) {
-    throw std::runtime_error("validation layers requested, but not available!");
+    VKR_CORE_ERROR("validation layers requested, but not available!");
   }
 #endif
 
@@ -43,12 +47,18 @@ Instance::Instance(const std::string appName, uint32_t appVersion,
 #endif
 
   if (vkCreateInstance(&createInfo, nullptr, &vk_instance_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create instance!");
+    VKR_CORE_ERROR("failed to create instance!");
   }
 
 #ifndef NDEBUG
   debug_messenger_ = std::make_unique<DebugMessenger>(vk_instance_);
 #endif
+
+  for (const auto &ext : extensions) {
+    VKR_CORE_TRACE("Enabled Extension: {}", ext);
+  }
+
+  VKR_CORE_INFO("Vulkan Instance created successfully.");
 }
 
 Instance::~Instance() {

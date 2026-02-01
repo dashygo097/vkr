@@ -1,4 +1,5 @@
 #include "vkr/resources/textures/image.hh"
+#include "vkr/logger.hh"
 #include "vkr/resources/buffers/buffer_utils.hh"
 
 namespace vkr::resource {
@@ -15,7 +16,7 @@ void Image::create(const std::string &imageFilePath) {
   VkDeviceSize imageSize = _width * _height * 4;
 
   if (!pixels) {
-    throw std::runtime_error("failed to load texture image!");
+    VKR_RES_ERROR("Failed to load texture image from file: {}!", imageFilePath);
   }
 
   // Create staging buffer
@@ -94,7 +95,7 @@ void Image::create(uint32_t width, uint32_t height, VkFormat format,
 
   if (vkCreateImage(device_.device(), &imageInfo, nullptr, &vk_image_) !=
       VK_SUCCESS) {
-    throw std::runtime_error("failed to create image!");
+    VKR_RES_ERROR("Failed to create image!");
   }
 
   VkMemoryRequirements memRequirements;
@@ -108,7 +109,7 @@ void Image::create(uint32_t width, uint32_t height, VkFormat format,
 
   if (vkAllocateMemory(device_.device(), &allocInfo, nullptr, &vk_memory_) !=
       VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate image memory!");
+    VKR_RES_ERROR("Failed to allocate image memory!");
   }
 
   vkBindImageMemory(device_.device(), vk_image_, vk_memory_, 0);
@@ -150,7 +151,7 @@ void Image::transitionImageLayout(VkImage image, VkFormat format,
     sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   } else {
-    throw std::invalid_argument("unsupported layout transition!");
+    VKR_RES_ERROR("Unsupported layout transition!");
   }
 
   vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,

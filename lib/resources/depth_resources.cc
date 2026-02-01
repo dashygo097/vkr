@@ -1,4 +1,5 @@
 #include "vkr/resources/depth_resources.hh"
+#include "vkr/logger.hh"
 
 namespace vkr::resource {
 DepthResources::DepthResources(const core::Device &device,
@@ -32,7 +33,7 @@ VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice,
     }
   }
 
-  throw std::runtime_error("failed to find supported format!");
+  VKR_RES_ERROR("failed to find supported format!");
 }
 
 VkFormat findDepthFormat(VkPhysicalDevice physicalDevice) {

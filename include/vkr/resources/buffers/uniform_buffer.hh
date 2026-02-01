@@ -2,6 +2,7 @@
 
 #include "../../core/command_buffer.hh"
 #include "../../core/device.hh"
+#include "../../logger.hh"
 #include "./buffer_utils.hh"
 #include <glm/glm.hpp>
 
@@ -33,6 +34,8 @@ public:
   void update(uint32_t currentFrame, const ObjectType &newObject) {
     if (currentFrame >= MAX_FRAMES_IN_FLIGHT) {
       throw std::out_of_range("currentFrame exceeds MAX_FRAMES_IN_FLIGHT");
+      VKR_RES_ERROR("currentFrame exceeds MAX_FRAMES_IN_FLIGHT({})!",
+                    MAX_FRAMES_IN_FLIGHT);
     }
     if (mapped_[currentFrame] == nullptr) {
       throw std::runtime_error("Mapped memory is null for current frame");
@@ -43,7 +46,7 @@ public:
   void updateRaw(uint32_t currentFrame, const void *data,
                  size_t size) override {
     if (size != sizeof(ObjectType)) {
-      throw std::runtime_error("Size mismatch in uniform buffer update");
+      VKR_RES_ERROR("Size mismatch in uniform buffer update!");
     }
     update(currentFrame, *static_cast<const ObjectType *>(data));
   }

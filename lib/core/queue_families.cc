@@ -1,4 +1,5 @@
 #include "vkr/core/queue_families.hh"
+#include "vkr/logger.hh"
 
 namespace vkr::core {
 QueueFamilyIndices::QueueFamilyIndices(const Surface &surface,
@@ -10,8 +11,7 @@ QueueFamilyIndices::QueueFamilyIndices(const Surface &surface,
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount,
                                            nullptr);
   if (!queueFamilyCount) {
-    throw std::runtime_error(
-        "Failed to find any queue families on the physical device.");
+    VKR_CORE_ERROR("No queue families found on the physical device.");
   }
 
   std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);

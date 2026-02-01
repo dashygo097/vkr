@@ -1,8 +1,11 @@
 #include "vkr/core/debug_messenger.hh"
+#include "vkr/logger.hh"
 #include <iostream>
 
 namespace vkr::core {
 DebugMessenger::DebugMessenger(VkInstance instance) : instance_(instance) {
+  VKR_CORE_INFO("Creating Debug Messenger...");
+
   VkDebugUtilsMessengerCreateInfoEXT createInfo{};
   populateCreateInfo(createInfo);
 
@@ -13,6 +16,8 @@ DebugMessenger::DebugMessenger(VkInstance instance) : instance_(instance) {
       func(instance, &createInfo, nullptr, &vk_messenger_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create debug messenger!");
   }
+
+  VKR_CORE_INFO("Debug Messenger created successfully.");
 }
 
 DebugMessenger::~DebugMessenger() {
@@ -44,7 +49,16 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugMessenger::debugCallback(
     VkDebugUtilsMessageTypeFlagsEXT type,
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
     void *pUserData) {
-  std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+  if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+    VKR_CORE_ERROR("{}", pCallbackData->pMessage);
+  } else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+    VKR_CORE_WARN("{}", pCallbackData->pMessage);
+  } else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+    VKR_CORE_INFO("{}", pCallbackData->pMessage);
+  } else {
+    VKR_CORE_TRACE("{}", pCallbackData->pMessage);
+  }
+
   return VK_FALSE;
 }
 } // namespace vkr::core

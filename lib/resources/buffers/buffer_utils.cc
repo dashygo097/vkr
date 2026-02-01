@@ -1,4 +1,5 @@
 #include "vkr/resources/buffers/buffer_utils.hh"
+#include "vkr/logger.hh"
 #include <stdexcept>
 
 namespace vkr::resource {
@@ -15,7 +16,7 @@ uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties,
     }
   }
 
-  throw std::runtime_error("failed to find suitable memory type!");
+  VKR_RES_ERROR("Failed to find suitable memory type!");
 }
 
 void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
@@ -29,7 +30,7 @@ void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
   bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
   if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create buffer!");
+    VKR_RES_ERROR("Failed to create buffer!");
   }
 
   VkMemoryRequirements memRequirements;
@@ -43,7 +44,7 @@ void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
 
   if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) !=
       VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate buffer memory!");
+    VKR_RES_ERROR("Failed to allocate buffer memory!");
   }
 
   vkBindBufferMemory(device, buffer, bufferMemory, 0);

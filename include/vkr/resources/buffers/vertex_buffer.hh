@@ -2,6 +2,7 @@
 
 #include "../../core/command_pool.hh"
 #include "../../core/device.hh"
+#include "../../logger.hh"
 #include "./buffer_utils.hh"
 #include <glm/glm.hpp>
 
@@ -33,7 +34,7 @@ public:
 
   void update(const std::vector<VertexType> &newVertices) {
     if (newVertices.empty()) {
-      throw std::runtime_error("Cannot update vertex buffer with no vertices");
+      VKR_RES_ERROR("Cannot update vertex buffer with no vertices!");
     }
 
     VkDeviceSize newBufferSize = sizeof(VertexType) * newVertices.size();
