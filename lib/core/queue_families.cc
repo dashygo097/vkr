@@ -2,19 +2,29 @@
 
 namespace vkr::core {
 QueueFamilyIndices::QueueFamilyIndices(const Surface &surface,
-                                       const VkPhysicalDevice &physicalDevice)
-    : surface_(surface), vk_physical_device_(physicalDevice) {
+                                       const VkPhysicalDevice &physicalDevice,
+                                       bool enableGraphics, bool enableCompute)
+    : surface_(surface), vk_physical_device_(physicalDevice),
+      enable_graphics_(enableGraphics), enable_compute_(enableCompute) {
   uint32_t queueFamilyCount = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount,
                                            nullptr);
+  if (!queueFamilyCount) {
+    throw std::runtime_error(
+        "Failed to find any queue families on the physical device.");
+  }
+
   std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount,
                                            queueFamilies.data());
 
-  int i = 0;
-  for (const auto &queueFamily : queueFamilies) {
-    if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+  for (uint32_t i = 0; i < queueFamilies.size(); i++) {
+    const auto &queueFamily = queueFamilies[i];
+    if (enableGraphics && (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
       graphics_family_ = i;
+    }
+    if (enableCompute && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+      compute_family_ = i;
     }
     VkBool32 presentSupport = false;
     vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface.surface(),
@@ -25,7 +35,6 @@ QueueFamilyIndices::QueueFamilyIndices(const Surface &surface,
     if (isComplete()) {
       break;
     }
-    i++;
   }
 }
 

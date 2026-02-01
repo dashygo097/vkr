@@ -14,11 +14,10 @@ void VulkanApplication::initVulkan() {
 
   // instance
   instance = std::make_unique<core::Instance>(
-      ctx.appName, ctx.engineName, ctx.appVersion, ctx.engineVersion,
-      ctx.preExtensions, ctx.validationLayers);
+      ctx.appName, ctx.appVersion, ctx.preExtensions, ctx.validationLayers);
 
   // surface
-  surface = std::make_unique<core::Surface>(*window, *instance);
+  surface = std::make_unique<core::Surface>(*instance, *window);
 
   // device
   device = std::make_unique<core::Device>(

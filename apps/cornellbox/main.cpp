@@ -41,8 +41,6 @@ private:
 
     ctx.appName = "Vulkan App";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
-    ctx.engineName = "No Engine";
-    ctx.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 
     ctx.width = 640;
     ctx.height = 480;
@@ -64,18 +62,18 @@ private:
 
   void onSetup() override {
     vkr::resource::Mesh<vkr::resource::Vertex3D> light(*device, *commandPool);
-    light.load("./assets/light.obj");
+    light.load("./assets/cornellbox/light.obj");
     vkr::resource::Mesh<vkr::resource::Vertex3D> floor(*device, *commandPool);
-    floor.load("./assets/floor.obj");
+    floor.load("./assets/cornellbox/floor.obj");
     vkr::resource::Mesh<vkr::resource::Vertex3D> left(*device, *commandPool);
-    left.load("./assets/left.obj");
+    left.load("./assets/cornellbox/left.obj");
     vkr::resource::Mesh<vkr::resource::Vertex3D> right(*device, *commandPool);
-    right.load("./assets/right.obj");
+    right.load("./assets/cornellbox/right.obj");
     vkr::resource::Mesh<vkr::resource::Vertex3D> tallbox(*device, *commandPool);
-    tallbox.load("./assets/tallbox.obj");
+    tallbox.load("./assets/cornellbox/tallbox.obj");
     vkr::resource::Mesh<vkr::resource::Vertex3D> shortbox(*device,
                                                           *commandPool);
-    shortbox.load("./assets/shortbox.obj");
+    shortbox.load("./assets/cornellbox/shortbox.obj");
 
     resourceManager->createMesh("light", light);
     resourceManager->createMesh("floor", floor);

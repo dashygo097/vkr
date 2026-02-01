@@ -3,18 +3,11 @@
 #include "./debug_messenger.hh"
 #include <vector>
 
-#ifdef NDEBUG
-const bool ENABLE_VALIDATION_LAYERS = false;
-#else
-const bool ENABLE_VALIDATION_LAYERS = true;
-#endif
-
 namespace vkr::core {
 
 class Instance {
 public:
-  explicit Instance(const std::string appName, const std::string engineName,
-                    uint32_t appVersion, uint32_t engineVersion,
+  explicit Instance(const std::string appName, uint32_t appVersion,
                     const std::vector<const char *> &preExtensions,
                     const std::vector<const char *> &validationLayers);
 
@@ -28,6 +21,9 @@ public:
 private:
   // components
   VkInstance vk_instance_{VK_NULL_HANDLE};
+
+#ifndef NDEBUG
   std::unique_ptr<DebugMessenger> debug_messenger_;
+#endif
 };
 } // namespace vkr::core

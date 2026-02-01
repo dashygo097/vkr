@@ -9,11 +9,9 @@
 namespace vkr {
 
 struct VulkanContext {
-  // --- App/Engine Info ---
+  // --- App Info ---
   std::string appName{};
-  std::string engineName{};
   uint32_t appVersion{};
-  uint32_t engineVersion{};
 
   // --- Window Info ---
   uint32_t width{};
@@ -51,14 +49,5 @@ struct VulkanContext {
       VK_KHR_SWAPCHAIN_EXTENSION_NAME,
       VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
   };
-
-  // --- Helpers ---
-  bool isValidationEnabled() const {
-#ifdef NDEBUG
-    return false;
-#else
-    return !validationLayers.empty();
-#endif
-  }
 };
 } // namespace vkr

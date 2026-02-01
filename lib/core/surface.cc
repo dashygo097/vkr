@@ -1,7 +1,7 @@
 #include "vkr/core/surface.hh"
 
 namespace vkr::core {
-Surface::Surface(const Window &window, const Instance &instance)
+Surface::Surface(const Instance &instance, const Window &window)
     : instance_(instance), window_(window) {
   if (glfwCreateWindowSurface(instance_.instance(), window_.glfwWindow(),
                               nullptr, &surface_) != VK_SUCCESS) {

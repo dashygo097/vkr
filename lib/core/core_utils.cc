@@ -15,9 +15,9 @@ getRequiredExtensions(const std::vector<const char *> &preExtensions) {
   extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
   extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
-  if (ENABLE_VALIDATION_LAYERS) {
-    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-  }
+#ifndef NDEBUG
+  extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
 
   return extensions;
 }

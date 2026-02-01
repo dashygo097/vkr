@@ -39,8 +39,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   init_info.Device = device.device();
   init_info.QueueFamily =
       core::QueueFamilyIndices(surface, device.physicalDevice())
-          .graphicsFamily()
-          .value();
+          .graphicsFamily();
   init_info.Queue = device.graphicsQueue();
   init_info.PipelineCache = VK_NULL_HANDLE;
   init_info.DescriptorPool = descriptorPool.pool();
