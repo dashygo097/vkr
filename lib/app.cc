@@ -104,11 +104,25 @@ void VulkanApplication::mainLoop() {
 
     if (ctx.cameraEnabled) {
       camera->track();
-      camera->lock(ui->layoutMode() == ui::LayoutMode::Standard);
     }
 
     if (isNowTabKeyPressed && !isLastTabKeyPressed) {
       ui->switchLayoutMode();
+
+      std::string modeStr;
+      switch (ui->layoutMode()) {
+      case ui::LayoutMode::Standard:
+        modeStr = "Standard";
+        break;
+      case ui::LayoutMode::FullScreen:
+        modeStr = "FullScreen";
+        break;
+      }
+
+      VKR_UI_DEBUG("UI is switched to {} mode", modeStr);
+
+      camera->lock(ui->layoutMode() == ui::LayoutMode::Standard);
+      VKR_SCENE_DEBUG("Camera {}", camera->isLocked() ? "locked" : "unlocked");
     }
 
     timer->update();

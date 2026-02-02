@@ -1,6 +1,8 @@
 #include "vkr/ui/ui.hh"
+#include "vkr/core/command_buffer.hh"
 #include "vkr/core/core_utils.hh"
 #include "vkr/core/queue_families.hh"
+#include "vkr/logger.hh"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
@@ -15,6 +17,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
     : window_(window), instance_(instance), surface_(surface), device_(device),
       render_pass_(renderPass), descriptor_pool_(descriptorPool),
       command_pool_(commandPool) {
+  VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
 
   ImGui::CreateContext();
@@ -44,12 +47,18 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   init_info.PipelineCache = VK_NULL_HANDLE;
   init_info.DescriptorPool = descriptorPool.pool();
   init_info.Allocator = nullptr;
-  init_info.MinImageCount = 2;
-  init_info.ImageCount = 2;
+  init_info.MinImageCount = MAX_FRAMES_IN_FLIGHT;
+  init_info.ImageCount = MAX_FRAMES_IN_FLIGHT;
   init_info.CheckVkResultFn = core::check_vk_result;
   init_info.PipelineInfoMain = pipeline_info;
 
   ImGui_ImplVulkan_Init(&init_info);
+
+  VKR_UI_INFO("Initializing FPS Panel...");
+  fps_panel_ = std::make_unique<FPSPanel>();
+  VKR_UI_INFO("FPS Panel initialized successfully.");
+
+  VKR_UI_INFO("ImGui UI initialized successfully.");
 }
 
 UI::~UI() {
