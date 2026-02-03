@@ -70,7 +70,7 @@ public:
   DescriptorSetLayout &operator=(const DescriptorSetLayout &) = delete;
 
   // FIXME: ref return
-  [[nodiscard]] VkDescriptorSetLayout &layout() noexcept { return layout_; }
+  [[nodiscard]] VkDescriptorSetLayout &layoutRef() noexcept { return layout_; }
 
   static DescriptorSetLayout createDefault3D(const core::Device &device);
 

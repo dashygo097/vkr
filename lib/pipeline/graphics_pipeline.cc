@@ -139,7 +139,7 @@ GraphicsPipeline::GraphicsPipeline(
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutInfo.setLayoutCount = 1;
-  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout.layout();
+  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout.layoutRef();
 
   if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr,
                              &vk_pipeline_layout_) != VK_SUCCESS) {

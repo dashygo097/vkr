@@ -18,7 +18,7 @@ DescriptorSets::~DescriptorSets() {
 }
 
 void DescriptorSets::allocateSets() {
-  std::vector<VkDescriptorSetLayout> layouts(frame_count_, layout_.layout());
+  std::vector<VkDescriptorSetLayout> layouts(frame_count_, layout_.layoutRef());
 
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
