@@ -8,15 +8,15 @@
 class TestApplication : public vkr::VulkanApplication {
 private:
   const std::vector<vkr::resource::VertexTextured3D> vertices1 = {
-      {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-      {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-      {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
+      {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+      {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+      {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}};
 
   const std::vector<vkr::resource::VertexTextured3D> vertices2 = {
-      {{-0.25f, -0.25f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-      {{0.25f, -0.25f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-      {{0.25f, 0.25f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+      {{-0.25f, -0.25f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
+      {{0.25f, -0.25f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
+      {{0.25f, 0.25f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
       {{-0.25f, 0.25f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
 
   const std::vector<uint16_t> indices1 = {0, 1, 2, 2, 3, 0};
@@ -70,7 +70,7 @@ private:
 
     ctx.width = 640;
     ctx.height = 480;
-    ctx.title = "Fortest";
+    ctx.title = "Test";
 
     ctx.cameraEnabled = true;
     ctx.cameraMovementSpeed = 5.0f;
