@@ -6,11 +6,11 @@
 #include <vulkan/vulkan.h>
 
 class CanvasApplication : public vkr::VulkanApplication {
-  const std::vector<vkr::resource::Vertex3D> vertices = {
-      {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-      {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-      {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}};
+  const std::vector<vkr::resource::Vertex2D> vertices = {
+      {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+      {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+      {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+      {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
 
   const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
 
@@ -65,11 +65,11 @@ private:
     ctx.vertexShaderPath = "shaders/canvas/vert_canvas.spv";
     ctx.fragmentShaderPath = "shaders/canvas/frag_canvas.spv";
 
-    ctx.pipelineMode = vkr::pipeline::PipelineMode::Default3D;
+    ctx.pipelineMode = vkr::pipeline::PipelineMode::Default2D;
   }
 
   void onSetup() override {
-    resourceManager->createVertexBuffer<vkr::resource::Vertex3D>("vertices",
+    resourceManager->createVertexBuffer<vkr::resource::Vertex2D>("vertices",
                                                                  vertices);
     resourceManager->createIndexBuffer("indices", indices);
   };
