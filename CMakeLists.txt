@@ -31,5 +31,7 @@ if(ENABLE_TESTING)
   add_subdirectory(tests)
 endif()
 
-# apps
-add_subdirectory(apps)
+# excutables 
+if(ENABLE_EXECUTABLES) 
+  add_subdirectory(tools)
+endif()
