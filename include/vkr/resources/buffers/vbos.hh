@@ -27,6 +27,11 @@ public:
   glm::vec2 pos;
   glm::vec3 color;
 
+  Vertex2D() = default;
+  Vertex2D(glm::vec2 pos, glm::vec3 color = glm::vec3(0.0f))
+      : pos(pos), color(color) {}
+  ~Vertex2D() = default;
+
   bool operator==(const Vertex2D &other) const {
     return pos == other.pos && color == other.color;
   }
@@ -56,6 +61,15 @@ public:
   glm::vec2 pos;
   glm::vec3 color;
   glm::vec2 texCoord;
+
+  VertexTextured2D() = default;
+  VertexTextured2D(glm::vec2 pos, glm::vec3 color = glm::vec3(0.0f),
+                   glm::vec2 texCoord = glm::vec2(0.0f))
+      : pos(pos), color(color), texCoord(texCoord) {}
+  ~VertexTextured2D() = default;
+
+  VertexTextured2D(const Vertex2D &v)
+      : pos(v.pos), color(v.color), texCoord(glm::vec2(0.0f)) {}
 
   bool operator==(const VertexTextured2D &other) const {
     return pos == other.pos && color == other.color &&
@@ -88,6 +102,11 @@ public:
   glm::vec3 pos;
   glm::vec3 color;
 
+  Vertex3D() = default;
+  Vertex3D(glm::vec3 pos, glm::vec3 color = glm::vec3(0.0f))
+      : pos(pos), color(color) {}
+  ~Vertex3D() = default;
+
   bool operator==(const Vertex3D &other) const {
     return pos == other.pos && color == other.color;
   }
@@ -116,6 +135,15 @@ struct VertexNormal3D {
   glm::vec3 pos;
   glm::vec3 color;
   glm::vec3 normal;
+
+  VertexNormal3D() = default;
+  VertexNormal3D(glm::vec3 pos, glm::vec3 color = glm::vec3(0.0f),
+                 glm::vec3 normal = glm::vec3(0.0f))
+      : pos(pos), color(color), normal(normal) {}
+  ~VertexNormal3D() = default;
+
+  VertexNormal3D(const Vertex3D &v)
+      : pos(v.pos), color(v.color), normal(glm::vec3(0.0f)) {}
 
   bool operator==(const VertexNormal3D &other) const {
     return pos == other.pos && color == other.color && normal == other.normal;
@@ -146,6 +174,15 @@ struct VertexTextured3D {
   glm::vec3 pos;
   glm::vec3 color;
   glm::vec2 texCoord;
+
+  VertexTextured3D() = default;
+  VertexTextured3D(glm::vec3 pos, glm::vec3 color = glm::vec3(0.0f),
+                   glm::vec2 texCoord = glm::vec2(0.0f))
+      : pos(pos), color(color), texCoord(texCoord) {}
+  ~VertexTextured3D() = default;
+
+  VertexTextured3D(const Vertex3D &v)
+      : pos(v.pos), color(v.color), texCoord(glm::vec2(0.0f)) {}
 
   bool operator==(const VertexTextured3D &other) const {
     return pos == other.pos && color == other.color &&
@@ -178,6 +215,23 @@ struct VertexNormalTexture3D {
   glm::vec3 color;
   glm::vec3 normal;
   glm::vec2 texCoord;
+
+  VertexNormalTexture3D() = default;
+  VertexNormalTexture3D(glm::vec3 pos, glm::vec3 color = glm::vec3(0.0f),
+                        glm::vec3 normal = glm::vec3(0.0f),
+                        glm::vec2 texCoord = glm::vec2(0.0f))
+      : pos(pos), color(color), normal(normal), texCoord(texCoord) {}
+  ~VertexNormalTexture3D() = default;
+
+  VertexNormalTexture3D(const Vertex3D &v)
+      : pos(v.pos), color(v.color), normal(glm::vec3(0.0f)),
+        texCoord(glm::vec3(0.0f)) {}
+  VertexNormalTexture3D(const VertexNormal3D &v)
+      : pos(v.pos), color(v.color), normal(v.normal),
+        texCoord(glm::vec2(0.0f)) {}
+  VertexNormalTexture3D(const VertexTextured3D &v)
+      : pos(v.pos), color(v.color), normal(glm::vec3(0.0f)),
+        texCoord(v.texCoord) {}
 
   bool operator==(const VertexNormalTexture3D &other) const {
     return pos == other.pos && color == other.color &&
