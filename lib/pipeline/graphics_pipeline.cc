@@ -44,6 +44,29 @@ GraphicsPipeline::GraphicsPipeline(
   std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 
   switch (mode) {
+  case (PipelineMode::Default2D): {
+    bindingDescription = resource::Vertex2D::getBindingDescription();
+    attributeDescriptions = resource::Vertex2D::getAttributeDescriptions();
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    VKR_PIPE_TRACE("Using Default2D vertex input descriptions.");
+    break;
+  }
+  case (PipelineMode::Textured2D): {
+    bindingDescription = resource::VertexTextured2D::getBindingDescription();
+    attributeDescriptions =
+        resource::VertexTextured2D::getAttributeDescriptions();
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    VKR_PIPE_TRACE("Using Textured2D vertex input descriptions.");
+    break;
+  }
   case (PipelineMode::Default3D): {
     bindingDescription = resource::Vertex3D::getBindingDescription();
     attributeDescriptions = resource::Vertex3D::getAttributeDescriptions();

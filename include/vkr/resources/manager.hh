@@ -2,7 +2,9 @@
 
 #include "./buffers/frame_buffer.hh"
 #include "./buffers/index_buffer.hh"
+#include "./buffers/ubos.hh"
 #include "./buffers/uniform_buffer.hh"
+#include "./buffers/vbos.hh"
 #include "./buffers/vertex_buffer.hh"
 #include "./depth_resources.hh"
 #include "./mesh.hh"
