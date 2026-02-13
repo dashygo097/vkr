@@ -3,9 +3,9 @@
 #include "./command_pool.hh"
 #include "./device.hh"
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
-
 namespace vkr::core {
+static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+
 class CommandBuffers {
 public:
   explicit CommandBuffers(const Device &device, const CommandPool &commandPool);

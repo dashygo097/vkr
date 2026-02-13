@@ -50,7 +50,7 @@ void VulkanApplication::initVulkan() {
   createUniforms();
 
   // descriptor manager
-  uint32_t maxSets = MAX_FRAMES_IN_FLIGHT + 1;
+  uint32_t maxSets = core::MAX_FRAMES_IN_FLIGHT + 1;
   pipeline::DescriptorPoolSizes poolSizes =
       pipeline::DescriptorManager::calculatePoolSizes(maxSets);
   descriptorPool =
@@ -72,9 +72,13 @@ void VulkanApplication::initVulkan() {
       descriptorManager->allocate(*descriptorSetLayout, *descriptorPool);
   bindDescriptorSets();
 
+  // timer
+  timer = std::make_unique<Timer>();
+
   // ui
   ui = std::make_unique<ui::UI>(*window, *instance, *surface, *device,
-                                *commandPool, *renderPass, *descriptorPool);
+                                *commandPool, *renderPass, *descriptorPool,
+                                *timer);
 
   // renderer
   renderer = std::make_unique<render::Renderer>(
@@ -87,16 +91,17 @@ void VulkanApplication::initVulkan() {
       ctx.cameraFov, ctx.cameraAspectRatio, ctx.cameraNearPlane,
       ctx.cameraFarPlane);
   ctx.cameraLocked = camera->isLocked();
-
-  // timer
-  timer = std::make_unique<Timer>();
 }
 
 void VulkanApplication::mainLoop() {
   timer->start();
+
   bool isLastTabKeyPressed = false;
 
   while (!window->shouldClose()) {
+    timer->maxFPS(ctx.maxFPS);
+    timer->beginFrame();
+
     window->pollEvents();
 
     bool isNowTabKeyPressed =
@@ -130,8 +135,11 @@ void VulkanApplication::mainLoop() {
     drawFrame();
 
     isLastTabKeyPressed = isNowTabKeyPressed;
-    device->waitIdle();
+
+    timer->endFrame();
   }
+
+  device->waitIdle();
 }
 
 void VulkanApplication::recreateSwapchain() {

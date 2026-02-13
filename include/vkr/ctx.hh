@@ -24,6 +24,7 @@ struct VulkanContext {
 
   // --- Rendering Mode ---
   pipeline::PipelineMode pipelineMode{pipeline::PipelineMode::Default3D};
+  uint32_t maxFPS{120};
 
   // --- Camera Info ---
   bool cameraEnabled{};

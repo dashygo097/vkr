@@ -15,7 +15,7 @@ class DescriptorSets {
 public:
   DescriptorSets(const core::Device &device, DescriptorSetLayout &layout,
                  const DescriptorPool &pool,
-                 uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
+                 uint32_t frameCount = core::MAX_FRAMES_IN_FLIGHT);
   ~DescriptorSets();
 
   DescriptorSets(const DescriptorSets &) = delete;
@@ -67,7 +67,7 @@ public:
 
   std::unique_ptr<DescriptorSets>
   allocate(DescriptorSetLayout &layout, const DescriptorPool &pool,
-           uint32_t frameCount = MAX_FRAMES_IN_FLIGHT);
+           uint32_t frameCount = core::MAX_FRAMES_IN_FLIGHT);
 
   static DescriptorPoolSizes calculatePoolSizes(uint32_t maxSets);
 
