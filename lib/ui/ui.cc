@@ -13,10 +13,10 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool,
        const pipeline::RenderPass &renderPass,
-       const pipeline::DescriptorPool &descriptorPool)
+       const pipeline::DescriptorPool &descriptorPool, const Timer &timer)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       render_pass_(renderPass), descriptor_pool_(descriptorPool),
-      command_pool_(commandPool) {
+      command_pool_(commandPool), timer_(timer) {
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
 
@@ -47,8 +47,8 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   init_info.PipelineCache = VK_NULL_HANDLE;
   init_info.DescriptorPool = descriptorPool.pool();
   init_info.Allocator = nullptr;
-  init_info.MinImageCount = MAX_FRAMES_IN_FLIGHT;
-  init_info.ImageCount = MAX_FRAMES_IN_FLIGHT;
+  init_info.MinImageCount = core::MAX_FRAMES_IN_FLIGHT;
+  init_info.ImageCount = core::MAX_FRAMES_IN_FLIGHT;
   init_info.CheckVkResultFn = core::check_vk_result;
   init_info.PipelineInfoMain = pipeline_info;
 
@@ -56,6 +56,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
 
   VKR_UI_INFO("Initializing FPS Panel...");
   fps_panel_ = std::make_unique<FPSPanel>();
+  fps_panel_->clear();
   VKR_UI_INFO("FPS Panel initialized successfully.");
 
   VKR_UI_INFO("ImGui UI initialized successfully.");
@@ -194,18 +195,8 @@ void UI::renderPerformancePanel() {
   if (ImGui::Begin("Performance", nullptr, window_flags)) {
     ImGuiIO &io = ImGui::GetIO();
 
-    float fps = io.Framerate;
-    ImVec4 fps_color = fps > 60   ? ImVec4(0.60f, 1.00f, 0.80f, 0.85f)
-                       : fps > 30 ? ImVec4(1.00f, 0.95f, 0.55f, 0.85f)
-                                  : ImVec4(1.00f, 0.60f, 0.60f, 0.85f);
-
-    ImGui::TextColored(fps_color, "FPS: %.1f", fps);
-    ImGui::Text("Frame Time: %.2f ms", 1000.0f / fps);
-
-    ImGui::Separator();
-
     if (fps_panel_) {
-      fps_panel_->render(fps);
+      fps_panel_->render(timer_.fps());
     }
   }
   ImGui::End();

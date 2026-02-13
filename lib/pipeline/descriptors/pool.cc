@@ -1,6 +1,5 @@
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/logger.hh"
-#include <stdexcept>
 
 namespace vkr::pipeline {
 

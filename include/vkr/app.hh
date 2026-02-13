@@ -55,13 +55,15 @@ public:
   std::unique_ptr<pipeline::DescriptorPool> descriptorPool;
   std::unique_ptr<pipeline::DescriptorSets> descriptorSets;
 
+  // ui
+  std::unique_ptr<ui::UI> ui;
+
   // renderer
   std::unique_ptr<render::Renderer> renderer;
 
   // components
   std::unique_ptr<scene::Camera> camera;
   std::unique_ptr<Timer> timer;
-  std::unique_ptr<ui::UI> ui;
 
 protected:
   virtual void onConfigure() {}

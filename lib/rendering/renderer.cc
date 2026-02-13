@@ -51,7 +51,7 @@ void Renderer::endFrame(const FrameData &frameData) {
 
   submitCommandBuffer(frameData);
   present(frameData.imageIndex);
-  _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+  _currentFrame = (_currentFrame + 1) % core::MAX_FRAMES_IN_FLIGHT;
 }
 
 void Renderer::beginRenderPass(const FrameData &frameData) {

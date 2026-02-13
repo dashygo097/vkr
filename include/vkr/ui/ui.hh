@@ -6,7 +6,8 @@
 #include "../core/window.hh"
 #include "../pipeline/descriptors/pool.hh"
 #include "../pipeline/render_pass.hh"
-#include "./fps_panel.hh"
+#include "../timer.hh"
+#include "./components/fps_panel.hh"
 
 namespace vkr::ui {
 
@@ -28,7 +29,7 @@ public:
      const core::Surface &surface, const core::Device &device,
      const core::CommandPool &commandPool,
      const pipeline::RenderPass &renderPass,
-     const pipeline::DescriptorPool &descriptorPool);
+     const pipeline::DescriptorPool &descriptorPool, const Timer &timer);
   ~UI();
 
   UI(const UI &) = delete;
@@ -65,6 +66,7 @@ private:
   const core::CommandPool &command_pool_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
+  const Timer &timer_;
 
   // components
   std::unique_ptr<FPSPanel> fps_panel_;

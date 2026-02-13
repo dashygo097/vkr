@@ -33,10 +33,10 @@ public:
   UniformBufferBase &operator=(const UniformBufferBase &) = delete;
 
   void update(uint32_t currentFrame, const ObjectType &newObject) {
-    if (currentFrame >= MAX_FRAMES_IN_FLIGHT) {
+    if (currentFrame >= core::MAX_FRAMES_IN_FLIGHT) {
       throw std::out_of_range("currentFrame exceeds MAX_FRAMES_IN_FLIGHT");
       VKR_RES_ERROR("currentFrame exceeds MAX_FRAMES_IN_FLIGHT({})!",
-                    MAX_FRAMES_IN_FLIGHT);
+                    core::MAX_FRAMES_IN_FLIGHT);
     }
     if (mapped_[currentFrame] == nullptr) {
       throw std::runtime_error("Mapped memory is null for current frame");
@@ -68,11 +68,11 @@ public:
 protected:
   void create() {
     VkDeviceSize bufferSize = sizeof(ObjectType);
-    vk_uniform_buffers_.resize(MAX_FRAMES_IN_FLIGHT);
-    vk_memories_.resize(MAX_FRAMES_IN_FLIGHT);
-    mapped_.resize(MAX_FRAMES_IN_FLIGHT);
+    vk_uniform_buffers_.resize(core::MAX_FRAMES_IN_FLIGHT);
+    vk_memories_.resize(core::MAX_FRAMES_IN_FLIGHT);
+    mapped_.resize(core::MAX_FRAMES_IN_FLIGHT);
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (size_t i = 0; i < core::MAX_FRAMES_IN_FLIGHT; i++) {
       createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -84,7 +84,7 @@ protected:
   }
 
   void destroy() {
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (size_t i = 0; i < core::MAX_FRAMES_IN_FLIGHT; i++) {
       if (mapped_[i]) {
         vkUnmapMemory(device_.device(), vk_memories_[i]);
         mapped_[i] = nullptr;
