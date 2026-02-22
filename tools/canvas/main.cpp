@@ -52,7 +52,7 @@ private:
 
     ctx.width = 640;
     ctx.height = 480;
-    ctx.title = "Fortest";
+    ctx.title = "Canvas";
 
     ctx.cameraEnabled = true;
     ctx.cameraMovementSpeed = 5.0f;
