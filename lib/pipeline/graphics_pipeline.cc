@@ -237,8 +237,8 @@ void GraphicsPipeline::requestRebuildFromSource(
   }
 
   std::lock_guard lock(pending_mutex_);
-  pending_rebuild_ = PendingRebuild{std::move(vertSpv), std::move(fragSpv),
-                                    std::move(callback)};
+  pending_rebuild_ = PendingRebuild{vertSrc, fragSrc, std::move(vertSpv),
+                                    std::move(fragSpv), std::move(callback)};
 
   VKR_PIPE_INFO("Rebuild staged, will apply at next frame boundary.");
 }
@@ -255,8 +255,17 @@ bool GraphicsPipeline::flushPendingRebuild() {
   destroyHandles();
   bool ok = build(req.vertSpv, req.fragSpv);
 
-  req.callback(ok, ok ? "" : "Pipeline build step failed.");
+  if (ok) {
+    if (!vert_src_path_.empty())
+      fwrite_string(vert_src_path_, req.vertSrc);
+    if (!frag_src_path_.empty())
+      fwrite_string(frag_src_path_, req.fragSrc);
 
+    vert_src_ = req.vertSrc;
+    frag_src_ = req.fragSrc;
+  }
+
+  req.callback(ok, ok ? "" : "Pipeline build step failed.");
   VKR_PIPE_INFO("Deferred rebuild {}.", ok ? "succeeded" : "FAILED");
   return true;
 }
@@ -317,13 +326,15 @@ static const std::unordered_map<PipelineMode,
 
 void GraphicsPipeline::loadDefaultSources() {
   auto it = kDefaultSourcePaths.find(mode_);
-
   if (it == kDefaultSourcePaths.end()) {
     VKR_PIPE_WARN("Default source paths NOT FOUND");
     return;
   }
 
   const auto &[vertPath, fragPath] = it->second;
+
+  vert_src_path_ = vertPath;
+  frag_src_path_ = fragPath;
 
   vert_src_ = fread_string(vertPath);
   frag_src_ = fread_string(fragPath);

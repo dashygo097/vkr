@@ -64,11 +64,15 @@ private:
   // components
   VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
   VkPipeline vk_graphics_pipeline_{VK_NULL_HANDLE};
+  std::string vert_src_path_;
+  std::string frag_src_path_;
   std::string vert_src_;
   std::string frag_src_;
 
   // states
   struct PendingRebuild {
+    std::string vertSrc;
+    std::string fragSrc;
     std::vector<uint32_t> vertSpv;
     std::vector<uint32_t> fragSpv;
     std::function<void(bool, const std::string &)> callback;
@@ -79,12 +83,9 @@ private:
   // helpers
   bool build(const std::vector<uint32_t> &vertSpv,
              const std::vector<uint32_t> &fragSpv);
-
   void destroyHandles();
-
-  static std::vector<uint32_t> loadSpv(const std::string &path);
-  static std::vector<uint32_t>
-  compileGlsl(const std::string &src, bool isVertex, std::string &outError);
+  std::vector<uint32_t> compileGlsl(const std::string &src, bool isVertex,
+                                    std::string &outError);
   void loadDefaultSources();
 };
 
