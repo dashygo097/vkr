@@ -18,10 +18,6 @@ struct VulkanContext {
   uint32_t height{};
   std::string title{"Vulkan Application"};
 
-  // --- Shader paths ---
-  std::string vertexShaderPath{};
-  std::string fragmentShaderPath{};
-
   // --- Rendering Mode ---
   pipeline::PipelineMode pipelineMode{pipeline::PipelineMode::Default3D};
   uint32_t maxFPS{120};

@@ -8,6 +8,8 @@ class ShaderModule {
 public:
   explicit ShaderModule(const core::Device &device,
                         const std::string &filePath);
+  explicit ShaderModule(const core::Device &device,
+                        const std::vector<uint32_t> &spvCode);
   ~ShaderModule();
 
   ShaderModule(const ShaderModule &) = delete;

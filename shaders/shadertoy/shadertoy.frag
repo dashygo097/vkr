@@ -11,9 +11,7 @@ layout(binding = 0) uniform ShaderToyUBO {
   vec4 iChannelTime;
   vec3 iChannelResolution[4];
 } ubo;
-
 layout(location = 0) in vec2 fragCoord;
-
 layout(location = 0) out vec4 fragColor;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {

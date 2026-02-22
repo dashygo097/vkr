@@ -80,9 +80,6 @@ private:
     ctx.cameraNearPlane = 0.01f;
     ctx.cameraFarPlane = 1000.0f;
 
-    ctx.vertexShaderPath = "shaders/texture/vert_texture.spv";
-    ctx.fragmentShaderPath = "shaders/texture/frag_texture.spv";
-
     ctx.pipelineMode = vkr::pipeline::PipelineMode::Textured3D;
   }
 

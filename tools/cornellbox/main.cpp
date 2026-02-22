@@ -54,9 +54,6 @@ private:
     ctx.cameraNearPlane = 0.01f;
     ctx.cameraFarPlane = 1000.0f;
 
-    ctx.vertexShaderPath = "shaders/albedo/vert_albedo.spv";
-    ctx.fragmentShaderPath = "shaders/albedo/frag_albedo.spv";
-
     ctx.pipelineMode = vkr::pipeline::PipelineMode::Default3D;
   }
 
