@@ -43,9 +43,6 @@ public:
   [[nodiscard]] VkPipeline pipeline() const noexcept {
     return vk_graphics_pipeline_;
   }
-  [[nodiscard]] bool isValid() const noexcept {
-    return vk_graphics_pipeline_ != VK_NULL_HANDLE;
-  }
   [[nodiscard]] const std::string &vertexSource() const noexcept {
     return vert_src_;
   }
