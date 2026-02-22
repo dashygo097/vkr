@@ -54,10 +54,42 @@ UI::UI(const core::Window &window, const core::Instance &instance,
 
   ImGui_ImplVulkan_Init(&init_info);
 
+  // fps panel
   VKR_UI_INFO("Initializing FPS Panel...");
   fps_panel_ = std::make_unique<FPSPanel>();
   fps_panel_->clear();
   VKR_UI_INFO("FPS Panel initialized successfully.");
+
+  // shader editor
+
+  VKR_UI_INFO("Initializing Shader Editor...");
+  shader_editor_ = std::make_unique<ShaderEditor>(
+      [](const std::string &vert, const std::string &frag) {
+        VKR_UI_INFO("Shader compile requested ({} vert bytes, {} frag bytes)",
+                    vert.size(), frag.size());
+      });
+
+  VKR_UI_INFO("Setting initial shader sources...");
+  shader_editor_->setSource(
+      ShaderType::Vertex,
+      "#version 450\n"
+      "layout(binding = 0) uniform UniformBufferObject {\n"
+      "    mat4 model;\n    mat4 view;\n    mat4 proj;\n} ubo;\n"
+      "layout(location = 0) in vec2 inPosition;\n"
+      "layout(location = 1) in vec3 inColor;\n"
+      "layout(location = 0) out vec3 fragColor;\n"
+      "void main() {\n"
+      "    gl_Position = ubo.proj * vec4(inPosition, 0.0, 1.0);\n"
+      "    fragColor = inColor;\n}\n");
+
+  VKR_UI_INFO("Setting initial fragment shader source...");
+  shader_editor_->setSource(ShaderType::Fragment,
+                            "#version 450\n"
+                            "layout(location = 0) in vec3 fragColor;\n"
+                            "layout(location = 0) out vec4 outColor;\n"
+                            "void main() {\n"
+                            "    outColor = vec4(fragColor, 1.0);\n}\n");
+  VKR_UI_INFO("Shader Editor initialized successfully.");
 
   VKR_UI_INFO("ImGui UI initialized successfully.");
 }
@@ -81,6 +113,7 @@ void UI::render(VkCommandBuffer commandBuffer) {
     renderDockspace();
     renderMainViewport();
     renderPerformancePanel();
+    renderShaderEditor();
     break;
   }
 
@@ -202,28 +235,63 @@ void UI::renderPerformancePanel() {
   ImGui::End();
 }
 
+void UI::renderShaderEditor() {
+  ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                           ImGuiWindowFlags_NoCollapse;
+  if (ImGui::Begin("Shader Editor", nullptr, flags)) {
+    shader_editor_->render();
+  }
+  ImGui::End();
+}
+
+// void UI::setupDockingLayout() {
+//   ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+//   ImGui::DockBuilderRemoveNode(dockspace_id);
+//   ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+//   ImGui::DockBuilderSetNodeSize(dockspace_id,
+//   ImGui::GetMainViewport()->Size);
+//
+//   ImGuiID dock_left, dock_right, dock_bottom_right;
+//
+//   dock_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f,
+//                                           nullptr, &dockspace_id);
+//
+//   dock_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right,
+//   0.25f,
+//                                            nullptr, &dockspace_id);
+//
+//   dock_bottom_right = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Down,
+//                                                   0.3f, nullptr,
+//                                                   &dock_right);
+//
+//   ImGui::DockBuilderDockWindow("Scene Hierarchy", dock_left);
+//   ImGui::DockBuilderDockWindow("Performance", dock_bottom_right);
+//   ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
+//
+//   ImGui::DockBuilderFinish(dockspace_id);
+// }
+
 void UI::setupDockingLayout() {
   ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
   ImGui::DockBuilderRemoveNode(dockspace_id);
   ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
   ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
 
-  ImGuiID dock_left, dock_right, dock_bottom_right;
+  ImGuiID dock_left, dock_right, dock_bottom_right, dock_shader;
 
-  dock_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f,
+  dock_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.20f,
                                           nullptr, &dockspace_id);
 
-  dock_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.25f,
+  dock_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.28f,
                                            nullptr, &dockspace_id);
-
-  dock_bottom_right = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Down,
-                                                  0.3f, nullptr, &dock_right);
+  dock_shader = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Up, 0.70f,
+                                            nullptr, &dock_bottom_right);
 
   ImGui::DockBuilderDockWindow("Scene Hierarchy", dock_left);
+  ImGui::DockBuilderDockWindow("Shader Editor", dock_shader);
   ImGui::DockBuilderDockWindow("Performance", dock_bottom_right);
   ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
 
   ImGui::DockBuilderFinish(dockspace_id);
 }
-
 } // namespace vkr::ui
