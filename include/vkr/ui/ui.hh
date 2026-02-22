@@ -8,6 +8,7 @@
 #include "../pipeline/render_pass.hh"
 #include "../timer.hh"
 #include "./components/fps_panel.hh"
+#include "./components/shader_editor.hh"
 
 namespace vkr::ui {
 
@@ -70,6 +71,7 @@ private:
 
   // components
   std::unique_ptr<FPSPanel> fps_panel_;
+  std::unique_ptr<ShaderEditor> shader_editor_;
 
   // state
   LayoutMode layout_mode_{LayoutMode::FullScreen};
@@ -79,6 +81,7 @@ private:
   void renderDockspace();
   void renderMainViewport();
   void renderPerformancePanel();
+  void renderShaderEditor();
 
   void setupDockingLayout();
 };
