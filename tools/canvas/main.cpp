@@ -7,10 +7,10 @@
 
 class CanvasApplication : public vkr::VulkanApplication {
   const std::vector<vkr::resource::Vertex2D> vertices = {
-      {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-      {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-      {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-      {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+      {{0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+      {{1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+      {{1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
+      {{0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}}};
 
   const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
 
@@ -37,10 +37,9 @@ private:
 
   void updateUniforms(uint32_t currentImage) override {
     vkr::resource::UniformBuffer3DObject ubo{};
-    ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    ubo.view = camera->getView();
-    ubo.proj = camera->getProjection();
-
+    ubo.model = glm::mat4(1.0f);
+    ubo.view = glm::mat4(1.0f);
+    ubo.proj = glm::ortho(0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f);
     resourceManager->getUniformBuffer("default")->updateRaw(currentImage, &ubo,
                                                             sizeof(ubo));
   }
@@ -54,13 +53,7 @@ private:
     ctx.height = 480;
     ctx.title = "Canvas";
 
-    ctx.cameraEnabled = true;
-    ctx.cameraMovementSpeed = 5.0f;
-    ctx.cameraMouseSensitivity = 0.5f;
-    ctx.cameraFov = 45.0f;
-    ctx.cameraAspectRatio = ctx.width / static_cast<float>(ctx.height);
-    ctx.cameraNearPlane = 0.01f;
-    ctx.cameraFarPlane = 1000.0f;
+    ctx.cameraEnabled = false;
 
     ctx.vertexShaderPath = "shaders/canvas/vert_canvas.spv";
     ctx.fragmentShaderPath = "shaders/canvas/frag_canvas.spv";
