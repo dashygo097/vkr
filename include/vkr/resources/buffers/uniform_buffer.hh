@@ -34,12 +34,11 @@ public:
 
   void update(uint32_t currentFrame, const ObjectType &newObject) {
     if (currentFrame >= core::MAX_FRAMES_IN_FLIGHT) {
-      throw std::out_of_range("currentFrame exceeds MAX_FRAMES_IN_FLIGHT");
       VKR_RES_ERROR("currentFrame exceeds MAX_FRAMES_IN_FLIGHT({})!",
                     core::MAX_FRAMES_IN_FLIGHT);
     }
     if (mapped_[currentFrame] == nullptr) {
-      throw std::runtime_error("Mapped memory is null for current frame");
+      VKR_RES_ERROR("Mapped memory is null for current frame!");
     }
     memcpy(mapped_[currentFrame], &newObject, sizeof(ObjectType));
   }

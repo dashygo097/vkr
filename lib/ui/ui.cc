@@ -13,10 +13,13 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool,
        const pipeline::RenderPass &renderPass,
-       const pipeline::DescriptorPool &descriptorPool, const Timer &timer)
+       const pipeline::DescriptorPool &descriptorPool,
+       pipeline::GraphicsPipeline &graphicsPipeline, const Timer &timer,
+       pipeline::PipelineMode mode)
     : window_(window), instance_(instance), surface_(surface), device_(device),
-      render_pass_(renderPass), descriptor_pool_(descriptorPool),
-      command_pool_(commandPool), timer_(timer) {
+      command_pool_(commandPool), render_pass_(renderPass),
+      descriptor_pool_(descriptorPool), graphics_pipeline_(graphicsPipeline),
+      timer_(timer), mode_(mode) {
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
 
@@ -61,34 +64,23 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   VKR_UI_INFO("FPS Panel initialized successfully.");
 
   // shader editor
-
   VKR_UI_INFO("Initializing Shader Editor...");
   shader_editor_ = std::make_unique<ShaderEditor>(
-      [](const std::string &vert, const std::string &frag) {
-        VKR_UI_INFO("Shader compile requested ({} vert bytes, {} frag bytes)",
-                    vert.size(), frag.size());
+      [this](const std::string &vert, const std::string &frag) {
+        std::string err;
+        graphics_pipeline_.requestRebuildFromSource(
+            vert, frag, [this](bool ok, const std::string &err) {
+              shader_editor_->setStatus(ok ? "Compiled successfully." : err,
+                                        !ok);
+            });
+        shader_editor_->setStatus("Compiling...", false);
       });
 
-  VKR_UI_INFO("Setting initial shader sources...");
-  shader_editor_->setSource(
-      ShaderType::Vertex,
-      "#version 450\n"
-      "layout(binding = 0) uniform UniformBufferObject {\n"
-      "    mat4 model;\n    mat4 view;\n    mat4 proj;\n} ubo;\n"
-      "layout(location = 0) in vec2 inPosition;\n"
-      "layout(location = 1) in vec3 inColor;\n"
-      "layout(location = 0) out vec3 fragColor;\n"
-      "void main() {\n"
-      "    gl_Position = ubo.proj * vec4(inPosition, 0.0, 1.0);\n"
-      "    fragColor = inColor;\n}\n");
-
-  VKR_UI_INFO("Setting initial fragment shader source...");
+  shader_editor_->setSource(ShaderType::Vertex,
+                            graphics_pipeline_.vertexSource());
   shader_editor_->setSource(ShaderType::Fragment,
-                            "#version 450\n"
-                            "layout(location = 0) in vec3 fragColor;\n"
-                            "layout(location = 0) out vec4 outColor;\n"
-                            "void main() {\n"
-                            "    outColor = vec4(fragColor, 1.0);\n}\n");
+                            graphics_pipeline_.fragmentSource());
+  shader_editor_->setStatus("Loaded default shaders.", false);
   VKR_UI_INFO("Shader Editor initialized successfully.");
 
   VKR_UI_INFO("ImGui UI initialized successfully.");
@@ -244,33 +236,6 @@ void UI::renderShaderEditor() {
   ImGui::End();
 }
 
-// void UI::setupDockingLayout() {
-//   ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-//   ImGui::DockBuilderRemoveNode(dockspace_id);
-//   ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-//   ImGui::DockBuilderSetNodeSize(dockspace_id,
-//   ImGui::GetMainViewport()->Size);
-//
-//   ImGuiID dock_left, dock_right, dock_bottom_right;
-//
-//   dock_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f,
-//                                           nullptr, &dockspace_id);
-//
-//   dock_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right,
-//   0.25f,
-//                                            nullptr, &dockspace_id);
-//
-//   dock_bottom_right = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Down,
-//                                                   0.3f, nullptr,
-//                                                   &dock_right);
-//
-//   ImGui::DockBuilderDockWindow("Scene Hierarchy", dock_left);
-//   ImGui::DockBuilderDockWindow("Performance", dock_bottom_right);
-//   ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
-//
-//   ImGui::DockBuilderFinish(dockspace_id);
-// }
-
 void UI::setupDockingLayout() {
   ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
   ImGui::DockBuilderRemoveNode(dockspace_id);
@@ -294,4 +259,5 @@ void UI::setupDockingLayout() {
 
   ImGui::DockBuilderFinish(dockspace_id);
 }
+
 } // namespace vkr::ui

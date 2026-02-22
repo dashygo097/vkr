@@ -7,11 +7,8 @@
 #include <vulkan/vulkan.h>
 
 struct ShaderToyConfig {
-  std::string vertexShaderPath;
-  std::string fragmentShaderPath;
-
-  int width{800};
-  int height{600};
+  int width{640};
+  int height{480};
 };
 
 class ShaderToyApplication : public vkr::VulkanApplication {
@@ -113,9 +110,6 @@ private:
 
     ctx.cameraEnabled = false;
 
-    ctx.vertexShaderPath = config.vertexShaderPath;
-    ctx.fragmentShaderPath = config.fragmentShaderPath;
-
     startTime = std::chrono::high_resolution_clock::now();
     lastFrameTime = startTime;
 
@@ -124,15 +118,12 @@ private:
 };
 
 void printUsage(const char *programName) {
-  std::cout
-      << "Usage: " << programName << " [options]\n"
-      << "Options:\n"
-      << "  -v, --vert <path>    Path to vertex shader (default: built-in)\n"
-      << "  -f, --frag <path>    Path to fragment shader\n"
-      << "  -w, --width <width>      Window width (default: 640)\n"
-      << "  -h, --height <height>    Window height (default: 480)\n"
-      << "  --help                   Display this help message\n"
-      << std::endl;
+  std::cout << "Usage: " << programName << " [options]\n"
+            << "Options:\n"
+            << "  -w, --width <width>      Window width (default: 640)\n"
+            << "  -h, --height <height>    Window height (default: 480)\n"
+            << "  --help                   Display this help message\n"
+            << std::endl;
 }
 
 ShaderToyConfig parseArgs(int argc, char *argv[]) {
@@ -144,10 +135,6 @@ ShaderToyConfig parseArgs(int argc, char *argv[]) {
     if (arg == "--help") {
       printUsage(argv[0]);
       exit(0);
-    } else if ((arg == "-v" || arg == "--vert") && i + 1 < argc) {
-      config.vertexShaderPath = argv[++i];
-    } else if ((arg == "-f" || arg == "--frag") && i + 1 < argc) {
-      config.fragmentShaderPath = argv[++i];
     } else if ((arg == "-w" || arg == "--width") && i + 1 < argc) {
       config.width = std::atoi(argv[++i]);
       if (config.width <= 0) {

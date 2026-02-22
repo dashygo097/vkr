@@ -8,10 +8,10 @@ target_include_directories(vkr PUBLIC
 
 # Vulkan
 target_include_directories(vkr PUBLIC ${Vulkan_INCLUDE_DIRS})
+target_link_libraries(vkr PUBLIC Vulkan::Vulkan Vulkan::shaderc_combined)
 
 # 3rdparty libs to link statically
 target_link_libraries(vkr PUBLIC glfw)
-target_link_libraries(vkr PUBLIC Vulkan::Vulkan)
 target_link_libraries(vkr PUBLIC glm::glm-header-only)
 target_link_libraries(vkr PUBLIC imgui)
 target_link_libraries(vkr PUBLIC tinyobjloader)

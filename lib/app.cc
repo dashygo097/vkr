@@ -65,7 +65,7 @@ void VulkanApplication::initVulkan() {
   // graphics pipeline
   graphicsPipeline = std::make_unique<pipeline::GraphicsPipeline>(
       *device, *resourceManager, *renderPass, *descriptorSetLayout,
-      ctx.vertexShaderPath, ctx.fragmentShaderPath, ctx.pipelineMode);
+      ctx.pipelineMode);
 
   // descriptor sets
   descriptorSets =
@@ -78,7 +78,7 @@ void VulkanApplication::initVulkan() {
   // ui
   ui = std::make_unique<ui::UI>(*window, *instance, *surface, *device,
                                 *commandPool, *renderPass, *descriptorPool,
-                                *timer);
+                                *graphicsPipeline, *timer, ctx.pipelineMode);
 
   // renderer
   renderer = std::make_unique<render::Renderer>(
@@ -103,6 +103,7 @@ void VulkanApplication::mainLoop() {
     timer->beginFrame();
 
     window->pollEvents();
+    graphicsPipeline->flushPendingRebuild();
 
     bool isNowTabKeyPressed =
         glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;

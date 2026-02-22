@@ -15,9 +15,6 @@ else
   BUILD_CMD = cmake --build $(BUILD_DIR)
 endif
 
-# Shader compiler
-GLSL_COMPILER = $(shell which glslc)
-
 .PHONY: all config build shaders clean reconfigure help
 
 all: build
@@ -35,12 +32,7 @@ config:
 
 # Compile shaders
 shaders:
-	@echo "==> Compiling shaders..."
-	@if [ -z "$(GLSL_COMPILER)" ]; then \
-		echo "  ✗ glslc not found in PATH" >&2; \
-		exit 1; \
-	fi
-	@echo "  ✓ Using glslc at $(GLSL_COMPILER)"
+	@echo "==> Transferring shaders..."
 	@mkdir -p $(SHADER_OUT_ROOT)
 	@find $(SHADER_SRC_ROOT) -type f \( -name "*.vert" -o -name "*.frag" \) 2>/dev/null | while read -r src; do \
 		rel="$${src#$(SHADER_SRC_ROOT)/}"; \
@@ -50,8 +42,8 @@ shaders:
 		out_dir="$(SHADER_OUT_ROOT)/$$(dirname "$$rel")"; \
 		mkdir -p "$$out_dir"; \
 		out="$$out_dir/$${ext}_$${name}.spv"; \
-		echo "  ✓ Compiling $$src → $$out"; \
-		$(GLSL_COMPILER) -o "$$out" "$$src"; \
+		cp "$$src" "$$out_dir/$$name.$${ext}"; \
+		echo "  ✓ Copy $$src → $$out"; \
 	done || true
 
 # Build the project (includes shader compilation)
@@ -81,7 +73,7 @@ help:
 	@echo "Available targets:"
 	@echo "  all              - Configure, compile shaders, and build (default)"
 	@echo "  config           - Configure CMake project"
-	@echo "  shaders          - Compile shader files to SPIR-V"
+	@echo "  shaders          - Copy shader files to the correct paths"
 	@echo "  build            - Build the project (includes config and shaders)"
 	@echo "  reconfigure      - Force CMake reconfiguration"
 	@echo "  clean            - Remove build directory"

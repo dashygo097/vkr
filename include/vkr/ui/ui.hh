@@ -5,6 +5,7 @@
 #include "../core/instance.hh"
 #include "../core/window.hh"
 #include "../pipeline/descriptors/pool.hh"
+#include "../pipeline/graphics_pipeline.hh"
 #include "../pipeline/render_pass.hh"
 #include "../timer.hh"
 #include "./components/fps_panel.hh"
@@ -30,7 +31,9 @@ public:
      const core::Surface &surface, const core::Device &device,
      const core::CommandPool &commandPool,
      const pipeline::RenderPass &renderPass,
-     const pipeline::DescriptorPool &descriptorPool, const Timer &timer);
+     const pipeline::DescriptorPool &descriptorPool,
+     pipeline::GraphicsPipeline &graphicsPipeline, const Timer &timer,
+     pipeline::PipelineMode mode);
   ~UI();
 
   UI(const UI &) = delete;
@@ -67,7 +70,9 @@ private:
   const core::CommandPool &command_pool_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
+  pipeline::GraphicsPipeline &graphics_pipeline_;
   const Timer &timer_;
+  pipeline::PipelineMode mode_;
 
   // components
   std::unique_ptr<FPSPanel> fps_panel_;

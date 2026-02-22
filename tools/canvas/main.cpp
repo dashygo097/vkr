@@ -55,9 +55,6 @@ private:
 
     ctx.cameraEnabled = false;
 
-    ctx.vertexShaderPath = "shaders/canvas/vert_canvas.spv";
-    ctx.fragmentShaderPath = "shaders/canvas/frag_canvas.spv";
-
     ctx.pipelineMode = vkr::pipeline::PipelineMode::Default2D;
   }
 
