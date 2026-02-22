@@ -87,9 +87,9 @@ void VulkanApplication::initVulkan() {
 
   // camera
   camera = std::make_unique<scene::Camera>(
-      *window, ctx.cameraMovementSpeed, ctx.cameraMouseSensitivity,
-      ctx.cameraFov, ctx.cameraAspectRatio, ctx.cameraNearPlane,
-      ctx.cameraFarPlane);
+      *window, *timer, ctx.pipelineMode, ctx.cameraMovementSpeed,
+      ctx.cameraMouseSensitivity, ctx.cameraFov, ctx.cameraAspectRatio,
+      ctx.cameraNearPlane, ctx.cameraFarPlane);
   ctx.cameraLocked = camera->isLocked();
 }
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../core/window.hh"
-#include "../logger.hh"
 #include "../pipeline/graphics_pipeline.hh"
+#include "../timer.hh"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -10,7 +10,8 @@
 namespace vkr::scene {
 class Camera {
 public:
-  explicit Camera(const core::Window &window, const float &movemeneSpeed,
+  explicit Camera(const core::Window &window, const Timer &timer,
+                  const pipeline::PipelineMode mode, const float &movemeneSpeed,
                   const float &mouseSensitivity, const float &fov,
                   const float &aspectRatio, const float &nearPlane,
                   const float &farPlane);
@@ -70,19 +71,17 @@ public:
     pos_ -= world_up_ * movement_speed_ * deltaTime;
   }
 
-  [[nodiscard]] bool isLocked() const noexcept { return locked_; }
-  void lock(bool lock) { locked_ = lock; }
-
-  void doLock() { locked_ = true; }
-  void doUnlock() { locked_ = false; }
   void toggleLock() { locked_ = !locked_; }
+  void lock(bool lock) noexcept { locked_ = lock; }
+  [[nodiscard]] bool isLocked() const noexcept { return locked_; }
 
 private:
   // dependencies
   const core::Window &window_;
+  const Timer &timer_;
+  const pipeline::PipelineMode mode_;
   const float &movement_speed_;
   const float &mouse_sensitivity_;
-  const float &fov_;
   const float &aspect_ratio_;
   const float &near_plane_;
   const float &far_plane_;
@@ -95,12 +94,28 @@ private:
   glm::vec3 world_up_{glm::vec3(0.0f, 1.0f, 0.0f)};
   float yaw_{-90.0f};
   float pitch_{0.0f};
+  float fov_;
+  float scroll_offset_{0.0f};
 
   // state
   bool locked_{false};
-  std::chrono::high_resolution_clock::time_point last_time_stamp_;
   float first_mouse_{true};
   float last_x_{0.0f};
   float last_y_{0.0f};
+
+  static void scrollCallback(GLFWwindow *window, double xoffset,
+                             double yoffset) {
+    auto *cam = static_cast<Camera *>(glfwGetWindowUserPointer(window));
+    if (!cam || cam->locked_)
+      return;
+
+    constexpr float kMinFov = 1.0f;
+    constexpr float kMaxFov = 120.0f;
+    constexpr float kZoomSpeed = 2.0f;
+
+    cam->fov_ -= static_cast<float>(yoffset) * kZoomSpeed;
+    cam->fov_ = glm::clamp(cam->fov_, kMinFov, kMaxFov);
+  }
 };
+
 } // namespace vkr::scene

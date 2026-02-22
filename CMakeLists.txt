@@ -14,15 +14,10 @@ if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/config.cmake")
 endif()
 
 include(Helpers)
-
 include(CompilerSetup)
-
 include(SourceCollections)
-
 include(Dependencies)
-
 include(LibraryTargets)
-
 include(Stastics)
 
 # tests 
