@@ -7,8 +7,8 @@
 #include <vulkan/vulkan.h>
 
 struct ShaderToyConfig {
-  int width{640};
-  int height{480};
+  int width{800};
+  int height{600};
 };
 
 class ShaderToyApplication : public vkr::VulkanApplication {
@@ -120,8 +120,8 @@ private:
 void printUsage(const char *programName) {
   std::cout << "Usage: " << programName << " [options]\n"
             << "Options:\n"
-            << "  -w, --width <width>      Window width (default: 640)\n"
-            << "  -h, --height <height>    Window height (default: 480)\n"
+            << "  -w, --width <width>      Window width (default: 800)\n"
+            << "  -h, --height <height>    Window height (default: 600)\n"
             << "  --help                   Display this help message\n"
             << std::endl;
 }

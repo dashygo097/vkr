@@ -68,8 +68,8 @@ private:
     ctx.appName = "Vulkan App";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
 
-    ctx.width = 640;
-    ctx.height = 480;
+    ctx.width = 800;
+    ctx.height = 600;
     ctx.title = "Test";
 
     ctx.cameraEnabled = true;

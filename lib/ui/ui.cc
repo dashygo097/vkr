@@ -167,7 +167,7 @@ void UI::renderDockspace() {
 
   ImGuiIO &io = ImGui::GetIO();
   if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-    ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+    ImGuiID dockspace_id = ImGui::GetID("DockSpace");
     ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
     static bool first_time = true;
@@ -237,22 +237,18 @@ void UI::renderShaderEditor() {
 }
 
 void UI::setupDockingLayout() {
-  ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+  ImGuiID dockspace_id = ImGui::GetID("DockSpace");
   ImGui::DockBuilderRemoveNode(dockspace_id);
   ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
   ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
 
-  ImGuiID dock_left, dock_right, dock_bottom_right, dock_shader;
-
-  dock_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.20f,
-                                          nullptr, &dockspace_id);
+  ImGuiID dock_right, dock_bottom_right, dock_shader;
 
   dock_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.28f,
                                            nullptr, &dockspace_id);
   dock_shader = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Up, 0.70f,
                                             nullptr, &dock_bottom_right);
 
-  ImGui::DockBuilderDockWindow("Scene Hierarchy", dock_left);
   ImGui::DockBuilderDockWindow("Shader Editor", dock_shader);
   ImGui::DockBuilderDockWindow("Performance", dock_bottom_right);
   ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
