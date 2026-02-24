@@ -31,17 +31,17 @@ void Logger::init() {
 
   // Initialize individual loggers
   core_logger_ =
-      std::make_shared<spdlog::logger>("core", sinks.begin(), sinks.end());
+      std::make_shared<spdlog::logger>("core    ", sinks.begin(), sinks.end());
   resource_logger_ =
       std::make_shared<spdlog::logger>("resource", sinks.begin(), sinks.end());
   pipeline_logger_ =
       std::make_shared<spdlog::logger>("pipeline", sinks.begin(), sinks.end());
   render_logger_ =
-      std::make_shared<spdlog::logger>("render", sinks.begin(), sinks.end());
+      std::make_shared<spdlog::logger>("render  ", sinks.begin(), sinks.end());
   scene_logger_ =
-      std::make_shared<spdlog::logger>("scene", sinks.begin(), sinks.end());
+      std::make_shared<spdlog::logger>("scene   ", sinks.begin(), sinks.end());
   ui_logger_ =
-      std::make_shared<spdlog::logger>("ui", sinks.begin(), sinks.end());
+      std::make_shared<spdlog::logger>("ui      ", sinks.begin(), sinks.end());
 
   // Set levels
   core_logger_->set_level(spdlog::level::trace);
