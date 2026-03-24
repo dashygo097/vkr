@@ -12,7 +12,7 @@ Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
       sync_objects_(syncObjects), resource_manage_(resourceManager),
       render_pass_(renderPass), _ui(ui) {
   command_buffers_ =
-      std::make_unique<core::CommandBuffers>(device, commandPool);
+      std::make_unique<core::CommandBuffers>(device_, command_pool_);
 }
 
 Renderer::~Renderer() = default;

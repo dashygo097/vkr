@@ -13,6 +13,11 @@ struct VulkanContext {
   std::string appName{};
   uint32_t appVersion{};
 
+  // --- Functional Utilities ---
+  bool enableGraphics{false};
+  bool enablePresent{false};
+  bool enableCompute{false};
+
   // --- Window Info ---
   uint32_t width{};
   uint32_t height{};

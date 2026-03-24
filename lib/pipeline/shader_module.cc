@@ -14,7 +14,7 @@ ShaderModule::ShaderModule(const core::Device &device,
   createInfo.codeSize = code.size();
   createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
-  if (vkCreateShaderModule(device.device(), &createInfo, nullptr,
+  if (vkCreateShaderModule(device_.device(), &createInfo, nullptr,
                            &vk_shader_module_) != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to create shader module from file: {}!", filePath);
   }

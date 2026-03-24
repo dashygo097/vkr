@@ -11,12 +11,12 @@ CommandBuffers::CommandBuffers(const Device &device,
 
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.commandPool = commandPool.commandPool();
+  allocInfo.commandPool = commandPool_.commandPool();
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocInfo.commandBufferCount =
       static_cast<uint32_t>(vk_command_buffers_.size());
 
-  if (vkAllocateCommandBuffers(device.device(), &allocInfo,
+  if (vkAllocateCommandBuffers(device_.device(), &allocInfo,
                                vk_command_buffers_.data()) != VK_SUCCESS) {
     VKR_CORE_ERROR("Failed to allocate command buffers!");
   }

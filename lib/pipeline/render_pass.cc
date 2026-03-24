@@ -65,7 +65,7 @@ RenderPass::RenderPass(const core::Device &device,
   renderPassInfo.dependencyCount = 1;
   renderPassInfo.pDependencies = &dependency;
 
-  if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr,
+  if (vkCreateRenderPass(device_.device(), &renderPassInfo, nullptr,
                          &vk_render_pass_) != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to create render pass!");
   }

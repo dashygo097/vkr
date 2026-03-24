@@ -6,14 +6,14 @@ namespace vkr::core {
 CommandPool::CommandPool(const Device &device, const Surface &surface)
     : device_(device), surface_(surface) {
   VKR_CORE_INFO("Creating command pool...");
-  QueueFamilyIndices queueFamilyIndices(surface, device.physicalDevice());
+  QueueFamilyIndices queueFamilyIndices(device_.physicalDevice(), surface_);
 
   VkCommandPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily();
 
-  if (vkCreateCommandPool(device.device(), &poolInfo, nullptr,
+  if (vkCreateCommandPool(device_.device(), &poolInfo, nullptr,
                           &vk_command_pool_) != VK_SUCCESS) {
     VKR_CORE_ERROR("Failed to create command pool!");
   }

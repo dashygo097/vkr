@@ -13,7 +13,7 @@ DebugMessenger::DebugMessenger(VkInstance instance) : instance_(instance) {
       instance, "vkCreateDebugUtilsMessengerEXT");
 
   if (func &&
-      func(instance, &createInfo, nullptr, &vk_messenger_) != VK_SUCCESS) {
+      func(instance_, &createInfo, nullptr, &vk_messenger_) != VK_SUCCESS) {
     throw std::runtime_error("failed to create debug messenger!");
   }
 

@@ -43,7 +43,7 @@ DescriptorPool::DescriptorPool(const core::Device &device, uint32_t maxSets,
   poolInfo.maxSets = maxSets;
 
   VkResult result =
-      vkCreateDescriptorPool(device.device(), &poolInfo, nullptr, &pool_);
+      vkCreateDescriptorPool(device_.device(), &poolInfo, nullptr, &pool_);
   if (result != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to create descriptor pool. VkResult: {}",
                    std::to_string(result));
