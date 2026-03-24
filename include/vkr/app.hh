@@ -20,12 +20,8 @@ public:
   VulkanApplication &operator=(const VulkanApplication &) = delete;
 
   void run() {
-    onConfigure();
     initVulkan();
-    onSetup();
-
     mainLoop();
-
     cleanup();
   }
 

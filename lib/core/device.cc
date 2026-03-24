@@ -78,7 +78,7 @@ void Device::pickPhysicalDevice() {
 
 void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
                                  std::vector<const char *> validationLayers) {
-  QueueFamilyIndices indices(surface_, vk_physical_device_);
+  QueueFamilyIndices indices(vk_physical_device_, surface_);
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
   std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily(),
@@ -129,7 +129,7 @@ void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
 }
 
 bool Device::isSuitable(VkPhysicalDevice physicalDevice) {
-  QueueFamilyIndices indices(surface_, physicalDevice);
+  QueueFamilyIndices indices(physicalDevice, surface_);
   return indices.isComplete();
 }
 

@@ -33,22 +33,22 @@ UI::UI(const core::Window &window, const core::Instance &instance,
     style.WindowRounding = 0.0f;
     style.Colors[ImGuiCol_WindowBg].w = 1.0f;
   }
-  ImGui_ImplGlfw_InitForVulkan(window.glfwWindow(), true);
+  ImGui_ImplGlfw_InitForVulkan(window_.glfwWindow(), true);
 
   ImGui_ImplVulkan_PipelineInfo pipeline_info = {};
   pipeline_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-  pipeline_info.RenderPass = renderPass.renderPass();
+  pipeline_info.RenderPass = render_pass_.renderPass();
 
   ImGui_ImplVulkan_InitInfo init_info = {};
-  init_info.Instance = instance.instance();
-  init_info.PhysicalDevice = device.physicalDevice();
-  init_info.Device = device.device();
+  init_info.Instance = instance_.instance();
+  init_info.PhysicalDevice = device_.physicalDevice();
+  init_info.Device = device_.device();
   init_info.QueueFamily =
-      core::QueueFamilyIndices(surface, device.physicalDevice())
+      core::QueueFamilyIndices(device_.physicalDevice(), surface_)
           .graphicsFamily();
-  init_info.Queue = device.graphicsQueue();
+  init_info.Queue = device_.graphicsQueue();
   init_info.PipelineCache = VK_NULL_HANDLE;
-  init_info.DescriptorPool = descriptorPool.pool();
+  init_info.DescriptorPool = descriptor_pool_.pool();
   init_info.Allocator = nullptr;
   init_info.MinImageCount = core::MAX_FRAMES_IN_FLIGHT;
   init_info.ImageCount = core::MAX_FRAMES_IN_FLIGHT;

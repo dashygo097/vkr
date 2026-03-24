@@ -6,10 +6,12 @@ namespace vkr::core {
 
 class QueueFamilyIndices {
 public:
-  explicit QueueFamilyIndices(const Surface &surface,
-                              const VkPhysicalDevice &physicalDevice,
+  // NOTE: All enabled for now
+  explicit QueueFamilyIndices(const VkPhysicalDevice &physicalDevice,
+                              const Surface &surface,
                               bool enableGraphics = true,
-                              bool enableCompute = false);
+                              bool enablePresent = true,
+                              bool enableCompute = true);
   ~QueueFamilyIndices() = default;
 
   [[nodiscard]] bool isComplete() const {
@@ -17,7 +19,8 @@ public:
         !enable_graphics_ || graphics_family_ != VK_QUEUE_FAMILY_IGNORED;
     bool computeComplete =
         !enable_compute_ || compute_family_ != VK_QUEUE_FAMILY_IGNORED;
-    bool presentComplete = present_family_ != VK_QUEUE_FAMILY_IGNORED;
+    bool presentComplete =
+        !enable_present_ || present_family_ != VK_QUEUE_FAMILY_IGNORED;
     return graphicsComplete && computeComplete && presentComplete;
   }
 
@@ -35,6 +38,7 @@ private:
   uint32_t present_family_{VK_QUEUE_FAMILY_IGNORED};
   uint32_t compute_family_{VK_QUEUE_FAMILY_IGNORED};
   bool enable_graphics_{false};
+  bool enable_present_{false};
   bool enable_compute_{false};
 };
 

@@ -29,7 +29,7 @@ DescriptorSetLayout::DescriptorSetLayout(
   layoutInfo.bindingCount = static_cast<uint32_t>(vkBindings.size());
   layoutInfo.pBindings = vkBindings.data();
 
-  VkResult result = vkCreateDescriptorSetLayout(device.device(), &layoutInfo,
+  VkResult result = vkCreateDescriptorSetLayout(device_.device(), &layoutInfo,
                                                 nullptr, &layout_);
   if (result != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to create descriptor set layout! VkResult: {}",

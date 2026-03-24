@@ -10,7 +10,7 @@ SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
   vk_image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
   vk_in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
 
-  vk_render_finished_semaphores.resize(swapchain.images().size());
+  vk_render_finished_semaphores.resize(swapchain_.images().size());
 
   VkSemaphoreCreateInfo semaphoreInfo{};
   semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -20,16 +20,16 @@ SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr,
+    if (vkCreateSemaphore(device_.device(), &semaphoreInfo, nullptr,
                           &vk_image_available_semaphores[i]) != VK_SUCCESS ||
-        vkCreateFence(device.device(), &fenceInfo, nullptr,
+        vkCreateFence(device_.device(), &fenceInfo, nullptr,
                       &vk_in_flight_fences[i]) != VK_SUCCESS) {
       VKR_CORE_ERROR("failed to create synchronization objects for a frame!");
     }
   }
 
-  for (size_t i = 0; i < swapchain.images().size(); i++) {
-    if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr,
+  for (size_t i = 0; i < swapchain_.images().size(); i++) {
+    if (vkCreateSemaphore(device_.device(), &semaphoreInfo, nullptr,
                           &vk_render_finished_semaphores[i]) != VK_SUCCESS) {
       VKR_CORE_ERROR(
           "failed to create render finished semaphore for swap chain image!");

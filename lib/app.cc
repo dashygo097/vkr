@@ -7,6 +7,8 @@ namespace vkr {
 
 void VulkanApplication::initVulkan() {
   Logger::init();
+  onConfigure();
+
   // window
   window = std::make_unique<core::Window>(ctx.title, ctx.width, ctx.height);
   glfwSetWindowUserPointer(window->glfwWindow(), this);
@@ -91,6 +93,8 @@ void VulkanApplication::initVulkan() {
       ctx.cameraMouseSensitivity, ctx.cameraFov, ctx.cameraAspectRatio,
       ctx.cameraNearPlane, ctx.cameraFarPlane);
   ctx.cameraLocked = camera->isLocked();
+
+  onSetup();
 }
 
 void VulkanApplication::mainLoop() {
