@@ -7,7 +7,8 @@ QueueFamilyIndices::QueueFamilyIndices(const VkPhysicalDevice &physicalDevice,
                                        bool enableGraphics, bool enablePresent,
                                        bool enableCompute)
     : surface_(surface), vk_physical_device_(physicalDevice),
-      enable_graphics_(enableGraphics), enable_compute_(enableCompute) {
+      enable_graphics_(enableGraphics), enable_present_(enablePresent),
+      enable_compute_(enableCompute) {
   uint32_t queueFamilyCount = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device_,
                                            &queueFamilyCount, nullptr);
