@@ -5,13 +5,13 @@ namespace vkr::core {
 
 CommandBuffers::CommandBuffers(const Device &device,
                                const CommandPool &commandPool)
-    : device_(device), commandPool_(commandPool) {
+    : device_(device), command_pool_(commandPool) {
   VKR_CORE_INFO("Creating command buffers...");
   vk_command_buffers_.resize(MAX_FRAMES_IN_FLIGHT);
 
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.commandPool = commandPool_.commandPool();
+  allocInfo.commandPool = command_pool_.commandPool();
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocInfo.commandBufferCount =
       static_cast<uint32_t>(vk_command_buffers_.size());
@@ -26,7 +26,7 @@ CommandBuffers::CommandBuffers(const Device &device,
 
 CommandBuffers::~CommandBuffers() {
   if (!vk_command_buffers_.empty()) {
-    vkFreeCommandBuffers(device_.device(), commandPool_.commandPool(),
+    vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(),
                          static_cast<uint32_t>(vk_command_buffers_.size()),
                          vk_command_buffers_.data());
   }

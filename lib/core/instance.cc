@@ -3,7 +3,7 @@
 #include "vkr/logger.hh"
 
 namespace vkr::core {
-Instance::Instance(const std::string appName, uint32_t appVersion,
+Instance::Instance(std::string appName, uint32_t appVersion,
                    const std::vector<const char *> &preExtensions,
                    const std::vector<const char *> &validationLayers) {
   VKR_CORE_INFO("Creating Vulkan Instance: {} ({}.{}.{})...", appName,

@@ -7,7 +7,7 @@ namespace vkr::core {
 
 class Instance {
 public:
-  explicit Instance(const std::string appName, uint32_t appVersion,
+  explicit Instance(std::string appName, uint32_t appVersion,
                     const std::vector<const char *> &preExtensions,
                     const std::vector<const char *> &validationLayers);
 
