@@ -24,7 +24,7 @@ public:
 private:
   // dependencies
   const Device &device_;
-  const CommandPool &commandPool_;
+  const CommandPool &command_pool_;
 
   // components
   std::vector<VkCommandBuffer> vk_command_buffers_{};
