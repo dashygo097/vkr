@@ -3,12 +3,8 @@
 
 namespace vkr::core {
 QueueFamilyIndices::QueueFamilyIndices(const VkPhysicalDevice &physicalDevice,
-                                       const Surface &surface,
-                                       bool enableGraphics, bool enablePresent,
-                                       bool enableCompute)
-    : surface_(surface), vk_physical_device_(physicalDevice),
-      enable_graphics_(enableGraphics), enable_present_(enablePresent),
-      enable_compute_(enableCompute) {
+                                       const Surface &surface)
+    : surface_(surface), vk_physical_device_(physicalDevice) {
   uint32_t queueFamilyCount = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device_,
                                            &queueFamilyCount, nullptr);
@@ -22,19 +18,14 @@ QueueFamilyIndices::QueueFamilyIndices(const VkPhysicalDevice &physicalDevice,
 
   for (uint32_t i = 0; i < queueFamilies.size(); i++) {
     const auto &queueFamily = queueFamilies[i];
-    if (enableGraphics && (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
+    if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
       graphics_family_ = i;
     }
-    if (enableCompute && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
-      compute_family_ = i;
-    }
-    if (enablePresent) {
-      VkBool32 presentSupport = false;
-      vkGetPhysicalDeviceSurfaceSupportKHR(vk_physical_device_, i,
-                                           surface.surface(), &presentSupport);
-      if (presentSupport) {
-        present_family_ = i;
-      }
+    VkBool32 presentSupport = false;
+    vkGetPhysicalDeviceSurfaceSupportKHR(vk_physical_device_, i,
+                                         surface.surface(), &presentSupport);
+    if (presentSupport) {
+      present_family_ = i;
     }
     if (isComplete()) {
       break;

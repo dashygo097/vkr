@@ -48,9 +48,6 @@ private:
     ctx.appName = "Vulkan App";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
 
-    ctx.enableGraphics = true;
-    ctx.enablePresent = true;
-
     ctx.width = 800;
     ctx.height = 600;
     ctx.title = "Canvas";
