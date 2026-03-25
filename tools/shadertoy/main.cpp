@@ -104,9 +104,6 @@ private:
     ctx.appName = "ShaderToy";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
 
-    ctx.enableGraphics = true;
-    ctx.enablePresent = true;
-
     ctx.width = config.width;
     ctx.height = config.height;
     ctx.title = "ShaderToy Viewer";
