@@ -117,13 +117,21 @@ void OffscreenTarget::create() {
   subpass.pColorAttachments = &colorRef;
   subpass.pDepthStencilAttachment = &depthRef;
 
-  VkSubpassDependency dep{};
-  dep.srcSubpass = 0;
-  dep.dstSubpass = VK_SUBPASS_EXTERNAL;
-  dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  dep.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-  dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-  dep.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  std::array<VkSubpassDependency, 2> deps{};
+
+  deps[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+  deps[0].dstSubpass = 0;
+  deps[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+  deps[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  deps[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  deps[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+  deps[1].srcSubpass = 0;
+  deps[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+  deps[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  deps[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+  deps[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  deps[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
   std::array<VkAttachmentDescription, 2> atts = {colorAtt, depthAtt};
   VkRenderPassCreateInfo rpInfo{};
@@ -132,8 +140,8 @@ void OffscreenTarget::create() {
   rpInfo.pAttachments = atts.data();
   rpInfo.subpassCount = 1;
   rpInfo.pSubpasses = &subpass;
-  rpInfo.dependencyCount = 1;
-  rpInfo.pDependencies = &dep;
+  rpInfo.dependencyCount = static_cast<uint32_t>(deps.size());
+  rpInfo.pDependencies = deps.data();
   vkCreateRenderPass(device_.device(), &rpInfo, nullptr, &render_pass_);
 
   std::array<VkImageView, 2> views = {color_view_, depth_view_};

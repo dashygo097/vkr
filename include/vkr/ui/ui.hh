@@ -7,6 +7,7 @@
 #include "../pipeline/descriptors/pool.hh"
 #include "../pipeline/graphics_pipeline.hh"
 #include "../pipeline/render_pass.hh"
+#include "../resources/offscreen_target.hh"
 #include "../timer.hh"
 #include "./components/fps_panel.hh"
 #include "./components/shader_editor.hh"
@@ -33,7 +34,8 @@ public:
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
      pipeline::GraphicsPipeline &graphicsPipeline, const Timer &timer,
-     pipeline::PipelineMode mode);
+     pipeline::PipelineMode mode,
+     resource::OffscreenTarget *offscreenTarget = nullptr);
   ~UI();
 
   UI(const UI &) = delete;
@@ -73,6 +75,7 @@ private:
   pipeline::GraphicsPipeline &graphics_pipeline_;
   const Timer &timer_;
   pipeline::PipelineMode mode_;
+  resource::OffscreenTarget *offscreen_target_{nullptr};
 
   // components
   std::unique_ptr<FPSPanel> fps_panel_;

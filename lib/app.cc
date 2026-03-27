@@ -1,6 +1,5 @@
 #include "vkr/app.hh"
 #include <GLFW/glfw3.h>
-#include <unistd.h>
 #include <vulkan/vulkan_core.h>
 
 namespace vkr {
@@ -36,10 +35,10 @@ void VulkanApplication::initVulkan() {
   commandBuffers =
       std::make_unique<core::CommandBuffers>(*device, *commandPool);
 
-  // sync_objects
+  // sync objects
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
-  // render pass
+  // render pass (swapchain)
   renderPass = std::make_unique<pipeline::RenderPass>(*device, *swapchain);
 
   // resource manager
@@ -49,25 +48,29 @@ void VulkanApplication::initVulkan() {
       *device, *swapchain, *commandPool, *depthResources, *renderPass);
   resourceManager->createFramebuffers("swapchain");
 
+  offscreenTarget = std::make_unique<resource::OffscreenTarget>(
+      *device, *commandPool, swapchain->extent2D().width,
+      swapchain->extent2D().height);
+
   createUniforms();
 
-  // descriptor manager
-  uint32_t maxSets = core::MAX_FRAMES_IN_FLIGHT + 1;
+  // descriptor pool
+  uint32_t maxSets = core::MAX_FRAMES_IN_FLIGHT + 2;
   pipeline::DescriptorPoolSizes poolSizes =
       pipeline::DescriptorManager::calculatePoolSizes(maxSets);
   descriptorPool =
       std::make_unique<pipeline::DescriptorPool>(*device, maxSets, poolSizes);
 
+  // descriptor layout
   descriptorManager = std::make_unique<pipeline::DescriptorManager>(*device);
   std::vector<pipeline::DescriptorBinding> bindings =
       createDescriptorBindings();
-
   descriptorSetLayout = descriptorManager->createLayout(bindings);
 
-  // graphics pipeline
   graphicsPipeline = std::make_unique<pipeline::GraphicsPipeline>(
       *device, *resourceManager, *renderPass, *descriptorSetLayout,
       ctx.pipelineMode);
+  graphicsPipeline->buildOffscreen(offscreenTarget->renderPass());
 
   // descriptor sets
   descriptorSets =
@@ -80,7 +83,9 @@ void VulkanApplication::initVulkan() {
   // ui
   ui = std::make_unique<ui::UI>(*window, *instance, *surface, *device,
                                 *commandPool, *renderPass, *descriptorPool,
-                                *graphicsPipeline, *timer, ctx.pipelineMode);
+                                *graphicsPipeline, *timer, ctx.pipelineMode,
+                                offscreenTarget.get());
+  offscreenTarget->registerWithImGui(descriptorPool->pool());
 
   // renderer
   renderer = std::make_unique<render::Renderer>(
@@ -99,7 +104,6 @@ void VulkanApplication::initVulkan() {
 
 void VulkanApplication::mainLoop() {
   timer->start();
-
   bool isLastTabKeyPressed = false;
 
   while (!window->shouldClose()) {
@@ -112,13 +116,11 @@ void VulkanApplication::mainLoop() {
     bool isNowTabKeyPressed =
         glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
 
-    if (ctx.cameraEnabled) {
+    if (ctx.cameraEnabled)
       camera->track();
-    }
 
-    if (isNowTabKeyPressed && !isLastTabKeyPressed) {
+    if (isNowTabKeyPressed && !isLastTabKeyPressed)
       ui->switchLayoutMode();
-    }
 
     camera->lock(ui->layoutMode() == ui::LayoutMode::Standard);
 
@@ -127,7 +129,6 @@ void VulkanApplication::mainLoop() {
     drawFrame();
 
     isLastTabKeyPressed = isNowTabKeyPressed;
-
     timer->endFrame();
   }
 
@@ -141,29 +142,31 @@ void VulkanApplication::recreateSwapchain() {
     glfwGetFramebufferSize(window->glfwWindow(), &width, &height);
     glfwWaitEvents();
   }
-
   renderer->recreateSwapchain();
 }
 
 void VulkanApplication::drawFrame() {
   render::FrameData frameData;
-
-  if (!renderer->beginFrame(frameData)) {
+  if (!renderer->beginFrame(frameData))
     return;
-  }
 
-  const auto &viewport = ui->viewportInfo();
+  if (offscreenTarget->flushPendingResize(descriptorPool->pool()))
+    graphicsPipeline->buildOffscreen(offscreenTarget->renderPass());
 
   updateUniforms(frameData.frameIndex);
 
-  renderer->beginRenderPass(frameData);
-  renderer->bindPipeline(frameData, graphicsPipeline->pipeline(),
-                         graphicsPipeline->pipelineLayout(),
+  renderer->beginOffscreenPass(frameData, *offscreenTarget);
+  renderer->bindPipeline(frameData, graphicsPipeline->offscreenPipeline(),
+                         graphicsPipeline->offscreenPipelineLayout(),
                          descriptorSets->sets());
-  renderer->setViewportAndScissor(frameData);
+  renderer->setOffscreenViewportAndScissor(frameData, *offscreenTarget);
   renderer->drawGeometry(frameData);
+  renderer->endOffscreenPass(frameData);
+
+  renderer->beginRenderPass(frameData);
   renderer->drawUI(frameData);
   renderer->endRenderPass(frameData);
+
   renderer->endFrame(frameData);
 }
 
@@ -175,6 +178,7 @@ void VulkanApplication::cleanup() {
   camera.reset();
   renderer.reset();
   syncObjects.reset();
+  offscreenTarget.reset();
   resourceManager.reset();
   depthResources.reset();
   commandBuffers.reset();

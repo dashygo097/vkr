@@ -7,6 +7,7 @@
 #include "../core/sync_objects.hh"
 #include "../pipeline/render_pass.hh"
 #include "../resources/manager.hh"
+#include "../resources/offscreen_target.hh"
 #include "../ui/ui.hh"
 
 namespace vkr::render {
@@ -24,31 +25,36 @@ public:
                     const core::SyncObjects &syncObjects,
                     resource::ResourceManager &resourceManager,
                     const pipeline::RenderPass &renderPass, ui::UI &ui);
-
   ~Renderer();
-
   Renderer(const Renderer &) = delete;
   Renderer &operator=(const Renderer &) = delete;
 
   bool beginFrame(FrameData &outFrameData);
   void endFrame(const FrameData &frameData);
 
+  // Swapchain pass
   void beginRenderPass(const FrameData &frameData);
   void endRenderPass(const FrameData &frameData);
+
+  // Offscreen pass
+  void beginOffscreenPass(const FrameData &frameData,
+                          const resource::OffscreenTarget &target);
+  void endOffscreenPass(const FrameData &frameData);
+  void setOffscreenViewportAndScissor(const FrameData &frameData,
+                                      const resource::OffscreenTarget &target);
 
   void bindPipeline(const FrameData &frameData, VkPipeline pipeline,
                     VkPipelineLayout pipelineLayout,
                     const std::vector<VkDescriptorSet> &descriptorSets);
-
+  void setViewportAndScissor(const FrameData &frameData);
   void drawGeometry(const FrameData &frameData);
   void drawUI(const FrameData &frameData);
-
-  void setViewportAndScissor(const FrameData &frameData);
   void recreateSwapchain();
 
   [[nodiscard]] uint32_t currentFrameIndex() const noexcept {
     return _currentFrame;
   }
+  void setFramebufferResized(bool v) noexcept { _framebufferResized = v; }
 
 private:
   // dependencies
@@ -69,7 +75,6 @@ private:
   uint32_t _currentFrame = 0;
   bool _framebufferResized = false;
 
-  // methods
   void waitForFence(uint32_t frameIndex);
   void resetFence(uint32_t frameIndex);
   bool acquireNextImage(uint32_t &imageIndex);
