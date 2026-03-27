@@ -38,27 +38,27 @@ UI::UI(const core::Window &window, const core::Instance &instance,
 
   ImGui_ImplGlfw_InitForVulkan(window_.glfwWindow(), true);
 
-  ImGui_ImplVulkan_PipelineInfo pipeline_info{};
-  pipeline_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-  pipeline_info.RenderPass = render_pass_.renderPass();
+  ImGui_ImplVulkan_PipelineInfo pipelineInfo{};
+  pipelineInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+  pipelineInfo.RenderPass = render_pass_.renderPass();
 
-  ImGui_ImplVulkan_InitInfo init_info{};
-  init_info.Instance = instance_.instance();
-  init_info.PhysicalDevice = device_.physicalDevice();
-  init_info.Device = device_.device();
-  init_info.QueueFamily =
+  ImGui_ImplVulkan_InitInfo initInfo{};
+  initInfo.Instance = instance_.instance();
+  initInfo.PhysicalDevice = device_.physicalDevice();
+  initInfo.Device = device_.device();
+  initInfo.QueueFamily =
       core::QueueFamilyIndices(device_.physicalDevice(), surface_)
           .graphicsFamily();
-  init_info.Queue = device_.graphicsQueue();
-  init_info.PipelineCache = VK_NULL_HANDLE;
-  init_info.DescriptorPool = descriptor_pool_.pool();
-  init_info.Allocator = nullptr;
-  init_info.MinImageCount = core::MAX_FRAMES_IN_FLIGHT;
-  init_info.ImageCount = core::MAX_FRAMES_IN_FLIGHT;
-  init_info.CheckVkResultFn = core::check_vk_result;
-  init_info.PipelineInfoMain = pipeline_info;
+  initInfo.Queue = device_.graphicsQueue();
+  initInfo.PipelineCache = VK_NULL_HANDLE;
+  initInfo.DescriptorPool = descriptor_pool_.pool();
+  initInfo.Allocator = nullptr;
+  initInfo.MinImageCount = core::MAX_FRAMES_IN_FLIGHT;
+  initInfo.ImageCount = core::MAX_FRAMES_IN_FLIGHT;
+  initInfo.CheckVkResultFn = core::check_vk_result;
+  initInfo.PipelineInfoMain = pipelineInfo;
 
-  ImGui_ImplVulkan_Init(&init_info);
+  ImGui_ImplVulkan_Init(&initInfo);
 
   // fps panel
   VKR_UI_INFO("Initializing FPS Panel...");
@@ -113,8 +113,8 @@ void UI::render(VkCommandBuffer commandBuffer) {
   }
 
   ImGui::Render();
-  ImDrawData *draw_data = ImGui::GetDrawData();
-  ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
+  ImDrawData *drawData = ImGui::GetDrawData();
+  ImGui_ImplVulkan_RenderDrawData(drawData, commandBuffer);
 }
 
 void UI::renderFullScreen() {
@@ -142,9 +142,9 @@ void UI::renderFullScreen() {
 
 void UI::renderDockspace() {
   static bool dockspaceOpen = true;
-  static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+  static ImGuiDockNodeFlags dockSpaceFlags = ImGuiDockNodeFlags_None;
 
-  ImGuiWindowFlags window_flags =
+  ImGuiWindowFlags windowFlags =
       ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
 
   const ImGuiViewport *viewport = ImGui::GetMainViewport();
@@ -155,16 +155,16 @@ void UI::renderDockspace() {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
-  window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-  window_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-  window_flags |=
+  windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
+  windowFlags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+  windowFlags |=
       ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-  if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
-    window_flags |= ImGuiWindowFlags_NoBackground;
+  if (dockSpaceFlags & ImGuiDockNodeFlags_PassthruCentralNode)
+    windowFlags |= ImGuiWindowFlags_NoBackground;
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-  ImGui::Begin("DockSpace", &dockspaceOpen, window_flags);
+  ImGui::Begin("DockSpace", &dockspaceOpen, windowFlags);
   ImGui::PopStyleVar();
   ImGui::PopStyleVar(2);
 
@@ -188,12 +188,12 @@ void UI::renderDockspace() {
 
   ImGuiIO &io = ImGui::GetIO();
   if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-    ImGuiID dockspace_id = ImGui::GetID("DockSpace");
-    ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+    ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
+    ImGui::DockSpace(dockSpaceId, ImVec2(0.0f, 0.0f), dockSpaceFlags);
 
-    static bool first_time = true;
-    if (first_time) {
-      first_time = false;
+    static bool firstTime = true;
+    if (firstTime) {
+      firstTime = false;
       setupDockingLayout();
     }
   }
@@ -204,11 +204,11 @@ void UI::renderDockspace() {
 void UI::renderMainViewport() {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
-  ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoMove |
-                                  ImGuiWindowFlags_NoResize |
-                                  ImGuiWindowFlags_NoCollapse;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
+                                 ImGuiWindowFlags_NoResize |
+                                 ImGuiWindowFlags_NoCollapse;
 
-  if (ImGui::Begin("Viewport", nullptr, window_flags)) {
+  if (ImGui::Begin("Viewport", nullptr, windowFlags)) {
     ImVec2 panelSize = ImGui::GetContentRegionAvail();
     if (panelSize.x < 1.0f)
       panelSize.x = 1.0f;
@@ -222,17 +222,6 @@ void UI::renderMainViewport() {
                    panelSize);
     } else {
       ImGui::TextDisabled("(no offscreen target)");
-    }
-
-    if (offscreen_target_) {
-      auto ow = static_cast<float>(offscreen_target_->width());
-      auto oh = static_cast<float>(offscreen_target_->height());
-      if (!offscreen_target_->isResizePending() &&
-          (std::abs(panelSize.x - ow) > 1.0f ||
-           std::abs(panelSize.y - oh) > 1.0f)) {
-        offscreen_target_->requestResize(static_cast<uint32_t>(panelSize.x),
-                                         static_cast<uint32_t>(panelSize.y));
-      }
     }
 
     ImVec2 windowPos = ImGui::GetWindowPos();
@@ -250,11 +239,11 @@ void UI::renderMainViewport() {
 }
 
 void UI::renderPerformancePanel() {
-  ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoMove |
-                                  ImGuiWindowFlags_NoResize |
-                                  ImGuiWindowFlags_NoCollapse;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
+                                 ImGuiWindowFlags_NoResize |
+                                 ImGuiWindowFlags_NoCollapse;
 
-  if (ImGui::Begin("Performance", nullptr, window_flags)) {
+  if (ImGui::Begin("Performance", nullptr, windowFlags)) {
     if (fps_panel_)
       fps_panel_->render(timer_.fps());
   }
@@ -270,21 +259,21 @@ void UI::renderShaderEditor() {
 }
 
 void UI::setupDockingLayout() {
-  ImGuiID dockspace_id = ImGui::GetID("DockSpace");
-  ImGui::DockBuilderRemoveNode(dockspace_id);
-  ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-  ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
+  ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
+  ImGui::DockBuilderRemoveNode(dockSpaceId);
+  ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
+  ImGui::DockBuilderSetNodeSize(dockSpaceId, ImGui::GetMainViewport()->Size);
 
-  ImGuiID dock_right, dock_bottom_right, dock_shader;
-  dock_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.28f,
-                                           nullptr, &dockspace_id);
-  dock_shader = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Up, 0.70f,
-                                            nullptr, &dock_bottom_right);
+  ImGuiID dockRight, dockBottomRight, dockShader;
+  dockRight = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Right, 0.28f,
+                                          nullptr, &dockSpaceId);
+  dockShader = ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Up, 0.70f,
+                                           nullptr, &dockBottomRight);
 
-  ImGui::DockBuilderDockWindow("Shader Editor", dock_shader);
-  ImGui::DockBuilderDockWindow("Performance", dock_bottom_right);
-  ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
-  ImGui::DockBuilderFinish(dockspace_id);
+  ImGui::DockBuilderDockWindow("Shader Editor", dockShader);
+  ImGui::DockBuilderDockWindow("Performance", dockBottomRight);
+  ImGui::DockBuilderDockWindow("Viewport", dockSpaceId);
+  ImGui::DockBuilderFinish(dockSpaceId);
 }
 
 } // namespace vkr::ui
