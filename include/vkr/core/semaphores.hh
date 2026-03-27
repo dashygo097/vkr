@@ -8,6 +8,7 @@ public:
   explicit Semaphore(const Device &device, const VkImage &image);
 
   ~Semaphore();
+
   Semaphore(const Semaphore &) = delete;
   Semaphore &operator=(const Semaphore &) = delete;
 

@@ -11,7 +11,7 @@ namespace vkr::scene {
 class Camera {
 public:
   explicit Camera(const core::Window &window, const Timer &timer,
-                  const pipeline::PipelineMode mode, const float &movemeneSpeed,
+                  pipeline::PipelineMode mode, const float &movementSpeed,
                   const float &mouseSensitivity, const float &fov,
                   const float &aspectRatio, const float &nearPlane,
                   const float &farPlane);
@@ -22,7 +22,7 @@ public:
 
   void track();
 
-  glm::vec3 pos() const { return pos_; }
+  [[nodiscard]] glm::vec3 pos() const noexcept { return pos_; }
 
   // update camera vectors
   glm::mat4 getView() const { return glm::lookAt(pos_, pos_ + front_, up_); }
@@ -71,7 +71,7 @@ public:
     pos_ -= world_up_ * movement_speed_ * deltaTime;
   }
 
-  void toggleLock() { locked_ = !locked_; }
+  void toggleLock() noexcept { locked_ = !locked_; }
   void lock(bool lock) noexcept { locked_ = lock; }
   [[nodiscard]] bool isLocked() const noexcept { return locked_; }
 

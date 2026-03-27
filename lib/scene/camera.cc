@@ -3,15 +3,15 @@
 
 namespace vkr::scene {
 Camera::Camera(const core::Window &window, const Timer &timer,
-               const pipeline::PipelineMode mode, const float &movementSpeed,
+               pipeline::PipelineMode mode, const float &movementSpeed,
                const float &mouseSensitivity, const float &fov,
                const float &aspectRatio, const float &nearPlane,
                const float &farPlane)
     : window_(window), timer_(timer), mode_(mode),
       movement_speed_(movementSpeed), mouse_sensitivity_(mouseSensitivity),
       fov_(fov), aspect_ratio_(aspectRatio), near_plane_(nearPlane),
-      far_plane_(farPlane), locked_(false), last_x_(window.width() / 2.0),
-      last_y_(window.height() / 2.0), first_mouse_(true) {
+      far_plane_(farPlane), last_x_(window.width() / 2.0),
+      last_y_(window.height() / 2.0) {
   right_ = glm::normalize(glm::cross(front_, world_up_));
   up_ = glm::normalize(glm::cross(right_, front_));
 
