@@ -149,9 +149,9 @@ public:
   template <typename ResourceType>
   std::vector<std::shared_ptr<ResourceType>> listResources(
       const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
-          &resource_map) const {
-    std::vector<std::shared_ptr<ResourceType>> resources;
-    for (const auto &[_, resource] : resource_map) {
+          &resourceMap) const {
+    std::vector<std::shared_ptr<ResourceType>> resources(resourceMap.size());
+    for (const auto &[_, resource] : resourceMap) {
       resources.push_back(resource);
     }
     return resources;
@@ -159,9 +159,9 @@ public:
   template <typename ResourceType>
   std::vector<std::string> listResourceNames(
       const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
-          &resource_map) const {
-    std::vector<std::string> names;
-    for (const auto &[name, _] : resource_map) {
+          &resourceMap) const {
+    std::vector<std::string> names(resourceMap.size());
+    for (const auto &[name, _] : resourceMap) {
       names.push_back(name);
     }
     return names;

@@ -16,10 +16,14 @@ public:
 
   ~Instance();
 
+  [[nodiscard]] std::string name() const noexcept { return name_; }
+  [[nodiscard]] uint32_t version() const noexcept { return version_; }
   [[nodiscard]] VkInstance instance() const noexcept { return vk_instance_; }
 
 private:
   // components
+  std::string name_{};
+  uint32_t version_;
   VkInstance vk_instance_{VK_NULL_HANDLE};
 
 #ifndef NDEBUG
