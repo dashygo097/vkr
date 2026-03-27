@@ -5,7 +5,8 @@
 namespace vkr::core {
 Instance::Instance(std::string appName, uint32_t appVersion,
                    const std::vector<const char *> &preExtensions,
-                   const std::vector<const char *> &validationLayers) {
+                   const std::vector<const char *> &validationLayers)
+    : name_(appName), version_(appVersion) {
   VKR_CORE_INFO("Creating Vulkan Instance: {} ({}.{}.{})...", appName,
                 VK_VERSION_MAJOR(appVersion), VK_VERSION_MINOR(appVersion),
                 VK_VERSION_PATCH(appVersion));

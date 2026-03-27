@@ -17,11 +17,11 @@ GraphicsPipeline::GraphicsPipeline(
   VKR_PIPE_INFO("Graphics pipeline initializing...");
 
   loadDefaultSources();
-  std::string vert_err = "Default vertex shader compilation failed!";
-  std::string frag_err = "Default fragment shader compilation failed!";
+  std::string vertErr = "Default vertex shader compilation failed!";
+  std::string fragErr = "Default fragment shader compilation failed!";
 
-  auto vertSpv = compileGlsl(vert_src_, true, vert_err);
-  auto fragSpv = compileGlsl(frag_src_, false, frag_err);
+  auto vertSpv = compileGlsl(vert_src_, true, vertErr);
+  auto fragSpv = compileGlsl(frag_src_, false, fragErr);
   if (!build(vertSpv, fragSpv))
     VKR_PIPE_ERROR("Failed to build graphics pipeline from default sources!");
 
