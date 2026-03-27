@@ -75,10 +75,6 @@ void ShaderEditor::render() {
   }
   if (!canCompile)
     ImGui::EndDisabled();
-
-  ImGui::SameLine();
-  if (ImGui::Button("Clear Status", ImVec2(100, 0)))
-    state_.statusMessage.clear();
 }
 
 } // namespace vkr::ui
