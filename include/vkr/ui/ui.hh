@@ -20,8 +20,7 @@ enum LayoutMode {
 };
 
 struct ViewportInfo {
-  float x, y;
-  float width, height;
+  float x, y, width, height;
   bool isFocused;
   bool isHovered;
 };
@@ -54,6 +53,7 @@ public:
       break;
     }
   }
+
   void viewportInfo(const ViewportInfo &info) noexcept {
     viewport_info_ = info;
   }
@@ -86,6 +86,7 @@ private:
   ViewportInfo viewport_info_{};
 
   // helpers
+  void renderFullScreen();
   void renderDockspace();
   void renderMainViewport();
   void renderPerformancePanel();

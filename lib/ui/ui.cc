@@ -102,6 +102,7 @@ void UI::render(VkCommandBuffer commandBuffer) {
 
   switch (layout_mode_) {
   case LayoutMode::FullScreen:
+    renderFullScreen();
     break;
   case LayoutMode::Standard:
     renderDockspace();
@@ -114,6 +115,29 @@ void UI::render(VkCommandBuffer commandBuffer) {
   ImGui::Render();
   ImDrawData *draw_data = ImGui::GetDrawData();
   ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
+}
+
+void UI::renderFullScreen() {
+  const ImGuiViewport *viewport = ImGui::GetMainViewport();
+  ImGui::SetNextWindowPos(viewport->WorkPos);
+  ImGui::SetNextWindowSize(viewport->WorkSize);
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+  ImGuiWindowFlags flags =
+      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+  if (ImGui::Begin("Fullscreen Viewport", nullptr, flags)) {
+    if (offscreen_target_ && offscreen_target_->imguiDescriptorSet()) {
+      ImGui::Image(reinterpret_cast<ImTextureID>(
+                       offscreen_target_->imguiDescriptorSet()),
+                   ImGui::GetContentRegionAvail());
+    }
+  }
+  ImGui::End();
+  ImGui::PopStyleVar(2);
 }
 
 void UI::renderDockspace() {
@@ -191,7 +215,6 @@ void UI::renderMainViewport() {
     if (panelSize.y < 1.0f)
       panelSize.y = 1.0f;
 
-    // Display the offscreen texture if available
     if (offscreen_target_ &&
         offscreen_target_->imguiDescriptorSet() != VK_NULL_HANDLE) {
       ImGui::Image(reinterpret_cast<ImTextureID>(
