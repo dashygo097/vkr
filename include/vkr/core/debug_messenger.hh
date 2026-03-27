@@ -4,7 +4,7 @@
 
 namespace vkr::core {
 
-class DebugMessenger {
+class DebugMessenger final {
 public:
   explicit DebugMessenger(VkInstance instance);
   ~DebugMessenger();
