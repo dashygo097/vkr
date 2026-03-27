@@ -3,6 +3,7 @@
 #include "./device.hh"
 
 namespace vkr::core {
+
 class Fence {
 public:
   explicit Fence(const Device &device, const VkImage &image);
