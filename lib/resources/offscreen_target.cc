@@ -15,11 +15,13 @@ OffscreenTarget::OffscreenTarget(const core::Device &device,
 OffscreenTarget::~OffscreenTarget() { destroy(); }
 
 void OffscreenTarget::resize(uint32_t width, uint32_t height) {
+  vkDeviceWaitIdle(device_.device());
+
   if (imgui_ds_ != VK_NULL_HANDLE) {
     ImGui_ImplVulkan_RemoveTexture(imgui_ds_);
     imgui_ds_ = VK_NULL_HANDLE;
   }
-  vkDeviceWaitIdle(device_.device());
+
   destroy();
   width_ = width;
   height_ = height;

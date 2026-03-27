@@ -122,7 +122,12 @@ void VulkanApplication::mainLoop() {
     if (isNowTabKeyPressed && !isLastTabKeyPressed)
       ui->switchLayoutMode();
 
-    camera->lock(ui->layoutMode() == ui::LayoutMode::Standard);
+    bool shouldLockCamera = false;
+    if (ui->layoutMode() == ui::LayoutMode::Standard) {
+      shouldLockCamera = !ui->viewportInfo().isHovered;
+    }
+
+    camera->lock(shouldLockCamera);
 
     timer->update();
     onUpdate(timer->deltaTime());
