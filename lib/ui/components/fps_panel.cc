@@ -26,11 +26,11 @@ void FPSPanel::render(float fps) {
   uint32_t count = is_filled_ ? FPS_PANEL_HISTORY_SIZE : fps_index_;
   avg_fps_ = (count > 0) ? (sum_fps_ / count) : 0.0f;
 
-  ImVec4 fps_color = fps > 59   ? ImVec4(0.60f, 1.00f, 0.80f, 0.85f)
-                     : fps > 29 ? ImVec4(1.00f, 0.95f, 0.55f, 0.85f)
-                                : ImVec4(1.00f, 0.60f, 0.60f, 0.85f);
+  ImVec4 fpsColor = fps > 59   ? ImVec4(0.60f, 1.00f, 0.80f, 0.85f)
+                    : fps > 29 ? ImVec4(1.00f, 0.95f, 0.55f, 0.85f)
+                               : ImVec4(1.00f, 0.60f, 0.60f, 0.85f);
 
-  ImGui::TextColored(fps_color, "FPS: %.1f", fps);
+  ImGui::TextColored(fpsColor, "FPS: %.1f", fps);
   ImGui::Text("Frame Time: %.2f ms", 1000.0f / fps);
 
   ImGui::Separator();
