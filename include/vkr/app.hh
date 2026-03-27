@@ -40,6 +40,7 @@ public:
   // resource management
   std::unique_ptr<resource::DepthResources> depthResources;
   std::unique_ptr<resource::ResourceManager> resourceManager;
+  std::unique_ptr<resource::OffscreenTarget> offscreenTarget;
 
   // pipeline
   std::unique_ptr<pipeline::RenderPass> renderPass;

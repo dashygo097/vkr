@@ -1,9 +1,10 @@
 #pragma once
-
 #include "../core/device.hh"
 #include "../resources/manager.hh"
 #include "./descriptors/set.hh"
 #include "./render_pass.hh"
+#include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -37,11 +38,20 @@ public:
 
   bool flushPendingRebuild();
 
+  void buildOffscreen(VkRenderPass offscreenRenderPass);
+  void destroyOffscreenHandles();
+
   [[nodiscard]] VkPipelineLayout pipelineLayout() const noexcept {
     return vk_pipeline_layout_;
   }
   [[nodiscard]] VkPipeline pipeline() const noexcept {
     return vk_graphics_pipeline_;
+  }
+  [[nodiscard]] VkPipelineLayout offscreenPipelineLayout() const noexcept {
+    return vk_offscreen_layout_;
+  }
+  [[nodiscard]] VkPipeline offscreenPipeline() const noexcept {
+    return vk_offscreen_pipeline_;
   }
   [[nodiscard]] const std::string &vertexSource() const noexcept {
     return vert_src_;
@@ -61,6 +71,11 @@ private:
   // components
   VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
   VkPipeline vk_graphics_pipeline_{VK_NULL_HANDLE};
+
+  VkPipelineLayout vk_offscreen_layout_{VK_NULL_HANDLE};
+  VkPipeline vk_offscreen_pipeline_{VK_NULL_HANDLE};
+  VkRenderPass offscreen_render_pass_{VK_NULL_HANDLE};
+
   std::string vert_src_path_;
   std::string frag_src_path_;
   std::string vert_src_;
@@ -80,7 +95,14 @@ private:
   // helpers
   bool build(const std::vector<uint32_t> &vertSpv,
              const std::vector<uint32_t> &fragSpv);
+
+  bool buildInto(const std::vector<uint32_t> &vertSpv,
+                 const std::vector<uint32_t> &fragSpv,
+                 VkRenderPass targetRenderPass, VkPipelineLayout &outLayout,
+                 VkPipeline &outPipeline);
+
   void destroyHandles();
+
   std::vector<uint32_t> compileGlsl(const std::string &src, bool isVertex,
                                     std::string &outError);
   void loadDefaultSources();

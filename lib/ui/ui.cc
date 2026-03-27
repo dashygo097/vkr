@@ -9,17 +9,19 @@
 #include <imgui_internal.h>
 
 namespace vkr::ui {
+
 UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
        pipeline::GraphicsPipeline &graphicsPipeline, const Timer &timer,
-       pipeline::PipelineMode mode)
+       pipeline::PipelineMode mode, resource::OffscreenTarget *offscreenTarget)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), render_pass_(renderPass),
       descriptor_pool_(descriptorPool), graphics_pipeline_(graphicsPipeline),
-      timer_(timer), mode_(mode) {
+      timer_(timer), mode_(mode), offscreen_target_(offscreenTarget) {
+
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
 
@@ -33,13 +35,14 @@ UI::UI(const core::Window &window, const core::Instance &instance,
     style.WindowRounding = 0.0f;
     style.Colors[ImGuiCol_WindowBg].w = 1.0f;
   }
+
   ImGui_ImplGlfw_InitForVulkan(window_.glfwWindow(), true);
 
-  ImGui_ImplVulkan_PipelineInfo pipeline_info = {};
+  ImGui_ImplVulkan_PipelineInfo pipeline_info{};
   pipeline_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
   pipeline_info.RenderPass = render_pass_.renderPass();
 
-  ImGui_ImplVulkan_InitInfo init_info = {};
+  ImGui_ImplVulkan_InitInfo init_info{};
   init_info.Instance = instance_.instance();
   init_info.PhysicalDevice = device_.physicalDevice();
   init_info.Device = device_.device();
@@ -100,7 +103,6 @@ void UI::render(VkCommandBuffer commandBuffer) {
   switch (layout_mode_) {
   case LayoutMode::FullScreen:
     break;
-
   case LayoutMode::Standard:
     renderDockspace();
     renderMainViewport();
@@ -134,9 +136,8 @@ void UI::renderDockspace() {
   window_flags |=
       ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-  if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode) {
+  if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
     window_flags |= ImGuiWindowFlags_NoBackground;
-  }
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
   ImGui::Begin("DockSpace", &dockspaceOpen, window_flags);
@@ -149,19 +150,15 @@ void UI::renderDockspace() {
       }
       ImGui::EndMenu();
     }
-
     if (ImGui::BeginMenu("View")) {
       if (ImGui::MenuItem("Full Screen", nullptr,
-                          layout_mode_ == LayoutMode::FullScreen)) {
+                          layout_mode_ == LayoutMode::FullScreen))
         layout_mode_ = LayoutMode::FullScreen;
-      }
       if (ImGui::MenuItem("Standard Layout", nullptr,
-                          layout_mode_ == LayoutMode::Standard)) {
+                          layout_mode_ == LayoutMode::Standard))
         layout_mode_ = LayoutMode::Standard;
-      }
       ImGui::EndMenu();
     }
-
     ImGui::EndMenuBar();
   }
 
@@ -188,18 +185,36 @@ void UI::renderMainViewport() {
                                   ImGuiWindowFlags_NoCollapse;
 
   if (ImGui::Begin("Viewport", nullptr, window_flags)) {
-    ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+    ImVec2 panelSize = ImGui::GetContentRegionAvail();
+    if (panelSize.x < 1.0f)
+      panelSize.x = 1.0f;
+    if (panelSize.y < 1.0f)
+      panelSize.y = 1.0f;
 
-    ImGui::Text("Main Rendering Viewport");
-    ImGui::Text("Size: %.0f x %.0f", viewportPanelSize.x, viewportPanelSize.y);
+    // Display the offscreen texture if available
+    if (offscreen_target_ &&
+        offscreen_target_->imguiDescriptorSet() != VK_NULL_HANDLE) {
+      ImGui::Image(reinterpret_cast<ImTextureID>(
+                       offscreen_target_->imguiDescriptorSet()),
+                   panelSize);
+    } else {
+      ImGui::TextDisabled("(no offscreen target)");
+    }
 
-    // ImGui::Image((ImTextureID)m_viewportTextureID, viewportPanelSize);
+    if (offscreen_target_) {
+      auto ow = static_cast<float>(offscreen_target_->width());
+      auto oh = static_cast<float>(offscreen_target_->height());
+      if (!offscreen_target_->isResizePending() &&
+          (std::abs(panelSize.x - ow) > 1.0f ||
+           std::abs(panelSize.y - oh) > 1.0f)) {
+        offscreen_target_->requestResize(static_cast<uint32_t>(panelSize.x),
+                                         static_cast<uint32_t>(panelSize.y));
+      }
+    }
 
     ImVec2 windowPos = ImGui::GetWindowPos();
-    ImVec2 windowSize = ImGui::GetWindowSize();
     ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
     ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
-
     viewport_info_.x = windowPos.x + contentMin.x;
     viewport_info_.y = windowPos.y + contentMin.y;
     viewport_info_.width = contentMax.x - contentMin.x;
@@ -208,7 +223,6 @@ void UI::renderMainViewport() {
     viewport_info_.isHovered = ImGui::IsWindowHovered();
   }
   ImGui::End();
-
   ImGui::PopStyleVar();
 }
 
@@ -218,11 +232,8 @@ void UI::renderPerformancePanel() {
                                   ImGuiWindowFlags_NoCollapse;
 
   if (ImGui::Begin("Performance", nullptr, window_flags)) {
-    ImGuiIO &io = ImGui::GetIO();
-
-    if (fps_panel_) {
+    if (fps_panel_)
       fps_panel_->render(timer_.fps());
-    }
   }
   ImGui::End();
 }
@@ -230,9 +241,8 @@ void UI::renderPerformancePanel() {
 void UI::renderShaderEditor() {
   ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                            ImGuiWindowFlags_NoCollapse;
-  if (ImGui::Begin("Shader Editor", nullptr, flags)) {
+  if (ImGui::Begin("Shader Editor", nullptr, flags))
     shader_editor_->render();
-  }
   ImGui::End();
 }
 
@@ -243,7 +253,6 @@ void UI::setupDockingLayout() {
   ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
 
   ImGuiID dock_right, dock_bottom_right, dock_shader;
-
   dock_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.28f,
                                            nullptr, &dockspace_id);
   dock_shader = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Up, 0.70f,
@@ -252,7 +261,6 @@ void UI::setupDockingLayout() {
   ImGui::DockBuilderDockWindow("Shader Editor", dock_shader);
   ImGui::DockBuilderDockWindow("Performance", dock_bottom_right);
   ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
-
   ImGui::DockBuilderFinish(dockspace_id);
 }
 

@@ -21,12 +21,10 @@ bool Renderer::beginFrame(FrameData &outFrameData) {
   waitForFence(_currentFrame);
 
   uint32_t imageIndex;
-  if (!acquireNextImage(imageIndex)) {
+  if (!acquireNextImage(imageIndex))
     return false;
-  }
 
   resetFence(_currentFrame);
-
   vkResetCommandBuffer(command_buffers_->commandBuffer(_currentFrame), 0);
 
   outFrameData.imageIndex = imageIndex;
@@ -37,17 +35,15 @@ bool Renderer::beginFrame(FrameData &outFrameData) {
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
   if (vkBeginCommandBuffer(outFrameData.commandBuffer, &beginInfo) !=
-      VK_SUCCESS) {
+      VK_SUCCESS)
     throw std::runtime_error("failed to begin recording command buffer!");
-  }
 
   return true;
 }
 
 void Renderer::endFrame(const FrameData &frameData) {
-  if (vkEndCommandBuffer(frameData.commandBuffer) != VK_SUCCESS) {
+  if (vkEndCommandBuffer(frameData.commandBuffer) != VK_SUCCESS)
     throw std::runtime_error("failed to record command buffer!");
-  }
 
   submitCommandBuffer(frameData);
   present(frameData.imageIndex);
@@ -68,7 +64,6 @@ void Renderer::beginRenderPass(const FrameData &frameData) {
   std::array<VkClearValue, 2> clearValues{};
   clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
   clearValues[1].depthStencil = {1.0f, 0};
-
   renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
   renderPassInfo.pClearValues = clearValues.data();
 
@@ -80,13 +75,50 @@ void Renderer::endRenderPass(const FrameData &frameData) {
   vkCmdEndRenderPass(frameData.commandBuffer);
 }
 
+void Renderer::beginOffscreenPass(const FrameData &frameData,
+                                  const resource::OffscreenTarget &target) {
+  VkRenderPassBeginInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  info.renderPass = target.renderPass();
+  info.framebuffer = target.framebuffer();
+  info.renderArea.offset = {0, 0};
+  info.renderArea.extent = {target.width(), target.height()};
+
+  std::array<VkClearValue, 2> clear{};
+  clear[0].color = {{0.05f, 0.05f, 0.05f, 1.0f}};
+  clear[1].depthStencil = {1.0f, 0};
+  info.clearValueCount = static_cast<uint32_t>(clear.size());
+  info.pClearValues = clear.data();
+
+  vkCmdBeginRenderPass(frameData.commandBuffer, &info,
+                       VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void Renderer::endOffscreenPass(const FrameData &frameData) {
+  vkCmdEndRenderPass(frameData.commandBuffer);
+}
+
+void Renderer::setOffscreenViewportAndScissor(
+    const FrameData &frameData, const resource::OffscreenTarget &target) {
+  VkViewport vp{};
+  vp.x = 0.0f;
+  vp.y = 0.0f;
+  vp.width = static_cast<float>(target.width());
+  vp.height = static_cast<float>(target.height());
+  vp.minDepth = 0.0f;
+  vp.maxDepth = 1.0f;
+  vkCmdSetViewport(frameData.commandBuffer, 0, 1, &vp);
+
+  VkRect2D scissor{{0, 0}, {target.width(), target.height()}};
+  vkCmdSetScissor(frameData.commandBuffer, 0, 1, &scissor);
+}
+
 void Renderer::bindPipeline(
     const FrameData &frameData, VkPipeline pipeline,
     VkPipelineLayout pipelineLayout,
     const std::vector<VkDescriptorSet> &descriptorSets) {
   vkCmdBindPipeline(frameData.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     pipeline);
-
   if (!descriptorSets.empty()) {
     vkCmdBindDescriptorSets(frameData.commandBuffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0,
@@ -125,12 +157,9 @@ void Renderer::drawGeometry(const FrameData &frameData) {
     if (vertexBuffers[i] && indexBuffers[i]) {
       VkBuffer vb = vertexBuffers[i]->buffer();
       VkDeviceSize offsets[] = {0};
-
       vkCmdBindVertexBuffers(frameData.commandBuffer, 0, 1, &vb, offsets);
-
       vkCmdBindIndexBuffer(frameData.commandBuffer, indexBuffers[i]->buffer(),
                            0, VK_INDEX_TYPE_UINT16);
-
       vkCmdDrawIndexed(frameData.commandBuffer,
                        static_cast<uint32_t>(indexBuffers[i]->indices().size()),
                        1, 0, 0, 0);
@@ -144,7 +173,6 @@ void Renderer::drawUI(const FrameData &frameData) {
 
 void Renderer::recreateSwapchain() {
   device_.waitIdle();
-
   swapchain_.recreate();
   resource_manage_.getFramebuffers("swapchain")->destroy();
   resource_manage_.getFramebuffers("swapchain")->create();
@@ -173,7 +201,6 @@ bool Renderer::acquireNextImage(uint32_t &imageIndex) {
   } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
-
   return true;
 }
 
@@ -188,7 +215,6 @@ void Renderer::submitCommandBuffer(const FrameData &frameData) {
   submitInfo.waitSemaphoreCount = 1;
   submitInfo.pWaitSemaphores = waitSemaphores;
   submitInfo.pWaitDstStageMask = waitStages;
-
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &frameData.commandBuffer;
 
@@ -199,9 +225,8 @@ void Renderer::submitCommandBuffer(const FrameData &frameData) {
 
   if (vkQueueSubmit(device_.graphicsQueue(), 1, &submitInfo,
                     sync_objects_.inFlightFences()[frameData.frameIndex]) !=
-      VK_SUCCESS) {
+      VK_SUCCESS)
     throw std::runtime_error("failed to submit draw command buffer!");
-  }
 }
 
 void Renderer::present(uint32_t imageIndex) {
