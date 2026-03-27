@@ -5,25 +5,17 @@
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
-class CanvasApplication : public vkr::VulkanApplication {
-  const std::vector<vkr::resource::Vertex2D> vertices = {
-      {{0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-      {{1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-      {{1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
-      {{0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}}};
-
-  const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
-
+class TeapotApp : public vkr::VulkanApplication {
 private:
-  void createUniforms() override {
-    resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
-        "default", {});
-  }
-
   std::vector<vkr::pipeline::DescriptorBinding>
   createDescriptorBindings() override {
     return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
              VK_SHADER_STAGE_VERTEX_BIT}};
+  }
+
+  void createUniforms() override {
+    resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
+        "default", {});
   }
 
   void bindDescriptorSets() override {
@@ -37,9 +29,10 @@ private:
 
   void updateUniforms(uint32_t currentImage) override {
     vkr::resource::UniformBuffer3DObject ubo{};
-    ubo.model = glm::mat4(1.0f);
-    ubo.view = glm::mat4(1.0f);
-    ubo.proj = glm::ortho(0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f);
+    ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    ubo.view = camera->getView();
+    ubo.proj = camera->getProjection();
+
     resourceManager->getUniformBuffer("default")->updateRaw(currentImage, &ubo,
                                                             sizeof(ubo));
   }
@@ -50,22 +43,29 @@ private:
 
     ctx.width = 800;
     ctx.height = 600;
-    ctx.title = "Canvas";
+    ctx.title = "Cornell Box";
 
-    ctx.cameraEnabled = false;
+    ctx.cameraEnabled = true;
+    ctx.cameraMovementSpeed = 5.0f;
+    ctx.cameraMouseSensitivity = 0.5f;
+    ctx.cameraFov = 45.0f;
+    ctx.cameraAspectRatio = ctx.width / static_cast<float>(ctx.height);
+    ctx.cameraNearPlane = 0.01f;
+    ctx.cameraFarPlane = 1000.0f;
 
-    ctx.pipelineMode = vkr::pipeline::PipelineMode::Default2D;
+    ctx.pipelineMode = vkr::pipeline::PipelineMode::Default3D;
   }
 
   void onSetup() override {
-    resourceManager->createVertexBuffer<vkr::resource::Vertex2D>("vertices",
-                                                                 vertices);
-    resourceManager->createIndexBuffer("indices", indices);
-  };
+    vkr::resource::Mesh<vkr::resource::Vertex3D> teapot(*device, *commandPool);
+    teapot.load("./assets/teapot/teapot.obj");
+
+    resourceManager->createMesh("teapot", teapot);
+  }
 };
 
 int main() {
-  CanvasApplication app;
+  TeapotApp app;
 
   try {
     app.run();

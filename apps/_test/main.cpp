@@ -5,7 +5,7 @@
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
-class TestApplication : public vkr::VulkanApplication {
+class TestApp : public vkr::VulkanApplication {
 private:
   const std::vector<vkr::resource::VertexTextured3D> vertices1 = {
       {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
@@ -93,7 +93,7 @@ private:
 };
 
 int main() {
-  TestApplication app;
+  TestApp app;
 
   try {
     app.run();

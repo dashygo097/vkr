@@ -20,13 +20,13 @@ include(Dependencies)
 include(LibraryTargets)
 include(Stastics)
 
-# tests 
-if(ENABLE_TESTING)
+# tools 
+if(ENABLE_TOOLING)
   enable_testing()
-  add_subdirectory(tests)
+  add_subdirectory(tools)
 endif()
 
 # excutables 
 if(ENABLE_EXECUTABLES) 
-  add_subdirectory(tools)
+  add_subdirectory(apps)
 endif()

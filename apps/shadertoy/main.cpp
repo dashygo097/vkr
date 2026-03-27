@@ -6,15 +6,7 @@
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
-struct ShaderToyConfig {
-  int width{800};
-  int height{600};
-};
-
-class ShaderToyApplication : public vkr::VulkanApplication {
-public:
-  ShaderToyApplication(const ShaderToyConfig &config) : config(config) {}
-
+class ShaderToyApp : public vkr::VulkanApplication {
 private:
   std::chrono::high_resolution_clock::time_point startTime;
   std::chrono::high_resolution_clock::time_point lastFrameTime;
@@ -23,8 +15,6 @@ private:
 
   glm::vec4 mouseState{0.0f};
   bool mousePressed{false};
-
-  ShaderToyConfig config;
 
   void createUniforms() override {
     resourceManager
@@ -104,8 +94,8 @@ private:
     ctx.appName = "ShaderToy";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
 
-    ctx.width = config.width;
-    ctx.height = config.height;
+    ctx.width = 640;
+    ctx.height = 480;
     ctx.title = "ShaderToy Viewer";
 
     ctx.cameraEnabled = false;
@@ -117,50 +107,9 @@ private:
   }
 };
 
-void printUsage(const char *programName) {
-  std::cout << "Usage: " << programName << " [options]\n"
-            << "Options:\n"
-            << "  -w, --width <width>      Window width (default: 800)\n"
-            << "  -h, --height <height>    Window height (default: 600)\n"
-            << "  --help                   Display this help message\n"
-            << std::endl;
-}
-
-ShaderToyConfig parseArgs(int argc, char *argv[]) {
-  ShaderToyConfig config;
-
-  for (int i = 1; i < argc; ++i) {
-    std::string arg = argv[i];
-
-    if (arg == "--help") {
-      printUsage(argv[0]);
-      exit(0);
-    } else if ((arg == "-w" || arg == "--width") && i + 1 < argc) {
-      config.width = std::atoi(argv[++i]);
-      if (config.width <= 0) {
-        std::cerr << "Error: Invalid width value\n";
-        exit(EXIT_FAILURE);
-      }
-    } else if ((arg == "-h" || arg == "--height") && i + 1 < argc) {
-      config.height = std::atoi(argv[++i]);
-      if (config.height <= 0) {
-        std::cerr << "Error: Invalid height value\n";
-        exit(EXIT_FAILURE);
-      }
-    } else {
-      std::cerr << "Error: Unknown argument '" << arg << "'\n";
-      printUsage(argv[0]);
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  return config;
-}
-
 int main(int argc, char *argv[]) {
-  ShaderToyConfig config = parseArgs(argc, argv);
+  ShaderToyApp app;
 
-  ShaderToyApplication app(config);
   try {
     app.run();
   } catch (const std::exception &e) {
