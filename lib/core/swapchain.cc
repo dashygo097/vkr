@@ -118,8 +118,8 @@ void Swapchain::destroy() {
   }
 }
 
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(
-    const std::vector<VkSurfaceFormatKHR> &availableFormats) {
+auto chooseSwapSurfaceFormat(
+    const std::vector<VkSurfaceFormatKHR> &availableFormats) -> VkSurfaceFormatKHR {
   for (const auto &availableFormat : availableFormats) {
     if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
         availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -130,8 +130,8 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(
   return availableFormats[0];
 }
 
-VkPresentModeKHR chooseSwapPresentMode(
-    const std::vector<VkPresentModeKHR> &availablePresentModes) {
+auto chooseSwapPresentMode(
+    const std::vector<VkPresentModeKHR> &availablePresentModes) -> VkPresentModeKHR {
   for (const auto &availablePresentMode : availablePresentModes) {
     if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
       return availablePresentMode;
@@ -141,8 +141,8 @@ VkPresentModeKHR chooseSwapPresentMode(
   return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D chooseSwapExtent(GLFWwindow *window,
-                            const VkSurfaceCapabilitiesKHR &capabilities) {
+auto chooseSwapExtent(GLFWwindow *window,
+                            const VkSurfaceCapabilitiesKHR &capabilities) -> VkExtent2D {
   if (capabilities.currentExtent.width !=
       std::numeric_limits<uint32_t>::max()) {
     return capabilities.currentExtent;
@@ -164,8 +164,8 @@ VkExtent2D chooseSwapExtent(GLFWwindow *window,
   }
 }
 
-SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice physicalDevice,
-                                              VkSurfaceKHR surface) {
+auto querySwapchainSupport(VkPhysicalDevice physicalDevice,
+                                              VkSurfaceKHR surface) -> SwapchainSupportDetails {
   SwapchainSupportDetails details;
 
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,

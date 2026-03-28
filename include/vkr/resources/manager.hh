@@ -27,7 +27,7 @@ public:
   ~ResourceManager() = default;
 
   ResourceManager(const ResourceManager &) = delete;
-  ResourceManager &operator=(const ResourceManager &) = delete;
+  auto operator=(const ResourceManager &) -> ResourceManager & = delete;
 
   // Vertex Buffer Management
   template <typename VBOType>
@@ -39,7 +39,7 @@ public:
     vertex_buffers_[name] = std::move(vb);
   }
 
-  std::shared_ptr<IVertexBuffer> getVertexBuffer(const std::string &name) {
+  auto getVertexBuffer(const std::string &name) -> std::shared_ptr<IVertexBuffer> {
     auto it = vertex_buffers_.find(name);
     return it != vertex_buffers_.end() ? it->second : nullptr;
   }
@@ -56,7 +56,7 @@ public:
     index_buffers_[name] = std::move(ib);
   }
 
-  std::shared_ptr<IndexBuffer> getIndexBuffer(const std::string &name) {
+  auto getIndexBuffer(const std::string &name) -> std::shared_ptr<IndexBuffer> {
     auto it = index_buffers_.find(name);
     return it != index_buffers_.end() ? it->second : nullptr;
   }
@@ -73,7 +73,7 @@ public:
     uniform_buffers_[name] = std::move(ub);
   }
 
-  std::shared_ptr<IUniformBuffer> getUniformBuffer(const std::string &name) {
+  auto getUniformBuffer(const std::string &name) -> std::shared_ptr<IUniformBuffer> {
     auto it = uniform_buffers_.find(name);
     return it != uniform_buffers_.end() ? it->second : nullptr;
   }
@@ -89,7 +89,7 @@ public:
     frame_buffers_[name] = std::move(fb);
   }
 
-  std::shared_ptr<Framebuffers> getFramebuffers(const std::string &name) {
+  auto getFramebuffers(const std::string &name) -> std::shared_ptr<Framebuffers> {
     auto it = frame_buffers_.find(name);
     return it != frame_buffers_.end() ? it->second : nullptr;
   }
@@ -117,17 +117,17 @@ public:
     texture_samplers_[name] = std::move(sampler);
   }
 
-  std::shared_ptr<Image> getTextureImage(const std::string &name) {
+  auto getTextureImage(const std::string &name) -> std::shared_ptr<Image> {
     auto it = texture_images_.find(name);
     return it != texture_images_.end() ? it->second : nullptr;
   }
 
-  std::shared_ptr<ImageView> getTextureImageView(const std::string &name) {
+  auto getTextureImageView(const std::string &name) -> std::shared_ptr<ImageView> {
     auto it = texture_imageviews_.find(name);
     return it != texture_imageviews_.end() ? it->second : nullptr;
   }
 
-  std::shared_ptr<Sampler> getTextureSampler(const std::string &name) {
+  auto getTextureSampler(const std::string &name) -> std::shared_ptr<Sampler> {
     auto it = texture_samplers_.find(name);
     return it != texture_samplers_.end() ? it->second : nullptr;
   }
@@ -139,17 +139,17 @@ public:
   }
 
   // Utility functions
-  size_t vertexBufferCount() const { return vertex_buffers_.size(); }
-  size_t indexBufferCount() const { return index_buffers_.size(); }
-  size_t uniformBufferCount() const { return uniform_buffers_.size(); }
-  size_t framebufferCount() const { return frame_buffers_.size(); }
-  size_t textureImageCount() const { return texture_images_.size(); }
+  [[nodiscard]] auto vertexBufferCount() const -> size_t { return vertex_buffers_.size(); }
+  [[nodiscard]] auto indexBufferCount() const -> size_t { return index_buffers_.size(); }
+  [[nodiscard]] auto uniformBufferCount() const -> size_t { return uniform_buffers_.size(); }
+  [[nodiscard]] auto framebufferCount() const -> size_t { return frame_buffers_.size(); }
+  [[nodiscard]] auto textureImageCount() const -> size_t { return texture_images_.size(); }
 
   // List all resources
   template <typename ResourceType>
-  std::vector<std::shared_ptr<ResourceType>> listResources(
+  [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] auto listResources(
       const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
-          &resourceMap) const {
+          &resourceMap) const -> std::vector<std::shared_ptr<ResourceType>> {
     std::vector<std::shared_ptr<ResourceType>> resources(resourceMap.size());
     for (const auto &[_, resource] : resourceMap) {
       resources.push_back(resource);
@@ -157,9 +157,9 @@ public:
     return resources;
   }
   template <typename ResourceType>
-  std::vector<std::string> listResourceNames(
+  [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] auto listResourceNames(
       const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
-          &resourceMap) const {
+          &resourceMap) const -> std::vector<std::string> {
     std::vector<std::string> names(resourceMap.size());
     for (const auto &[name, _] : resourceMap) {
       names.push_back(name);
@@ -167,34 +167,34 @@ public:
     return names;
   }
 
-  std::vector<std::shared_ptr<IVertexBuffer>> listVertexBuffers() const {
+  [[nodiscard]] auto listVertexBuffers() const -> std::vector<std::shared_ptr<IVertexBuffer>> {
     return listResources<IVertexBuffer>(vertex_buffers_);
   }
-  std::vector<std::string> listVertexBufferNames() const {
+  [[nodiscard]] auto listVertexBufferNames() const -> std::vector<std::string> {
     return listResourceNames<IVertexBuffer>(vertex_buffers_);
   }
-  std::vector<std::shared_ptr<IndexBuffer>> listIndexBuffers() const {
+  [[nodiscard]] auto listIndexBuffers() const -> std::vector<std::shared_ptr<IndexBuffer>> {
     return listResources<IndexBuffer>(index_buffers_);
   }
-  std::vector<std::string> listIndexBufferNames() const {
+  [[nodiscard]] auto listIndexBufferNames() const -> std::vector<std::string> {
     return listResourceNames<IndexBuffer>(index_buffers_);
   }
-  std::vector<std::shared_ptr<IUniformBuffer>> listUniformBuffers() const {
+  [[nodiscard]] auto listUniformBuffers() const -> std::vector<std::shared_ptr<IUniformBuffer>> {
     return listResources<IUniformBuffer>(uniform_buffers_);
   }
-  std::vector<std::string> listUniformBufferNames() const {
+  [[nodiscard]] auto listUniformBufferNames() const -> std::vector<std::string> {
     return listResourceNames<IUniformBuffer>(uniform_buffers_);
   }
-  std::vector<std::shared_ptr<Framebuffers>> listFramebuffers() const {
+  [[nodiscard]] auto listFramebuffers() const -> std::vector<std::shared_ptr<Framebuffers>> {
     return listResources<Framebuffers>(frame_buffers_);
   }
-  std::vector<std::string> listFramebufferNames() const {
+  [[nodiscard]] auto listFramebufferNames() const -> std::vector<std::string> {
     return listResourceNames<Framebuffers>(frame_buffers_);
   }
-  std::vector<std::shared_ptr<Image>> listTextureImages() const {
+  [[nodiscard]] auto listTextureImages() const -> std::vector<std::shared_ptr<Image>> {
     return listResources<Image>(texture_images_);
   }
-  std::vector<std::string> listTextureImageNames() const {
+  [[nodiscard]] auto listTextureImageNames() const -> std::vector<std::string> {
     return listResourceNames<Image>(texture_images_);
   }
 

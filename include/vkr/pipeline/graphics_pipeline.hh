@@ -28,36 +28,36 @@ public:
                             PipelineMode mode = PipelineMode::Default3D);
   ~GraphicsPipeline();
   GraphicsPipeline(const GraphicsPipeline &) = delete;
-  GraphicsPipeline &operator=(const GraphicsPipeline &) = delete;
+  auto operator=(const GraphicsPipeline &) -> GraphicsPipeline & = delete;
 
-  bool rebuild(const std::string &vertShaderPath,
-               const std::string &fragShaderPath);
+  auto rebuild(const std::string &vertShaderPath,
+               const std::string &fragShaderPath) -> bool;
 
   void requestRebuildFromSource(
       const std::string &vertSrc, const std::string &fragSrc,
       std::function<void(bool, const std::string &)> callback);
 
-  bool flushPendingRebuild();
+  auto flushPendingRebuild() -> bool;
 
   void buildOffscreen(VkRenderPass offscreenRenderPass);
   void destroyOffscreenHandles();
 
-  [[nodiscard]] VkPipelineLayout pipelineLayout() const noexcept {
+  [[nodiscard]] auto pipelineLayout() const noexcept -> VkPipelineLayout {
     return vk_pipeline_layout_;
   }
-  [[nodiscard]] VkPipeline pipeline() const noexcept {
+  [[nodiscard]] auto pipeline() const noexcept -> VkPipeline {
     return vk_graphics_pipeline_;
   }
-  [[nodiscard]] VkPipelineLayout offscreenPipelineLayout() const noexcept {
+  [[nodiscard]] auto offscreenPipelineLayout() const noexcept -> VkPipelineLayout {
     return vk_offscreen_layout_;
   }
-  [[nodiscard]] VkPipeline offscreenPipeline() const noexcept {
+  [[nodiscard]] auto offscreenPipeline() const noexcept -> VkPipeline {
     return vk_offscreen_pipeline_;
   }
-  [[nodiscard]] const std::string &vertexSource() const noexcept {
+  [[nodiscard]] auto vertexSource() const noexcept -> const std::string & {
     return vert_src_;
   }
-  [[nodiscard]] const std::string &fragmentSource() const noexcept {
+  [[nodiscard]] auto fragmentSource() const noexcept -> const std::string & {
     return frag_src_;
   }
 
@@ -95,18 +95,18 @@ private:
   std::mutex pending_mutex_;
 
   // helpers
-  bool build(const std::vector<uint32_t> &vertSpv,
-             const std::vector<uint32_t> &fragSpv);
+  auto build(const std::vector<uint32_t> &vertSpv,
+             const std::vector<uint32_t> &fragSpv) -> bool;
 
-  bool buildInto(const std::vector<uint32_t> &vertSpv,
+  auto buildInto(const std::vector<uint32_t> &vertSpv,
                  const std::vector<uint32_t> &fragSpv,
                  VkRenderPass targetRenderPass, VkPipelineLayout &outLayout,
-                 VkPipeline &outPipeline);
+                 VkPipeline &outPipeline) -> bool;
 
   void destroyHandles();
 
-  std::vector<uint32_t> compileGlsl(const std::string &src, bool isVertex,
-                                    std::string &outError);
+  auto compileGlsl(const std::string &src, bool isVertex,
+                                    std::string &outError) -> std::vector<uint32_t>;
   void loadDefaultSources();
 };
 

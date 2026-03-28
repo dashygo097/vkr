@@ -11,14 +11,14 @@ struct SwapchainSupportDetails {
   std::vector<VkPresentModeKHR> presentModes;
 };
 
-SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device,
-                                              VkSurfaceKHR surface);
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(
-    const std::vector<VkSurfaceFormatKHR> &availableFormats);
-VkPresentModeKHR chooseSwapPresentMode(
-    const std::vector<VkPresentModeKHR> &availablePresentModes);
-VkExtent2D chooseSwapExtent(GLFWwindow *window,
-                            const VkSurfaceCapabilitiesKHR &capabilities);
+auto querySwapchainSupport(VkPhysicalDevice device,
+                                              VkSurfaceKHR surface) -> SwapchainSupportDetails;
+auto chooseSwapSurfaceFormat(
+    const std::vector<VkSurfaceFormatKHR> &availableFormats) -> VkSurfaceFormatKHR;
+auto chooseSwapPresentMode(
+    const std::vector<VkPresentModeKHR> &availablePresentModes) -> VkPresentModeKHR;
+auto chooseSwapExtent(GLFWwindow *window,
+                            const VkSurfaceCapabilitiesKHR &capabilities) -> VkExtent2D;
 
 class Swapchain {
 public:
@@ -27,19 +27,19 @@ public:
   ~Swapchain();
 
   Swapchain(const Swapchain &) = delete;
-  Swapchain &operator=(const Swapchain &) = delete;
+  auto operator=(const Swapchain &) -> Swapchain & = delete;
 
-  [[nodiscard]] VkSwapchainKHR swapchain() const noexcept {
+  [[nodiscard]] auto swapchain() const noexcept -> VkSwapchainKHR {
     return vk_swapchain_;
   }
-  [[nodiscard]] std::vector<VkImage> images() const noexcept {
+  [[nodiscard]] auto images() const noexcept -> std::vector<VkImage> {
     return vk_images_;
   }
-  [[nodiscard]] std::vector<VkImageView> imageViews() const noexcept {
+  [[nodiscard]] auto imageViews() const noexcept -> std::vector<VkImageView> {
     return vk_imageviews_;
   }
-  [[nodiscard]] VkFormat format() const noexcept { return vk_format_; }
-  [[nodiscard]] VkExtent2D extent2D() const noexcept { return vk_extent_; }
+  [[nodiscard]] auto format() const noexcept -> VkFormat { return vk_format_; }
+  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D { return vk_extent_; }
 
   void create();
   void destroy();

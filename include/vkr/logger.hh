@@ -38,7 +38,7 @@ public:
     dest.append(level_name.data(), level_name.data() + level_name.size());
   }
 
-  std::unique_ptr<custom_flag_formatter> clone() const override {
+  [[nodiscard]] auto clone() const -> std::unique_ptr<custom_flag_formatter> override {
     return std::make_unique<Formatter>();
   }
 };
@@ -47,22 +47,22 @@ class Logger {
 public:
   static void init();
 
-  static std::shared_ptr<spdlog::logger> &getCoreLogger() {
+  static auto getCoreLogger() -> std::shared_ptr<spdlog::logger> & {
     return core_logger_;
   }
-  static std::shared_ptr<spdlog::logger> &getResourceLogger() {
+  static auto getResourceLogger() -> std::shared_ptr<spdlog::logger> & {
     return resource_logger_;
   }
-  static std::shared_ptr<spdlog::logger> &getPipelineLogger() {
+  static auto getPipelineLogger() -> std::shared_ptr<spdlog::logger> & {
     return pipeline_logger_;
   }
-  static std::shared_ptr<spdlog::logger> &getRenderLogger() {
+  static auto getRenderLogger() -> std::shared_ptr<spdlog::logger> & {
     return render_logger_;
   }
-  static std::shared_ptr<spdlog::logger> &getSceneLogger() {
+  static auto getSceneLogger() -> std::shared_ptr<spdlog::logger> & {
     return scene_logger_;
   }
-  static std::shared_ptr<spdlog::logger> &getUiLogger() { return ui_logger_; }
+  static auto getUiLogger() -> std::shared_ptr<spdlog::logger> & { return ui_logger_; }
 
 private:
   static std::shared_ptr<spdlog::logger> core_logger_;

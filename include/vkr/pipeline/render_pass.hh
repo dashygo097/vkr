@@ -11,9 +11,9 @@ public:
   ~RenderPass();
 
   RenderPass(const RenderPass &) = delete;
-  RenderPass &operator=(const RenderPass &) = delete;
+  auto operator=(const RenderPass &) -> RenderPass & = delete;
 
-  [[nodiscard]] VkRenderPass renderPass() const noexcept {
+  [[nodiscard]] auto renderPass() const noexcept -> VkRenderPass {
     return vk_render_pass_;
   }
 

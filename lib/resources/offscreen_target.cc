@@ -34,7 +34,7 @@ void OffscreenTarget::create() {
 
   auto makeImage = [&](uint32_t w, uint32_t h, VkFormat fmt,
                        VkImageUsageFlags usage, VkImage &img,
-                       VkDeviceMemory &mem) {
+                       VkDeviceMemory &mem) -> void {
     VkImageCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     info.imageType = VK_IMAGE_TYPE_2D;
@@ -206,14 +206,16 @@ void OffscreenTarget::registerWithImGui(VkDescriptorPool descriptorPool) {
   VKR_RENDER_INFO("OffscreenTarget registered with ImGui.");
 }
 
-uint32_t OffscreenTarget::findMemoryType(uint32_t filter,
-                                         VkMemoryPropertyFlags props) {
+auto OffscreenTarget::findMemoryType(uint32_t filter,
+                                         VkMemoryPropertyFlags props) -> uint32_t {
   VkPhysicalDeviceMemoryProperties memProps;
   vkGetPhysicalDeviceMemoryProperties(device_.physicalDevice(), &memProps);
-  for (uint32_t i = 0; i < memProps.memoryTypeCount; i++)
+  for (uint32_t i = 0; i < memProps.memoryTypeCount; i++) {
     if ((filter & (1 << i)) &&
-        (memProps.memoryTypes[i].propertyFlags & props) == props)
+        (memProps.memoryTypes[i].propertyFlags & props) == props) {
       return i;
+}
+}
   VKR_RENDER_ERROR("No suitable memory type for offscreen target");
 }
 

@@ -3,8 +3,8 @@
 #include <GLFW/glfw3.h>
 
 namespace vkr::core {
-std::vector<const char *>
-getRequiredExtensions(const std::vector<const char *> &preExtensions) {
+auto
+getRequiredExtensions(const std::vector<const char *> &preExtensions) -> std::vector<const char *> {
   uint32_t glfwExtensionCount = 0;
   const char **glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -22,8 +22,8 @@ getRequiredExtensions(const std::vector<const char *> &preExtensions) {
   return extensions;
 }
 
-bool checkValidationLayerSupport(
-    const std::vector<const char *> &validationLayers) {
+auto checkValidationLayerSupport(
+    const std::vector<const char *> &validationLayers) -> bool {
   uint32_t layerCount;
   vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 

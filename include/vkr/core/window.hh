@@ -12,15 +12,15 @@ public:
   ~Window();
 
   Window(const Window &) = delete;
-  Window &operator=(const Window &) = delete;
+  auto operator=(const Window &) -> Window & = delete;
 
-  [[nodiscard]] bool shouldClose() const;
+  [[nodiscard]] auto shouldClose() const -> bool;
   void pollEvents() const;
 
-  [[nodiscard]] GLFWwindow *glfwWindow() const noexcept { return window_; }
-  [[nodiscard]] uint32_t width() const noexcept { return width_; }
-  [[nodiscard]] uint32_t height() const noexcept { return height_; }
-  [[nodiscard]] std::string title() const noexcept { return title_; }
+  [[nodiscard]] auto glfwWindow() const noexcept -> GLFWwindow * { return window_; }
+  [[nodiscard]] auto width() const noexcept -> uint32_t { return width_; }
+  [[nodiscard]] auto height() const noexcept -> uint32_t { return height_; }
+  [[nodiscard]] auto title() const noexcept -> std::string { return title_; }
 
 private:
   // components

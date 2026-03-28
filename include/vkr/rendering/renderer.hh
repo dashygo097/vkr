@@ -27,9 +27,9 @@ public:
                     const pipeline::RenderPass &renderPass, ui::UI &ui);
   ~Renderer();
   Renderer(const Renderer &) = delete;
-  Renderer &operator=(const Renderer &) = delete;
+  auto operator=(const Renderer &) -> Renderer & = delete;
 
-  bool beginFrame(FrameData &outFrameData);
+  auto beginFrame(FrameData &outFrameData) -> bool;
   void endFrame(const FrameData &frameData);
 
   // Swapchain pass
@@ -51,7 +51,7 @@ public:
   void drawUI(const FrameData &frameData);
   void recreateSwapchain();
 
-  [[nodiscard]] uint32_t currentFrameIndex() const noexcept {
+  [[nodiscard]] auto currentFrameIndex() const noexcept -> uint32_t {
     return _currentFrame;
   }
   void setFramebufferResized(bool v) noexcept { _framebufferResized = v; }
@@ -77,7 +77,7 @@ private:
 
   void waitForFence(uint32_t frameIndex);
   void resetFence(uint32_t frameIndex);
-  bool acquireNextImage(uint32_t &imageIndex);
+  auto acquireNextImage(uint32_t &imageIndex) -> bool;
   void submitCommandBuffer(const FrameData &frameData);
   void present(uint32_t imageIndex);
 };

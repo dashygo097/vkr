@@ -116,11 +116,13 @@ void VulkanApplication::mainLoop() {
     bool isNowTabKeyPressed =
         glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
 
-    if (ctx.cameraEnabled)
+    if (ctx.cameraEnabled) {
       camera->track();
+    }
 
-    if (isNowTabKeyPressed && !isLastTabKeyPressed)
+    if (isNowTabKeyPressed && !isLastTabKeyPressed) {
       ui->switchLayoutMode();
+    }
 
     bool shouldLockCamera = false;
     if (ui->layoutMode() == ui::LayoutMode::Standard) {
@@ -152,11 +154,13 @@ void VulkanApplication::recreateSwapchain() {
 
 void VulkanApplication::drawFrame() {
   render::FrameData frameData;
-  if (!renderer->beginFrame(frameData))
+  if (!renderer->beginFrame(frameData)) {
     return;
+  }
 
-  if (offscreenTarget->flushPendingResize(descriptorPool->pool()))
+  if (offscreenTarget->flushPendingResize(descriptorPool->pool())) {
     graphicsPipeline->buildOffscreen(offscreenTarget->renderPass());
+  }
 
   updateUniforms(frameData.frameIndex);
 

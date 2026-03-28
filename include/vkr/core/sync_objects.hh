@@ -11,17 +11,17 @@ public:
   ~SyncObjects();
 
   SyncObjects(const SyncObjects &) = delete;
-  SyncObjects &operator=(const SyncObjects &) = delete;
+  auto operator=(const SyncObjects &) -> SyncObjects & = delete;
 
-  [[nodiscard]] std::vector<VkSemaphore>
-  imageAvailableSemaphores() const noexcept {
+  [[nodiscard]] auto
+  imageAvailableSemaphores() const noexcept -> std::vector<VkSemaphore> {
     return vk_image_available_semaphores;
   }
-  [[nodiscard]] std::vector<VkSemaphore>
-  renderFinishedSemaphores() const noexcept {
+  [[nodiscard]] auto
+  renderFinishedSemaphores() const noexcept -> std::vector<VkSemaphore> {
     return vk_render_finished_semaphores;
   }
-  [[nodiscard]] std::vector<VkFence> inFlightFences() const noexcept {
+  [[nodiscard]] auto inFlightFences() const noexcept -> std::vector<VkFence> {
     return vk_in_flight_fences;
   }
 

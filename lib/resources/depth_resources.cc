@@ -17,10 +17,10 @@ DepthResources::DepthResources(const core::Device &device,
                      VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
-VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice,
+auto findSupportedFormat(VkPhysicalDevice physicalDevice,
                              const std::vector<VkFormat> &candidates,
                              VkImageTiling tiling,
-                             VkFormatFeatureFlags features) {
+                             VkFormatFeatureFlags features) -> VkFormat {
   for (VkFormat format : candidates) {
     VkFormatProperties props;
     vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
@@ -36,7 +36,7 @@ VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice,
   VKR_RES_ERROR("failed to find supported format!");
 }
 
-VkFormat findDepthFormat(VkPhysicalDevice physicalDevice) {
+auto findDepthFormat(VkPhysicalDevice physicalDevice) -> VkFormat {
   return findSupportedFormat(
       physicalDevice,
       {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,

@@ -12,12 +12,12 @@ public:
   ~CommandBuffers();
 
   CommandBuffers(const CommandBuffers &) = delete;
-  CommandBuffers &operator=(const CommandBuffers &) = delete;
+  auto operator=(const CommandBuffers &) -> CommandBuffers & = delete;
 
-  [[nodiscard]] std::vector<VkCommandBuffer> &commandBuffers() noexcept {
+  [[nodiscard]] auto commandBuffers() noexcept -> std::vector<VkCommandBuffer> & {
     return vk_command_buffers_;
   }
-  [[nodiscard]] VkCommandBuffer &commandBuffer(uint32_t index) {
+  [[nodiscard]] auto commandBuffer(uint32_t index) -> VkCommandBuffer & {
     return vk_command_buffers_.at(index);
   }
 

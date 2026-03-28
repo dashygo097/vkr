@@ -69,10 +69,10 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   // shader editor
   VKR_UI_INFO("Initializing Shader Editor...");
   shader_editor_ = std::make_unique<ShaderEditor>(
-      [this](const std::string &vert, const std::string &frag) {
+      [this](const std::string &vert, const std::string &frag) -> void {
         std::string err;
         graphics_pipeline_.requestRebuildFromSource(
-            vert, frag, [this](bool ok, const std::string &err) {
+            vert, frag, [this](bool ok, const std::string &err) -> void {
               shader_editor_->setStatus(ok ? "Compiled successfully." : err,
                                         !ok);
             });
@@ -160,8 +160,9 @@ void UI::renderDockspace() {
   windowFlags |=
       ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-  if (dockSpaceFlags & ImGuiDockNodeFlags_PassthruCentralNode)
+  if (dockSpaceFlags & ImGuiDockNodeFlags_PassthruCentralNode) {
     windowFlags |= ImGuiWindowFlags_NoBackground;
+  }
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
   ImGui::Begin("DockSpace", &dockspaceOpen, windowFlags);
@@ -176,11 +177,13 @@ void UI::renderDockspace() {
     }
     if (ImGui::BeginMenu("View")) {
       if (ImGui::MenuItem("Full Screen", nullptr,
-                          layout_mode_ == LayoutMode::FullScreen))
+                          layout_mode_ == LayoutMode::FullScreen)) {
         layout_mode_ = LayoutMode::FullScreen;
+      }
       if (ImGui::MenuItem("Standard Layout", nullptr,
-                          layout_mode_ == LayoutMode::Standard))
+                          layout_mode_ == LayoutMode::Standard)) {
         layout_mode_ = LayoutMode::Standard;
+      }
       ImGui::EndMenu();
     }
     ImGui::EndMenuBar();
@@ -210,10 +213,12 @@ void UI::renderMainViewport() {
 
   if (ImGui::Begin("Viewport", nullptr, windowFlags)) {
     ImVec2 panelSize = ImGui::GetContentRegionAvail();
-    if (panelSize.x < 1.0f)
+    if (panelSize.x < 1.0f) {
       panelSize.x = 1.0f;
-    if (panelSize.y < 1.0f)
+    }
+    if (panelSize.y < 1.0f) {
       panelSize.y = 1.0f;
+    }
 
     if (offscreen_target_ &&
         offscreen_target_->imguiDescriptorSet() != VK_NULL_HANDLE) {
@@ -244,8 +249,9 @@ void UI::renderPerformancePanel() {
                                  ImGuiWindowFlags_NoCollapse;
 
   if (ImGui::Begin("Performance", nullptr, windowFlags)) {
-    if (fps_panel_)
+    if (fps_panel_) {
       fps_panel_->render(timer_.fps());
+    }
   }
   ImGui::End();
 }
@@ -253,8 +259,9 @@ void UI::renderPerformancePanel() {
 void UI::renderShaderEditor() {
   ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                            ImGuiWindowFlags_NoCollapse;
-  if (ImGui::Begin("Shader Editor", nullptr, flags))
+  if (ImGui::Begin("Shader Editor", nullptr, flags)) {
     shader_editor_->render();
+  }
   ImGui::End();
 }
 

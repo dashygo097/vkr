@@ -128,7 +128,7 @@ void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
                    &vk_present_queue_);
 }
 
-bool Device::isSuitable(VkPhysicalDevice physicalDevice) {
+auto Device::isSuitable(VkPhysicalDevice physicalDevice) -> bool {
   QueueFamilyIndices indices(physicalDevice, surface_);
   return indices.isComplete();
 }

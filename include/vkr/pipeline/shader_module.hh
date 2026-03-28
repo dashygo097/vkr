@@ -13,9 +13,9 @@ public:
   ~ShaderModule();
 
   ShaderModule(const ShaderModule &) = delete;
-  ShaderModule &operator=(const ShaderModule &) = delete;
+  auto operator=(const ShaderModule &) -> ShaderModule & = delete;
 
-  [[nodiscard]] VkShaderModule module() const noexcept {
+  [[nodiscard]] auto module() const noexcept -> VkShaderModule {
     return vk_shader_module_;
   }
 

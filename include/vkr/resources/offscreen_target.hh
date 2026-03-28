@@ -11,25 +11,25 @@ public:
                   uint32_t height);
   ~OffscreenTarget();
   OffscreenTarget(const OffscreenTarget &) = delete;
-  OffscreenTarget &operator=(const OffscreenTarget &) = delete;
+  auto operator=(const OffscreenTarget &) -> OffscreenTarget & = delete;
 
   void resize(uint32_t width, uint32_t height);
   void create();
   void destroy();
 
-  [[nodiscard]] VkRenderPass renderPass() const noexcept {
+  [[nodiscard]] auto renderPass() const noexcept -> VkRenderPass {
     return render_pass_;
   }
-  [[nodiscard]] VkFramebuffer framebuffer() const noexcept {
+  [[nodiscard]] auto framebuffer() const noexcept -> VkFramebuffer {
     return framebuffer_;
   }
-  [[nodiscard]] VkImageView colorView() const noexcept { return color_view_; }
-  [[nodiscard]] VkSampler sampler() const noexcept { return sampler_; }
-  [[nodiscard]] VkDescriptorSet imguiDescriptorSet() const noexcept {
+  [[nodiscard]] auto colorView() const noexcept -> VkImageView { return color_view_; }
+  [[nodiscard]] auto sampler() const noexcept -> VkSampler { return sampler_; }
+  [[nodiscard]] auto imguiDescriptorSet() const noexcept -> VkDescriptorSet {
     return imgui_ds_;
   }
-  [[nodiscard]] uint32_t width() const noexcept { return width_; }
-  [[nodiscard]] uint32_t height() const noexcept { return height_; }
+  [[nodiscard]] auto width() const noexcept -> uint32_t { return width_; }
+  [[nodiscard]] auto height() const noexcept -> uint32_t { return height_; }
 
   void registerWithImGui(VkDescriptorPool descriptorPool);
 
@@ -39,16 +39,17 @@ public:
     resize_pending_ = true;
   }
 
-  bool flushPendingResize(VkDescriptorPool pool) {
-    if (!resize_pending_)
+  auto flushPendingResize(VkDescriptorPool pool) -> bool {
+    if (!resize_pending_) {
       return false;
+}
     resize_pending_ = false;
     resize(pending_width_, pending_height_);
     registerWithImGui(pool);
     return true;
   }
 
-  [[nodiscard]] bool isResizePending() const noexcept {
+  [[nodiscard]] auto isResizePending() const noexcept -> bool {
     return resize_pending_;
   }
 
@@ -78,7 +79,7 @@ private:
   uint32_t pending_height_{0};
 
   // helpers
-  uint32_t findMemoryType(uint32_t filter, VkMemoryPropertyFlags props);
+  auto findMemoryType(uint32_t filter, VkMemoryPropertyFlags props) -> uint32_t;
 };
 
 } // namespace vkr::resource

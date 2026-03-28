@@ -10,9 +10,9 @@ public:
   ~Fence();
 
   Fence(const Fence &) = delete;
-  Fence &operator=(const Fence &) = delete;
+  auto operator=(const Fence &) -> Fence & = delete;
 
-  [[nodiscard]] VkFence fence() const noexcept { return vk_fence_; }
+  [[nodiscard]] auto fence() const noexcept -> VkFence { return vk_fence_; }
 
 private:
   // dependencies

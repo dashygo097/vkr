@@ -17,7 +17,7 @@ public:
   virtual ~VulkanApplication() { cleanup(); }
 
   VulkanApplication(const VulkanApplication &) = delete;
-  VulkanApplication &operator=(const VulkanApplication &) = delete;
+  auto operator=(const VulkanApplication &) -> VulkanApplication & = delete;
 
   void run() {
     initVulkan();
@@ -69,7 +69,7 @@ protected:
   virtual void onCleanup() {}
 
   virtual void createUniforms() {}
-  virtual std::vector<pipeline::DescriptorBinding> createDescriptorBindings() {
+  virtual auto createDescriptorBindings() -> std::vector<pipeline::DescriptorBinding> {
     return {};
   }
   virtual void bindDescriptorSets() {}

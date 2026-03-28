@@ -17,12 +17,13 @@ Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
 
 Renderer::~Renderer() = default;
 
-bool Renderer::beginFrame(FrameData &outFrameData) {
+auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
   waitForFence(_currentFrame);
 
   uint32_t imageIndex;
-  if (!acquireNextImage(imageIndex))
+  if (!acquireNextImage(imageIndex)) {
     return false;
+}
 
   resetFence(_currentFrame);
   vkResetCommandBuffer(command_buffers_->commandBuffer(_currentFrame), 0);
@@ -35,15 +36,17 @@ bool Renderer::beginFrame(FrameData &outFrameData) {
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
   if (vkBeginCommandBuffer(outFrameData.commandBuffer, &beginInfo) !=
-      VK_SUCCESS)
+      VK_SUCCESS) {
     throw std::runtime_error("failed to begin recording command buffer!");
+}
 
   return true;
 }
 
 void Renderer::endFrame(const FrameData &frameData) {
-  if (vkEndCommandBuffer(frameData.commandBuffer) != VK_SUCCESS)
+  if (vkEndCommandBuffer(frameData.commandBuffer) != VK_SUCCESS) {
     throw std::runtime_error("failed to record command buffer!");
+}
 
   submitCommandBuffer(frameData);
   present(frameData.imageIndex);
@@ -189,7 +192,7 @@ void Renderer::resetFence(uint32_t frameIndex) {
                 &sync_objects_.inFlightFences()[frameIndex]);
 }
 
-bool Renderer::acquireNextImage(uint32_t &imageIndex) {
+auto Renderer::acquireNextImage(uint32_t &imageIndex) -> bool {
   VkResult result = vkAcquireNextImageKHR(
       device_.device(), swapchain_.swapchain(), UINT64_MAX,
       sync_objects_.imageAvailableSemaphores()[_currentFrame], VK_NULL_HANDLE,
@@ -225,8 +228,9 @@ void Renderer::submitCommandBuffer(const FrameData &frameData) {
 
   if (vkQueueSubmit(device_.graphicsQueue(), 1, &submitInfo,
                     sync_objects_.inFlightFences()[frameData.frameIndex]) !=
-      VK_SUCCESS)
+      VK_SUCCESS) {
     throw std::runtime_error("failed to submit draw command buffer!");
+}
 }
 
 void Renderer::present(uint32_t imageIndex) {

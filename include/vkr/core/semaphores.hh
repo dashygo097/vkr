@@ -10,9 +10,9 @@ public:
   ~Semaphore();
 
   Semaphore(const Semaphore &) = delete;
-  Semaphore &operator=(const Semaphore &) = delete;
+  auto operator=(const Semaphore &) -> Semaphore & = delete;
 
-  [[nodiscard]] VkSemaphore semaphore() const noexcept { return vk_semaphore_; }
+  [[nodiscard]] auto semaphore() const noexcept -> VkSemaphore { return vk_semaphore_; }
 
 private:
   // dependenciesi

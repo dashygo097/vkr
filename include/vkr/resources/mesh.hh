@@ -16,7 +16,7 @@ public:
   ~Mesh() = default;
 
   Mesh(const Mesh &) = delete;
-  Mesh &operator=(const Mesh &) = delete;
+  auto operator=(const Mesh &) -> Mesh & = delete;
 
 public:
   void load(const std::vector<VBOType> &vertices,
@@ -47,11 +47,11 @@ public:
     index_buffer_->update(indices);
   }
 
-  [[nodiscard]] std::shared_ptr<VertexBufferBase<VBOType>>
-  vertexBuffer() const {
+  [[nodiscard]] auto
+  vertexBuffer() const -> std::shared_ptr<VertexBufferBase<VBOType>> {
     return vertex_buffer_;
   }
-  [[nodiscard]] std::shared_ptr<IndexBuffer> indexBuffer() const {
+  [[nodiscard]] auto indexBuffer() const -> std::shared_ptr<IndexBuffer> {
     return index_buffer_;
   }
 

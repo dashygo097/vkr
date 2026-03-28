@@ -12,13 +12,13 @@ public:
                     const std::vector<const char *> &validationLayers);
 
   Instance(const Instance &) = delete;
-  Instance &operator=(const Instance &) = delete;
+  auto operator=(const Instance &) -> Instance & = delete;
 
   ~Instance();
 
-  [[nodiscard]] std::string name() const noexcept { return name_; }
-  [[nodiscard]] uint32_t version() const noexcept { return version_; }
-  [[nodiscard]] VkInstance instance() const noexcept { return vk_instance_; }
+  [[nodiscard]] auto name() const noexcept -> std::string { return name_; }
+  [[nodiscard]] auto version() const noexcept -> uint32_t { return version_; }
+  [[nodiscard]] auto instance() const noexcept -> VkInstance { return vk_instance_; }
 
 private:
   // components
