@@ -91,7 +91,7 @@ private:
   }
 
   void onConfigure() override {
-    ctx.appName = "ShaderToy";
+    ctx.appName = "shadertoy";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
 
     ctx.width = 640;

@@ -3,16 +3,17 @@
 #include "vkr/logger.hh"
 #include "vkr/pipeline/shader_module.hh"
 #include "vkr/resources/buffers/vertex_buffer.hh"
+#include <filesystem>
 #include <shaderc/shaderc.hpp>
 
 namespace vkr::pipeline {
 
 GraphicsPipeline::GraphicsPipeline(
-    const core::Device &device,
+    const core::Instance &instance, const core::Device &device,
     const resource::ResourceManager &resourceManager,
     const RenderPass &renderPass, DescriptorSetLayout &descriptorSetLayout,
     PipelineMode mode)
-    : device_(device), resource_manager_(resourceManager),
+    : instance_(instance), device_(device), resource_manager_(resourceManager),
       render_pass_(renderPass), descriptor_set_layout_(descriptorSetLayout),
       mode_(mode) {
   VKR_PIPE_INFO("Graphics pipeline initializing...");
@@ -57,7 +58,6 @@ bool GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
 
   VkPipelineShaderStageCreateInfo stages[] = {vertStage, fragStage};
 
-  // Vertex input
   VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
   vertexInputInfo.sType =
       VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -257,7 +257,6 @@ bool GraphicsPipeline::rebuild(const std::string &vertShaderPath,
 
   vkDeviceWaitIdle(device_.device());
   destroyHandles();
-
   bool ok = build(vertSpv, fragSpv);
 
   if (ok && offscreen_render_pass_ != VK_NULL_HANDLE)
@@ -309,7 +308,6 @@ bool GraphicsPipeline::flushPendingRebuild() {
     vert_src_ = req.vertSrc;
     frag_src_ = req.fragSrc;
 
-    // Rebuild offscreen pipeline with the same new sources
     if (offscreen_render_pass_ != VK_NULL_HANDLE)
       buildOffscreen(offscreen_render_pass_);
   }
@@ -374,17 +372,66 @@ static const std::unordered_map<PipelineMode,
 };
 
 void GraphicsPipeline::loadDefaultSources() {
+  namespace fs = std::filesystem;
+
   auto it = kDefaultSourcePaths.find(mode_);
   if (it == kDefaultSourcePaths.end()) {
-    VKR_PIPE_WARN("Default source paths NOT FOUND");
+    VKR_PIPE_WARN(
+        "No default source paths found for the current PipelineMode.");
     return;
   }
-  const auto &[vertPath, fragPath] = it->second;
-  vert_src_path_ = vertPath;
-  frag_src_path_ = fragPath;
-  vert_src_ = fread_string(vertPath);
-  frag_src_ = fread_string(fragPath);
-  VKR_PIPE_INFO("Loaded shader sources: {} / {}", vertPath, fragPath);
+  const auto &[defaultVert, defaultFrag] = it->second;
+
+  if (!instance_.name().empty()) {
+    std::string appDir = "shaders/" + instance_.name();
+    std::string appVert = appDir + "/" + instance_.name() + ".vert";
+    std::string appFrag = appDir + "/" + instance_.name() + ".frag";
+
+    if (!fs::exists(appVert) || !fs::exists(appFrag)) {
+      std::error_code ec;
+      fs::create_directories(appDir, ec);
+      if (ec) {
+        VKR_PIPE_WARN("Could not create shader directory '{}': {} — "
+                      "falling back to read-only mode defaults.",
+                      appDir, ec.message());
+      } else {
+        fs::copy_file(defaultVert, appVert, fs::copy_options::skip_existing,
+                      ec);
+        if (ec)
+          VKR_PIPE_WARN("Could not copy '{}' → '{}': {}", defaultVert, appVert,
+                        ec.message());
+
+        fs::copy_file(defaultFrag, appFrag, fs::copy_options::skip_existing,
+                      ec);
+        if (ec)
+          VKR_PIPE_WARN("Could not copy '{}' → '{}': {}", defaultFrag, appFrag,
+                        ec.message());
+
+        VKR_PIPE_INFO("Created app shaders from defaults: {} / {}", appVert,
+                      appFrag);
+      }
+    }
+
+    if (fs::exists(appVert) && fs::exists(appFrag)) {
+      vert_src_path_ = appVert;
+      frag_src_path_ = appFrag;
+      vert_src_ = fread_string(appVert);
+      frag_src_ = fread_string(appFrag);
+      VKR_PIPE_INFO("Loaded app shaders: {} / {}", appVert, appFrag);
+      return;
+    }
+
+    VKR_PIPE_WARN("App shaders still unavailable at {} / {} — "
+                  "falling back to read-only mode defaults.",
+                  appVert, appFrag);
+  }
+
+  vert_src_path_ = "";
+  frag_src_path_ = "";
+  vert_src_ = fread_string(defaultVert);
+  frag_src_ = fread_string(defaultFrag);
+  VKR_PIPE_INFO("Loaded mode-default shaders: {} / {} (read-only)", defaultVert,
+                defaultFrag);
 }
 
 } // namespace vkr::pipeline

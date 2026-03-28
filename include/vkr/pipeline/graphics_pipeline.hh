@@ -20,7 +20,8 @@ enum class PipelineMode {
 
 class GraphicsPipeline {
 public:
-  explicit GraphicsPipeline(const core::Device &device,
+  explicit GraphicsPipeline(const core::Instance &instance,
+                            const core::Device &device,
                             const resource::ResourceManager &resourceManager,
                             const RenderPass &renderPass,
                             DescriptorSetLayout &descriptorSetLayout,
@@ -62,6 +63,7 @@ public:
 
 private:
   // dependencies
+  const core::Instance &instance_;
   const core::Device &device_;
   const resource::ResourceManager &resource_manager_;
   const RenderPass &render_pass_;

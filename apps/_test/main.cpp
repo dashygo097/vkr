@@ -64,7 +64,7 @@ private:
   }
 
   void onConfigure() override {
-    ctx.appName = "Vulkan App";
+    ctx.appName = "test";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
 
     ctx.width = 800;

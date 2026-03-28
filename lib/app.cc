@@ -68,7 +68,7 @@ void VulkanApplication::initVulkan() {
   descriptorSetLayout = descriptorManager->createLayout(bindings);
 
   graphicsPipeline = std::make_unique<pipeline::GraphicsPipeline>(
-      *device, *resourceManager, *renderPass, *descriptorSetLayout,
+      *instance, *device, *resourceManager, *renderPass, *descriptorSetLayout,
       ctx.pipelineMode);
   graphicsPipeline->buildOffscreen(offscreenTarget->renderPass());
 
