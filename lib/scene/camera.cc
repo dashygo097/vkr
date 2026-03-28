@@ -20,8 +20,9 @@ Camera::Camera(const core::Window &window, const Timer &timer,
 }
 
 void Camera::track() {
-  if (locked_)
+  if (locked_) {
     return;
+}
 
   auto deltaTime = timer_.deltaTime();
 
@@ -52,8 +53,8 @@ void Camera::track() {
     first_mouse_ = false;
     return;
   }
-  float xoffset = static_cast<float>(xpos - last_x_);
-  float yoffset = static_cast<float>(last_y_ - ypos);
+  auto xoffset = static_cast<float>(xpos - last_x_);
+  auto yoffset = static_cast<float>(last_y_ - ypos);
 
   last_x_ = xpos;
   last_y_ = ypos;

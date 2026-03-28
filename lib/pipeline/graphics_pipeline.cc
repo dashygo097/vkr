@@ -36,11 +36,11 @@ GraphicsPipeline::~GraphicsPipeline() {
   destroyHandles();
 }
 
-bool GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
+auto GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
                                  const std::vector<uint32_t> &fragSpv,
                                  VkRenderPass targetRenderPass,
                                  VkPipelineLayout &outLayout,
-                                 VkPipeline &outPipeline) {
+                                 VkPipeline &outPipeline) -> bool {
   ShaderModule vertShader(device_, vertSpv);
   ShaderModule fragShader(device_, fragSpv);
 
@@ -200,8 +200,8 @@ bool GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
   return true;
 }
 
-bool GraphicsPipeline::build(const std::vector<uint32_t> &vertSpv,
-                             const std::vector<uint32_t> &fragSpv) {
+auto GraphicsPipeline::build(const std::vector<uint32_t> &vertSpv,
+                             const std::vector<uint32_t> &fragSpv) -> bool {
   return buildInto(vertSpv, fragSpv, render_pass_.renderPass(),
                    vk_pipeline_layout_, vk_graphics_pipeline_);
 }
@@ -242,8 +242,8 @@ void GraphicsPipeline::destroyOffscreenHandles() {
   }
 }
 
-bool GraphicsPipeline::rebuild(const std::string &vertShaderPath,
-                               const std::string &fragShaderPath) {
+auto GraphicsPipeline::rebuild(const std::string &vertShaderPath,
+                               const std::string &fragShaderPath) -> bool {
   VKR_PIPE_INFO("Hot-reloading pipeline from files...");
 
   std::vector<uint32_t> vertSpv, fragSpv;
@@ -259,8 +259,9 @@ bool GraphicsPipeline::rebuild(const std::string &vertShaderPath,
   destroyHandles();
   bool ok = build(vertSpv, fragSpv);
 
-  if (ok && offscreen_render_pass_ != VK_NULL_HANDLE)
+  if (ok && offscreen_render_pass_ != VK_NULL_HANDLE) {
     buildOffscreen(offscreen_render_pass_);
+}
 
   VKR_PIPE_INFO("Pipeline hot-reload {}.", ok ? "succeeded" : "FAILED");
   return ok;
@@ -282,16 +283,17 @@ void GraphicsPipeline::requestRebuildFromSource(
     return;
   }
 
-  std::lock_guard lock(pending_mutex_);
+  std::scoped_lock lock(pending_mutex_);
   pending_rebuild_ = PendingRebuild{vertSrc, fragSrc, std::move(vertSpv),
                                     std::move(fragSpv), std::move(callback)};
   VKR_PIPE_INFO("Rebuild staged, will apply at next frame boundary.");
 }
 
-bool GraphicsPipeline::flushPendingRebuild() {
-  std::lock_guard lock(pending_mutex_);
-  if (!pending_rebuild_)
+auto GraphicsPipeline::flushPendingRebuild() -> bool {
+  std::scoped_lock lock(pending_mutex_);
+  if (!pending_rebuild_) {
     return false;
+}
 
   PendingRebuild req = std::move(*pending_rebuild_);
   pending_rebuild_.reset();
@@ -301,15 +303,18 @@ bool GraphicsPipeline::flushPendingRebuild() {
   bool ok = build(req.vertSpv, req.fragSpv);
 
   if (ok) {
-    if (!vert_src_path_.empty())
+    if (!vert_src_path_.empty()) {
       fwrite_string(vert_src_path_, req.vertSrc);
-    if (!frag_src_path_.empty())
+}
+    if (!frag_src_path_.empty()) {
       fwrite_string(frag_src_path_, req.fragSrc);
+}
     vert_src_ = req.vertSrc;
     frag_src_ = req.fragSrc;
 
-    if (offscreen_render_pass_ != VK_NULL_HANDLE)
+    if (offscreen_render_pass_ != VK_NULL_HANDLE) {
       buildOffscreen(offscreen_render_pass_);
+}
   }
 
   req.callback(ok, ok ? "" : "Pipeline build step failed.");
@@ -317,9 +322,9 @@ bool GraphicsPipeline::flushPendingRebuild() {
   return true;
 }
 
-std::vector<uint32_t> GraphicsPipeline::compileGlsl(const std::string &src,
+auto GraphicsPipeline::compileGlsl(const std::string &src,
                                                     bool isVertex,
-                                                    std::string &outError) {
+                                                    std::string &outError) -> std::vector<uint32_t> {
   shaderc::Compiler compiler;
   shaderc::CompileOptions opts;
   opts.SetOptimizationLevel(shaderc_optimization_level_performance);

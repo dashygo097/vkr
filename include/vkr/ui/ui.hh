@@ -38,7 +38,7 @@ public:
   ~UI();
 
   UI(const UI &) = delete;
-  UI &operator=(const UI &) = delete;
+  auto operator=(const UI &) -> UI & = delete;
 
   void render(VkCommandBuffer commandBuffer);
 
@@ -58,8 +58,8 @@ public:
     viewport_info_ = info;
   }
 
-  [[nodiscard]] LayoutMode layoutMode() const noexcept { return layout_mode_; }
-  [[nodiscard]] const ViewportInfo &viewportInfo() const noexcept {
+  [[nodiscard]] auto layoutMode() const noexcept -> LayoutMode { return layout_mode_; }
+  [[nodiscard]] auto viewportInfo() const noexcept -> const ViewportInfo & {
     return viewport_info_;
   }
 

@@ -10,12 +10,12 @@ public:
   ~DebugMessenger();
 
   DebugMessenger(const DebugMessenger &) = delete;
-  DebugMessenger &operator=(const DebugMessenger &) = delete;
+  auto operator=(const DebugMessenger &) -> DebugMessenger & = delete;
 
   static void
   populateCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
 
-  [[nodiscard]] VkDebugUtilsMessengerEXT messenger() const {
+  [[nodiscard]] auto messenger() const -> VkDebugUtilsMessengerEXT {
     return vk_messenger_;
   }
 
@@ -26,10 +26,10 @@ private:
   // components
   VkDebugUtilsMessengerEXT vk_messenger_{VK_NULL_HANDLE};
 
-  static VKAPI_ATTR VkBool32 VKAPI_CALL
+  static VKAPI_ATTR auto VKAPI_CALL
   debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                 VkDebugUtilsMessageTypeFlagsEXT messageType,
                 const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                void *pUserData);
+                void *pUserData) -> VkBool32;
 };
 } // namespace vkr::core

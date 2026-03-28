@@ -13,18 +13,18 @@ public:
   ~Device();
 
   Device(const Device &) = delete;
-  Device &operator=(const Device &) = delete;
+  auto operator=(const Device &) -> Device & = delete;
 
   void waitIdle();
 
-  [[nodiscard]] VkDevice device() const noexcept { return vk_logical_device_; }
-  [[nodiscard]] VkPhysicalDevice physicalDevice() const noexcept {
+  [[nodiscard]] auto device() const noexcept -> VkDevice { return vk_logical_device_; }
+  [[nodiscard]] auto physicalDevice() const noexcept -> VkPhysicalDevice {
     return vk_physical_device_;
   }
-  [[nodiscard]] VkQueue graphicsQueue() const noexcept {
+  [[nodiscard]] auto graphicsQueue() const noexcept -> VkQueue {
     return vk_graphics_queue_;
   }
-  [[nodiscard]] VkQueue presentQueue() const noexcept {
+  [[nodiscard]] auto presentQueue() const noexcept -> VkQueue {
     return vk_present_queue_;
   }
 
@@ -43,6 +43,6 @@ private:
   void createLogicalDevice(std::vector<const char *> deviceExtensions,
                            std::vector<const char *> validationLayers);
 
-  [[nodiscard]] bool isSuitable(VkPhysicalDevice physicalDevice);
+  [[nodiscard]] auto isSuitable(VkPhysicalDevice physicalDevice) -> bool;
 };
 } // namespace vkr::core

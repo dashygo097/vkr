@@ -40,7 +40,7 @@ Instance::Instance(std::string appName, uint32_t appVersion,
   createInfo.ppEnabledLayerNames = validationLayers.data();
 
   DebugMessenger::populateCreateInfo(debugCreateInfo);
-  createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
+  createInfo.pNext = &debugCreateInfo;
 #else
   createInfo.enabledLayerCount = 0;
 

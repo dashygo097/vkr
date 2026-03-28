@@ -18,15 +18,15 @@ public:
   ~Camera() = default;
 
   Camera(const Camera &) = delete;
-  Camera &operator=(const Camera &) = delete;
+  auto operator=(const Camera &) -> Camera & = delete;
 
   void track();
 
-  [[nodiscard]] glm::vec3 pos() const noexcept { return pos_; }
+  [[nodiscard]] auto pos() const noexcept -> glm::vec3 { return pos_; }
 
   // update camera vectors
-  glm::mat4 getView() const { return glm::lookAt(pos_, pos_ + front_, up_); }
-  glm::mat4 getProjection() const {
+  [[nodiscard]] auto getView() const -> glm::mat4 { return glm::lookAt(pos_, pos_ + front_, up_); }
+  [[nodiscard]] auto getProjection() const -> glm::mat4 {
     glm::mat4 proj = glm::perspective(glm::radians(fov_), aspect_ratio_,
                                       near_plane_, far_plane_);
     proj[1][1] *= -1;
@@ -36,10 +36,12 @@ public:
   void mouseMove(float xOffset, float yOffset) {
     yaw_ += xOffset * mouse_sensitivity_;
     pitch_ += yOffset * mouse_sensitivity_;
-    if (pitch_ > 89.0f)
+    if (pitch_ > 89.0f) {
       pitch_ = 89.0f;
-    if (pitch_ < -89.0f)
+}
+    if (pitch_ < -89.0f) {
       pitch_ = -89.0f;
+}
 
     glm::vec3 frontTemp;
     frontTemp.x = cos(glm::radians(yaw_)) * cos(glm::radians(pitch_));
@@ -73,7 +75,7 @@ public:
 
   void toggleLock() noexcept { locked_ = !locked_; }
   void lock(bool lock) noexcept { locked_ = lock; }
-  [[nodiscard]] bool isLocked() const noexcept { return locked_; }
+  [[nodiscard]] auto isLocked() const noexcept -> bool { return locked_; }
 
 private:
   // dependencies
@@ -106,8 +108,9 @@ private:
   static void scrollCallback(GLFWwindow *window, double xoffset,
                              double yoffset) {
     auto *cam = static_cast<Camera *>(glfwGetWindowUserPointer(window));
-    if (!cam || cam->locked_)
+    if (!cam || cam->locked_) {
       return;
+}
 
     constexpr float kMinFov = 1.0f;
     constexpr float kMaxFov = 120.0f;

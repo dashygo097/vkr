@@ -11,9 +11,9 @@ public:
   ~CommandPool();
 
   CommandPool(const CommandPool &) = delete;
-  CommandPool &operator=(const CommandPool &) = delete;
+  auto operator=(const CommandPool &) -> CommandPool & = delete;
 
-  [[nodiscard]] VkCommandPool commandPool() const noexcept {
+  [[nodiscard]] auto commandPool() const noexcept -> VkCommandPool {
     return vk_command_pool_;
   }
 
