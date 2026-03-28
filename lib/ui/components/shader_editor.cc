@@ -43,12 +43,13 @@ void ShaderEditor::render() {
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
   if (ImGui::BeginChild("##code_area", ImVec2(-1.0f, codeH), false,
                         ImGuiWindowFlags_NoScrollbar)) {
-    if (active_tab_ == 0)
+    if (active_tab_ == 0) {
       renderCodeBlock(state_.vertBuffer.data(), state_.vertBuffer.size(),
                       "##vert_src");
-    else
+    } else {
       renderCodeBlock(state_.fragBuffer.data(), state_.fragBuffer.size(),
                       "##frag_src");
+}
   }
   ImGui::EndChild();
   ImGui::PopStyleColor();
@@ -65,16 +66,18 @@ void ShaderEditor::render() {
   }
 
   bool canCompile = on_compile_ != nullptr;
-  if (!canCompile)
+  if (!canCompile) {
     ImGui::BeginDisabled();
+}
   if (ImGui::Button("Compile & Apply", ImVec2(140, 0))) {
     state_.statusMessage = "Compiling...";
     state_.statusIsError = false;
     on_compile_(std::string(state_.vertBuffer.data()),
                 std::string(state_.fragBuffer.data()));
   }
-  if (!canCompile)
+  if (!canCompile) {
     ImGui::EndDisabled();
+}
 }
 
 } // namespace vkr::ui

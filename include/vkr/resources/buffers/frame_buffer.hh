@@ -16,12 +16,12 @@ public:
   ~Framebuffers();
 
   Framebuffers(const Framebuffers &) = delete;
-  Framebuffers &operator=(const Framebuffers &) = delete;
+  auto operator=(const Framebuffers &) -> Framebuffers & = delete;
 
   void create();
   void destroy();
 
-  [[nodiscard]] std::vector<VkFramebuffer> framebuffers() const noexcept {
+  [[nodiscard]] auto framebuffers() const noexcept -> std::vector<VkFramebuffer> {
     return vk_framebuffers_;
   }
 

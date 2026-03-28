@@ -7,10 +7,10 @@
 
 class CanvasApp : public vkr::VulkanApplication {
   const std::vector<vkr::resource::Vertex2D> vertices = {
-      {{0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-      {{1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-      {{1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
-      {{0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}}};
+      vkr::resource::Vertex2D({0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}),
+      vkr::resource::Vertex2D({1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}),
+      vkr::resource::Vertex2D({1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}),
+      vkr::resource::Vertex2D({0.0f, 1.0f}, {1.0f, 1.0f, 1.0f})};
 
   const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
 
@@ -20,8 +20,8 @@ private:
         "default", {});
   }
 
-  std::vector<vkr::pipeline::DescriptorBinding>
-  createDescriptorBindings() override {
+  auto createDescriptorBindings()
+      -> std::vector<vkr::pipeline::DescriptorBinding> override {
     return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
              VK_SHADER_STAGE_VERTEX_BIT}};
   }
@@ -64,7 +64,7 @@ private:
   };
 };
 
-int main() {
+auto main() -> int {
   CanvasApp app;
 
   try {

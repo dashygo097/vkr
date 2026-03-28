@@ -19,10 +19,10 @@ public:
   ~DescriptorPool();
 
   DescriptorPool(const DescriptorPool &) = delete;
-  DescriptorPool &operator=(const DescriptorPool &) = delete;
+  auto operator=(const DescriptorPool &) -> DescriptorPool & = delete;
 
-  [[nodiscard]] VkDescriptorPool pool() const noexcept { return pool_; }
-  [[nodiscard]] bool canAllocate() const noexcept;
+  [[nodiscard]] auto pool() const noexcept -> VkDescriptorPool { return pool_; }
+  [[nodiscard]] auto canAllocate() const noexcept -> bool;
 
   void reset();
 

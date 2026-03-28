@@ -6,9 +6,9 @@ namespace vkr::pipeline {
 DescriptorWriter::DescriptorWriter(const core::Device &device)
     : device_(device) {}
 
-DescriptorWriter &
+auto
 DescriptorWriter::writeBuffer(uint32_t binding, VkDescriptorType type,
-                              const VkDescriptorBufferInfo *bufferInfo) {
+                              const VkDescriptorBufferInfo *bufferInfo) -> DescriptorWriter & {
   std::string typeStr;
   switch (type) {
   case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
@@ -38,9 +38,9 @@ DescriptorWriter::writeBuffer(uint32_t binding, VkDescriptorType type,
   return *this;
 }
 
-DescriptorWriter &
+auto
 DescriptorWriter::writeImage(uint32_t binding, VkDescriptorType type,
-                             const VkDescriptorImageInfo *imageInfo) {
+                             const VkDescriptorImageInfo *imageInfo) -> DescriptorWriter & {
 
   std::string typeStr;
   switch (type) {
@@ -69,9 +69,9 @@ DescriptorWriter::writeImage(uint32_t binding, VkDescriptorType type,
   return *this;
 }
 
-DescriptorWriter &DescriptorWriter::writeBufferArray(
+auto DescriptorWriter::writeBufferArray(
     uint32_t binding, VkDescriptorType type,
-    const std::vector<VkDescriptorBufferInfo> &bufferInfos) {
+    const std::vector<VkDescriptorBufferInfo> &bufferInfos) -> DescriptorWriter & {
   std::string typeStr;
   switch (type) {
   case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
@@ -102,9 +102,9 @@ DescriptorWriter &DescriptorWriter::writeBufferArray(
   return *this;
 }
 
-DescriptorWriter &DescriptorWriter::writeImageArray(
+auto DescriptorWriter::writeImageArray(
     uint32_t binding, VkDescriptorType type,
-    const std::vector<VkDescriptorImageInfo> &imageInfos) {
+    const std::vector<VkDescriptorImageInfo> &imageInfos) -> DescriptorWriter & {
   std::string typeStr;
   switch (type) {
   case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:

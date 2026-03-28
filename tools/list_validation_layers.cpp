@@ -2,7 +2,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-int main() {
+auto main() -> int {
   uint32_t layerCount = 0;
   vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 

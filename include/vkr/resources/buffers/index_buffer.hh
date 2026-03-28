@@ -12,20 +12,20 @@ public:
   ~IndexBuffer();
 
   IndexBuffer(const IndexBuffer &) = delete;
-  IndexBuffer &operator=(const IndexBuffer &) = delete;
+  auto operator=(const IndexBuffer &) -> IndexBuffer & = delete;
 
   IndexBuffer(IndexBuffer &&other) noexcept;
-  IndexBuffer &operator=(IndexBuffer &&other) noexcept;
+  auto operator=(IndexBuffer &&other) noexcept -> IndexBuffer &;
 
   void create();
   void destroy();
   void update(const std::vector<uint16_t> &indices);
 
-  [[nodiscard]] std::vector<uint16_t> indices() const noexcept {
+  [[nodiscard]] auto indices() const noexcept -> std::vector<uint16_t> {
     return indices_;
   }
-  [[nodiscard]] VkBuffer buffer() const noexcept { return vk_index_buffer_; }
-  [[nodiscard]] VkDeviceMemory bufferMemory() const noexcept {
+  [[nodiscard]] auto buffer() const noexcept -> VkBuffer { return vk_index_buffer_; }
+  [[nodiscard]] auto bufferMemory() const noexcept -> VkDeviceMemory {
     return vk_memory_;
   }
 

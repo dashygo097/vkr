@@ -8,16 +8,20 @@
 class TestApp : public vkr::VulkanApplication {
 private:
   const std::vector<vkr::resource::VertexTextured3D> vertices1 = {
-      {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-      {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-      {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}};
+      vkr::resource::VertexTextured3D({-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}),
+      vkr::resource::VertexTextured3D({0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}),
+      vkr::resource::VertexTextured3D({0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}),
+      vkr::resource::VertexTextured3D({-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f})};
 
   const std::vector<vkr::resource::VertexTextured3D> vertices2 = {
-      {{-0.25f, -0.25f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
-      {{0.25f, -0.25f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
-      {{0.25f, 0.25f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-      {{-0.25f, 0.25f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
+      vkr::resource::VertexTextured3D({-0.25f, -0.25f, 0.5f},
+                                      {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}),
+      vkr::resource::VertexTextured3D({0.25f, -0.25f, 0.5f}, {1.0f, 1.0f, 1.0f},
+                                      {1.0f, 0.0f}),
+      vkr::resource::VertexTextured3D({0.25f, 0.25f, 0.5f}, {1.0f, 1.0f, 1.0f},
+                                      {1.0f, 1.0f}),
+      vkr::resource::VertexTextured3D({-0.25f, 0.25f, 0.5f}, {1.0f, 1.0f, 1.0f},
+                                      {0.0f, 1.0f})};
 
   const std::vector<uint16_t> indices1 = {0, 1, 2, 2, 3, 0};
   const std::vector<uint16_t> indices2 = {0, 1, 2, 2, 3, 0};
@@ -28,8 +32,8 @@ private:
     resourceManager->createTexture("image1", "assets/textures/image.jpg");
   }
 
-  std::vector<vkr::pipeline::DescriptorBinding>
-  createDescriptorBindings() override {
+  auto createDescriptorBindings()
+      -> std::vector<vkr::pipeline::DescriptorBinding> override {
     return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
              VK_SHADER_STAGE_VERTEX_BIT},
             {1, vkr::pipeline::DescriptorType::CombinedImageSampler, 1,
@@ -92,7 +96,7 @@ private:
   }
 };
 
-int main() {
+auto main() -> int {
   TestApp app;
 
   try {

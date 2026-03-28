@@ -19,7 +19,7 @@ public:
   ~DescriptorSets();
 
   DescriptorSets(const DescriptorSets &) = delete;
-  DescriptorSets &operator=(const DescriptorSets &) = delete;
+  auto operator=(const DescriptorSets &) -> DescriptorSets & = delete;
 
   void bindUniformBuffer(uint32_t binding, const std::vector<VkBuffer> &buffers,
                          VkDeviceSize size, VkDeviceSize offset = 0);
@@ -34,7 +34,7 @@ public:
 
   void bindToFrame(uint32_t frameIndex, DescriptorWriter &writer);
 
-  [[nodiscard]] const std::vector<VkDescriptorSet> &sets() const noexcept {
+  [[nodiscard]] auto sets() const noexcept -> const std::vector<VkDescriptorSet> & {
     return sets_;
   }
 
@@ -60,16 +60,16 @@ public:
   ~DescriptorManager() = default;
 
   DescriptorManager(const DescriptorManager &) = delete;
-  DescriptorManager &operator=(const DescriptorManager &) = delete;
+  auto operator=(const DescriptorManager &) -> DescriptorManager & = delete;
 
-  std::shared_ptr<DescriptorSetLayout>
-  createLayout(const std::vector<DescriptorBinding> &bindings);
+  auto
+  createLayout(const std::vector<DescriptorBinding> &bindings) -> std::shared_ptr<DescriptorSetLayout>;
 
-  std::unique_ptr<DescriptorSets>
+  auto
   allocate(DescriptorSetLayout &layout, const DescriptorPool &pool,
-           uint32_t frameCount = core::MAX_FRAMES_IN_FLIGHT);
+           uint32_t frameCount = core::MAX_FRAMES_IN_FLIGHT) -> std::unique_ptr<DescriptorSets>;
 
-  static DescriptorPoolSizes calculatePoolSizes(uint32_t maxSets);
+  static auto calculatePoolSizes(uint32_t maxSets) -> DescriptorPoolSizes;
 
 private:
   // dependencies

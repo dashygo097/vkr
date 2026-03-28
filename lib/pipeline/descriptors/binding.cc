@@ -41,8 +41,8 @@ DescriptorSetLayout::DescriptorSetLayout(
 
 DescriptorSetLayout::~DescriptorSetLayout() { cleanup(); }
 
-DescriptorSetLayout
-DescriptorSetLayout::createDefault3D(const core::Device &device) {
+auto
+DescriptorSetLayout::createDefault3D(const core::Device &device) -> DescriptorSetLayout {
   std::vector<DescriptorBinding> bindings = {
       {0, DescriptorType::UniformBuffer, 1, VK_SHADER_STAGE_VERTEX_BIT}};
   return DescriptorSetLayout(device, bindings);

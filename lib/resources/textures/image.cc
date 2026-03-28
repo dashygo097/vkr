@@ -181,7 +181,7 @@ void Image::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
   endSingleTimeCommands(commandBuffer);
 }
 
-VkCommandBuffer Image::beginSingleTimeCommands() {
+auto Image::beginSingleTimeCommands() -> VkCommandBuffer {
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;

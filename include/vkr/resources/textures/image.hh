@@ -12,7 +12,7 @@ public:
   ~Image();
 
   Image(const Image &) = delete;
-  Image &operator=(const Image &) = delete;
+  auto operator=(const Image &) -> Image & = delete;
 
   void create(uint32_t width, uint32_t height, VkFormat format,
               VkImageTiling tiling, VkImageUsageFlags usage,
@@ -21,11 +21,11 @@ public:
   void destroy();
   void update(const std::string &imageFilePath);
 
-  [[nodiscard]] int width() const { return _width; }
-  [[nodiscard]] int height() const { return _height; }
-  [[nodiscard]] int channels() const { return _channels; }
-  [[nodiscard]] VkImage image() const { return vk_image_; }
-  [[nodiscard]] VkDeviceMemory memory() const { return vk_memory_; }
+  [[nodiscard]] auto width() const -> int { return _width; }
+  [[nodiscard]] auto height() const -> int { return _height; }
+  [[nodiscard]] auto channels() const -> int { return _channels; }
+  [[nodiscard]] auto image() const -> VkImage { return vk_image_; }
+  [[nodiscard]] auto memory() const -> VkDeviceMemory { return vk_memory_; }
 
 private:
   // dependencies
@@ -45,7 +45,7 @@ private:
   void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
                          uint32_t height);
 
-  VkCommandBuffer beginSingleTimeCommands();
+  auto beginSingleTimeCommands() -> VkCommandBuffer;
   void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 };
 } // namespace vkr::resource

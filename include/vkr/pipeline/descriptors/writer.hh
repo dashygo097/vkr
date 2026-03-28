@@ -8,19 +8,19 @@ class DescriptorWriter {
 public:
   explicit DescriptorWriter(const core::Device &device);
 
-  DescriptorWriter &writeBuffer(uint32_t binding, VkDescriptorType type,
-                                const VkDescriptorBufferInfo *bufferInfo);
+  auto writeBuffer(uint32_t binding, VkDescriptorType type,
+                                const VkDescriptorBufferInfo *bufferInfo) -> DescriptorWriter &;
 
-  DescriptorWriter &writeImage(uint32_t binding, VkDescriptorType type,
-                               const VkDescriptorImageInfo *imageInfo);
+  auto writeImage(uint32_t binding, VkDescriptorType type,
+                               const VkDescriptorImageInfo *imageInfo) -> DescriptorWriter &;
 
-  DescriptorWriter &
+  auto
   writeBufferArray(uint32_t binding, VkDescriptorType type,
-                   const std::vector<VkDescriptorBufferInfo> &bufferInfos);
+                   const std::vector<VkDescriptorBufferInfo> &bufferInfos) -> DescriptorWriter &;
 
-  DescriptorWriter &
+  auto
   writeImageArray(uint32_t binding, VkDescriptorType type,
-                  const std::vector<VkDescriptorImageInfo> &imageInfos);
+                  const std::vector<VkDescriptorImageInfo> &imageInfos) -> DescriptorWriter &;
 
   void update(VkDescriptorSet set);
   void clear();
