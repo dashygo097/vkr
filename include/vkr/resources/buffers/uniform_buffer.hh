@@ -13,9 +13,9 @@ class IUniformBuffer {
 public:
   virtual ~IUniformBuffer() = default;
 
-  virtual const std::vector<VkBuffer> &buffers() const noexcept = 0;
-  virtual const std::vector<VkDeviceMemory> &buffersMemory() const noexcept = 0;
-  virtual const std::vector<void *> &mapped() const noexcept = 0;
+  [[nodiscard]] virtual auto buffers() const noexcept -> const std::vector<VkBuffer> & = 0;
+  [[nodiscard]] virtual auto buffersMemory() const noexcept -> const std::vector<VkDeviceMemory> & = 0;
+  [[nodiscard]] virtual auto mapped() const noexcept -> const std::vector<void *> & = 0;
 
   virtual void updateRaw(uint32_t currentFrame, const void *data,
                          size_t size) = 0;
@@ -27,10 +27,10 @@ public:
     create();
   }
 
-  virtual ~UniformBufferBase() { destroy(); }
+  ~UniformBufferBase() override { destroy(); }
 
   UniformBufferBase(const UniformBufferBase &) = delete;
-  UniformBufferBase &operator=(const UniformBufferBase &) = delete;
+  auto operator=(const UniformBufferBase &) -> UniformBufferBase & = delete;
 
   void update(uint32_t currentFrame, const ObjectType &newObject) {
     if (currentFrame >= core::MAX_FRAMES_IN_FLIGHT) {
@@ -51,16 +51,16 @@ public:
     update(currentFrame, *static_cast<const ObjectType *>(data));
   }
 
-  [[nodiscard]] const std::vector<VkBuffer> &buffers() const noexcept override {
+  [[nodiscard]] auto buffers() const noexcept -> const std::vector<VkBuffer> & override {
     return vk_uniform_buffers_;
   }
 
-  [[nodiscard]] const std::vector<VkDeviceMemory> &
-  buffersMemory() const noexcept override {
+  [[nodiscard]] auto
+  buffersMemory() const noexcept -> const std::vector<VkDeviceMemory> & override {
     return vk_memories_;
   }
 
-  [[nodiscard]] const std::vector<void *> &mapped() const noexcept override {
+  [[nodiscard]] auto mapped() const noexcept -> const std::vector<void *> & override {
     return mapped_;
   }
 

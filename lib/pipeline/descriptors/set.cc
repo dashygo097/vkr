@@ -116,7 +116,7 @@ void DescriptorSets::bind(VkCommandBuffer cmd, VkPipelineLayout layout,
 DescriptorManager::DescriptorManager(const core::Device &device)
     : device_(device) {}
 
-DescriptorPoolSizes DescriptorManager::calculatePoolSizes(uint32_t maxSets) {
+auto DescriptorManager::calculatePoolSizes(uint32_t maxSets) -> DescriptorPoolSizes {
   DescriptorPoolSizes sizes;
   sizes.uniformBufferCount = maxSets * 10;
   sizes.storageBufferCount = maxSets * 10;
@@ -126,14 +126,14 @@ DescriptorPoolSizes DescriptorManager::calculatePoolSizes(uint32_t maxSets) {
   return sizes;
 }
 
-std::shared_ptr<DescriptorSetLayout> DescriptorManager::createLayout(
-    const std::vector<DescriptorBinding> &bindings) {
+auto DescriptorManager::createLayout(
+    const std::vector<DescriptorBinding> &bindings) -> std::shared_ptr<DescriptorSetLayout> {
   return std::make_shared<DescriptorSetLayout>(device_, bindings);
 }
 
-std::unique_ptr<DescriptorSets>
+auto
 DescriptorManager::allocate(DescriptorSetLayout &layout,
-                            const DescriptorPool &pool, uint32_t frameCount) {
+                            const DescriptorPool &pool, uint32_t frameCount) -> std::unique_ptr<DescriptorSets> {
   return std::make_unique<DescriptorSets>(device_, layout, pool, frameCount);
 }
 

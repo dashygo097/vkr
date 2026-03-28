@@ -12,7 +12,7 @@ public:
   ~FPSPanel() = default;
 
   FPSPanel(const FPSPanel &) = delete;
-  FPSPanel &operator=(const FPSPanel &) = delete;
+  auto operator=(const FPSPanel &) -> FPSPanel & = delete;
 
   void clear();
   void render(float fps);

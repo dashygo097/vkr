@@ -18,7 +18,7 @@ struct DescriptorBinding {
   uint32_t count{1};
   VkShaderStageFlags stageFlags;
 
-  [[nodiscard]] VkDescriptorType toVkType() const noexcept {
+  [[nodiscard]] auto toVkType() const noexcept -> VkDescriptorType {
     switch (type) {
     case DescriptorType::UniformBuffer:
       return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -35,7 +35,7 @@ struct DescriptorBinding {
     }
   }
 
-  [[nodiscard]] std::string toString() const noexcept {
+  [[nodiscard]] auto toString() const noexcept -> std::string {
     std::string typeStr;
     switch (type) {
     case DescriptorType::UniformBuffer:
@@ -67,12 +67,12 @@ public:
   ~DescriptorSetLayout();
 
   DescriptorSetLayout(const DescriptorSetLayout &) = delete;
-  DescriptorSetLayout &operator=(const DescriptorSetLayout &) = delete;
+  auto operator=(const DescriptorSetLayout &) -> DescriptorSetLayout & = delete;
 
   // FIXME: ref return
-  [[nodiscard]] VkDescriptorSetLayout &layoutRef() noexcept { return layout_; }
+  [[nodiscard]] auto layoutRef() noexcept -> VkDescriptorSetLayout & { return layout_; }
 
-  static DescriptorSetLayout createDefault3D(const core::Device &device);
+  static auto createDefault3D(const core::Device &device) -> DescriptorSetLayout;
 
 private:
   // dependencies

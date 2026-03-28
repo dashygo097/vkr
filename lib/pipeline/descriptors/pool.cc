@@ -54,7 +54,7 @@ DescriptorPool::DescriptorPool(const core::Device &device, uint32_t maxSets,
 
 DescriptorPool::~DescriptorPool() { cleanup(); }
 
-bool DescriptorPool::canAllocate() const noexcept {
+auto DescriptorPool::canAllocate() const noexcept -> bool {
   return allocated_sets_ < max_sets_;
 }
 

@@ -10,7 +10,7 @@ public:
   ~ImageView();
 
   ImageView(const ImageView &) = delete;
-  ImageView &operator=(const ImageView &) = delete;
+  auto operator=(const ImageView &) -> ImageView & = delete;
 
   void create(const Image &image, VkFormat format,
               VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT);
@@ -21,7 +21,7 @@ public:
     create(image, format);
   }
 
-  [[nodiscard]] VkImageView imageView() const noexcept { return vk_imageview_; }
+  [[nodiscard]] auto imageView() const noexcept -> VkImageView { return vk_imageview_; }
 
 private:
   // dependencies

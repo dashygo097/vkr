@@ -2,7 +2,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-int main() {
+auto main() -> int {
   uint32_t extensionCount = 0;
 
   VkResult result =

@@ -7,8 +7,8 @@
 
 class CornellBoxApp : public vkr::VulkanApplication {
 private:
-  std::vector<vkr::pipeline::DescriptorBinding>
-  createDescriptorBindings() override {
+  auto createDescriptorBindings()
+      -> std::vector<vkr::pipeline::DescriptorBinding> override {
     return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
              VK_SHADER_STAGE_VERTEX_BIT}};
   }
@@ -80,7 +80,7 @@ private:
   }
 };
 
-int main() {
+auto main() -> int {
   CornellBoxApp app;
 
   try {

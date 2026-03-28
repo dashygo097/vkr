@@ -26,7 +26,7 @@ void IndexBuffer::create() {
 
   void *data;
   vkMapMemory(device_.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
-  memcpy(data, indices_.data(), (size_t)bufferSize);
+  memcpy(data, indices_.data(), static_cast<size_t>(bufferSize));
   vkUnmapMemory(device_.device(), stagingBufferMemory);
 
   createBuffer(bufferSize,

@@ -12,9 +12,9 @@ class IVertexBuffer {
 public:
   virtual ~IVertexBuffer() = default;
 
-  virtual VkBuffer buffer() const noexcept = 0;
-  virtual VkDeviceMemory bufferMemory() const noexcept = 0;
-  virtual size_t vertexCount() const noexcept = 0;
+  [[nodiscard]] virtual auto buffer() const noexcept -> VkBuffer = 0;
+  [[nodiscard]] virtual auto bufferMemory() const noexcept -> VkDeviceMemory = 0;
+  [[nodiscard]] virtual auto vertexCount() const noexcept -> size_t = 0;
 
   virtual void updateRaw(const void *data, size_t count) = 0;
 };
@@ -27,10 +27,10 @@ public:
     create();
   }
 
-  virtual ~VertexBufferBase() { destroy(); }
+  ~VertexBufferBase() override { destroy(); }
 
   VertexBufferBase(const VertexBufferBase &) = delete;
-  VertexBufferBase &operator=(const VertexBufferBase &) = delete;
+  auto operator=(const VertexBufferBase &) -> VertexBufferBase & = delete;
 
   void update(const std::vector<VertexType> &newVertices) {
     if (newVertices.empty()) {
@@ -78,24 +78,24 @@ public:
   }
 
   void updateRaw(const void *data, size_t count) override {
-    const VertexType *vertices = static_cast<const VertexType *>(data);
+    const auto *vertices = static_cast<const VertexType *>(data);
     std::vector<VertexType> newVertices(vertices, vertices + count);
     update(newVertices);
   }
 
-  [[nodiscard]] VkBuffer buffer() const noexcept override {
+  [[nodiscard]] auto buffer() const noexcept -> VkBuffer override {
     return vk_vertex_buffer_;
   }
 
-  [[nodiscard]] VkDeviceMemory bufferMemory() const noexcept override {
+  [[nodiscard]] auto bufferMemory() const noexcept -> VkDeviceMemory override {
     return vk_memory_;
   }
 
-  [[nodiscard]] size_t vertexCount() const noexcept override {
+  [[nodiscard]] auto vertexCount() const noexcept -> size_t override {
     return vertices_.size();
   }
 
-  [[nodiscard]] const std::vector<VertexType> &vertices() const noexcept {
+  [[nodiscard]] auto vertices() const noexcept -> const std::vector<VertexType> & {
     return vertices_;
   }
 

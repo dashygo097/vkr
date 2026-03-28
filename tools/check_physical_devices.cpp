@@ -27,7 +27,7 @@ void printDeviceType(VkPhysicalDeviceType type) {
   }
 }
 
-int main() {
+auto main() -> int {
   // -- Create Vulkan instance --
   VkApplicationInfo appInfo{};
   appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -100,14 +100,18 @@ int main() {
     for (size_t i = 0; i < queueFamilies.size(); ++i) {
       const auto &q = queueFamilies[i];
       std::cout << "    - [" << i << "] ";
-      if (q.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+      if (q.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
         std::cout << "Graphics ";
-      if (q.queueFlags & VK_QUEUE_COMPUTE_BIT)
+}
+      if (q.queueFlags & VK_QUEUE_COMPUTE_BIT) {
         std::cout << "Compute ";
-      if (q.queueFlags & VK_QUEUE_TRANSFER_BIT)
+}
+      if (q.queueFlags & VK_QUEUE_TRANSFER_BIT) {
         std::cout << "Transfer ";
-      if (q.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
+}
+      if (q.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) {
         std::cout << "SparseBinding ";
+}
       std::cout << "\n";
     }
 

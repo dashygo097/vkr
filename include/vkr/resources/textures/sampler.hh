@@ -9,9 +9,9 @@ public:
   ~Sampler();
 
   Sampler(const Sampler &) = delete;
-  Sampler &operator=(const Sampler &) = delete;
+  auto operator=(const Sampler &) -> Sampler & = delete;
 
-  [[nodiscard]] VkSampler sampler() const noexcept { return _vk_sampler_; }
+  [[nodiscard]] auto sampler() const noexcept -> VkSampler { return _vk_sampler_; }
 
 private:
   // dependeies
