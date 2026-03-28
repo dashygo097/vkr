@@ -38,12 +38,12 @@ private:
   }
 
   void onConfigure() override {
-    ctx.appName = "Vulkan App";
+    ctx.appName = "teapot";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
 
     ctx.width = 800;
     ctx.height = 600;
-    ctx.title = "Cornell Box";
+    ctx.title = "Teapot Demo";
 
     ctx.cameraEnabled = true;
     ctx.cameraMovementSpeed = 5.0f;

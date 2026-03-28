@@ -38,7 +38,7 @@ private:
   }
 
   void onConfigure() override {
-    ctx.appName = "Vulkan App";
+    ctx.appName = "cornellbox";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
 
     ctx.width = 800;
