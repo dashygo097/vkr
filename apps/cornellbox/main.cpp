@@ -41,8 +41,8 @@ private:
     ctx.appName = "cornellbox";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
 
-    ctx.width = 800;
-    ctx.height = 600;
+    ctx.width = 1200;
+    ctx.height = 900;
     ctx.title = "Cornell Box";
 
     ctx.cameraEnabled = true;

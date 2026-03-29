@@ -69,7 +69,8 @@ protected:
   virtual void onCleanup() {}
 
   virtual void createUniforms() {}
-  virtual auto createDescriptorBindings() -> std::vector<pipeline::DescriptorBinding> {
+  virtual auto createDescriptorBindings()
+      -> std::vector<pipeline::DescriptorBinding> {
     return {};
   }
   virtual void bindDescriptorSets() {}

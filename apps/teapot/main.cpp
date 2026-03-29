@@ -7,8 +7,8 @@
 
 class TeapotApp : public vkr::VulkanApplication {
 private:
-  auto
-  createDescriptorBindings() -> std::vector<vkr::pipeline::DescriptorBinding> override {
+  auto createDescriptorBindings()
+      -> std::vector<vkr::pipeline::DescriptorBinding> override {
     return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
              VK_SHADER_STAGE_VERTEX_BIT}};
   }
@@ -41,8 +41,8 @@ private:
     ctx.appName = "teapot";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
 
-    ctx.width = 800;
-    ctx.height = 600;
+    ctx.width = 1200;
+    ctx.height = 900;
     ctx.title = "Teapot Demo";
 
     ctx.cameraEnabled = true;

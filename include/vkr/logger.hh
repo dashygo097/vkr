@@ -1,11 +1,57 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 #include <spdlog/pattern_formatter.h>
+#include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+#include <string>
+#include <vector>
 
 namespace vkr {
+
+struct LogMessage {
+  std::string text;
+  spdlog::level::level_enum level;
+};
+
+class UiLogSink : public spdlog::sinks::base_sink<std::mutex> {
+public:
+  UiLogSink(size_t max_messages = 1000) : max_messages_(max_messages) {}
+
+  auto getMessages() -> std::vector<LogMessage> {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    return messages_;
+  }
+
+  void clear() {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    messages_.clear();
+  }
+
+protected:
+  void sink_it_(const spdlog::details::log_msg &msg) override {
+    spdlog::memory_buf_t formatted;
+    this->formatter_->format(msg, formatted);
+
+    std::string text(formatted.data(), formatted.size());
+    if (!text.empty() && text.back() == '\n') {
+      text.pop_back(); // Remove trailing newline for ImGui
+    }
+
+    if (messages_.size() >= max_messages_) {
+      messages_.erase(messages_.begin());
+    }
+    messages_.push_back({std::move(text), msg.level});
+  }
+
+  void flush_() override {}
+
+private:
+  size_t max_messages_;
+  std::vector<LogMessage> messages_;
+};
 
 class Formatter : public spdlog::custom_flag_formatter {
 public:
@@ -38,7 +84,8 @@ public:
     dest.append(level_name.data(), level_name.data() + level_name.size());
   }
 
-  [[nodiscard]] auto clone() const -> std::unique_ptr<custom_flag_formatter> override {
+  [[nodiscard]] auto clone() const
+      -> std::unique_ptr<custom_flag_formatter> override {
     return std::make_unique<Formatter>();
   }
 };
@@ -47,6 +94,7 @@ class Logger {
 public:
   static void init();
 
+  static auto getUiSink() -> std::shared_ptr<UiLogSink> & { return ui_sink_; }
   static auto getCoreLogger() -> std::shared_ptr<spdlog::logger> & {
     return core_logger_;
   }
@@ -62,9 +110,12 @@ public:
   static auto getSceneLogger() -> std::shared_ptr<spdlog::logger> & {
     return scene_logger_;
   }
-  static auto getUiLogger() -> std::shared_ptr<spdlog::logger> & { return ui_logger_; }
+  static auto getUiLogger() -> std::shared_ptr<spdlog::logger> & {
+    return ui_logger_;
+  }
 
 private:
+  static std::shared_ptr<UiLogSink> ui_sink_;
   static std::shared_ptr<spdlog::logger> core_logger_;
   static std::shared_ptr<spdlog::logger> resource_logger_;
   static std::shared_ptr<spdlog::logger> pipeline_logger_;

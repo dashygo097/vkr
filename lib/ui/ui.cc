@@ -86,6 +86,11 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   shader_editor_->setStatus("Loaded default shaders.", false);
   VKR_UI_INFO("Shader Editor initialized successfully.");
 
+  // logging panel
+  VKR_UI_INFO("Initializing Logging Panel...");
+  logging_panel_ = std::make_unique<LoggingPanel>();
+  VKR_UI_INFO("Logging Panel initialized successfully.");
+
   VKR_UI_INFO("ImGui UI initialized successfully.");
 }
 
@@ -109,6 +114,7 @@ void UI::render(VkCommandBuffer commandBuffer) {
     renderMainViewport();
     renderPerformancePanel();
     renderShaderEditor();
+    renderLoggingPanel();
     break;
   }
 
@@ -265,21 +271,38 @@ void UI::renderShaderEditor() {
   ImGui::End();
 }
 
+void UI::renderLoggingPanel() {
+  ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                           ImGuiWindowFlags_NoCollapse;
+  if (ImGui::Begin("Logging", nullptr, flags)) {
+    if (logging_panel_) {
+      logging_panel_->render();
+    }
+  }
+  ImGui::End();
+}
+
 void UI::setupDockingLayout() {
   ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
   ImGui::DockBuilderRemoveNode(dockSpaceId);
   ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
   ImGui::DockBuilderSetNodeSize(dockSpaceId, ImGui::GetMainViewport()->Size);
 
-  ImGuiID dockRight, dockBottomRight, dockShader;
+  ImGuiID dockRight, dockBottomRight, dockShader, dockLogs;
+
   dockRight = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Right, 0.28f,
                                           nullptr, &dockSpaceId);
   dockShader = ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Up, 0.70f,
                                            nullptr, &dockBottomRight);
 
+  dockLogs = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Down, 0.25f,
+                                         nullptr, &dockSpaceId);
+
   ImGui::DockBuilderDockWindow("Shader Editor", dockShader);
   ImGui::DockBuilderDockWindow("Performance", dockBottomRight);
+  ImGui::DockBuilderDockWindow("Logging", dockLogs);
   ImGui::DockBuilderDockWindow("Viewport", dockSpaceId);
+
   ImGui::DockBuilderFinish(dockSpaceId);
 }
 

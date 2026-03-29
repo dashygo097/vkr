@@ -261,7 +261,7 @@ auto GraphicsPipeline::rebuild(const std::string &vertShaderPath,
 
   if (ok && offscreen_render_pass_ != VK_NULL_HANDLE) {
     buildOffscreen(offscreen_render_pass_);
-}
+  }
 
   VKR_PIPE_INFO("Pipeline hot-reload {}.", ok ? "succeeded" : "FAILED");
   return ok;
@@ -293,7 +293,7 @@ auto GraphicsPipeline::flushPendingRebuild() -> bool {
   std::scoped_lock lock(pending_mutex_);
   if (!pending_rebuild_) {
     return false;
-}
+  }
 
   PendingRebuild req = std::move(*pending_rebuild_);
   pending_rebuild_.reset();
@@ -305,16 +305,16 @@ auto GraphicsPipeline::flushPendingRebuild() -> bool {
   if (ok) {
     if (!vert_src_path_.empty()) {
       fwrite_string(vert_src_path_, req.vertSrc);
-}
+    }
     if (!frag_src_path_.empty()) {
       fwrite_string(frag_src_path_, req.fragSrc);
-}
+    }
     vert_src_ = req.vertSrc;
     frag_src_ = req.fragSrc;
 
     if (offscreen_render_pass_ != VK_NULL_HANDLE) {
       buildOffscreen(offscreen_render_pass_);
-}
+    }
   }
 
   req.callback(ok, ok ? "" : "Pipeline build step failed.");
@@ -322,9 +322,9 @@ auto GraphicsPipeline::flushPendingRebuild() -> bool {
   return true;
 }
 
-auto GraphicsPipeline::compileGlsl(const std::string &src,
-                                                    bool isVertex,
-                                                    std::string &outError) -> std::vector<uint32_t> {
+auto GraphicsPipeline::compileGlsl(const std::string &src, bool isVertex,
+                                   std::string &outError)
+    -> std::vector<uint32_t> {
   shaderc::Compiler compiler;
   shaderc::CompileOptions opts;
   opts.SetOptimizationLevel(shaderc_optimization_level_performance);
@@ -360,20 +360,20 @@ static const std::unordered_map<PipelineMode,
                                 std::pair<std::string, std::string>>
     kDefaultSourcePaths = {
         {PipelineMode::Default2D,
-         {"shaders/default2d/default2d.vert",
-          "shaders/default2d/default2d.frag"}},
+         {"shaders/defaults/default2d/default2d.vert",
+          "shaders/defaults/default2d/default2d.frag"}},
         {PipelineMode::Textured2D,
-         {"shaders/texture2d/texture2d.vert",
-          "shaders/texture2d/texture2d.frag"}},
+         {"shaders/defautls/texture2d/texture2d.vert",
+          "shaders/defaults/texture2d/texture2d.frag"}},
         {PipelineMode::Default3D,
-         {"shaders/default3d/default3d.vert",
-          "shaders/default3d/default3d.frag"}},
+         {"shaders/defaults/default3d/default3d.vert",
+          "shaders/defaults/default3d/default3d.frag"}},
         {PipelineMode::Textured3D,
-         {"shaders/texture3d/texture3d.vert",
-          "shaders/texture3d/texture3d.frag"}},
+         {"shaders/defaults/texture3d/texture3d.vert",
+          "shaders/defaults/texture3d/texture3d.frag"}},
         {PipelineMode::NoVertices,
-         {"shaders/shadertoy/shadertoy.vert",
-          "shaders/shadertoy/shadertoy.frag"}},
+         {"shaders/defaults/shadertoy/shadertoy.vert",
+          "shaders/defaults/shadertoy/shadertoy.frag"}},
 };
 
 void GraphicsPipeline::loadDefaultSources() {
