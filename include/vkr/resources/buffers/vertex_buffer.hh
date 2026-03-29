@@ -13,7 +13,8 @@ public:
   virtual ~IVertexBuffer() = default;
 
   [[nodiscard]] virtual auto buffer() const noexcept -> VkBuffer = 0;
-  [[nodiscard]] virtual auto bufferMemory() const noexcept -> VkDeviceMemory = 0;
+  [[nodiscard]] virtual auto bufferMemory() const noexcept
+      -> VkDeviceMemory = 0;
   [[nodiscard]] virtual auto vertexCount() const noexcept -> size_t = 0;
 
   virtual void updateRaw(const void *data, size_t count) = 0;
@@ -95,7 +96,8 @@ public:
     return vertices_.size();
   }
 
-  [[nodiscard]] auto vertices() const noexcept -> const std::vector<VertexType> & {
+  [[nodiscard]] auto vertices() const noexcept
+      -> const std::vector<VertexType> & {
     return vertices_;
   }
 

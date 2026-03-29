@@ -18,8 +18,12 @@ public:
 
   [[nodiscard]] auto deltaTime() const noexcept -> float { return delta_time_; }
   [[nodiscard]] auto fps() const noexcept -> float { return fps_; }
-  [[nodiscard]] auto elapsedTime() const noexcept -> float { return elapsed_time_; }
-  [[nodiscard]] auto frameCount() const noexcept -> uint64_t { return frame_count_; }
+  [[nodiscard]] auto elapsedTime() const noexcept -> float {
+    return elapsed_time_;
+  }
+  [[nodiscard]] auto frameCount() const noexcept -> uint64_t {
+    return frame_count_;
+  }
   void maxFPS(float maxFPS) noexcept { max_fps_ = maxFPS; }
   [[nodiscard]] auto maxFPS() const noexcept -> float { return max_fps_; }
 

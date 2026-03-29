@@ -11,7 +11,9 @@ public:
   Sampler(const Sampler &) = delete;
   auto operator=(const Sampler &) -> Sampler & = delete;
 
-  [[nodiscard]] auto sampler() const noexcept -> VkSampler { return _vk_sampler_; }
+  [[nodiscard]] auto sampler() const noexcept -> VkSampler {
+    return _vk_sampler_;
+  }
 
 private:
   // dependeies

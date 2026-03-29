@@ -24,7 +24,9 @@ public:
   [[nodiscard]] auto indices() const noexcept -> std::vector<uint16_t> {
     return indices_;
   }
-  [[nodiscard]] auto buffer() const noexcept -> VkBuffer { return vk_index_buffer_; }
+  [[nodiscard]] auto buffer() const noexcept -> VkBuffer {
+    return vk_index_buffer_;
+  }
   [[nodiscard]] auto bufferMemory() const noexcept -> VkDeviceMemory {
     return vk_memory_;
   }

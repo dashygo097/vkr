@@ -5,7 +5,7 @@
 namespace vkr::resource {
 
 auto findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties,
-                        VkPhysicalDevice physicalDevice) -> uint32_t;
+                    VkPhysicalDevice physicalDevice) -> uint32_t;
 
 void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                   VkMemoryPropertyFlags properties, VkBuffer &buffer,

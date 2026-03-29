@@ -37,7 +37,7 @@ protected:
 
     std::string text(formatted.data(), formatted.size());
     if (!text.empty() && text.back() == '\n') {
-      text.pop_back(); // Remove trailing newline for ImGui
+      text.pop_back();
     }
 
     if (messages_.size() >= max_messages_) {
