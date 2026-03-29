@@ -5,6 +5,7 @@
 
 namespace vkr {
 
+std::shared_ptr<UiLogSink> Logger::ui_sink_;
 std::shared_ptr<spdlog::logger> Logger::core_logger_;
 std::shared_ptr<spdlog::logger> Logger::resource_logger_;
 std::shared_ptr<spdlog::logger> Logger::pipeline_logger_;
@@ -14,22 +15,28 @@ std::shared_ptr<spdlog::logger> Logger::ui_logger_;
 
 void Logger::init() {
   std::vector<spdlog::sink_ptr> sinks;
-  auto formatter = std::make_unique<spdlog::pattern_formatter>();
 
-  formatter->add_flag<Formatter>('*');
-  formatter->set_pattern("%^%*%$ \033[2mlibvkr::%n\033[0m %v");
+  // Console formatter
+  auto console_formatter = std::make_unique<spdlog::pattern_formatter>();
+  console_formatter->add_flag<Formatter>('*');
+  console_formatter->set_pattern("%^%*%$ \033[2mlibvkr::%n\033[0m %v");
 
-  sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-  sinks.push_back(
-      std::make_shared<spdlog::sinks::basic_file_sink_mt>("vkr.log", true));
+  auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+  console_sink->set_formatter(std::move(console_formatter));
+  sinks.push_back(console_sink);
 
-  for (auto &sink : sinks) {
-  }
+  // File sink
+  auto file_sink =
+      std::make_shared<spdlog::sinks::basic_file_sink_mt>("vkr.log", true);
+  file_sink->set_pattern("[%T] [%l] %n: %v");
+  sinks.push_back(file_sink);
 
-  sinks[0]->set_formatter(std::move(formatter));
-  sinks[1]->set_pattern("[%T] [%l] %n: %v");
+  // UI Sink (Memory buffer)
+  ui_sink_ = std::make_shared<UiLogSink>(1000);
+  ui_sink_->set_pattern(" %-5l %-16n %v");
+  sinks.push_back(ui_sink_);
 
-  // Initialize individual loggers
+  // Initialize individual loggers with all three sinks
   core_logger_ =
       std::make_shared<spdlog::logger>("core    ", sinks.begin(), sinks.end());
   resource_logger_ =

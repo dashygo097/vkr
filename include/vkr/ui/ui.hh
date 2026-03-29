@@ -10,7 +10,9 @@
 #include "../resources/offscreen_target.hh"
 #include "../timer.hh"
 #include "./components/fps_panel.hh"
+#include "./components/logging_panel.hh"
 #include "./components/shader_editor.hh"
+#include <memory>
 
 namespace vkr::ui {
 
@@ -58,7 +60,9 @@ public:
     viewport_info_ = info;
   }
 
-  [[nodiscard]] auto layoutMode() const noexcept -> LayoutMode { return layout_mode_; }
+  [[nodiscard]] auto layoutMode() const noexcept -> LayoutMode {
+    return layout_mode_;
+  }
   [[nodiscard]] auto viewportInfo() const noexcept -> const ViewportInfo & {
     return viewport_info_;
   }
@@ -80,6 +84,7 @@ private:
   // components
   std::unique_ptr<FPSPanel> fps_panel_;
   std::unique_ptr<ShaderEditor> shader_editor_;
+  std::unique_ptr<LoggingPanel> logging_panel_;
 
   // state
   LayoutMode layout_mode_{LayoutMode::FullScreen};
@@ -89,6 +94,7 @@ private:
   void renderFullScreen();
   void renderDockspace();
   void renderMainViewport();
+  void renderLoggingPanel();
   void renderPerformancePanel();
   void renderShaderEditor();
 

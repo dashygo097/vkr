@@ -22,7 +22,7 @@ Camera::Camera(const core::Window &window, const Timer &timer,
 void Camera::track() {
   if (locked_) {
     return;
-}
+  }
 
   auto deltaTime = timer_.deltaTime();
 

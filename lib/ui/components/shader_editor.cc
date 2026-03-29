@@ -49,7 +49,7 @@ void ShaderEditor::render() {
     } else {
       renderCodeBlock(state_.fragBuffer.data(), state_.fragBuffer.size(),
                       "##frag_src");
-}
+    }
   }
   ImGui::EndChild();
   ImGui::PopStyleColor();
@@ -68,7 +68,7 @@ void ShaderEditor::render() {
   bool canCompile = on_compile_ != nullptr;
   if (!canCompile) {
     ImGui::BeginDisabled();
-}
+  }
   if (ImGui::Button("Compile & Apply", ImVec2(140, 0))) {
     state_.statusMessage = "Compiling...";
     state_.statusIsError = false;
@@ -77,7 +77,7 @@ void ShaderEditor::render() {
   }
   if (!canCompile) {
     ImGui::EndDisabled();
-}
+  }
 }
 
 } // namespace vkr::ui
