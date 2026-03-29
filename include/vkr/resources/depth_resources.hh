@@ -18,7 +18,9 @@ public:
   DepthResources(const DepthResources &) = delete;
   auto operator=(const DepthResources &) -> DepthResources & = delete;
 
-  [[nodiscard]] auto image() const noexcept -> VkImage { return image_->image(); }
+  [[nodiscard]] auto image() const noexcept -> VkImage {
+    return image_->image();
+  }
   [[nodiscard]] auto imageView() const noexcept -> VkImageView {
     return imageview_->imageView();
   }
@@ -36,9 +38,9 @@ private:
 
 // helpers
 auto findSupportedFormat(VkPhysicalDevice physicalDevice,
-                             const std::vector<VkFormat> &candidates,
-                             VkImageTiling tiling,
-                             VkFormatFeatureFlags features) -> VkFormat;
+                         const std::vector<VkFormat> &candidates,
+                         VkImageTiling tiling, VkFormatFeatureFlags features)
+    -> VkFormat;
 auto findDepthFormat(VkPhysicalDevice physicalDevice) -> VkFormat;
 
 } // namespace vkr::resource

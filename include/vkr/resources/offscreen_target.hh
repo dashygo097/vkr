@@ -23,7 +23,9 @@ public:
   [[nodiscard]] auto framebuffer() const noexcept -> VkFramebuffer {
     return framebuffer_;
   }
-  [[nodiscard]] auto colorView() const noexcept -> VkImageView { return color_view_; }
+  [[nodiscard]] auto colorView() const noexcept -> VkImageView {
+    return color_view_;
+  }
   [[nodiscard]] auto sampler() const noexcept -> VkSampler { return sampler_; }
   [[nodiscard]] auto imguiDescriptorSet() const noexcept -> VkDescriptorSet {
     return imgui_ds_;
@@ -42,7 +44,7 @@ public:
   auto flushPendingResize(VkDescriptorPool pool) -> bool {
     if (!resize_pending_) {
       return false;
-}
+    }
     resize_pending_ = false;
     resize(pending_width_, pending_height_);
     registerWithImGui(pool);

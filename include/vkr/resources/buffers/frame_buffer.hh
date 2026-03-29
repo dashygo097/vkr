@@ -21,7 +21,8 @@ public:
   void create();
   void destroy();
 
-  [[nodiscard]] auto framebuffers() const noexcept -> std::vector<VkFramebuffer> {
+  [[nodiscard]] auto framebuffers() const noexcept
+      -> std::vector<VkFramebuffer> {
     return vk_framebuffers_;
   }
 

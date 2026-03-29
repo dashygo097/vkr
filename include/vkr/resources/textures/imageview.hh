@@ -21,7 +21,9 @@ public:
     create(image, format);
   }
 
-  [[nodiscard]] auto imageView() const noexcept -> VkImageView { return vk_imageview_; }
+  [[nodiscard]] auto imageView() const noexcept -> VkImageView {
+    return vk_imageview_;
+  }
 
 private:
   // dependencies

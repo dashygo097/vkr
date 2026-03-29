@@ -47,8 +47,8 @@ public:
     index_buffer_->update(indices);
   }
 
-  [[nodiscard]] auto
-  vertexBuffer() const -> std::shared_ptr<VertexBufferBase<VBOType>> {
+  [[nodiscard]] auto vertexBuffer() const
+      -> std::shared_ptr<VertexBufferBase<VBOType>> {
     return vertex_buffer_;
   }
   [[nodiscard]] auto indexBuffer() const -> std::shared_ptr<IndexBuffer> {
