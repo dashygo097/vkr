@@ -93,6 +93,16 @@ auto GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
     break;
+  case PipelineMode::Normal3D:
+    bindingDescription = resource::VertexNormal3D::getBindingDescription();
+    attributeDescriptions =
+        resource::VertexNormal3D::getAttributeDescriptions();
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    break;
   case PipelineMode::Textured3D:
     bindingDescription = resource::VertexTextured3D::getBindingDescription();
     attributeDescriptions =
@@ -368,6 +378,9 @@ static const std::unordered_map<PipelineMode,
         {PipelineMode::Default3D,
          {"shaders/defaults/default3d/default3d.vert",
           "shaders/defaults/default3d/default3d.frag"}},
+        {PipelineMode::Normal3D,
+         {"shaders/defaults/normal3d/normal3d.vert",
+          "shaders/defaults/normal3d/normal3d.frag"}},
         {PipelineMode::Textured3D,
          {"shaders/defaults/texture3d/texture3d.vert",
           "shaders/defaults/texture3d/texture3d.frag"}},
@@ -422,7 +435,7 @@ void GraphicsPipeline::loadDefaultSources() {
       frag_src_path_ = appFrag;
       vert_src_ = fread_string(appVert);
       frag_src_ = fread_string(appFrag);
-      VKR_PIPE_INFO("Loaded app shaders: {} / {}", appVert, appFrag);
+      VKR_PIPE_INFO("Loaded app shaders: {} | {}", appVert, appFrag);
       return;
     }
 

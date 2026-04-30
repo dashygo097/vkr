@@ -14,6 +14,7 @@ enum class PipelineMode {
   Default2D,
   Textured2D,
   Default3D,
+  Normal3D,
   Textured3D,
   NoVertices,
 };
@@ -48,7 +49,8 @@ public:
   [[nodiscard]] auto pipeline() const noexcept -> VkPipeline {
     return vk_graphics_pipeline_;
   }
-  [[nodiscard]] auto offscreenPipelineLayout() const noexcept -> VkPipelineLayout {
+  [[nodiscard]] auto offscreenPipelineLayout() const noexcept
+      -> VkPipelineLayout {
     return vk_offscreen_layout_;
   }
   [[nodiscard]] auto offscreenPipeline() const noexcept -> VkPipeline {
@@ -105,8 +107,8 @@ private:
 
   void destroyHandles();
 
-  auto compileGlsl(const std::string &src, bool isVertex,
-                                    std::string &outError) -> std::vector<uint32_t>;
+  auto compileGlsl(const std::string &src, bool isVertex, std::string &outError)
+      -> std::vector<uint32_t>;
   void loadDefaultSources();
 };
 

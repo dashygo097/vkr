@@ -18,9 +18,9 @@ DepthResources::DepthResources(const core::Device &device,
 }
 
 auto findSupportedFormat(VkPhysicalDevice physicalDevice,
-                             const std::vector<VkFormat> &candidates,
-                             VkImageTiling tiling,
-                             VkFormatFeatureFlags features) -> VkFormat {
+                         const std::vector<VkFormat> &candidates,
+                         VkImageTiling tiling, VkFormatFeatureFlags features)
+    -> VkFormat {
   for (VkFormat format : candidates) {
     VkFormatProperties props;
     vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);

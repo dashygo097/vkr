@@ -41,7 +41,7 @@ shaders:
 		name="$$(basename "$$base")"; \
 		out_dir="$(SHADER_OUT_ROOT)/$$(dirname "$$rel")"; \
 		mkdir -p "$$out_dir"; \
-		out="$$out_dir/$${ext}_$${name}.spv"; \
+		out="$$out_dir/$${name}.$${ext}"; \
 		cp "$$src" "$$out_dir/$$name.$${ext}"; \
 		echo "  ✓ Copy $$src → $$out"; \
 	done || true

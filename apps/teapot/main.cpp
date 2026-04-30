@@ -53,11 +53,12 @@ private:
     ctx.cameraNearPlane = 0.01f;
     ctx.cameraFarPlane = 1000.0f;
 
-    ctx.pipelineMode = vkr::pipeline::PipelineMode::Default3D;
+    ctx.pipelineMode = vkr::pipeline::PipelineMode::Normal3D;
   }
 
   void onSetup() override {
-    vkr::resource::Mesh<vkr::resource::Vertex3D> teapot(*device, *commandPool);
+    vkr::resource::Mesh<vkr::resource::VertexNormal3D> teapot(*device,
+                                                              *commandPool);
     teapot.load("./assets/teapot/teapot.obj");
 
     resourceManager->createMesh("teapot", teapot);
