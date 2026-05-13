@@ -4,7 +4,7 @@
 
 ## Screenshot
 
-![demo screenshot](assets/screenshots/demo.jpg)
+![demo screenshot](assets/screenshots/demo.png)
 
 ## License
 
