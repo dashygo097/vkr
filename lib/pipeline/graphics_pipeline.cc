@@ -370,23 +370,35 @@ static const std::unordered_map<PipelineMode,
                                 std::pair<std::string, std::string>>
     kDefaultSourcePaths = {
         {PipelineMode::Default2D,
-         {"shaders/defaults/default2d/default2d.vert",
-          "shaders/defaults/default2d/default2d.frag"}},
+         {std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/default2d/default2d.vert",
+          std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/default2d/default2d.frag"}},
         {PipelineMode::Textured2D,
-         {"shaders/defautls/texture2d/texture2d.vert",
-          "shaders/defaults/texture2d/texture2d.frag"}},
+         {std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defautls/texture2d/texture2d.vert",
+          std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/texture2d/texture2d.frag"}},
         {PipelineMode::Default3D,
-         {"shaders/defaults/default3d/default3d.vert",
-          "shaders/defaults/default3d/default3d.frag"}},
+         {std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/default3d/default3d.vert",
+          std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/default3d/default3d.frag"}},
         {PipelineMode::Normal3D,
-         {"shaders/defaults/normal3d/normal3d.vert",
-          "shaders/defaults/normal3d/normal3d.frag"}},
+         {std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/normal3d/normal3d.vert",
+          std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/normal3d/normal3d.frag"}},
         {PipelineMode::Textured3D,
-         {"shaders/defaults/texture3d/texture3d.vert",
-          "shaders/defaults/texture3d/texture3d.frag"}},
+         {std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/texture3d/texture3d.vert",
+          std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/texture3d/texture3d.frag"}},
         {PipelineMode::NoVertices,
-         {"shaders/defaults/shadertoy/shadertoy.vert",
-          "shaders/defaults/shadertoy/shadertoy.frag"}},
+         {std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/shadertoy/shadertoy.vert",
+          std::string(DEFAULT_ASSETS_DIR) +
+              "shaders/defaults/shadertoy/shadertoy.frag"}},
 };
 
 void GraphicsPipeline::loadDefaultSources() {

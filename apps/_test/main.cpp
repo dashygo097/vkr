@@ -29,7 +29,8 @@ private:
   void createUniforms() override {
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
-    resourceManager->createTexture("image1", "assets/textures/image.jpg");
+    resourceManager->createTexture("image1",
+                                   ctx.assetsDir + "textures/avatar.jpg");
   }
 
   auto createDescriptorBindings()
@@ -68,9 +69,12 @@ private:
   }
 
   void onUpdate(float deltaTime) override {
-    if (ui->viewportInfo().height > 0) {
+    if (ui->viewportInfo().height > 0 &&
+        ui->layoutMode() == vkr::ui::LayoutMode::Standard) {
       ctx.cameraAspectRatio = ui->viewportInfo().width /
                               static_cast<float>(ui->viewportInfo().height);
+    } else {
+      ctx.cameraAspectRatio = ctx.width / static_cast<float>(ctx.height);
     }
   }
 

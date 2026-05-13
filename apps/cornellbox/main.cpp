@@ -1,3 +1,4 @@
+#include "vkr/ctx.hh"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -38,9 +39,12 @@ private:
   }
 
   void onUpdate(float deltaTime) override {
-    if (ui->viewportInfo().height > 0) {
+    if (ui->viewportInfo().height > 0 &&
+        ui->layoutMode() == vkr::ui::LayoutMode::Standard) {
       ctx.cameraAspectRatio = ui->viewportInfo().width /
                               static_cast<float>(ui->viewportInfo().height);
+    } else {
+      ctx.cameraAspectRatio = ctx.width / static_cast<float>(ctx.height);
     }
   }
 
@@ -65,18 +69,18 @@ private:
 
   void onSetup() override {
     vkr::resource::Mesh<vkr::resource::Vertex3D> light(*device, *commandPool);
-    light.load("./assets/cornellbox/light.obj");
+    light.load(ctx.assetsDir + "objects/cornellbox/light.obj");
     vkr::resource::Mesh<vkr::resource::Vertex3D> floor(*device, *commandPool);
-    floor.load("./assets/cornellbox/floor.obj");
+    floor.load(ctx.assetsDir + "objects/cornellbox/floor.obj");
     vkr::resource::Mesh<vkr::resource::Vertex3D> left(*device, *commandPool);
-    left.load("./assets/cornellbox/left.obj");
+    left.load(ctx.assetsDir + "objects/cornellbox/left.obj");
     vkr::resource::Mesh<vkr::resource::Vertex3D> right(*device, *commandPool);
-    right.load("./assets/cornellbox/right.obj");
+    right.load(ctx.assetsDir + "objects/cornellbox/right.obj");
     vkr::resource::Mesh<vkr::resource::Vertex3D> tallbox(*device, *commandPool);
-    tallbox.load("./assets/cornellbox/tallbox.obj");
+    tallbox.load(ctx.assetsDir + "objects/cornellbox/tallbox.obj");
     vkr::resource::Mesh<vkr::resource::Vertex3D> shortbox(*device,
                                                           *commandPool);
-    shortbox.load("./assets/cornellbox/shortbox.obj");
+    shortbox.load(ctx.assetsDir + "objects/cornellbox/shortbox.obj");
 
     resourceManager->createMesh("light", light);
     resourceManager->createMesh("floor", floor);

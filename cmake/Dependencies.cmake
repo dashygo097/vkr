@@ -29,7 +29,6 @@ elseif(UNIX)
 
 endif()
 
-
 # 3rdparty
 set(GLFW_BUILD_DOCS     OFF CACHE BOOL "Disable GLFW docs" FORCE)
 set(GLFW_BUILD_TESTS    OFF CACHE BOOL "Disable GLFW tests" FORCE)
@@ -47,3 +46,9 @@ if (TARGET glfw)
   set(HAS_GLFW TRUE)
   get_target_property(GLFW_VERSION_STRING glfw VERSION)
 endif()
+
+if(NOT DEFINED DEFAULT_ASSETS_DIR)
+  set(DEFAULT_ASSETS_DIR ${CMAKE_SOURCE_DIR})
+endif()
+message(STATUS "Default Assets directory: ${DEFAULT_ASSETS_DIR}")
+add_compile_definitions(-DDEFAULT_ASSETS_DIR="${DEFAULT_ASSETS_DIR}")

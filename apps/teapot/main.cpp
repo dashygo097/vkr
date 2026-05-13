@@ -38,9 +38,12 @@ private:
   }
 
   void onUpdate(float deltaTime) override {
-    if (ui->viewportInfo().height > 0) {
+    if (ui->viewportInfo().height > 0 &&
+        ui->layoutMode() == vkr::ui::LayoutMode::Standard) {
       ctx.cameraAspectRatio = ui->viewportInfo().width /
                               static_cast<float>(ui->viewportInfo().height);
+    } else {
+      ctx.cameraAspectRatio = ctx.width / static_cast<float>(ctx.height);
     }
   }
 
@@ -66,7 +69,7 @@ private:
   void onSetup() override {
     vkr::resource::Mesh<vkr::resource::VertexNormal3D> teapot(*device,
                                                               *commandPool);
-    teapot.load("./assets/teapot/teapot.obj");
+    teapot.load(ctx.assetsDir + "teapot/teapot.obj");
 
     resourceManager->createMesh("teapot", teapot);
   }

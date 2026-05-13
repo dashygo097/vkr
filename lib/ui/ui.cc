@@ -227,15 +227,15 @@ void UI::setupDockingLayout() {
 
   ImGuiID dockLeft, dockRight, dockBottomRight, dockShader, dockLogs;
 
-  dockLeft = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Left, 0.25f,
+  dockLeft = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Left, 0.2f,
                                          nullptr, &dockSpaceId);
 
-  dockRight = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Right, 0.28f,
+  dockRight = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Right, 0.2f,
                                           nullptr, &dockSpaceId);
-  dockShader = ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Up, 0.70f,
+  dockShader = ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Up, 0.8f,
                                            nullptr, &dockBottomRight);
 
-  dockLogs = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Down, 0.25f,
+  dockLogs = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Down, 0.2f,
                                          nullptr, &dockSpaceId);
 
   ImGui::DockBuilderDockWindow("Resources", dockLeft);
