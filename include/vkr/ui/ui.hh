@@ -11,6 +11,7 @@
 #include "../timer.hh"
 #include "./components/fps_panel.hh"
 #include "./components/logging_panel.hh"
+#include "./components/resource_tree.hh"
 #include "./components/shader_editor.hh"
 #include <memory>
 
@@ -32,11 +33,12 @@ public:
   UI(const core::Window &window, const core::Instance &instance,
      const core::Surface &surface, const core::Device &device,
      const core::CommandPool &commandPool,
+     const resource::ResourceManager &resourceManager,
+     resource::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
-     pipeline::GraphicsPipeline &graphicsPipeline,
-     resource::OffscreenTarget &offscreenTarget, const Timer &timer,
-     pipeline::PipelineMode mode);
+     pipeline::GraphicsPipeline &graphicsPipeline, pipeline::PipelineMode mode,
+     const Timer &timer);
   ~UI();
 
   UI(const UI &) = delete;
@@ -74,14 +76,16 @@ private:
   const core::Surface &surface_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
+  const resource::ResourceManager &resource_manager_;
+  resource::OffscreenTarget &offscreen_target_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
   pipeline::GraphicsPipeline &graphics_pipeline_;
-  resource::OffscreenTarget &offscreen_target_;
-  const Timer &timer_;
   pipeline::PipelineMode mode_;
+  const Timer &timer_;
 
   // components
+  std::unique_ptr<ResourceTree> resource_tree_;
   std::unique_ptr<FPSPanel> fps_panel_;
   std::unique_ptr<ShaderEditor> shader_editor_;
   std::unique_ptr<LoggingPanel> logging_panel_;
@@ -91,13 +95,16 @@ private:
   ViewportInfo viewport_info_{};
 
   // helpers
+  // Full screen mode
   void renderFullScreen();
+
+  // Standard mode
   void renderDockspace();
+  void setupDockingLayout();
   void renderMainViewport();
+  void renderResourcePanel();
   void renderLoggingPanel();
   void renderPerformancePanel();
   void renderShaderEditor();
-
-  void setupDockingLayout();
 };
 } // namespace vkr::ui

@@ -13,15 +13,17 @@ namespace vkr::ui {
 UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool,
+       const resource::ResourceManager &resourceManager,
+       resource::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
        pipeline::GraphicsPipeline &graphicsPipeline,
-       resource::OffscreenTarget &offscreenTarget, const Timer &timer,
-       pipeline::PipelineMode mode)
+       pipeline::PipelineMode mode, const Timer &timer)
     : window_(window), instance_(instance), surface_(surface), device_(device),
-      command_pool_(commandPool), render_pass_(renderPass),
+      command_pool_(commandPool), resource_manager_(resourceManager),
+      offscreen_target_(offscreenTarget), render_pass_(renderPass),
       descriptor_pool_(descriptorPool), graphics_pipeline_(graphicsPipeline),
-      offscreen_target_(offscreenTarget), timer_(timer), mode_(mode) {
+      mode_(mode), timer_(timer) {
 
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
@@ -92,6 +94,11 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   logging_panel_ = std::make_unique<LoggingPanel>();
   VKR_UI_INFO("Logging Panel initialized successfully.");
 
+  // resource tree
+  VKR_UI_INFO("Initializing Resource Tree...");
+  resource_tree_ = std::make_unique<ResourceTree>(resource_manager_);
+  VKR_UI_INFO("Resource Tree initialized successfully.");
+
   VKR_UI_INFO("ImGui UI initialized successfully.");
 }
 
@@ -113,6 +120,7 @@ void UI::render(VkCommandBuffer commandBuffer) {
   case LayoutMode::Standard:
     renderDockspace();
     renderMainViewport();
+    renderResourcePanel();
     renderPerformancePanel();
     renderShaderEditor();
     renderLoggingPanel();
@@ -211,6 +219,34 @@ void UI::renderDockspace() {
   ImGui::End();
 }
 
+void UI::setupDockingLayout() {
+  ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
+  ImGui::DockBuilderRemoveNode(dockSpaceId);
+  ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
+  ImGui::DockBuilderSetNodeSize(dockSpaceId, ImGui::GetMainViewport()->Size);
+
+  ImGuiID dockLeft, dockRight, dockBottomRight, dockShader, dockLogs;
+
+  dockLeft = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Left, 0.25f,
+                                         nullptr, &dockSpaceId);
+
+  dockRight = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Right, 0.28f,
+                                          nullptr, &dockSpaceId);
+  dockShader = ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Up, 0.70f,
+                                           nullptr, &dockBottomRight);
+
+  dockLogs = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Down, 0.25f,
+                                         nullptr, &dockSpaceId);
+
+  ImGui::DockBuilderDockWindow("Resources", dockLeft);
+  ImGui::DockBuilderDockWindow("Shader Editor", dockShader);
+  ImGui::DockBuilderDockWindow("Performance", dockBottomRight);
+  ImGui::DockBuilderDockWindow("Logging", dockLogs);
+  ImGui::DockBuilderDockWindow("Viewport", dockSpaceId);
+
+  ImGui::DockBuilderFinish(dockSpaceId);
+}
+
 void UI::renderMainViewport() {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
@@ -249,6 +285,19 @@ void UI::renderMainViewport() {
   ImGui::PopStyleVar();
 }
 
+void UI::renderResourcePanel() {
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
+                                 ImGuiWindowFlags_NoResize |
+                                 ImGuiWindowFlags_NoCollapse;
+
+  if (ImGui::Begin("Resources", nullptr, windowFlags)) {
+    if (resource_tree_) {
+      resource_tree_->render();
+    }
+  }
+  ImGui::End();
+}
+
 void UI::renderPerformancePanel() {
   ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
                                  ImGuiWindowFlags_NoResize |
@@ -263,47 +312,25 @@ void UI::renderPerformancePanel() {
 }
 
 void UI::renderShaderEditor() {
-  ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                           ImGuiWindowFlags_NoCollapse;
-  if (ImGui::Begin("Shader Editor", nullptr, flags)) {
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
+                                 ImGuiWindowFlags_NoResize |
+                                 ImGuiWindowFlags_NoCollapse;
+  if (ImGui::Begin("Shader Editor", nullptr, windowFlags)) {
     shader_editor_->render();
   }
   ImGui::End();
 }
 
 void UI::renderLoggingPanel() {
-  ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                           ImGuiWindowFlags_NoCollapse;
-  if (ImGui::Begin("Logging", nullptr, flags)) {
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
+                                 ImGuiWindowFlags_NoResize |
+                                 ImGuiWindowFlags_NoCollapse;
+  if (ImGui::Begin("Logging", nullptr, windowFlags)) {
     if (logging_panel_) {
       logging_panel_->render();
     }
   }
   ImGui::End();
-}
-
-void UI::setupDockingLayout() {
-  ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
-  ImGui::DockBuilderRemoveNode(dockSpaceId);
-  ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
-  ImGui::DockBuilderSetNodeSize(dockSpaceId, ImGui::GetMainViewport()->Size);
-
-  ImGuiID dockRight, dockBottomRight, dockShader, dockLogs;
-
-  dockRight = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Right, 0.28f,
-                                          nullptr, &dockSpaceId);
-  dockShader = ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Up, 0.70f,
-                                           nullptr, &dockBottomRight);
-
-  dockLogs = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Down, 0.25f,
-                                         nullptr, &dockSpaceId);
-
-  ImGui::DockBuilderDockWindow("Shader Editor", dockShader);
-  ImGui::DockBuilderDockWindow("Performance", dockBottomRight);
-  ImGui::DockBuilderDockWindow("Logging", dockLogs);
-  ImGui::DockBuilderDockWindow("Viewport", dockSpaceId);
-
-  ImGui::DockBuilderFinish(dockSpaceId);
 }
 
 } // namespace vkr::ui

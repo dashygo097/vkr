@@ -164,20 +164,27 @@ public:
   [[nodiscard]] auto listResources(
       const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
           &resourceMap) const -> std::vector<std::shared_ptr<ResourceType>> {
-    std::vector<std::shared_ptr<ResourceType>> resources(resourceMap.size());
+    std::vector<std::shared_ptr<ResourceType>> resources;
+    resources.reserve(resourceMap.size());
+
     for (const auto &[_, resource] : resourceMap) {
       resources.push_back(resource);
     }
+
     return resources;
   }
+
   template <typename ResourceType>
   [[nodiscard]] auto listResourceNames(
       const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
           &resourceMap) const -> std::vector<std::string> {
-    std::vector<std::string> names(resourceMap.size());
+    std::vector<std::string> names;
+    names.reserve(resourceMap.size());
+
     for (const auto &[name, _] : resourceMap) {
       names.push_back(name);
     }
+
     return names;
   }
 
