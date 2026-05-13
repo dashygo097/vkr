@@ -90,6 +90,13 @@ private:
     shadertoyUBO->updateRaw(currentImage, &ubo, sizeof(ubo));
   }
 
+  void onUpdate(float deltaTime) override {
+    if (ui->viewportInfo().height > 0) {
+      ctx.cameraAspectRatio = ui->viewportInfo().width /
+                              static_cast<float>(ui->viewportInfo().height);
+    }
+  }
+
   void onConfigure() override {
     ctx.appName = "shadertoy";
     ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
