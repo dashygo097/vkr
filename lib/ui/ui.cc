@@ -15,12 +15,13 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const core::CommandPool &commandPool,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
-       pipeline::GraphicsPipeline &graphicsPipeline, const Timer &timer,
-       pipeline::PipelineMode mode, resource::OffscreenTarget *offscreenTarget)
+       pipeline::GraphicsPipeline &graphicsPipeline,
+       resource::OffscreenTarget &offscreenTarget, const Timer &timer,
+       pipeline::PipelineMode mode)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), render_pass_(renderPass),
       descriptor_pool_(descriptorPool), graphics_pipeline_(graphicsPipeline),
-      timer_(timer), mode_(mode), offscreen_target_(offscreenTarget) {
+      offscreen_target_(offscreenTarget), timer_(timer), mode_(mode) {
 
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
@@ -136,10 +137,10 @@ void UI::renderFullScreen() {
       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
   if (ImGui::Begin("Fullscreen Viewport", nullptr, flags)) {
-    if (offscreen_target_ && offscreen_target_->imguiDescriptorSet()) {
-      ImGui::Image(reinterpret_cast<ImTextureID>(
-                       offscreen_target_->imguiDescriptorSet()),
-                   ImGui::GetContentRegionAvail());
+    if (offscreen_target_.imguiDescriptorSet()) {
+      ImGui::Image(
+          reinterpret_cast<ImTextureID>(offscreen_target_.imguiDescriptorSet()),
+          ImGui::GetContentRegionAvail());
     }
   }
   ImGui::End();
@@ -226,11 +227,10 @@ void UI::renderMainViewport() {
       panelSize.y = 1.0f;
     }
 
-    if (offscreen_target_ &&
-        offscreen_target_->imguiDescriptorSet() != VK_NULL_HANDLE) {
-      ImGui::Image(reinterpret_cast<ImTextureID>(
-                       offscreen_target_->imguiDescriptorSet()),
-                   panelSize);
+    if (offscreen_target_.imguiDescriptorSet() != VK_NULL_HANDLE) {
+      ImGui::Image(
+          reinterpret_cast<ImTextureID>(offscreen_target_.imguiDescriptorSet()),
+          panelSize);
     } else {
       ImGui::TextDisabled("(no offscreen target)");
     }

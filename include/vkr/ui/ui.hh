@@ -34,9 +34,9 @@ public:
      const core::CommandPool &commandPool,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
-     pipeline::GraphicsPipeline &graphicsPipeline, const Timer &timer,
-     pipeline::PipelineMode mode,
-     resource::OffscreenTarget *offscreenTarget = nullptr);
+     pipeline::GraphicsPipeline &graphicsPipeline,
+     resource::OffscreenTarget &offscreenTarget, const Timer &timer,
+     pipeline::PipelineMode mode);
   ~UI();
 
   UI(const UI &) = delete;
@@ -77,9 +77,9 @@ private:
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
   pipeline::GraphicsPipeline &graphics_pipeline_;
+  resource::OffscreenTarget &offscreen_target_;
   const Timer &timer_;
   pipeline::PipelineMode mode_;
-  resource::OffscreenTarget *offscreen_target_{nullptr};
 
   // components
   std::unique_ptr<FPSPanel> fps_panel_;

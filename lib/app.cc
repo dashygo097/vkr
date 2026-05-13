@@ -83,8 +83,8 @@ void VulkanApplication::initVulkan() {
   // ui
   ui = std::make_unique<ui::UI>(*window, *instance, *surface, *device,
                                 *commandPool, *renderPass, *descriptorPool,
-                                *graphicsPipeline, *timer, ctx.pipelineMode,
-                                offscreenTarget.get());
+                                *graphicsPipeline, *offscreenTarget, *timer,
+                                ctx.pipelineMode);
   offscreenTarget->registerWithImGui(descriptorPool->pool());
 
   // renderer
