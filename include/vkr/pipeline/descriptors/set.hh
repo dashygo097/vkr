@@ -34,7 +34,8 @@ public:
 
   void bindToFrame(uint32_t frameIndex, DescriptorWriter &writer);
 
-  [[nodiscard]] auto sets() const noexcept -> const std::vector<VkDescriptorSet> & {
+  [[nodiscard]] auto sets() const noexcept
+      -> const std::vector<VkDescriptorSet> & {
     return sets_;
   }
 
@@ -62,12 +63,12 @@ public:
   DescriptorManager(const DescriptorManager &) = delete;
   auto operator=(const DescriptorManager &) -> DescriptorManager & = delete;
 
-  auto
-  createLayout(const std::vector<DescriptorBinding> &bindings) -> std::shared_ptr<DescriptorSetLayout>;
+  auto createLayout(const std::vector<DescriptorBinding> &bindings)
+      -> std::shared_ptr<DescriptorSetLayout>;
 
-  auto
-  allocate(DescriptorSetLayout &layout, const DescriptorPool &pool,
-           uint32_t frameCount = core::MAX_FRAMES_IN_FLIGHT) -> std::unique_ptr<DescriptorSets>;
+  auto allocate(DescriptorSetLayout &layout, const DescriptorPool &pool,
+                uint32_t frameCount = core::MAX_FRAMES_IN_FLIGHT)
+      -> std::unique_ptr<DescriptorSets>;
 
   static auto calculatePoolSizes(uint32_t maxSets) -> DescriptorPoolSizes;
 
