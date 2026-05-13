@@ -2,6 +2,10 @@
 
 ###### A simple toy renderer impled in vulkan
 
+## Screenshot
+
+![demo screenshot](assets/screenshots/demo.jpg)
+
 ## License
 
 Copyright 2025-2026 dashygo097

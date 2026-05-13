@@ -69,7 +69,7 @@ private:
   void onSetup() override {
     vkr::resource::Mesh<vkr::resource::VertexNormal3D> teapot(*device,
                                                               *commandPool);
-    teapot.load(ctx.assetsDir + "teapot/teapot.obj");
+    teapot.load(ctx.assetsDir + "objects/teapot/teapot.obj");
 
     resourceManager->createMesh("teapot", teapot);
   }
