@@ -69,13 +69,9 @@ public:
   DescriptorSetLayout(const DescriptorSetLayout &) = delete;
   auto operator=(const DescriptorSetLayout &) -> DescriptorSetLayout & = delete;
 
-  // FIXME: ref return
   [[nodiscard]] auto layoutRef() noexcept -> VkDescriptorSetLayout & {
     return layout_;
   }
-
-  static auto createDefault3D(const core::Device &device)
-      -> DescriptorSetLayout;
 
 private:
   // dependencies
