@@ -1,57 +1,35 @@
 #pragma once
 
 #include "../../core/device.hh"
+#include "vkr/logger.hh"
 #include <vector>
 
 namespace vkr::pipeline {
-enum class DescriptorType {
-  UniformBuffer,
-  StorageBuffer,
-  CombinedImageSampler,
-  StorageImage,
-  InputAttachment
-};
-
 struct DescriptorBinding {
   uint32_t binding;
-  DescriptorType type;
+  VkDescriptorType type;
   uint32_t count{1};
   VkShaderStageFlags stageFlags;
-
-  [[nodiscard]] auto toVkType() const noexcept -> VkDescriptorType {
-    switch (type) {
-    case DescriptorType::UniformBuffer:
-      return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    case DescriptorType::StorageBuffer:
-      return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    case DescriptorType::CombinedImageSampler:
-      return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    case DescriptorType::StorageImage:
-      return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    case DescriptorType::InputAttachment:
-      return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-    default:
-      return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    }
-  }
 
   [[nodiscard]] auto toString() const noexcept -> std::string {
     std::string typeStr;
     switch (type) {
-    case DescriptorType::UniformBuffer:
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
       typeStr = "uniform";
       break;
-    case DescriptorType::StorageBuffer:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
       typeStr = "storage";
       break;
-    case DescriptorType::CombinedImageSampler:
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
       typeStr = "combined image sampler";
-    case DescriptorType::StorageImage:
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
       typeStr = "storage image";
       break;
-    case DescriptorType::InputAttachment:
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
       typeStr = "input attachment";
       break;
+    default:
+      VKR_PIPE_ERROR("Unknown descriptor type: {}", std::to_string(type));
     }
 
     return "layout(binding=" + std::to_string(binding) + ", type=" + typeStr +

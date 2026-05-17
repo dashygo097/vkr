@@ -18,7 +18,9 @@ public:
 
   [[nodiscard]] auto name() const noexcept -> std::string { return name_; }
   [[nodiscard]] auto version() const noexcept -> uint32_t { return version_; }
-  [[nodiscard]] auto instance() const noexcept -> VkInstance { return vk_instance_; }
+  [[nodiscard]] auto instance() const noexcept -> VkInstance {
+    return vk_instance_;
+  }
 
 private:
   // components

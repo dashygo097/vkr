@@ -13,7 +13,9 @@ public:
   Surface(const Surface &) = delete;
   auto operator=(const Surface &) -> Surface & = delete;
 
-  [[nodiscard]] auto surface() const noexcept -> VkSurfaceKHR { return surface_; }
+  [[nodiscard]] auto surface() const noexcept -> VkSurfaceKHR {
+    return surface_;
+  }
 
 private:
   // dependencies

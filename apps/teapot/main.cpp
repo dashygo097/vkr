@@ -9,8 +9,8 @@ class TeapotApp : public vkr::VulkanApplication {
 private:
   auto createDescriptorBindings()
       -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
-             VK_SHADER_STAGE_VERTEX_BIT}};
+    return {
+        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
   }
 
   void createUniforms() override {

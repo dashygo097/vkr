@@ -24,7 +24,7 @@ private:
 
   auto createDescriptorBindings()
       -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {{0, vkr::pipeline::DescriptorType::UniformBuffer, 1,
+    return {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
              VK_SHADER_STAGE_FRAGMENT_BIT}};
   }
 

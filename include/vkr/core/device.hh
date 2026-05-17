@@ -17,7 +17,9 @@ public:
 
   void waitIdle();
 
-  [[nodiscard]] auto device() const noexcept -> VkDevice { return vk_logical_device_; }
+  [[nodiscard]] auto device() const noexcept -> VkDevice {
+    return vk_logical_device_;
+  }
   [[nodiscard]] auto physicalDevice() const noexcept -> VkPhysicalDevice {
     return vk_physical_device_;
   }

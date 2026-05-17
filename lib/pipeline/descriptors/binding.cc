@@ -1,5 +1,4 @@
 #include "vkr/pipeline/descriptors/binding.hh"
-#include "vkr/logger.hh"
 
 namespace vkr::pipeline {
 
@@ -15,7 +14,7 @@ DescriptorSetLayout::DescriptorSetLayout(
     VkDescriptorSetLayoutBinding vkBinding{};
 
     vkBinding.binding = binding.binding;
-    vkBinding.descriptorType = binding.toVkType();
+    vkBinding.descriptorType = binding.type;
     vkBinding.descriptorCount = binding.count;
     vkBinding.stageFlags = binding.stageFlags;
     vkBinding.pImmutableSamplers = nullptr;
