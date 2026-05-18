@@ -11,14 +11,17 @@ struct SwapchainSupportDetails {
   std::vector<VkPresentModeKHR> presentModes;
 };
 
-auto querySwapchainSupport(VkPhysicalDevice device,
-                                              VkSurfaceKHR surface) -> SwapchainSupportDetails;
+auto querySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
+    -> SwapchainSupportDetails;
 auto chooseSwapSurfaceFormat(
-    const std::vector<VkSurfaceFormatKHR> &availableFormats) -> VkSurfaceFormatKHR;
+    const std::vector<VkSurfaceFormatKHR> &availableFormats)
+    -> VkSurfaceFormatKHR;
 auto chooseSwapPresentMode(
-    const std::vector<VkPresentModeKHR> &availablePresentModes) -> VkPresentModeKHR;
+    const std::vector<VkPresentModeKHR> &availablePresentModes)
+    -> VkPresentModeKHR;
 auto chooseSwapExtent(GLFWwindow *window,
-                            const VkSurfaceCapabilitiesKHR &capabilities) -> VkExtent2D;
+                      const VkSurfaceCapabilitiesKHR &capabilities)
+    -> VkExtent2D;
 
 class Swapchain {
 public:
@@ -39,7 +42,9 @@ public:
     return vk_imageviews_;
   }
   [[nodiscard]] auto format() const noexcept -> VkFormat { return vk_format_; }
-  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D { return vk_extent_; }
+  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D {
+    return vk_extent_;
+  }
 
   void create();
   void destroy();
