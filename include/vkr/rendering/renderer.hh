@@ -26,6 +26,7 @@ public:
                     resource::ResourceManager &resourceManager,
                     const pipeline::RenderPass &renderPass, ui::UI &ui);
   ~Renderer();
+
   Renderer(const Renderer &) = delete;
   auto operator=(const Renderer &) -> Renderer & = delete;
 
@@ -62,7 +63,7 @@ private:
   core::Swapchain &swapchain_;
   const core::CommandPool &command_pool_;
   const core::SyncObjects &sync_objects_;
-  resource::ResourceManager &resource_manage_;
+  resource::ResourceManager &resource_manager_;
   const pipeline::RenderPass &render_pass_;
   ui::UI &_ui;
 

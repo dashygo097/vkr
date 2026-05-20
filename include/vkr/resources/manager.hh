@@ -1,12 +1,12 @@
 #pragma once
 
-#include "./buffers/frame_buffer.hh"
 #include "./buffers/index_buffer.hh"
 #include "./buffers/ubos.hh"
 #include "./buffers/uniform_buffer.hh"
 #include "./buffers/vbos.hh"
 #include "./buffers/vertex_buffer.hh"
 #include "./depth_resources.hh"
+#include "./framebuffer/buffer.hh"
 #include "./mesh.hh"
 #include "./textures/image.hh"
 #include "./textures/imageview.hh"
@@ -85,19 +85,19 @@ public:
   }
 
   // Framebuffer Management
-  void createFramebuffers(const std::string &name) {
-    auto fb = std::make_shared<Framebuffers>(device_, swapchain_,
-                                             depth_resources_, render_pass_);
+  void createFramebufferSet(const std::string &name,
+                            const FramebufferDesc &desc) {
+    auto fb = std::make_shared<FramebufferSet>(device_, render_pass_, desc);
     frame_buffers_[name] = std::move(fb);
   }
 
-  auto getFramebuffers(const std::string &name)
-      -> std::shared_ptr<Framebuffers> {
+  auto getFramebufferSet(const std::string &name)
+      -> std::shared_ptr<FramebufferSet> {
     auto it = frame_buffers_.find(name);
     return it != frame_buffers_.end() ? it->second : nullptr;
   }
 
-  void destroyFramebuffers(const std::string &name) {
+  void destroyFramebufferSet(const std::string &name) {
     frame_buffers_.erase(name);
   }
 
@@ -210,12 +210,12 @@ public:
       -> std::vector<std::string> {
     return listResourceNames<IUniformBuffer>(uniform_buffers_);
   }
-  [[nodiscard]] auto listFramebuffers() const
-      -> std::vector<std::shared_ptr<Framebuffers>> {
-    return listResources<Framebuffers>(frame_buffers_);
+  [[nodiscard]] auto listFramebufferSet() const
+      -> std::vector<std::shared_ptr<FramebufferSet>> {
+    return listResources<FramebufferSet>(frame_buffers_);
   }
   [[nodiscard]] auto listFramebufferNames() const -> std::vector<std::string> {
-    return listResourceNames<Framebuffers>(frame_buffers_);
+    return listResourceNames<FramebufferSet>(frame_buffers_);
   }
   [[nodiscard]] auto listTextureImages() const
       -> std::vector<std::shared_ptr<Image>> {
@@ -239,7 +239,8 @@ private:
   std::unordered_map<std::string, std::shared_ptr<IndexBuffer>> index_buffers_;
   std::unordered_map<std::string, std::shared_ptr<IUniformBuffer>>
       uniform_buffers_;
-  std::unordered_map<std::string, std::shared_ptr<Framebuffers>> frame_buffers_;
+  std::unordered_map<std::string, std::shared_ptr<FramebufferSet>>
+      frame_buffers_;
   std::unordered_map<std::string, std::shared_ptr<Image>> texture_images_;
   std::unordered_map<std::string, std::shared_ptr<ImageView>>
       texture_imageviews_;

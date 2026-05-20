@@ -31,7 +31,7 @@ void FramebufferSet::create() {
 
     if (vkCreateFramebuffer(device_.device(), &framebufferInfo, nullptr,
                             &vk_framebuffers_[i]) != VK_SUCCESS) {
-      VKR_RES_ERROR("Failed to create framebuffer: {}", desc_.name);
+      VKR_RES_ERROR("Failed to create framebuffer");
     }
   }
 }

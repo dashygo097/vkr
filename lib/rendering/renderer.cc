@@ -9,7 +9,7 @@ Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
                    resource::ResourceManager &resourceManager,
                    const pipeline::RenderPass &renderPass, ui::UI &ui)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
-      sync_objects_(syncObjects), resource_manage_(resourceManager),
+      sync_objects_(syncObjects), resource_manager_(resourceManager),
       render_pass_(renderPass), _ui(ui) {
   command_buffers_ =
       std::make_unique<core::CommandBuffers>(device_, command_pool_);
@@ -23,7 +23,7 @@ auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
   uint32_t imageIndex;
   if (!acquireNextImage(imageIndex)) {
     return false;
-}
+  }
 
   resetFence(_currentFrame);
   vkResetCommandBuffer(command_buffers_->commandBuffer(_currentFrame), 0);
@@ -38,7 +38,7 @@ auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
   if (vkBeginCommandBuffer(outFrameData.commandBuffer, &beginInfo) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to begin recording command buffer!");
-}
+  }
 
   return true;
 }
@@ -46,7 +46,7 @@ auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
 void Renderer::endFrame(const FrameData &frameData) {
   if (vkEndCommandBuffer(frameData.commandBuffer) != VK_SUCCESS) {
     throw std::runtime_error("failed to record command buffer!");
-}
+  }
 
   submitCommandBuffer(frameData);
   present(frameData.imageIndex);
@@ -55,7 +55,7 @@ void Renderer::endFrame(const FrameData &frameData) {
 
 void Renderer::beginRenderPass(const FrameData &frameData) {
   auto framebuffers =
-      resource_manage_.getFramebuffers("swapchain")->framebuffers();
+      resource_manager_.getFramebufferSet("swapchain")->buffers();
 
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -85,7 +85,7 @@ void Renderer::beginOffscreenPass(const FrameData &frameData,
   info.renderPass = target.renderPass();
   info.framebuffer = target.framebuffer();
   info.renderArea.offset = {0, 0};
-  info.renderArea.extent = {target.width(), target.height()};
+  info.renderArea.extent = target.extent2D();
 
   std::array<VkClearValue, 2> clear{};
   clear[0].color = {{0.05f, 0.05f, 0.05f, 1.0f}};
@@ -106,13 +106,13 @@ void Renderer::setOffscreenViewportAndScissor(
   VkViewport vp{};
   vp.x = 0.0f;
   vp.y = 0.0f;
-  vp.width = static_cast<float>(target.width());
-  vp.height = static_cast<float>(target.height());
+  vp.width = static_cast<float>(target.extent2D().width);
+  vp.height = static_cast<float>(target.extent2D().height);
   vp.minDepth = 0.0f;
   vp.maxDepth = 1.0f;
   vkCmdSetViewport(frameData.commandBuffer, 0, 1, &vp);
 
-  VkRect2D scissor{{0, 0}, {target.width(), target.height()}};
+  VkRect2D scissor{{0, 0}, target.extent2D()};
   vkCmdSetScissor(frameData.commandBuffer, 0, 1, &scissor);
 }
 
@@ -148,8 +148,8 @@ void Renderer::setViewportAndScissor(const FrameData &frameData) {
 }
 
 void Renderer::drawGeometry(const FrameData &frameData) {
-  auto vertexBuffers = resource_manage_.listVertexBuffers();
-  auto indexBuffers = resource_manage_.listIndexBuffers();
+  auto vertexBuffers = resource_manager_.listVertexBuffers();
+  auto indexBuffers = resource_manager_.listIndexBuffers();
 
   if (vertexBuffers.empty() || indexBuffers.empty()) {
     vkCmdDraw(frameData.commandBuffer, 3, 1, 0, 0);
@@ -177,8 +177,8 @@ void Renderer::drawUI(const FrameData &frameData) {
 void Renderer::recreateSwapchain() {
   device_.waitIdle();
   swapchain_.recreate();
-  resource_manage_.getFramebuffers("swapchain")->destroy();
-  resource_manage_.getFramebuffers("swapchain")->create();
+  resource_manager_.getFramebufferSet("swapchain")->destroy();
+  resource_manager_.getFramebufferSet("swapchain")->create();
 }
 
 void Renderer::waitForFence(uint32_t frameIndex) {
@@ -230,7 +230,7 @@ void Renderer::submitCommandBuffer(const FrameData &frameData) {
                     sync_objects_.inFlightFences()[frameData.frameIndex]) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to submit draw command buffer!");
-}
+  }
 }
 
 void Renderer::present(uint32_t imageIndex) {

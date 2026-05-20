@@ -6,15 +6,14 @@ namespace vkr::resource {
 
 OffscreenTarget::OffscreenTarget(const core::Device &device,
                                  const core::CommandPool &commandPool,
-                                 uint32_t width, uint32_t height)
-    : device_(device), command_pool_(commandPool), width_(width),
-      height_(height) {
+                                 VkExtent2D extent)
+    : device_(device), command_pool_(commandPool), extent_(extent) {
   create();
 }
 
 OffscreenTarget::~OffscreenTarget() { destroy(); }
 
-void OffscreenTarget::resize(uint32_t width, uint32_t height) {
+void OffscreenTarget::resize(VkExtent2D newExtent) {
   vkDeviceWaitIdle(device_.device());
 
   if (imgui_ds_ != VK_NULL_HANDLE) {
@@ -23,8 +22,7 @@ void OffscreenTarget::resize(uint32_t width, uint32_t height) {
   }
 
   destroy();
-  width_ = width;
-  height_ = height;
+  extent_ = newExtent;
   create();
 }
 
@@ -74,12 +72,12 @@ void OffscreenTarget::create() {
     return view;
   };
 
-  makeImage(width_, height_, colorFormat,
+  makeImage(extent_.width, extent_.height, colorFormat,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             color_image_, color_memory_);
   color_view_ = makeView(color_image_, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
-  makeImage(width_, height_, depthFormat,
+  makeImage(extent_.width, extent_.height, depthFormat,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depth_image_,
             depth_memory_);
   depth_view_ = makeView(depth_image_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -152,12 +150,13 @@ void OffscreenTarget::create() {
   fbInfo.renderPass = render_pass_;
   fbInfo.attachmentCount = static_cast<uint32_t>(views.size());
   fbInfo.pAttachments = views.data();
-  fbInfo.width = width_;
-  fbInfo.height = height_;
+  fbInfo.width = extent_.width;
+  fbInfo.height = extent_.height;
   fbInfo.layers = 1;
   vkCreateFramebuffer(device_.device(), &fbInfo, nullptr, &framebuffer_);
 
-  VKR_RENDER_INFO("OffscreenTarget created ({}x{})", width_, height_);
+  VKR_RENDER_INFO("OffscreenTarget created ({}x{})", extent_.width,
+                  extent_.height);
 }
 
 void OffscreenTarget::destroy() {

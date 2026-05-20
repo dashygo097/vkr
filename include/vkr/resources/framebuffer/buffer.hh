@@ -3,14 +3,12 @@
 #include "../../core/device.hh"
 #include "../../pipeline/render_pass.hh"
 #include <cstddef>
-#include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
 
 namespace vkr::resource {
 
 struct FramebufferDesc {
-  std::string name{};
   VkExtent2D extent{};
   uint32_t layers{1};
   std::vector<std::vector<VkImageView>> attachments{};

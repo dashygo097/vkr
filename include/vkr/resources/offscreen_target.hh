@@ -7,13 +7,13 @@ namespace vkr::resource {
 class OffscreenTarget {
 public:
   OffscreenTarget(const core::Device &device,
-                  const core::CommandPool &commandPool, uint32_t width,
-                  uint32_t height);
+                  const core::CommandPool &commandPool, VkExtent2D extent);
   ~OffscreenTarget();
+
   OffscreenTarget(const OffscreenTarget &) = delete;
   auto operator=(const OffscreenTarget &) -> OffscreenTarget & = delete;
 
-  void resize(uint32_t width, uint32_t height);
+  void resize(VkExtent2D newExtent);
   void create();
   void destroy();
 
@@ -26,18 +26,19 @@ public:
   [[nodiscard]] auto colorView() const noexcept -> VkImageView {
     return color_view_;
   }
+  [[nodiscard]] auto depthView() const noexcept -> VkImageView {
+    return depth_view_;
+  }
   [[nodiscard]] auto sampler() const noexcept -> VkSampler { return sampler_; }
   [[nodiscard]] auto imguiDescriptorSet() const noexcept -> VkDescriptorSet {
     return imgui_ds_;
   }
-  [[nodiscard]] auto width() const noexcept -> uint32_t { return width_; }
-  [[nodiscard]] auto height() const noexcept -> uint32_t { return height_; }
+  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D { return extent_; }
 
   void registerWithImGui(VkDescriptorPool descriptorPool);
 
-  void requestResize(uint32_t width, uint32_t height) noexcept {
-    pending_width_ = width;
-    pending_height_ = height;
+  void requestResize(VkExtent2D newExtent) noexcept {
+    pending_extent_ = newExtent;
     resize_pending_ = true;
   }
 
@@ -46,7 +47,7 @@ public:
       return false;
     }
     resize_pending_ = false;
-    resize(pending_width_, pending_height_);
+    resize(pending_extent_);
     registerWithImGui(pool);
     return true;
   }
@@ -59,7 +60,7 @@ private:
   // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  uint32_t width_, height_;
+  VkExtent2D extent_{};
 
   // components
   VkImage color_image_{VK_NULL_HANDLE};
@@ -77,8 +78,7 @@ private:
 
   // states
   bool resize_pending_{false};
-  uint32_t pending_width_{0};
-  uint32_t pending_height_{0};
+  VkExtent2D pending_extent_{};
 
   // helpers
   auto findMemoryType(uint32_t filter, VkMemoryPropertyFlags props) -> uint32_t;

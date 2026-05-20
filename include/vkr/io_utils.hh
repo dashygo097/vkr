@@ -4,7 +4,7 @@
 #include <fstream>
 
 namespace vkr {
-static std::vector<char> fread_char(const std::string &path) {
+static auto fread_char(const std::string &path) -> std::vector<char> {
   std::ifstream file(path, std::ios::ate | std::ios::binary);
   if (!file.is_open()) {
     VKR_CORE_ERROR("Failed to open file: {}", path);
@@ -18,7 +18,7 @@ static std::vector<char> fread_char(const std::string &path) {
   return buffer;
 };
 
-static std::vector<uint32_t> fread_uint32(const std::string &path) {
+static auto fread_uint32(const std::string &path) -> std::vector<uint32_t> {
   std::ifstream file(path, std::ios::ate | std::ios::binary);
   if (!file.is_open())
     VKR_CORE_ERROR("Failed to open file: {}", path);

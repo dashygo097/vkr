@@ -46,11 +46,27 @@ void VulkanApplication::initVulkan() {
       *device, *swapchain, *commandPool);
   resourceManager = std::make_unique<resource::ResourceManager>(
       *device, *swapchain, *commandPool, *depthResources, *renderPass);
-  resourceManager->createFramebuffers("swapchain");
+
+  resource::FramebufferDesc swapchainfbDesc;
+  swapchainfbDesc.extent = swapchain->extent2D();
+  swapchainfbDesc.layers = 1;
+  swapchainfbDesc.attachments.reserve(swapchain->images().size());
+  for (auto imageView : swapchain->imageViews()) {
+    swapchainfbDesc.attachments.push_back(
+        {imageView, depthResources->imageView()});
+  }
+
+  resourceManager->createFramebufferSet("swapchain", swapchainfbDesc);
 
   offscreenTarget = std::make_unique<resource::OffscreenTarget>(
-      *device, *commandPool, swapchain->extent2D().width,
-      swapchain->extent2D().height);
+      *device, *commandPool, swapchain->extent2D());
+
+  vkr::resource::FramebufferDesc offscreenTargetDesc{};
+  offscreenTargetDesc.extent = offscreenTarget->extent2D();
+  offscreenTargetDesc.layers = 1;
+  offscreenTargetDesc.attachments = {
+      {offscreenTarget->colorView(), offscreenTarget->depthView()},
+  };
 
   createUniforms();
 
