@@ -68,7 +68,7 @@ void VulkanApplication::initVulkan() {
       {offscreenTarget->colorView(), offscreenTarget->depthView()},
   };
 
-  resourceManager->createFramebufferSet("offscreen", offscreenTargetDesc);
+  // resourceManager->createFramebufferSet("offscreen", offscreenTargetDesc);
 
   createUniforms();
 
