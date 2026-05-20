@@ -1,4 +1,4 @@
-#include "vkr/resources/framebuffer/buffer.hh"
+#include "vkr/resources/buffers/frame_buffer.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::resource {
