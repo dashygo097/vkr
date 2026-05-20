@@ -19,19 +19,20 @@ public:
               VkMemoryPropertyFlags properties);
   void create(const std::string &imageFilePath);
   void destroy();
-  void update(const std::string &imageFilePath);
 
-  [[nodiscard]] auto width() const -> uint32_t {
+  [[nodiscard]] auto width() const noexcept -> uint32_t {
     return static_cast<uint32_t>(width_);
   }
-  [[nodiscard]] auto height() const -> uint32_t {
+  [[nodiscard]] auto height() const noexcept -> uint32_t {
     return static_cast<uint32_t>(height_);
   }
-  [[nodiscard]] auto channels() const -> uint32_t {
+  [[nodiscard]] auto channels() const noexcept -> uint32_t {
     return static_cast<uint32_t>(channels_);
   }
-  [[nodiscard]] auto image() const -> VkImage { return vk_image_; }
-  [[nodiscard]] auto memory() const -> VkDeviceMemory { return vk_memory_; }
+  [[nodiscard]] auto image() const noexcept -> VkImage { return vk_image_; }
+  [[nodiscard]] auto memory() const noexcept -> VkDeviceMemory {
+    return vk_memory_;
+  }
 
 private:
   // dependencies

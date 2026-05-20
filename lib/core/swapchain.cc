@@ -119,7 +119,8 @@ void Swapchain::destroy() {
 }
 
 auto chooseSwapSurfaceFormat(
-    const std::vector<VkSurfaceFormatKHR> &availableFormats) -> VkSurfaceFormatKHR {
+    const std::vector<VkSurfaceFormatKHR> &availableFormats)
+    -> VkSurfaceFormatKHR {
   for (const auto &availableFormat : availableFormats) {
     if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
         availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -131,7 +132,8 @@ auto chooseSwapSurfaceFormat(
 }
 
 auto chooseSwapPresentMode(
-    const std::vector<VkPresentModeKHR> &availablePresentModes) -> VkPresentModeKHR {
+    const std::vector<VkPresentModeKHR> &availablePresentModes)
+    -> VkPresentModeKHR {
   for (const auto &availablePresentMode : availablePresentModes) {
     if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
       return availablePresentMode;
@@ -142,7 +144,8 @@ auto chooseSwapPresentMode(
 }
 
 auto chooseSwapExtent(GLFWwindow *window,
-                            const VkSurfaceCapabilitiesKHR &capabilities) -> VkExtent2D {
+                      const VkSurfaceCapabilitiesKHR &capabilities)
+    -> VkExtent2D {
   if (capabilities.currentExtent.width !=
       std::numeric_limits<uint32_t>::max()) {
     return capabilities.currentExtent;
@@ -165,7 +168,7 @@ auto chooseSwapExtent(GLFWwindow *window,
 }
 
 auto querySwapchainSupport(VkPhysicalDevice physicalDevice,
-                                              VkSurfaceKHR surface) -> SwapchainSupportDetails {
+                           VkSurfaceKHR surface) -> SwapchainSupportDetails {
   SwapchainSupportDetails details;
 
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,

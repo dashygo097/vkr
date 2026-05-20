@@ -4,17 +4,12 @@
 namespace vkr::resource {
 
 FramebufferSet::FramebufferSet(const core::Device &device,
-                               const pipeline::RenderPass &renderPass,
-                               FramebufferDesc desc)
-    : device_(device), render_pass_(renderPass), desc_(std::move(desc)) {
-  create();
-}
+                               const pipeline::RenderPass &renderPass)
+    : device_(device), render_pass_(renderPass) {}
 
 FramebufferSet::~FramebufferSet() { destroy(); }
 
 void FramebufferSet::create() {
-  destroy();
-
   vk_framebuffers_.resize(desc_.attachments.size(), VK_NULL_HANDLE);
 
   for (size_t i = 0; i < desc_.attachments.size(); i++) {
@@ -46,9 +41,9 @@ void FramebufferSet::destroy() {
   vk_framebuffers_.clear();
 }
 
-void FramebufferSet::recreate(FramebufferDesc desc) {
+void FramebufferSet::update(const FramebufferDesc &desc) {
   destroy();
-  desc_ = std::move(desc);
+  desc_ = desc;
   create();
 }
 

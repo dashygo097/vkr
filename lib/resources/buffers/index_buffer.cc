@@ -4,16 +4,11 @@
 namespace vkr::resource {
 IndexBuffer::IndexBuffer(const core::Device &device,
                          const core::CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {
-  create();
-}
+    : device_(device), command_pool_(commandPool) {}
 
 IndexBuffer::~IndexBuffer() { destroy(); }
 
 void IndexBuffer::create() {
-  if (indices_.empty()) {
-    return;
-  }
   VkDeviceSize bufferSize = sizeof(indices_[0]) * indices_.size();
 
   VkBuffer stagingBuffer;
@@ -55,10 +50,9 @@ void IndexBuffer::destroy() {
   }
 }
 
-void IndexBuffer::update(const std::vector<uint16_t> &newIndices) {
+void IndexBuffer::update(const std::vector<uint16_t> &indices) {
   destroy();
-
-  indices_ = newIndices;
+  indices_ = indices;
   create();
 }
 } // namespace vkr::resource

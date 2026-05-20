@@ -45,7 +45,7 @@ void VulkanApplication::initVulkan() {
   depthResources = std::make_unique<resource::DepthResources>(
       *device, *swapchain, *commandPool);
   resourceManager = std::make_unique<resource::ResourceManager>(
-      *device, *swapchain, *commandPool, *depthResources, *renderPass);
+      *device, *swapchain, *commandPool, *renderPass);
 
   resource::FramebufferDesc swapchainfbDesc;
   swapchainfbDesc.extent = swapchain->extent2D();
@@ -67,6 +67,8 @@ void VulkanApplication::initVulkan() {
   offscreenTargetDesc.attachments = {
       {offscreenTarget->colorView(), offscreenTarget->depthView()},
   };
+
+  resourceManager->createFramebufferSet("offscreen", offscreenTargetDesc);
 
   createUniforms();
 

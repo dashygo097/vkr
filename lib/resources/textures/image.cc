@@ -71,11 +71,6 @@ void Image::destroy() {
   }
 }
 
-void Image::update(const std::string &imageFilePath) {
-  destroy();
-  create(imageFilePath);
-}
-
 void Image::create(uint32_t width, uint32_t height, VkFormat format,
                    VkImageTiling tiling, VkImageUsageFlags usage,
                    VkMemoryPropertyFlags properties) {

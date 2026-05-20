@@ -12,29 +12,12 @@ struct FramebufferDesc {
   VkExtent2D extent{};
   uint32_t layers{1};
   std::vector<std::vector<VkImageView>> attachments{};
-
-  // One entry per VkFramebuffer.
-  //
-  // Examples:
-  //
-  // Swapchain + depth:
-  //   attachments[i] = { swapchainImageView[i], depthImageView }
-  //
-  // Offscreen color + depth:
-  //   attachments[0] = { colorImageView, depthImageView }
-  //
-  // GBuffer:
-  //   attachments[0] = { position, normal, albedo, depth }
-  //
-  // Shadow map:
-  //   attachments[0] = { depthOnlyImageView }
 };
 
 class FramebufferSet {
 public:
   explicit FramebufferSet(const core::Device &device,
-                          const pipeline::RenderPass &renderPass,
-                          FramebufferDesc desc);
+                          const pipeline::RenderPass &renderPass);
 
   ~FramebufferSet();
 
@@ -44,7 +27,7 @@ public:
   void create();
   void destroy();
 
-  void recreate(FramebufferDesc desc);
+  void update(const FramebufferDesc &desc);
 
   [[nodiscard]] auto desc() const noexcept -> const FramebufferDesc & {
     return desc_;

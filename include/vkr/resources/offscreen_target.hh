@@ -13,7 +13,7 @@ public:
   OffscreenTarget(const OffscreenTarget &) = delete;
   auto operator=(const OffscreenTarget &) -> OffscreenTarget & = delete;
 
-  void resize(VkExtent2D newExtent);
+  void resize(VkExtent2D extent);
   void create();
   void destroy();
 
@@ -37,8 +37,8 @@ public:
 
   void registerWithImGui(VkDescriptorPool descriptorPool);
 
-  void requestResize(VkExtent2D newExtent) noexcept {
-    pending_extent_ = newExtent;
+  void requestResize(VkExtent2D extent) noexcept {
+    pending_extent_ = extent;
     resize_pending_ = true;
   }
 

@@ -13,7 +13,7 @@ OffscreenTarget::OffscreenTarget(const core::Device &device,
 
 OffscreenTarget::~OffscreenTarget() { destroy(); }
 
-void OffscreenTarget::resize(VkExtent2D newExtent) {
+void OffscreenTarget::resize(VkExtent2D extent) {
   vkDeviceWaitIdle(device_.device());
 
   if (imgui_ds_ != VK_NULL_HANDLE) {
@@ -22,7 +22,7 @@ void OffscreenTarget::resize(VkExtent2D newExtent) {
   }
 
   destroy();
-  extent_ = newExtent;
+  extent_ = extent;
   create();
 }
 
