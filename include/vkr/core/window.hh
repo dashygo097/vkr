@@ -17,7 +17,9 @@ public:
   [[nodiscard]] auto shouldClose() const -> bool;
   void pollEvents() const;
 
-  [[nodiscard]] auto glfwWindow() const noexcept -> GLFWwindow * { return window_; }
+  [[nodiscard]] auto glfwWindow() const noexcept -> GLFWwindow * {
+    return window_;
+  }
   [[nodiscard]] auto width() const noexcept -> uint32_t { return width_; }
   [[nodiscard]] auto height() const noexcept -> uint32_t { return height_; }
   [[nodiscard]] auto title() const noexcept -> std::string { return title_; }
