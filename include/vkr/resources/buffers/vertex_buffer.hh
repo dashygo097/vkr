@@ -20,18 +20,18 @@ public:
   virtual void updateRaw(const void *data, size_t count) = 0;
 };
 
-template <typename VertexType> class VertexBufferBase : public IVertexBuffer {
+template <typename VertexType> class VertexBuffer : public IVertexBuffer {
 public:
-  explicit VertexBufferBase(const core::Device &device,
-                            const core::CommandPool &commandPool)
+  explicit VertexBuffer(const core::Device &device,
+                        const core::CommandPool &commandPool)
       : device_(device), command_pool_(commandPool) {
     create();
   }
 
-  ~VertexBufferBase() override { destroy(); }
+  ~VertexBuffer() override { destroy(); }
 
-  VertexBufferBase(const VertexBufferBase &) = delete;
-  auto operator=(const VertexBufferBase &) -> VertexBufferBase & = delete;
+  VertexBuffer(const VertexBuffer &) = delete;
+  auto operator=(const VertexBuffer &) -> VertexBuffer & = delete;
 
   void update(const std::vector<VertexType> &vertices) {
     if (vertices.empty()) {

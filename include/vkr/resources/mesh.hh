@@ -22,7 +22,7 @@ public:
   void load(const std::vector<VBOType> &vertices,
             const std::vector<uint16_t> &indices) {
     if (!vertex_buffer_ || !index_buffer_) {
-      vertex_buffer_ = std::make_unique<VertexBufferBase<VBOType>>(
+      vertex_buffer_ = std::make_unique<VertexBuffer<VBOType>>(
           device_, command_pool_, vertices);
       index_buffer_ = std::make_unique<IndexBuffer>(device_, command_pool_);
       index_buffer_->update(indices);
@@ -48,7 +48,7 @@ public:
   }
 
   [[nodiscard]] auto vertexBuffer() const
-      -> std::shared_ptr<VertexBufferBase<VBOType>> {
+      -> std::shared_ptr<VertexBuffer<VBOType>> {
     return vertex_buffer_;
   }
   [[nodiscard]] auto indexBuffer() const -> std::shared_ptr<IndexBuffer> {
@@ -61,7 +61,7 @@ private:
   const core::CommandPool &command_pool_;
 
   // components
-  std::shared_ptr<VertexBufferBase<VBOType>> vertex_buffer_{nullptr};
+  std::shared_ptr<VertexBuffer<VBOType>> vertex_buffer_{nullptr};
   std::shared_ptr<IndexBuffer> index_buffer_{nullptr};
 
   void checkDataLoaded() {

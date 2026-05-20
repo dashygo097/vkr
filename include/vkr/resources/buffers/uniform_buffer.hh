@@ -24,16 +24,16 @@ public:
                          size_t size) = 0;
 };
 
-template <typename ObjectType> class UniformBufferBase : public IUniformBuffer {
+template <typename ObjectType> class UniformBuffer : public IUniformBuffer {
 public:
-  explicit UniformBufferBase(const core::Device &device) : device_(device) {
+  explicit UniformBuffer(const core::Device &device) : device_(device) {
     create();
   }
 
-  ~UniformBufferBase() override { destroy(); }
+  ~UniformBuffer() override { destroy(); }
 
-  UniformBufferBase(const UniformBufferBase &) = delete;
-  auto operator=(const UniformBufferBase &) -> UniformBufferBase & = delete;
+  UniformBuffer(const UniformBuffer &) = delete;
+  auto operator=(const UniformBuffer &) -> UniformBuffer & = delete;
 
   void update(uint32_t currentFrame, const ObjectType &newObject) {
     if (currentFrame >= core::MAX_FRAMES_IN_FLIGHT) {
@@ -118,14 +118,14 @@ protected:
   std::vector<void *> mapped_{};
 };
 
-class UniformBuffer3D : public UniformBufferBase<UniformBuffer3DObject> {
+class UniformBuffer3D : public UniformBuffer<UniformBuffer3DObject> {
 public:
-  using UniformBufferBase<UniformBuffer3DObject>::UniformBufferBase;
+  using UniformBuffer<UniformBuffer3DObject>::UniformBuffer;
 };
 
 class ShaderToyUniformBuffer
-    : public UniformBufferBase<UniformBufferShaderToyObject> {
-  using UniformBufferBase<UniformBufferShaderToyObject>::UniformBufferBase;
+    : public UniformBuffer<UniformBufferShaderToyObject> {
+  using UniformBuffer<UniformBufferShaderToyObject>::UniformBuffer;
 };
 
 } // namespace vkr::resource

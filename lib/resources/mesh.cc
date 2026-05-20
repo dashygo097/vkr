@@ -70,7 +70,7 @@ template <> void Mesh<Vertex3D>::load(const std::string &meshFilePath) {
 
   if (!vertex_buffer_ || !index_buffer_) {
     vertex_buffer_ =
-        std::make_unique<VertexBufferBase<Vertex3D>>(device_, command_pool_);
+        std::make_unique<VertexBuffer<Vertex3D>>(device_, command_pool_);
     vertex_buffer_->update(vertices);
     index_buffer_ = std::make_unique<IndexBuffer>(device_, command_pool_);
     index_buffer_->update(indices);
@@ -157,8 +157,8 @@ template <> void Mesh<VertexNormal3D>::load(const std::string &meshFilePath) {
   }
 
   if (!vertex_buffer_ || !index_buffer_) {
-    vertex_buffer_ = std::make_unique<VertexBufferBase<VertexNormal3D>>(
-        device_, command_pool_);
+    vertex_buffer_ =
+        std::make_unique<VertexBuffer<VertexNormal3D>>(device_, command_pool_);
     vertex_buffer_->update(vertices);
     index_buffer_ = std::make_unique<IndexBuffer>(device_, command_pool_);
     index_buffer_->update(indices);

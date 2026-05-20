@@ -32,8 +32,7 @@ public:
   template <typename VBOType>
   void createVertexBuffer(const std::string &name,
                           const std::vector<VBOType> &vertices) {
-    auto vb =
-        std::make_shared<VertexBufferBase<VBOType>>(device_, command_pool_);
+    auto vb = std::make_shared<VertexBuffer<VBOType>>(device_, command_pool_);
     vb->update(vertices);
     vertex_buffers_[name] = std::move(vb);
   }
@@ -68,7 +67,7 @@ public:
   // Uniform Buffer Management
   template <typename UBOType>
   void createUniformBuffer(const std::string &name, const UBOType &ubo) {
-    auto ub = std::make_shared<UniformBufferBase<UBOType>>(device_);
+    auto ub = std::make_shared<UniformBuffer<UBOType>>(device_);
     ub->update(0, ubo);
     uniform_buffers_[name] = std::move(ub);
   }
