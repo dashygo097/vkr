@@ -26,7 +26,6 @@ public:
 
   void create();
   void destroy();
-
   void update(const FramebufferDesc &desc);
 
   [[nodiscard]] auto desc() const noexcept -> const FramebufferDesc & {

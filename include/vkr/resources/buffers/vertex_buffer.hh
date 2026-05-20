@@ -33,24 +33,24 @@ public:
   VertexBufferBase(const VertexBufferBase &) = delete;
   auto operator=(const VertexBufferBase &) -> VertexBufferBase & = delete;
 
-  void update(const std::vector<VertexType> &newVertices) {
-    if (newVertices.empty()) {
+  void update(const std::vector<VertexType> &vertices) {
+    if (vertices.empty()) {
       VKR_RES_ERROR("Cannot update vertex buffer with no vertices!");
     }
 
-    VkDeviceSize newBufferSize = sizeof(VertexType) * newVertices.size();
+    VkDeviceSize newBufferSize = sizeof(VertexType) * vertices.size();
     VkDeviceSize oldBufferSize = sizeof(VertexType) * vertices_.size();
 
     // If size changed, recreate the buffer
     if (newBufferSize != oldBufferSize) {
       destroy();
-      vertices_ = newVertices;
+      vertices_ = vertices;
       create();
       return;
     }
 
     // Size is the same, just update the data
-    vertices_ = newVertices;
+    vertices_ = vertices;
 
     // Create staging buffer
     VkBuffer stagingBuffer;
@@ -79,9 +79,9 @@ public:
   }
 
   void updateRaw(const void *data, size_t count) override {
-    const auto *vertices = static_cast<const VertexType *>(data);
-    std::vector<VertexType> newVertices(vertices, vertices + count);
-    update(newVertices);
+    const auto *rawVertices = static_cast<const VertexType *>(data);
+    std::vector<VertexType> vertices(rawVertices, rawVertices + count);
+    update(vertices);
   }
 
   [[nodiscard]] auto buffer() const noexcept -> VkBuffer override {
