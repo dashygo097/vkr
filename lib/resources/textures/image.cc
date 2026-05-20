@@ -12,9 +12,9 @@ Image::~Image() { destroy(); }
 
 void Image::create(const std::string &imageFilePath) {
   // Load image from file
-  stbi_uc *pixels = stbi_load(imageFilePath.c_str(), &_width, &_height,
-                              &_channels, STBI_rgb_alpha);
-  VkDeviceSize imageSize = _width * _height * 4;
+  stbi_uc *pixels = stbi_load(imageFilePath.c_str(), &width_, &height_,
+                              &channels_, STBI_rgb_alpha);
+  VkDeviceSize imageSize = width_ * height_ * 4;
 
   if (!pixels) {
     VKR_RES_ERROR("Failed to load texture image from file: {}!", imageFilePath);
@@ -38,7 +38,7 @@ void Image::create(const std::string &imageFilePath) {
   stbi_image_free(pixels);
 
   // Create the image
-  create(static_cast<uint32_t>(_width), static_cast<uint32_t>(_height),
+  create(static_cast<uint32_t>(width_), static_cast<uint32_t>(height_),
          VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
          VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -48,8 +48,8 @@ void Image::create(const std::string &imageFilePath) {
                         VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-  copyBufferToImage(stagingBuffer, vk_image_, static_cast<uint32_t>(_width),
-                    static_cast<uint32_t>(_height));
+  copyBufferToImage(stagingBuffer, vk_image_, static_cast<uint32_t>(width_),
+                    static_cast<uint32_t>(height_));
 
   transitionImageLayout(vk_image_, VK_FORMAT_R8G8B8A8_SRGB,
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,

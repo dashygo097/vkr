@@ -21,9 +21,15 @@ public:
   void destroy();
   void update(const std::string &imageFilePath);
 
-  [[nodiscard]] auto width() const -> int { return _width; }
-  [[nodiscard]] auto height() const -> int { return _height; }
-  [[nodiscard]] auto channels() const -> int { return _channels; }
+  [[nodiscard]] auto width() const -> uint32_t {
+    return static_cast<uint32_t>(width_);
+  }
+  [[nodiscard]] auto height() const -> uint32_t {
+    return static_cast<uint32_t>(height_);
+  }
+  [[nodiscard]] auto channels() const -> uint32_t {
+    return static_cast<uint32_t>(channels_);
+  }
   [[nodiscard]] auto image() const -> VkImage { return vk_image_; }
   [[nodiscard]] auto memory() const -> VkDeviceMemory { return vk_memory_; }
 
@@ -33,9 +39,9 @@ private:
   const core::CommandPool &command_pool_;
 
   // components
-  int _width{0};
-  int _height{0};
-  int _channels{0};
+  int width_{0};
+  int height_{0};
+  int channels_{0};
   VkImage vk_image_{VK_NULL_HANDLE};
   VkDeviceMemory vk_memory_{VK_NULL_HANDLE};
 
