@@ -5,7 +5,7 @@
 namespace vkr::resource {
 
 auto findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties,
-                        VkPhysicalDevice physicalDevice) -> uint32_t {
+                    VkPhysicalDevice physicalDevice) -> uint32_t {
   VkPhysicalDeviceMemoryProperties memProperties;
   vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 

@@ -3,8 +3,8 @@
 #include <GLFW/glfw3.h>
 
 namespace vkr::core {
-auto
-getRequiredExtensions(const std::vector<const char *> &preExtensions) -> std::vector<const char *> {
+auto getRequiredExtensions(const std::vector<const char *> &preExtensions)
+    -> std::vector<const char *> {
   uint32_t glfwExtensionCount = 0;
   const char **glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);

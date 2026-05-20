@@ -9,8 +9,8 @@ DebugMessenger::DebugMessenger(VkInstance instance) : instance_(instance) {
   VkDebugUtilsMessengerCreateInfoEXT createInfo{};
   populateCreateInfo(createInfo);
 
-  auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
-      instance, "vkCreateDebugUtilsMessengerEXT"));
+  auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+      vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 
   if (func &&
       func(instance_, &createInfo, nullptr, &vk_messenger_) != VK_SUCCESS) {
@@ -21,8 +21,8 @@ DebugMessenger::DebugMessenger(VkInstance instance) : instance_(instance) {
 }
 
 DebugMessenger::~DebugMessenger() {
-  auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
-      instance_, "vkDestroyDebugUtilsMessengerEXT"));
+  auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+      vkGetInstanceProcAddr(instance_, "vkDestroyDebugUtilsMessengerEXT"));
 
   if (func && vk_messenger_ != VK_NULL_HANDLE) {
     func(instance_, vk_messenger_, nullptr);
@@ -47,8 +47,8 @@ void DebugMessenger::populateCreateInfo(
 VKAPI_ATTR auto VKAPI_CALL DebugMessenger::debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT type,
-    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-    void *pUserData) -> VkBool32 {
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)
+    -> VkBool32 {
   if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
     VKR_CORE_ERROR("{}", pCallbackData->pMessage);
   } else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {

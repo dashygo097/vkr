@@ -17,8 +17,12 @@ public:
     return graphicsComplete && presentComplete;
   }
 
-  [[nodiscard]] auto graphicsFamily() const -> uint32_t { return graphics_family_; }
-  [[nodiscard]] auto presentFamily() const -> uint32_t { return present_family_; }
+  [[nodiscard]] auto graphicsFamily() const -> uint32_t {
+    return graphics_family_;
+  }
+  [[nodiscard]] auto presentFamily() const -> uint32_t {
+    return present_family_;
+  }
 
 private:
   // dependencies

@@ -25,7 +25,9 @@ public:
   [[nodiscard]] auto pos() const noexcept -> glm::vec3 { return pos_; }
 
   // update camera vectors
-  [[nodiscard]] auto getView() const -> glm::mat4 { return glm::lookAt(pos_, pos_ + front_, up_); }
+  [[nodiscard]] auto getView() const -> glm::mat4 {
+    return glm::lookAt(pos_, pos_ + front_, up_);
+  }
   [[nodiscard]] auto getProjection() const -> glm::mat4 {
     glm::mat4 proj = glm::perspective(glm::radians(fov_), aspect_ratio_,
                                       near_plane_, far_plane_);
@@ -38,10 +40,10 @@ public:
     pitch_ += yOffset * mouse_sensitivity_;
     if (pitch_ > 89.0f) {
       pitch_ = 89.0f;
-}
+    }
     if (pitch_ < -89.0f) {
       pitch_ = -89.0f;
-}
+    }
 
     glm::vec3 frontTemp;
     frontTemp.x = cos(glm::radians(yaw_)) * cos(glm::radians(pitch_));
@@ -110,7 +112,7 @@ private:
     auto *cam = static_cast<Camera *>(glfwGetWindowUserPointer(window));
     if (!cam || cam->locked_) {
       return;
-}
+    }
 
     constexpr float kMinFov = 1.0f;
     constexpr float kMaxFov = 120.0f;

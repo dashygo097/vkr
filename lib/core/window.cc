@@ -28,6 +28,8 @@ Window::~Window() {
   glfwTerminate();
 }
 
-auto Window::shouldClose() const -> bool { return glfwWindowShouldClose(window_); }
+auto Window::shouldClose() const -> bool {
+  return glfwWindowShouldClose(window_);
+}
 void Window::pollEvents() const { glfwPollEvents(); }
 } // namespace vkr::core
