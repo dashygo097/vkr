@@ -84,5 +84,7 @@ private:
 auto makeSwapchainRenderPassDesc(const core::Device &device,
                                  const core::Swapchain &swapchain)
     -> RenderPassDesc;
+auto makeOffscreenRenderPassDesc(VkFormat colorFormat, VkFormat depthFormat)
+    -> RenderPassDesc;
 
 } // namespace vkr::pipeline

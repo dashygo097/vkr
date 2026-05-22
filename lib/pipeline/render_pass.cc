@@ -148,4 +148,52 @@ auto makeSwapchainRenderPassDesc(const core::Device &device,
   return desc;
 }
 
+auto makeOffscreenRenderPassDesc(VkFormat colorFormat, VkFormat depthFormat)
+    -> RenderPassDesc {
+  RenderPassDesc desc{};
+
+  RenderPassColorAttachmentDesc color{};
+  color.format = colorFormat;
+  color.samples = VK_SAMPLE_COUNT_1_BIT;
+  color.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  color.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  color.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  color.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  color.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  color.subpassLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  desc.colors.push_back(color);
+
+  desc.depth.enabled = true;
+  desc.depth.format = depthFormat;
+  desc.depth.samples = VK_SAMPLE_COUNT_1_BIT;
+  desc.depth.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  desc.depth.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  desc.depth.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  desc.depth.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  desc.depth.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  desc.depth.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  desc.depth.subpassLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  VkSubpassDependency before{};
+  before.srcSubpass = VK_SUBPASS_EXTERNAL;
+  before.dstSubpass = 0;
+  before.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+  before.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  before.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  before.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  desc.dependencies.push_back(before);
+
+  VkSubpassDependency after{};
+  after.srcSubpass = 0;
+  after.dstSubpass = VK_SUBPASS_EXTERNAL;
+  after.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  after.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+  after.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  after.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  desc.dependencies.push_back(after);
+
+  return desc;
+}
+
 } // namespace vkr::pipeline
