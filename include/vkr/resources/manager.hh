@@ -19,10 +19,8 @@ namespace vkr::resource {
 class ResourceManager {
 public:
   ResourceManager(const core::Device &device, const core::Swapchain &swapchain,
-                  const core::CommandPool &commandPool,
-                  const pipeline::RenderPass &renderPass)
-      : device_(device), swapchain_(swapchain), command_pool_(commandPool),
-        render_pass_(renderPass) {}
+                  const core::CommandPool &commandPool)
+      : device_(device), swapchain_(swapchain), command_pool_(commandPool) {}
   ~ResourceManager() = default;
 
   ResourceManager(const ResourceManager &) = delete;
@@ -84,8 +82,9 @@ public:
 
   // Framebuffer Management
   void createFramebufferSet(const std::string &name,
+                            const pipeline::RenderPass &renderPass,
                             const FramebufferDesc &desc) {
-    auto fb = std::make_shared<FramebufferSet>(device_, render_pass_);
+    auto fb = std::make_shared<FramebufferSet>(device_, renderPass);
     fb->update(desc);
     frame_buffers_[name] = std::move(fb);
   }
@@ -229,7 +228,6 @@ private:
   const core::Device &device_;
   const core::CommandPool &command_pool_;
   const core::Swapchain &swapchain_;
-  const pipeline::RenderPass &render_pass_;
 
   // components
   std::unordered_map<std::string, std::shared_ptr<IVertexBuffer>>

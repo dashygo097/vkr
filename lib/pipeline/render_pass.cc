@@ -3,81 +3,106 @@
 #include "vkr/resources/depth_resources.hh"
 
 namespace vkr::pipeline {
-RenderPass::RenderPass(const core::Device &device,
-                       const core::Swapchain &swapchain)
-    : device_(device), swapchain_(swapchain) {
-  VKR_PIPE_INFO("Creating render pass...");
 
-  VkAttachmentDescription colorAttachment{};
-  colorAttachment.format = swapchain_.format();
-  colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+RenderPass::RenderPass(const core::Device &device) : device_(device) {}
 
-  VkAttachmentDescription depthAttachment{};
-  depthAttachment.format = resource::findDepthFormat(device_.physicalDevice());
-  depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  depthAttachment.finalLayout =
-      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+RenderPass::~RenderPass() { destroy(); }
 
-  VkAttachmentReference colorAttachmentRef{};
-  colorAttachmentRef.attachment = 0;
-  colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+void RenderPass::create() {
+  destroy();
 
-  VkAttachmentReference depthAttachmentRef{};
-  depthAttachmentRef.attachment = 1;
-  depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  if (desc_.attachmentCount() == 0) {
+    VKR_PIPE_ERROR("RenderPassDesc has no attachments");
+  }
+
+  std::vector<VkAttachmentDescription> attachments{};
+  std::vector<VkAttachmentReference> colorRefs{};
+
+  attachments.reserve(desc_.attachmentCount());
+  colorRefs.reserve(desc_.colors.size());
+
+  for (uint32_t i = 0; i < desc_.colors.size(); i++) {
+    const auto &color = desc_.colors[i];
+
+    if (color.format == VK_FORMAT_UNDEFINED) {
+      VKR_PIPE_ERROR("RenderPass color attachment {} has undefined format", i);
+    }
+
+    VkAttachmentDescription attachment{};
+    attachment.format = color.format;
+    attachment.samples = color.samples;
+    attachment.loadOp = color.loadOp;
+    attachment.storeOp = color.storeOp;
+    attachment.stencilLoadOp = color.stencilLoadOp;
+    attachment.stencilStoreOp = color.stencilStoreOp;
+    attachment.initialLayout = color.initialLayout;
+    attachment.finalLayout = color.finalLayout;
+    attachments.push_back(attachment);
+
+    VkAttachmentReference ref{};
+    ref.attachment = i;
+    ref.layout = color.subpassLayout;
+    colorRefs.push_back(ref);
+  }
+
+  VkAttachmentReference depthRef{};
+  if (desc_.depth.enabled) {
+    if (desc_.depth.format == VK_FORMAT_UNDEFINED) {
+      VKR_PIPE_ERROR("RenderPass depth attachment has undefined format");
+    }
+
+    VkAttachmentDescription attachment{};
+    attachment.format = desc_.depth.format;
+    attachment.samples = desc_.depth.samples;
+    attachment.loadOp = desc_.depth.loadOp;
+    attachment.storeOp = desc_.depth.storeOp;
+    attachment.stencilLoadOp = desc_.depth.stencilLoadOp;
+    attachment.stencilStoreOp = desc_.depth.stencilStoreOp;
+    attachment.initialLayout = desc_.depth.initialLayout;
+    attachment.finalLayout = desc_.depth.finalLayout;
+    attachments.push_back(attachment);
+
+    depthRef.attachment = static_cast<uint32_t>(attachments.size() - 1);
+    depthRef.layout = desc_.depth.subpassLayout;
+  }
 
   VkSubpassDescription subpass{};
   subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass.colorAttachmentCount = 1;
-  subpass.pColorAttachments = &colorAttachmentRef;
-  subpass.pDepthStencilAttachment = &depthAttachmentRef;
+  subpass.colorAttachmentCount = static_cast<uint32_t>(colorRefs.size());
+  subpass.pColorAttachments = colorRefs.empty() ? nullptr : colorRefs.data();
+  subpass.pDepthStencilAttachment = desc_.depth.enabled ? &depthRef : nullptr;
 
-  VkSubpassDependency dependency{};
-  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-  dependency.dstSubpass = 0;
-  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-  dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  auto dependencies = desc_.dependencies;
 
-  std::array<VkAttachmentDescription, 2> attachments = {colorAttachment,
-                                                        depthAttachment};
   VkRenderPassCreateInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
   renderPassInfo.pAttachments = attachments.data();
   renderPassInfo.subpassCount = 1;
   renderPassInfo.pSubpasses = &subpass;
-  renderPassInfo.dependencyCount = 1;
-  renderPassInfo.pDependencies = &dependency;
+  renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+  renderPassInfo.pDependencies =
+      dependencies.empty() ? nullptr : dependencies.data();
 
   if (vkCreateRenderPass(device_.device(), &renderPassInfo, nullptr,
                          &vk_render_pass_) != VK_SUCCESS) {
-    VKR_PIPE_ERROR("Failed to create render pass!");
+    VKR_PIPE_ERROR("Failed to create render pass");
   }
 
-  VKR_PIPE_INFO("Render pass created successfully.");
+  VKR_PIPE_INFO("Render pass created successfully");
 }
 
-RenderPass::~RenderPass() {
+void RenderPass::destroy() {
   if (vk_render_pass_ != VK_NULL_HANDLE) {
     vkDestroyRenderPass(device_.device(), vk_render_pass_, nullptr);
     vk_render_pass_ = VK_NULL_HANDLE;
   }
+}
+
+void RenderPass::update(const RenderPassDesc &desc) {
+  destroy();
+  desc_ = desc;
+  create();
 }
 
 } // namespace vkr::pipeline

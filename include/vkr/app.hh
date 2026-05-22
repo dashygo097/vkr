@@ -43,7 +43,8 @@ public:
   std::unique_ptr<resource::OffscreenTarget> offscreenTarget;
 
   // pipeline
-  std::unique_ptr<pipeline::RenderPass> renderPass;
+  std::unique_ptr<pipeline::RenderPass> swapchainRenderPass;
+  std::unique_ptr<pipeline::RenderPass> offscreenRenderPass;
   std::unique_ptr<pipeline::GraphicsPipeline> graphicsPipeline;
 
   // descriptor

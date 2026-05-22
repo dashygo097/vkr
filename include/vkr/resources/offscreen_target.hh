@@ -13,9 +13,9 @@ public:
   OffscreenTarget(const OffscreenTarget &) = delete;
   auto operator=(const OffscreenTarget &) -> OffscreenTarget & = delete;
 
-  void resize(VkExtent2D extent);
   void create();
   void destroy();
+  void resize(VkExtent2D extent);
 
   [[nodiscard]] auto renderPass() const noexcept -> VkRenderPass {
     return render_pass_;

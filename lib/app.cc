@@ -39,13 +39,50 @@ void VulkanApplication::initVulkan() {
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
   // render pass (swapchain)
-  renderPass = std::make_unique<pipeline::RenderPass>(*device, *swapchain);
+  pipeline::RenderPassDesc desc{};
+
+  pipeline::RenderPassColorAttachmentDesc color{};
+  color.format = swapchain->format();
+  color.samples = VK_SAMPLE_COUNT_1_BIT;
+  color.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  color.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  color.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  color.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  color.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  color.subpassLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  desc.colors.push_back(color);
+
+  desc.depth.enabled = true;
+  desc.depth.format = resource::findDepthFormat(device->physicalDevice());
+  desc.depth.samples = VK_SAMPLE_COUNT_1_BIT;
+  desc.depth.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  desc.depth.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  desc.depth.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  desc.depth.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  desc.depth.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  desc.depth.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  desc.depth.subpassLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  VkSubpassDependency dependency{};
+  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+  dependency.dstSubpass = 0;
+  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+  dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  desc.dependencies.push_back(dependency);
+  swapchainRenderPass = std::make_unique<pipeline::RenderPass>(*device);
+  swapchainRenderPass->update(desc);
 
   // resource manager
   depthResources = std::make_unique<resource::DepthResources>(
       *device, *swapchain, *commandPool);
   resourceManager = std::make_unique<resource::ResourceManager>(
-      *device, *swapchain, *commandPool, *renderPass);
+      *device, *swapchain, *commandPool);
 
   resource::FramebufferDesc swapchainfbDesc;
   swapchainfbDesc.extent = swapchain->extent2D();
@@ -56,7 +93,8 @@ void VulkanApplication::initVulkan() {
         {imageView, depthResources->imageView()});
   }
 
-  resourceManager->createFramebufferSet("swapchain", swapchainfbDesc);
+  resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
+                                        swapchainfbDesc);
 
   offscreenTarget = std::make_unique<resource::OffscreenTarget>(
       *device, *commandPool, swapchain->extent2D());
@@ -86,8 +124,8 @@ void VulkanApplication::initVulkan() {
   descriptorSetLayout = descriptorManager->createLayout(bindings);
 
   graphicsPipeline = std::make_unique<pipeline::GraphicsPipeline>(
-      *instance, *device, *resourceManager, *renderPass, *descriptorSetLayout,
-      ctx.pipelineMode);
+      *instance, *device, *resourceManager, *swapchainRenderPass,
+      *descriptorSetLayout, ctx.pipelineMode);
   graphicsPipeline->buildOffscreen(offscreenTarget->renderPass());
 
   // descriptor sets
@@ -99,16 +137,16 @@ void VulkanApplication::initVulkan() {
   timer = std::make_unique<Timer>();
 
   // ui
-  ui = std::make_unique<ui::UI>(*window, *instance, *surface, *device,
-                                *commandPool, *resourceManager,
-                                *offscreenTarget, *renderPass, *descriptorPool,
-                                *graphicsPipeline, ctx.pipelineMode, *timer);
+  ui = std::make_unique<ui::UI>(
+      *window, *instance, *surface, *device, *commandPool, *resourceManager,
+      *offscreenTarget, *swapchainRenderPass, *descriptorPool,
+      *graphicsPipeline, ctx.pipelineMode, *timer);
   offscreenTarget->registerWithImGui(descriptorPool->pool());
 
   // renderer
   renderer = std::make_unique<render::Renderer>(
       *device, *swapchain, *commandPool, *syncObjects, *resourceManager,
-      *renderPass, *ui);
+      *swapchainRenderPass, *ui);
 
   // camera
   camera = std::make_unique<scene::Camera>(
@@ -215,7 +253,7 @@ void VulkanApplication::cleanup() {
   descriptorPool.reset();
   commandPool.reset();
   graphicsPipeline.reset();
-  renderPass.reset();
+  swapchainRenderPass.reset();
   swapchain.reset();
   device.reset();
   surface.reset();
