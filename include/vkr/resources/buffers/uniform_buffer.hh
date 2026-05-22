@@ -24,7 +24,7 @@ public:
                          size_t size) = 0;
 };
 
-template <typename ObjectType> class UniformBuffer : public IUniformBuffer {
+template <typename UniformType> class UniformBuffer : public IUniformBuffer {
 public:
   explicit UniformBuffer(const core::Device &device) : device_(device) {
     create();
@@ -35,7 +35,7 @@ public:
   UniformBuffer(const UniformBuffer &) = delete;
   auto operator=(const UniformBuffer &) -> UniformBuffer & = delete;
 
-  void update(uint32_t currentFrame, const ObjectType &newObject) {
+  void update(uint32_t currentFrame, const UniformType &newObject) {
     if (currentFrame >= core::MAX_FRAMES_IN_FLIGHT) {
       VKR_RES_ERROR("currentFrame exceeds MAX_FRAMES_IN_FLIGHT({})!",
                     core::MAX_FRAMES_IN_FLIGHT);
@@ -43,15 +43,15 @@ public:
     if (mapped_[currentFrame] == nullptr) {
       VKR_RES_ERROR("Mapped memory is null for current frame!");
     }
-    memcpy(mapped_[currentFrame], &newObject, sizeof(ObjectType));
+    memcpy(mapped_[currentFrame], &newObject, sizeof(UniformType));
   }
 
   void updateRaw(uint32_t currentFrame, const void *data,
                  size_t size) override {
-    if (size != sizeof(ObjectType)) {
+    if (size != sizeof(UniformType)) {
       VKR_RES_ERROR("Size mismatch in uniform buffer update!");
     }
-    update(currentFrame, *static_cast<const ObjectType *>(data));
+    update(currentFrame, *static_cast<const UniformType *>(data));
   }
 
   [[nodiscard]] auto buffers() const noexcept
@@ -71,7 +71,7 @@ public:
 
 protected:
   void create() {
-    VkDeviceSize bufferSize = sizeof(ObjectType);
+    VkDeviceSize bufferSize = sizeof(UniformType);
     vk_uniform_buffers_.resize(core::MAX_FRAMES_IN_FLIGHT);
     vk_memories_.resize(core::MAX_FRAMES_IN_FLIGHT);
     mapped_.resize(core::MAX_FRAMES_IN_FLIGHT);
@@ -112,7 +112,7 @@ protected:
   const core::Device &device_;
 
   // components
-  ObjectType _object;
+  UniformType _object;
   std::vector<VkBuffer> vk_uniform_buffers_{};
   std::vector<VkDeviceMemory> vk_memories_{};
   std::vector<void *> mapped_{};
