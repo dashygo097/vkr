@@ -1,4 +1,4 @@
-#include "vkr/resources/textures/sampler.hh"
+#include "vkr/resources/images/sampler.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::resource {
@@ -22,16 +22,16 @@ Sampler::Sampler(const core::Device &device) : device_(device) {
   samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
   samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-  if (vkCreateSampler(device_.device(), &samplerInfo, nullptr, &_vk_sampler_) !=
+  if (vkCreateSampler(device_.device(), &samplerInfo, nullptr, &vk_sampler_) !=
       VK_SUCCESS) {
     VKR_RES_ERROR("Failed to create texture sampler!");
   }
 }
 
 Sampler::~Sampler() {
-  if (_vk_sampler_ != VK_NULL_HANDLE) {
-    vkDestroySampler(device_.device(), _vk_sampler_, nullptr);
-    _vk_sampler_ = VK_NULL_HANDLE;
+  if (vk_sampler_ != VK_NULL_HANDLE) {
+    vkDestroySampler(device_.device(), vk_sampler_, nullptr);
+    vk_sampler_ = VK_NULL_HANDLE;
   }
 }
 

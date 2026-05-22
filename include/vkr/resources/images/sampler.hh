@@ -12,7 +12,7 @@ public:
   auto operator=(const Sampler &) -> Sampler & = delete;
 
   [[nodiscard]] auto sampler() const noexcept -> VkSampler {
-    return _vk_sampler_;
+    return vk_sampler_;
   }
 
 private:
@@ -20,6 +20,6 @@ private:
   const core::Device &device_;
 
   // components
-  VkSampler _vk_sampler_{VK_NULL_HANDLE};
+  VkSampler vk_sampler_{VK_NULL_HANDLE};
 };
 } // namespace vkr::resource

@@ -1,5 +1,5 @@
 #define STB_IMAGE_IMPLEMENTATION
-#include "vkr/resources/textures/image.hh"
+#include "vkr/resources/images/image.hh"
 #include "vkr/logger.hh"
 #include "vkr/resources/buffers/buffer_utils.hh"
 

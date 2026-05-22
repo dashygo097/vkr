@@ -1,8 +1,8 @@
 #pragma once
 #include "../../core/device.hh"
 #include "../../resources/buffers/uniform_buffer.hh"
-#include "../../resources/textures/imageview.hh"
-#include "../../resources/textures/sampler.hh"
+#include "../../resources/images/imageview.hh"
+#include "../../resources/images/sampler.hh"
 #include "./binding.hh"
 #include "./pool.hh"
 #include "./writer.hh"

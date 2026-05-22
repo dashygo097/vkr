@@ -7,10 +7,10 @@
 #include "./buffers/vbos.hh"
 #include "./buffers/vertex_buffer.hh"
 #include "./depth_resources.hh"
+#include "./images/image.hh"
+#include "./images/imageview.hh"
+#include "./images/sampler.hh"
 #include "./mesh.hh"
-#include "./textures/image.hh"
-#include "./textures/imageview.hh"
-#include "./textures/sampler.hh"
 #include <memory>
 #include <vector>
 
