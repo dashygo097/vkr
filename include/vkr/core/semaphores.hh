@@ -12,7 +12,9 @@ public:
   Semaphore(const Semaphore &) = delete;
   auto operator=(const Semaphore &) -> Semaphore & = delete;
 
-  [[nodiscard]] auto semaphore() const noexcept -> VkSemaphore { return vk_semaphore_; }
+  [[nodiscard]] auto semaphore() const noexcept -> VkSemaphore {
+    return vk_semaphore_;
+  }
 
 private:
   // dependenciesi

@@ -79,4 +79,5 @@ RenderPass::~RenderPass() {
     vk_render_pass_ = VK_NULL_HANDLE;
   }
 }
+
 } // namespace vkr::pipeline
