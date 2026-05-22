@@ -5,11 +5,8 @@
 namespace vkr::resource {
 
 OffscreenTarget::OffscreenTarget(const core::Device &device,
-                                 const core::CommandPool &commandPool,
-                                 VkExtent2D extent)
-    : device_(device), command_pool_(commandPool), extent_(extent) {
-  create();
-}
+                                 const core::CommandPool &commandPool)
+    : device_(device), command_pool_(commandPool) {}
 
 OffscreenTarget::~OffscreenTarget() { destroy(); }
 

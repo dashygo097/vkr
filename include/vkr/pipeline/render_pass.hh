@@ -80,4 +80,9 @@ private:
   VkRenderPass vk_render_pass_{VK_NULL_HANDLE};
 };
 
+// factories
+auto makeSwapchainRenderPassDesc(const core::Device &device,
+                                 const core::Swapchain &swapchain)
+    -> RenderPassDesc;
+
 } // namespace vkr::pipeline

@@ -39,44 +39,10 @@ void VulkanApplication::initVulkan() {
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
   // render pass (swapchain)
-  pipeline::RenderPassDesc desc{};
-
-  pipeline::RenderPassColorAttachmentDesc color{};
-  color.format = swapchain->format();
-  color.samples = VK_SAMPLE_COUNT_1_BIT;
-  color.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  color.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  color.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  color.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  color.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-  color.subpassLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-  desc.colors.push_back(color);
-
-  desc.depth.enabled = true;
-  desc.depth.format = resource::findDepthFormat(device->physicalDevice());
-  desc.depth.samples = VK_SAMPLE_COUNT_1_BIT;
-  desc.depth.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  desc.depth.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  desc.depth.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  desc.depth.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  desc.depth.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  desc.depth.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-  desc.depth.subpassLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-  VkSubpassDependency dependency{};
-  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-  dependency.dstSubpass = 0;
-  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-  dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-  desc.dependencies.push_back(dependency);
+  pipeline::RenderPassDesc swapchainRenderPassDesc =
+      pipeline::makeSwapchainRenderPassDesc(*device, *swapchain);
   swapchainRenderPass = std::make_unique<pipeline::RenderPass>(*device);
-  swapchainRenderPass->update(desc);
+  swapchainRenderPass->update(swapchainRenderPassDesc);
 
   // resource manager
   depthResources = std::make_unique<resource::DepthResources>(
@@ -96,13 +62,14 @@ void VulkanApplication::initVulkan() {
   resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
                                         swapchainfbDesc);
 
-  offscreenTarget = std::make_unique<resource::OffscreenTarget>(
-      *device, *commandPool, swapchain->extent2D());
+  offscreenTarget =
+      std::make_unique<resource::OffscreenTarget>(*device, *commandPool);
+  offscreenTarget->resize(swapchain->extent2D());
 
-  vkr::resource::FramebufferDesc offscreenTargetDesc{};
-  offscreenTargetDesc.extent = offscreenTarget->extent2D();
-  offscreenTargetDesc.layers = 1;
-  offscreenTargetDesc.attachments = {
+  vkr::resource::FramebufferDesc offscreenTargetfbDesc{};
+  offscreenTargetfbDesc.extent = offscreenTarget->extent2D();
+  offscreenTargetfbDesc.layers = 1;
+  offscreenTargetfbDesc.attachments = {
       {offscreenTarget->colorView(), offscreenTarget->depthView()},
   };
 

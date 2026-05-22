@@ -7,7 +7,7 @@ namespace vkr::resource {
 class OffscreenTarget {
 public:
   OffscreenTarget(const core::Device &device,
-                  const core::CommandPool &commandPool, VkExtent2D extent);
+                  const core::CommandPool &commandPool);
   ~OffscreenTarget();
 
   OffscreenTarget(const OffscreenTarget &) = delete;

@@ -105,4 +105,47 @@ void RenderPass::update(const RenderPassDesc &desc) {
   create();
 }
 
+auto makeSwapchainRenderPassDesc(const core::Device &device,
+                                 const core::Swapchain &swapchain)
+    -> RenderPassDesc {
+  RenderPassDesc desc{};
+
+  RenderPassColorAttachmentDesc color{};
+  color.format = swapchain.format();
+  color.samples = VK_SAMPLE_COUNT_1_BIT;
+  color.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  color.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  color.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  color.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  color.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  color.subpassLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  desc.colors.push_back(color);
+
+  desc.depth.enabled = true;
+  desc.depth.format = resource::findDepthFormat(device.physicalDevice());
+  desc.depth.samples = VK_SAMPLE_COUNT_1_BIT;
+  desc.depth.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  desc.depth.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  desc.depth.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  desc.depth.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  desc.depth.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  desc.depth.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  desc.depth.subpassLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  VkSubpassDependency dependency{};
+  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+  dependency.dstSubpass = 0;
+  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+  dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  desc.dependencies.push_back(dependency);
+
+  return desc;
+}
+
 } // namespace vkr::pipeline
