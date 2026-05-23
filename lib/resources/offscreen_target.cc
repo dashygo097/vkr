@@ -5,8 +5,9 @@
 namespace vkr::resource {
 
 OffscreenTarget::OffscreenTarget(const core::Device &device,
-                                 const core::CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {}
+                                 const core::CommandPool &commandPool,
+                                 const pipeline::RenderPass &renderPass)
+    : device_(device), command_pool_(commandPool), render_pass_(renderPass) {}
 
 OffscreenTarget::~OffscreenTarget() { destroy(); }
 
@@ -88,84 +89,12 @@ void OffscreenTarget::create() {
   samp.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
   vkCreateSampler(device_.device(), &samp, nullptr, &sampler_);
 
-  VkAttachmentDescription colorAtt{};
-  colorAtt.format = colorFormat;
-  colorAtt.samples = VK_SAMPLE_COUNT_1_BIT;
-  colorAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  colorAtt.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  colorAtt.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  colorAtt.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-  VkAttachmentDescription depthAtt{};
-  depthAtt.format = depthFormat;
-  depthAtt.samples = VK_SAMPLE_COUNT_1_BIT;
-  depthAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  depthAtt.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depthAtt.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  depthAtt.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-  VkAttachmentReference colorRef{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-  VkAttachmentReference depthRef{
-      1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
-
-  VkSubpassDescription subpass{};
-  subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass.colorAttachmentCount = 1;
-  subpass.pColorAttachments = &colorRef;
-  subpass.pDepthStencilAttachment = &depthRef;
-
-  std::array<VkSubpassDependency, 2> deps{};
-
-  deps[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-  deps[0].dstSubpass = 0;
-  deps[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-  deps[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  deps[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-  deps[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-  deps[1].srcSubpass = 0;
-  deps[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-  deps[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  deps[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-  deps[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-  deps[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-  std::array<VkAttachmentDescription, 2> atts = {colorAtt, depthAtt};
-  VkRenderPassCreateInfo rpInfo{};
-  rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  rpInfo.attachmentCount = static_cast<uint32_t>(atts.size());
-  rpInfo.pAttachments = atts.data();
-  rpInfo.subpassCount = 1;
-  rpInfo.pSubpasses = &subpass;
-  rpInfo.dependencyCount = static_cast<uint32_t>(deps.size());
-  rpInfo.pDependencies = deps.data();
-  vkCreateRenderPass(device_.device(), &rpInfo, nullptr, &render_pass_);
-
-  std::array<VkImageView, 2> views = {color_view_, depth_view_};
-  VkFramebufferCreateInfo fbInfo{};
-  fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-  fbInfo.renderPass = render_pass_;
-  fbInfo.attachmentCount = static_cast<uint32_t>(views.size());
-  fbInfo.pAttachments = views.data();
-  fbInfo.width = extent_.width;
-  fbInfo.height = extent_.height;
-  fbInfo.layers = 1;
-  vkCreateFramebuffer(device_.device(), &fbInfo, nullptr, &framebuffer_);
-
   VKR_RENDER_INFO("OffscreenTarget created ({}x{})", extent_.width,
                   extent_.height);
 }
 
 void OffscreenTarget::destroy() {
   auto d = device_.device();
-  if (framebuffer_) {
-    vkDestroyFramebuffer(d, framebuffer_, nullptr);
-    framebuffer_ = VK_NULL_HANDLE;
-  }
-  if (render_pass_) {
-    vkDestroyRenderPass(d, render_pass_, nullptr);
-    render_pass_ = VK_NULL_HANDLE;
-  }
   if (sampler_) {
     vkDestroySampler(d, sampler_, nullptr);
     sampler_ = VK_NULL_HANDLE;

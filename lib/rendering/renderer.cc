@@ -1,5 +1,5 @@
 #include "vkr/rendering/renderer.hh"
-#include <stdexcept>
+#include "vkr/logger.hh"
 
 namespace vkr::render {
 
@@ -18,26 +18,30 @@ Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
 Renderer::~Renderer() = default;
 
 auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
-  waitForFence(_currentFrame);
+  waitForFence(current_frame_);
 
-  uint32_t imageIndex;
+  uint32_t imageIndex = 0;
   if (!acquireNextImage(imageIndex)) {
     return false;
   }
 
-  resetFence(_currentFrame);
-  vkResetCommandBuffer(command_buffers_->commandBuffer(_currentFrame), 0);
+  resetFence(current_frame_);
+
+  VkCommandBuffer commandBuffer =
+      command_buffers_->commandBuffer(current_frame_);
+
+  vkResetCommandBuffer(commandBuffer, 0);
 
   outFrameData.imageIndex = imageIndex;
-  outFrameData.frameIndex = _currentFrame;
-  outFrameData.commandBuffer = command_buffers_->commandBuffer(_currentFrame);
+  outFrameData.frameIndex = current_frame_;
+  outFrameData.commandBuffer = commandBuffer;
 
   VkCommandBufferBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
   if (vkBeginCommandBuffer(outFrameData.commandBuffer, &beginInfo) !=
       VK_SUCCESS) {
-    throw std::runtime_error("failed to begin recording command buffer!");
+    throw std::runtime_error("failed to begin recording command buffer");
   }
 
   return true;
@@ -45,75 +49,105 @@ auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
 
 void Renderer::endFrame(const FrameData &frameData) {
   if (vkEndCommandBuffer(frameData.commandBuffer) != VK_SUCCESS) {
-    throw std::runtime_error("failed to record command buffer!");
+    throw std::runtime_error("failed to record command buffer");
   }
 
   submitCommandBuffer(frameData);
   present(frameData.imageIndex);
-  _currentFrame = (_currentFrame + 1) % core::MAX_FRAMES_IN_FLIGHT;
+
+  current_frame_ = (current_frame_ + 1) % core::MAX_FRAMES_IN_FLIGHT;
+}
+
+void Renderer::beginPass(const FrameData &frameData,
+                         const RenderPassBeginDesc &desc) {
+  if (desc.renderPass == nullptr) {
+    VKR_RENDER_ERROR("RenderPassBeginDesc has null renderPass");
+  }
+
+  if (desc.framebufferSet == nullptr) {
+    VKR_RENDER_ERROR("RenderPassBeginDesc has null framebufferSet");
+  }
+
+  if (desc.framebufferSet->buffers().empty()) {
+    VKR_RENDER_ERROR("RenderPassBeginDesc framebufferSet is empty");
+  }
+
+  if (desc.framebufferIndex >= desc.framebufferSet->buffers().size()) {
+    VKR_RENDER_ERROR("Framebuffer index {} out of range, framebuffer count {}",
+                     desc.framebufferIndex,
+                     desc.framebufferSet->buffers().size());
+  }
+
+  if (desc.renderArea.extent.width == 0 || desc.renderArea.extent.height == 0) {
+    VKR_RENDER_ERROR("RenderPassBeginDesc has invalid extent: {}x{}",
+                     desc.renderArea.extent.width,
+                     desc.renderArea.extent.height);
+  }
+
+  VkRenderPassBeginInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  info.renderPass = desc.renderPass->renderPass();
+  info.framebuffer = desc.framebufferSet->buffer(desc.framebufferIndex);
+  info.renderArea = desc.renderArea;
+  info.clearValueCount = static_cast<uint32_t>(desc.clearValues.size());
+  info.pClearValues =
+      desc.clearValues.empty() ? nullptr : desc.clearValues.data();
+
+  vkCmdBeginRenderPass(frameData.commandBuffer, &info, desc.contents);
+}
+
+void Renderer::endPass(const FrameData &frameData) {
+  vkCmdEndRenderPass(frameData.commandBuffer);
 }
 
 void Renderer::beginRenderPass(const FrameData &frameData) {
-  auto framebuffers =
-      resource_manager_.getFramebufferSet("swapchain")->buffers();
+  auto framebufferSet = resource_manager_.getFramebufferSet("swapchain");
+  if (!framebufferSet) {
+    VKR_RENDER_ERROR("Missing framebuffer set: swapchain");
+  }
 
-  VkRenderPassBeginInfo renderPassInfo{};
-  renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  renderPassInfo.renderPass = render_pass_.renderPass();
-  renderPassInfo.framebuffer = framebuffers[frameData.imageIndex];
-  renderPassInfo.renderArea.offset = {0, 0};
-  renderPassInfo.renderArea.extent = swapchain_.extent2D();
-
-  std::array<VkClearValue, 2> clearValues{};
+  std::vector<VkClearValue> clearValues(2);
   clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
   clearValues[1].depthStencil = {1.0f, 0};
-  renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-  renderPassInfo.pClearValues = clearValues.data();
 
-  vkCmdBeginRenderPass(frameData.commandBuffer, &renderPassInfo,
-                       VK_SUBPASS_CONTENTS_INLINE);
+  RenderPassBeginDesc desc{};
+  desc.renderPass = &render_pass_;
+  desc.framebufferSet = framebufferSet.get();
+  desc.framebufferIndex = frameData.imageIndex;
+  desc.renderArea = {
+      .offset = {0, 0},
+      .extent = swapchain_.extent2D(),
+  };
+  desc.clearValues = std::move(clearValues);
+
+  beginPass(frameData, desc);
 }
 
-void Renderer::endRenderPass(const FrameData &frameData) {
-  vkCmdEndRenderPass(frameData.commandBuffer);
-}
+void Renderer::endRenderPass(const FrameData &frameData) { endPass(frameData); }
 
-void Renderer::beginOffscreenPass(const FrameData &frameData,
-                                  const resource::OffscreenTarget &target) {
-  VkRenderPassBeginInfo info{};
-  info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  info.renderPass = target.renderPass();
-  info.framebuffer = target.framebuffer();
-  info.renderArea.offset = {0, 0};
-  info.renderArea.extent = target.extent2D();
+void Renderer::beginOffscreenPass(
+    const FrameData &frameData, const pipeline::RenderPass &renderPass,
+    const resource::FramebufferSet &framebufferSet,
+    const resource::OffscreenTarget &target) {
+  std::vector<VkClearValue> clearValues(2);
+  clearValues[0].color = {{0.05f, 0.05f, 0.05f, 1.0f}};
+  clearValues[1].depthStencil = {1.0f, 0};
 
-  std::array<VkClearValue, 2> clear{};
-  clear[0].color = {{0.05f, 0.05f, 0.05f, 1.0f}};
-  clear[1].depthStencil = {1.0f, 0};
-  info.clearValueCount = static_cast<uint32_t>(clear.size());
-  info.pClearValues = clear.data();
+  RenderPassBeginDesc desc{};
+  desc.renderPass = &renderPass;
+  desc.framebufferSet = &framebufferSet;
+  desc.framebufferIndex = 0;
+  desc.renderArea = {
+      .offset = {0, 0},
+      .extent = target.extent2D(),
+  };
+  desc.clearValues = std::move(clearValues);
 
-  vkCmdBeginRenderPass(frameData.commandBuffer, &info,
-                       VK_SUBPASS_CONTENTS_INLINE);
+  beginPass(frameData, desc);
 }
 
 void Renderer::endOffscreenPass(const FrameData &frameData) {
-  vkCmdEndRenderPass(frameData.commandBuffer);
-}
-
-void Renderer::setOffscreenViewportAndScissor(
-    const FrameData &frameData, const resource::OffscreenTarget &target) {
-  VkViewport vp{};
-  vp.x = 0.0f;
-  vp.y = 0.0f;
-  vp.width = static_cast<float>(target.extent2D().width);
-  vp.height = static_cast<float>(target.extent2D().height);
-  vp.minDepth = 0.0f;
-  vp.maxDepth = 1.0f;
-  vkCmdSetViewport(frameData.commandBuffer, 0, 1, &vp);
-
-  VkRect2D scissor{{0, 0}, target.extent2D()};
-  vkCmdSetScissor(frameData.commandBuffer, 0, 1, &scissor);
+  endPass(frameData);
 }
 
 void Renderer::bindPipeline(
@@ -122,6 +156,7 @@ void Renderer::bindPipeline(
     const std::vector<VkDescriptorSet> &descriptorSets) {
   vkCmdBindPipeline(frameData.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     pipeline);
+
   if (!descriptorSets.empty()) {
     vkCmdBindDescriptorSets(frameData.commandBuffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0,
@@ -130,21 +165,32 @@ void Renderer::bindPipeline(
   }
 }
 
+void Renderer::setViewportAndScissor(const FrameData &frameData,
+                                     VkExtent2D extent) {
+  VkViewport viewport{};
+  viewport.x = 0.0f;
+  viewport.y = 0.0f;
+  viewport.width = static_cast<float>(extent.width);
+  viewport.height = static_cast<float>(extent.height);
+  viewport.minDepth = 0.0f;
+  viewport.maxDepth = 1.0f;
+
+  vkCmdSetViewport(frameData.commandBuffer, 0, 1, &viewport);
+
+  VkRect2D scissor{};
+  scissor.offset = {0, 0};
+  scissor.extent = extent;
+
+  vkCmdSetScissor(frameData.commandBuffer, 0, 1, &scissor);
+}
+
 void Renderer::setViewportAndScissor(const FrameData &frameData) {
-  VkExtent2D extent = swapchain_.extent2D();
-  ui::ViewportInfo viewportInfo = ui_.viewportInfo();
+  setViewportAndScissor(frameData, swapchain_.extent2D());
+}
 
-  vk_viewport_.x = viewportInfo.x;
-  vk_viewport_.y = viewportInfo.y;
-  vk_viewport_.width = static_cast<float>(extent.width);
-  vk_viewport_.height = static_cast<float>(extent.height);
-  vk_viewport_.minDepth = 0.0f;
-  vk_viewport_.maxDepth = 1.0f;
-  vkCmdSetViewport(frameData.commandBuffer, 0, 1, &vk_viewport_);
-
-  vk_scissor_.offset = {0, 0};
-  vk_scissor_.extent = extent;
-  vkCmdSetScissor(frameData.commandBuffer, 0, 1, &vk_scissor_);
+void Renderer::setOffscreenViewportAndScissor(
+    const FrameData &frameData, const resource::OffscreenTarget &target) {
+  setViewportAndScissor(frameData, target.extent2D());
 }
 
 void Renderer::drawGeometry(const FrameData &frameData) {
@@ -156,17 +202,23 @@ void Renderer::drawGeometry(const FrameData &frameData) {
     return;
   }
 
-  for (size_t i = 0; i < vertexBuffers.size() && i < indexBuffers.size(); ++i) {
-    if (vertexBuffers[i] && indexBuffers[i]) {
-      VkBuffer vb = vertexBuffers[i]->buffer();
-      VkDeviceSize offsets[] = {0};
-      vkCmdBindVertexBuffers(frameData.commandBuffer, 0, 1, &vb, offsets);
-      vkCmdBindIndexBuffer(frameData.commandBuffer, indexBuffers[i]->buffer(),
-                           0, VK_INDEX_TYPE_UINT16);
-      vkCmdDrawIndexed(frameData.commandBuffer,
-                       static_cast<uint32_t>(indexBuffers[i]->indices().size()),
-                       1, 0, 0, 0);
+  for (size_t i = 0; i < vertexBuffers.size() && i < indexBuffers.size(); i++) {
+    if (!vertexBuffers[i] || !indexBuffers[i]) {
+      continue;
     }
+
+    VkBuffer vertexBuffer = vertexBuffers[i]->buffer();
+    VkDeviceSize offsets[] = {0};
+
+    vkCmdBindVertexBuffers(frameData.commandBuffer, 0, 1, &vertexBuffer,
+                           offsets);
+
+    vkCmdBindIndexBuffer(frameData.commandBuffer, indexBuffers[i]->buffer(), 0,
+                         VK_INDEX_TYPE_UINT16);
+
+    vkCmdDrawIndexed(frameData.commandBuffer,
+                     static_cast<uint32_t>(indexBuffers[i]->indices().size()),
+                     1, 0, 0, 0);
   }
 }
 
@@ -176,9 +228,19 @@ void Renderer::drawUI(const FrameData &frameData) {
 
 void Renderer::recreateSwapchain() {
   device_.waitIdle();
+
   swapchain_.recreate();
-  resource_manager_.getFramebufferSet("swapchain")->destroy();
-  resource_manager_.getFramebufferSet("swapchain")->create();
+
+  if (swapchain_recreate_callback_) {
+    swapchain_recreate_callback_();
+    return;
+  }
+
+  auto framebufferSet = resource_manager_.getFramebufferSet("swapchain");
+  if (framebufferSet) {
+    framebufferSet->destroy();
+    framebufferSet->create();
+  }
 }
 
 void Renderer::waitForFence(uint32_t frameIndex) {
@@ -195,15 +257,18 @@ void Renderer::resetFence(uint32_t frameIndex) {
 auto Renderer::acquireNextImage(uint32_t &imageIndex) -> bool {
   VkResult result = vkAcquireNextImageKHR(
       device_.device(), swapchain_.swapchain(), UINT64_MAX,
-      sync_objects_.imageAvailableSemaphores()[_currentFrame], VK_NULL_HANDLE,
+      sync_objects_.imageAvailableSemaphores()[current_frame_], VK_NULL_HANDLE,
       &imageIndex);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
     recreateSwapchain();
     return false;
-  } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-    throw std::runtime_error("failed to acquire swap chain image!");
   }
+
+  if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    throw std::runtime_error("failed to acquire swap chain image");
+  }
+
   return true;
 }
 
@@ -213,8 +278,10 @@ void Renderer::submitCommandBuffer(const FrameData &frameData) {
 
   VkSemaphore waitSemaphores[] = {
       sync_objects_.imageAvailableSemaphores()[frameData.frameIndex]};
+
   VkPipelineStageFlags waitStages[] = {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
   submitInfo.waitSemaphoreCount = 1;
   submitInfo.pWaitSemaphores = waitSemaphores;
   submitInfo.pWaitDstStageMask = waitStages;
@@ -223,13 +290,14 @@ void Renderer::submitCommandBuffer(const FrameData &frameData) {
 
   VkSemaphore signalSemaphores[] = {
       sync_objects_.renderFinishedSemaphores()[frameData.imageIndex]};
+
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
   if (vkQueueSubmit(device_.graphicsQueue(), 1, &submitInfo,
                     sync_objects_.inFlightFences()[frameData.frameIndex]) !=
       VK_SUCCESS) {
-    throw std::runtime_error("failed to submit draw command buffer!");
+    throw std::runtime_error("failed to submit draw command buffer");
   }
 }
 
@@ -239,6 +307,7 @@ void Renderer::present(uint32_t imageIndex) {
 
   VkSemaphore signalSemaphores[] = {
       sync_objects_.renderFinishedSemaphores()[imageIndex]};
+
   presentInfo.waitSemaphoreCount = 1;
   presentInfo.pWaitSemaphores = signalSemaphores;
 
@@ -250,11 +319,14 @@ void Renderer::present(uint32_t imageIndex) {
   VkResult result = vkQueuePresentKHR(device_.presentQueue(), &presentInfo);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-      _framebufferResized) {
-    _framebufferResized = false;
+      framebuffer_resized_) {
+    framebuffer_resized_ = false;
     recreateSwapchain();
-  } else if (result != VK_SUCCESS) {
-    throw std::runtime_error("failed to present swap chain image!");
+    return;
+  }
+
+  if (result != VK_SUCCESS) {
+    throw std::runtime_error("failed to present swap chain image");
   }
 }
 

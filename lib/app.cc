@@ -62,8 +62,13 @@ void VulkanApplication::initVulkan() {
   resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
                                         swapchainfbDesc);
 
-  offscreenTarget =
-      std::make_unique<resource::OffscreenTarget>(*device, *commandPool);
+  pipeline::RenderPassDesc offscreenRenderPassDesc =
+      pipeline::makeOffscreenRenderPassDesc(VK_FORMAT_R8G8B8A8_UNORM,
+                                            VK_FORMAT_D32_SFLOAT);
+  offscreenRenderPass = std::make_unique<pipeline::RenderPass>(*device);
+  offscreenRenderPass->update(offscreenRenderPassDesc);
+  offscreenTarget = std::make_unique<resource::OffscreenTarget>(
+      *device, *commandPool, *offscreenRenderPass);
   offscreenTarget->resize(swapchain->extent2D());
 
   vkr::resource::FramebufferDesc offscreenTargetfbDesc{};
@@ -73,7 +78,8 @@ void VulkanApplication::initVulkan() {
       {offscreenTarget->colorView(), offscreenTarget->depthView()},
   };
 
-  // resourceManager->createFramebufferSet("offscreen", offscreenTargetDesc);
+  resourceManager->createFramebufferSet("offscreen", *offscreenRenderPass,
+                                        offscreenTargetfbDesc);
 
   createUniforms();
 
@@ -93,7 +99,7 @@ void VulkanApplication::initVulkan() {
   graphicsPipeline = std::make_unique<pipeline::GraphicsPipeline>(
       *instance, *device, *resourceManager, *swapchainRenderPass,
       *descriptorSetLayout, ctx.pipelineMode);
-  graphicsPipeline->buildOffscreen(offscreenTarget->renderPass());
+  graphicsPipeline->buildOffscreen(offscreenRenderPass->renderPass());
 
   // descriptor sets
   descriptorSets =
@@ -182,12 +188,14 @@ void VulkanApplication::drawFrame() {
   }
 
   if (offscreenTarget->flushPendingResize(descriptorPool->pool())) {
-    graphicsPipeline->buildOffscreen(offscreenTarget->renderPass());
+    graphicsPipeline->buildOffscreen(offscreenRenderPass->renderPass());
   }
 
   updateUniforms(frameData.frameIndex);
 
-  renderer->beginOffscreenPass(frameData, *offscreenTarget);
+  renderer->beginOffscreenPass(frameData, *offscreenRenderPass,
+                               *resourceManager->getFramebufferSet("offscreen"),
+                               *offscreenTarget);
   renderer->bindPipeline(frameData, graphicsPipeline->offscreenPipeline(),
                          graphicsPipeline->offscreenPipelineLayout(),
                          descriptorSets->sets());
@@ -221,6 +229,7 @@ void VulkanApplication::cleanup() {
   commandPool.reset();
   graphicsPipeline.reset();
   swapchainRenderPass.reset();
+  offscreenRenderPass.reset();
   swapchain.reset();
   device.reset();
   surface.reset();

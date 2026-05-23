@@ -1,13 +1,16 @@
 #pragma once
+
 #include "../core/command_pool.hh"
 #include "../core/device.hh"
-#include <vulkan/vulkan.h>
+#include "../pipeline/render_pass.hh"
 
 namespace vkr::resource {
+
 class OffscreenTarget {
 public:
   OffscreenTarget(const core::Device &device,
-                  const core::CommandPool &commandPool);
+                  const core::CommandPool &commandPool,
+                  const pipeline::RenderPass &renderPass);
   ~OffscreenTarget();
 
   OffscreenTarget(const OffscreenTarget &) = delete;
@@ -17,12 +20,6 @@ public:
   void destroy();
   void resize(VkExtent2D extent);
 
-  [[nodiscard]] auto renderPass() const noexcept -> VkRenderPass {
-    return render_pass_;
-  }
-  [[nodiscard]] auto framebuffer() const noexcept -> VkFramebuffer {
-    return framebuffer_;
-  }
   [[nodiscard]] auto colorView() const noexcept -> VkImageView {
     return color_view_;
   }
@@ -60,6 +57,7 @@ private:
   // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
+  const pipeline::RenderPass &render_pass_;
   VkExtent2D extent_{};
 
   // components
@@ -72,8 +70,6 @@ private:
   VkImageView depth_view_{VK_NULL_HANDLE};
 
   VkSampler sampler_{VK_NULL_HANDLE};
-  VkRenderPass render_pass_{VK_NULL_HANDLE};
-  VkFramebuffer framebuffer_{VK_NULL_HANDLE};
   VkDescriptorSet imgui_ds_{VK_NULL_HANDLE};
 
   // states
