@@ -66,7 +66,7 @@ public:
 protected:
   virtual void onConfigure() {}
   virtual void onSetup() {}
-  virtual void onUpdate(float deltaTime) {}
+  virtual void onDrawFrame(uint32_t currentImage) {}
   virtual void onCleanup() {}
 
   virtual void createUniforms() {}
@@ -75,7 +75,6 @@ protected:
     return {};
   }
   virtual void bindDescriptorSets() {}
-  virtual void updateUniforms(uint32_t frameIndex) {}
 
 private:
   // Initialization methods

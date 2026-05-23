@@ -35,7 +35,7 @@ private:
     }
   }
 
-  void updateUniforms(uint32_t currentImage) override {
+  void onDrawFrame(uint32_t currentImage) override {
     vkr::resource::UniformBuffer3DObject ubo{};
     ubo.model = glm::mat4(1.0f);
     ubo.view = glm::mat4(1.0f);

@@ -160,7 +160,6 @@ void VulkanApplication::mainLoop() {
     camera->lock(shouldLockCamera);
 
     timer->update();
-    onUpdate(timer->deltaTime());
     drawFrame();
 
     isLastTabKeyPressed = isNowTabKeyPressed;
@@ -190,7 +189,7 @@ void VulkanApplication::drawFrame() {
     graphicsPipeline->buildOffscreen(offscreenRenderPass->renderPass());
   }
 
-  updateUniforms(frameData.frameIndex);
+  onDrawFrame(frameData.frameIndex);
 
   renderer->beginOffscreenPass(frameData,
                                *resourceManager->getFramebufferSet("offscreen"),

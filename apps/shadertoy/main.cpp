@@ -37,7 +37,7 @@ private:
     }
   }
 
-  void updateUniforms(uint32_t currentImage) override {
+  void onDrawFrame(uint32_t currentImage) override {
     auto shadertoyUBO = resourceManager->getUniformBuffer("shadertoy");
     if (!shadertoyUBO) {
       return;
@@ -88,13 +88,6 @@ private:
                                              now->tm_min * 60 + now->tm_sec));
 
     shadertoyUBO->updateRaw(currentImage, &ubo, sizeof(ubo));
-  }
-
-  void onUpdate(float deltaTime) override {
-    if (ui->viewportInfo().height > 0) {
-      ctx.cameraAspectRatio = ui->viewportInfo().width /
-                              static_cast<float>(ui->viewportInfo().height);
-    }
   }
 
   void onConfigure() override {

@@ -27,7 +27,7 @@ private:
     }
   }
 
-  void updateUniforms(uint32_t currentImage) override {
+  void onDrawFrame(uint32_t currentImage) override {
     vkr::resource::UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     ubo.view = camera->getView();
@@ -35,9 +35,7 @@ private:
 
     resourceManager->getUniformBuffer("default")->updateRaw(currentImage, &ubo,
                                                             sizeof(ubo));
-  }
 
-  void onUpdate(float deltaTime) override {
     if (ui->viewportInfo().height > 0 &&
         ui->layoutMode() == vkr::ui::LayoutMode::Standard) {
       ctx.cameraAspectRatio = ui->viewportInfo().width /
