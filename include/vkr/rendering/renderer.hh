@@ -20,9 +20,6 @@ struct FrameData {
 };
 
 struct RenderPassBeginDesc {
-  const pipeline::RenderPass *renderPass{nullptr};
-  const resource::FramebufferSet *framebufferSet{nullptr};
-
   uint32_t framebufferIndex{0};
 
   VkRect2D renderArea{};
@@ -49,19 +46,22 @@ public:
   void endFrame(const FrameData &frameData);
 
   // Generic pass API
-  void beginPass(const FrameData &frameData, const RenderPassBeginDesc &desc);
+  void beginPass(const FrameData &frameData,
+                 const resource::FramebufferSet &framebufferSet,
+                 const pipeline::RenderPass &renderPass,
+                 const RenderPassBeginDesc &desc);
   void endPass(const FrameData &frameData);
 
   // Swapchain pass
-  void beginRenderPass(const FrameData &frameData);
-  void endRenderPass(const FrameData &frameData);
+  void beginSwapchainPass(const FrameData &frameData,
+                          const resource::FramebufferSet &framebufferSet,
+                          const pipeline::RenderPass &renderPass);
 
   // Offscreen pass
   void beginOffscreenPass(const FrameData &frameData,
-                          const pipeline::RenderPass &renderPass,
                           const resource::FramebufferSet &framebufferSet,
+                          const pipeline::RenderPass &renderPass,
                           const resource::OffscreenTarget &target);
-  void endOffscreenPass(const FrameData &frameData);
 
   void bindPipeline(const FrameData &frameData, VkPipeline pipeline,
                     VkPipelineLayout pipelineLayout,

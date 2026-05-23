@@ -193,19 +193,21 @@ void VulkanApplication::drawFrame() {
 
   updateUniforms(frameData.frameIndex);
 
-  renderer->beginOffscreenPass(frameData, *offscreenRenderPass,
+  renderer->beginOffscreenPass(frameData,
                                *resourceManager->getFramebufferSet("offscreen"),
-                               *offscreenTarget);
+                               *offscreenRenderPass, *offscreenTarget);
   renderer->bindPipeline(frameData, graphicsPipeline->offscreenPipeline(),
                          graphicsPipeline->offscreenPipelineLayout(),
                          descriptorSets->sets());
   renderer->setOffscreenViewportAndScissor(frameData, *offscreenTarget);
   renderer->drawGeometry(frameData);
-  renderer->endOffscreenPass(frameData);
+  renderer->endPass(frameData);
 
-  renderer->beginRenderPass(frameData);
+  renderer->beginSwapchainPass(frameData,
+                               *resourceManager->getFramebufferSet("swapchain"),
+                               *swapchainRenderPass);
   renderer->drawUI(frameData);
-  renderer->endRenderPass(frameData);
+  renderer->endPass(frameData);
 
   renderer->endFrame(frameData);
 }

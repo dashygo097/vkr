@@ -59,23 +59,12 @@ void Renderer::endFrame(const FrameData &frameData) {
 }
 
 void Renderer::beginPass(const FrameData &frameData,
+                         const resource::FramebufferSet &framebufferSet,
+                         const pipeline::RenderPass &renderPass,
                          const RenderPassBeginDesc &desc) {
-  if (desc.renderPass == nullptr) {
-    VKR_RENDER_ERROR("RenderPassBeginDesc has null renderPass");
-  }
-
-  if (desc.framebufferSet == nullptr) {
-    VKR_RENDER_ERROR("RenderPassBeginDesc has null framebufferSet");
-  }
-
-  if (desc.framebufferSet->buffers().empty()) {
-    VKR_RENDER_ERROR("RenderPassBeginDesc framebufferSet is empty");
-  }
-
-  if (desc.framebufferIndex >= desc.framebufferSet->buffers().size()) {
+  if (desc.framebufferIndex >= framebufferSet.buffers().size()) {
     VKR_RENDER_ERROR("Framebuffer index {} out of range, framebuffer count {}",
-                     desc.framebufferIndex,
-                     desc.framebufferSet->buffers().size());
+                     desc.framebufferIndex, framebufferSet.buffers().size());
   }
 
   if (desc.renderArea.extent.width == 0 || desc.renderArea.extent.height == 0) {
@@ -86,8 +75,8 @@ void Renderer::beginPass(const FrameData &frameData,
 
   VkRenderPassBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  info.renderPass = desc.renderPass->renderPass();
-  info.framebuffer = desc.framebufferSet->buffer(desc.framebufferIndex);
+  info.renderPass = renderPass.renderPass();
+  info.framebuffer = framebufferSet.buffer(desc.framebufferIndex);
   info.renderArea = desc.renderArea;
   info.clearValueCount = static_cast<uint32_t>(desc.clearValues.size());
   info.pClearValues =
@@ -100,19 +89,15 @@ void Renderer::endPass(const FrameData &frameData) {
   vkCmdEndRenderPass(frameData.commandBuffer);
 }
 
-void Renderer::beginRenderPass(const FrameData &frameData) {
-  auto framebufferSet = resource_manager_.getFramebufferSet("swapchain");
-  if (!framebufferSet) {
-    VKR_RENDER_ERROR("Missing framebuffer set: swapchain");
-  }
+void Renderer::beginSwapchainPass(
+    const FrameData &frameData, const resource::FramebufferSet &framebufferSet,
+    const pipeline::RenderPass &renderPass) {
 
   std::vector<VkClearValue> clearValues(2);
   clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
   clearValues[1].depthStencil = {1.0f, 0};
 
   RenderPassBeginDesc desc{};
-  desc.renderPass = &render_pass_;
-  desc.framebufferSet = framebufferSet.get();
   desc.framebufferIndex = frameData.imageIndex;
   desc.renderArea = {
       .offset = {0, 0},
@@ -120,22 +105,18 @@ void Renderer::beginRenderPass(const FrameData &frameData) {
   };
   desc.clearValues = std::move(clearValues);
 
-  beginPass(frameData, desc);
+  beginPass(frameData, framebufferSet, renderPass, desc);
 }
 
-void Renderer::endRenderPass(const FrameData &frameData) { endPass(frameData); }
-
 void Renderer::beginOffscreenPass(
-    const FrameData &frameData, const pipeline::RenderPass &renderPass,
-    const resource::FramebufferSet &framebufferSet,
+    const FrameData &frameData, const resource::FramebufferSet &framebufferSet,
+    const pipeline::RenderPass &renderPass,
     const resource::OffscreenTarget &target) {
   std::vector<VkClearValue> clearValues(2);
   clearValues[0].color = {{0.05f, 0.05f, 0.05f, 1.0f}};
   clearValues[1].depthStencil = {1.0f, 0};
 
   RenderPassBeginDesc desc{};
-  desc.renderPass = &renderPass;
-  desc.framebufferSet = &framebufferSet;
   desc.framebufferIndex = 0;
   desc.renderArea = {
       .offset = {0, 0},
@@ -143,11 +124,7 @@ void Renderer::beginOffscreenPass(
   };
   desc.clearValues = std::move(clearValues);
 
-  beginPass(frameData, desc);
-}
-
-void Renderer::endOffscreenPass(const FrameData &frameData) {
-  endPass(frameData);
+  beginPass(frameData, framebufferSet, renderPass, desc);
 }
 
 void Renderer::bindPipeline(
