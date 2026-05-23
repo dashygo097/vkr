@@ -35,8 +35,7 @@ public:
   explicit Renderer(core::Device &device, core::Swapchain &swapchain,
                     const core::CommandPool &commandPool,
                     const core::SyncObjects &syncObjects,
-                    resource::ResourceManager &resourceManager,
-                    const pipeline::RenderPass &renderPass, ui::UI &ui);
+                    resource::ResourceManager &resourceManager, ui::UI &ui);
   ~Renderer();
 
   Renderer(const Renderer &) = delete;
@@ -97,7 +96,6 @@ private:
   const core::CommandPool &command_pool_;
   const core::SyncObjects &sync_objects_;
   resource::ResourceManager &resource_manager_;
-  const pipeline::RenderPass &render_pass_;
   ui::UI &ui_;
 
   // components

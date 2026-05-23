@@ -6,11 +6,9 @@ namespace vkr::render {
 Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
                    const core::CommandPool &commandPool,
                    const core::SyncObjects &syncObjects,
-                   resource::ResourceManager &resourceManager,
-                   const pipeline::RenderPass &renderPass, ui::UI &ui)
+                   resource::ResourceManager &resourceManager, ui::UI &ui)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
-      sync_objects_(syncObjects), resource_manager_(resourceManager),
-      render_pass_(renderPass), ui_(ui) {
+      sync_objects_(syncObjects), resource_manager_(resourceManager), ui_(ui) {
   command_buffers_ =
       std::make_unique<core::CommandBuffers>(device_, command_pool_);
 }

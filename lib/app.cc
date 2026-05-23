@@ -118,8 +118,7 @@ void VulkanApplication::initVulkan() {
 
   // renderer
   renderer = std::make_unique<render::Renderer>(
-      *device, *swapchain, *commandPool, *syncObjects, *resourceManager,
-      *swapchainRenderPass, *ui);
+      *device, *swapchain, *commandPool, *syncObjects, *resourceManager, *ui);
 
   // camera
   camera = std::make_unique<scene::Camera>(
