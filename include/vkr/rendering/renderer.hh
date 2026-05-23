@@ -65,7 +65,7 @@ private:
   const core::SyncObjects &sync_objects_;
   resource::ResourceManager &resource_manager_;
   const pipeline::RenderPass &render_pass_;
-  ui::UI &_ui;
+  ui::UI &ui_;
 
   // components
   std::unique_ptr<core::CommandBuffers> command_buffers_;

@@ -10,7 +10,7 @@ Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
                    const pipeline::RenderPass &renderPass, ui::UI &ui)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
       sync_objects_(syncObjects), resource_manager_(resourceManager),
-      render_pass_(renderPass), _ui(ui) {
+      render_pass_(renderPass), ui_(ui) {
   command_buffers_ =
       std::make_unique<core::CommandBuffers>(device_, command_pool_);
 }
@@ -132,7 +132,7 @@ void Renderer::bindPipeline(
 
 void Renderer::setViewportAndScissor(const FrameData &frameData) {
   VkExtent2D extent = swapchain_.extent2D();
-  ui::ViewportInfo viewportInfo = _ui.viewportInfo();
+  ui::ViewportInfo viewportInfo = ui_.viewportInfo();
 
   vk_viewport_.x = viewportInfo.x;
   vk_viewport_.y = viewportInfo.y;
@@ -171,7 +171,7 @@ void Renderer::drawGeometry(const FrameData &frameData) {
 }
 
 void Renderer::drawUI(const FrameData &frameData) {
-  _ui.render(frameData.commandBuffer);
+  ui_.render(frameData.commandBuffer);
 }
 
 void Renderer::recreateSwapchain() {
