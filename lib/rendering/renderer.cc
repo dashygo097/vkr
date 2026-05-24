@@ -5,7 +5,7 @@ namespace vkr::render {
 
 Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
                    const core::CommandPool &commandPool,
-                   const core::SyncObjects &syncObjects,
+                   core::SyncObjects &syncObjects,
                    resource::ResourceManager &resourceManager, ui::UI &ui)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
       sync_objects_(syncObjects), resource_manager_(resourceManager), ui_(ui) {

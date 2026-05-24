@@ -23,6 +23,7 @@ void FPSPanel::clear() {
 void FPSPanel::render() {
   float fps = timer_.fps();
   float oldFPS = fps_history_[fps_index_];
+  bool unlimited = timer_.maxFPS() <= 0.0f;
 
   sum_fps_ = sum_fps_ - oldFPS + fps;
 
@@ -48,11 +49,11 @@ void FPSPanel::render() {
     ImGui::Text("Frame Time: -- ms");
   }
 
-  ImGui::Text("Average: %.1f FPS", avg_fps_);
+  ImGui::Text("Average: %.1f FPS / Maximum %.1f FPS", avg_fps_,
+              timer_.maxFPS());
 
   ImGui::Separator();
 
-  bool unlimited = timer_.maxFPS() <= 0.0f;
   if (ImGui::Checkbox("Unlimited FPS", &unlimited)) {
     if (unlimited) {
       timer_.maxFPS(0.0f);
@@ -65,16 +66,11 @@ void FPSPanel::render() {
   }
 
   if (!unlimited) {
-    if (ImGui::SliderFloat("Max FPS", &max_fps_edit_, 1.0f, 500.0f, "%.0f")) {
+    if (ImGui::SliderFloat("Maximum FPS", &max_fps_edit_, 1.0f, 500.0f,
+                           "%.0f")) {
       max_fps_edit_ = std::clamp(max_fps_edit_, 1.0f, 500.0f);
       timer_.maxFPS(max_fps_edit_);
     }
-  }
-
-  ImGui::Text("Limit: %s", unlimited ? "Unlimited" : "");
-  if (!unlimited) {
-    ImGui::SameLine();
-    ImGui::Text("%.0f FPS", timer_.maxFPS());
   }
 
   ImGui::Separator();

@@ -4,83 +4,102 @@
 
 namespace vkr {
 
-Timer::Timer() {
-  _startTime = std::chrono::high_resolution_clock::now();
-  _lastTime = _startTime;
-  _frameStartTime = _startTime;
-  _frameTimeHistory.fill(0.0f);
-}
+Timer::Timer() { start(); }
 
 void Timer::start() {
-  _startTime = std::chrono::high_resolution_clock::now();
-  _lastTime = _startTime;
-  _frameStartTime = _startTime;
+  auto now = Clock::now();
+
+  start_time_ = now;
+  frame_start_time_ = now;
+
+  raw_delta_time_ = 0.0f;
   delta_time_ = 0.0f;
+
+  raw_fps_ = 0.0f;
   fps_ = 0.0f;
+
   elapsed_time_ = 0.0f;
   frame_count_ = 0;
-  _frameTimeHistory.fill(0.0f);
-  _frameTimeIndex = 0;
+
+  frame_time_history_.fill(0.0f);
+  frame_time_index_ = 0;
+  frame_time_count_ = 0;
 }
 
-void Timer::beginFrame() {
-  _frameStartTime = std::chrono::high_resolution_clock::now();
-}
+void Timer::beginFrame() { frame_start_time_ = Clock::now(); }
 
 void Timer::update() {
-  auto now = std::chrono::high_resolution_clock::now();
-
-  std::chrono::duration<float> delta = now - _lastTime;
-  float rawDeltaTime = delta.count();
-
-  constexpr float MAX_DELTA_TIME = 0.1f;
-  rawDeltaTime = std::min(rawDeltaTime, MAX_DELTA_TIME);
-
-  _frameTimeHistory[_frameTimeIndex] = rawDeltaTime;
-  _frameTimeIndex = (_frameTimeIndex + 1) % FRAME_TIME_HISTORY_SIZE;
-
-  float smoothedDeltaTime = 0.0f;
-  for (float frameTime : _frameTimeHistory) {
-    smoothedDeltaTime += frameTime;
-  }
-  smoothedDeltaTime /= FRAME_TIME_HISTORY_SIZE;
-
-  delta_time_ = smoothedDeltaTime;
-
-  std::chrono::duration<float> elapsed = now - _startTime;
+  auto now = Clock::now();
+  std::chrono::duration<float> elapsed = now - start_time_;
   elapsed_time_ = elapsed.count();
-
-  fps_ = (rawDeltaTime > 0.0f) ? (1.0f / rawDeltaTime) : 0.0f;
-
-  _lastTime = now;
-  frame_count_++;
 }
 
 void Timer::endFrame() {
-  if (max_fps_ <= 0.0f) {
-    return;
+  if (max_fps_ > 0.0f) {
+    const double targetFrameSeconds = 1.0 / static_cast<double>(max_fps_);
+    const auto targetFrameDuration =
+        std::chrono::duration<double>(targetFrameSeconds);
+
+    const auto targetEndTime =
+        frame_start_time_ +
+        std::chrono::duration_cast<Clock::duration>(targetFrameDuration);
+
+    while (true) {
+      auto now = Clock::now();
+
+      if (now >= targetEndTime) {
+        break;
+      }
+
+      auto remaining = targetEndTime - now;
+
+      if (remaining > std::chrono::milliseconds(2)) {
+        std::this_thread::sleep_for(remaining - std::chrono::milliseconds(1));
+      } else {
+        std::this_thread::yield();
+      }
+    }
   }
 
-  float targetFrameTime = 1.0f / max_fps_;
+  auto frame_end_time = Clock::now();
 
-  while (true) {
-    auto now = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<float> elapsed = now - _frameStartTime;
-    float remainingTime = targetFrameTime - elapsed.count();
+  std::chrono::duration<float> frameDuration =
+      frame_end_time - frame_start_time_;
 
-    if (remainingTime <= 0.0f) {
-      break;
-    }
+  raw_delta_time_ = frameDuration.count();
 
-    if (remainingTime > 0.001f) {
-      auto sleepTime = std::chrono::duration<float>(remainingTime - 0.001f);
-      std::this_thread::sleep_for(sleepTime);
-    } else {
-      std::this_thread::yield();
-    }
+  constexpr float MAX_DELTA_TIME = 0.1f;
+  raw_delta_time_ = std::min(raw_delta_time_, MAX_DELTA_TIME);
+
+  if (raw_delta_time_ > 0.0f) {
+    pushFrameTime(raw_delta_time_);
   }
+
+  raw_fps_ = raw_delta_time_ > 0.0f ? 1.0f / raw_delta_time_ : 0.0f;
+  fps_ = delta_time_ > 0.0f ? 1.0f / delta_time_ : 0.0f;
+
+  std::chrono::duration<float> elapsed = frame_end_time - start_time_;
+  elapsed_time_ = elapsed.count();
+
+  frame_count_++;
 }
 
 void Timer::reset() { start(); }
+
+void Timer::pushFrameTime(float frameTime) {
+  frame_time_history_[frame_time_index_] = frameTime;
+  frame_time_index_ = (frame_time_index_ + 1) % FRAME_TIME_HISTORY_SIZE;
+
+  if (frame_time_count_ < FRAME_TIME_HISTORY_SIZE) {
+    frame_time_count_++;
+  }
+
+  float sum = 0.0f;
+  for (size_t i = 0; i < frame_time_count_; i++) {
+    sum += frame_time_history_[i];
+  }
+
+  delta_time_ = sum / static_cast<float>(frame_time_count_);
+}
 
 } // namespace vkr

@@ -34,7 +34,7 @@ public:
 
   explicit Renderer(core::Device &device, core::Swapchain &swapchain,
                     const core::CommandPool &commandPool,
-                    const core::SyncObjects &syncObjects,
+                    core::SyncObjects &syncObjects,
                     resource::ResourceManager &resourceManager, ui::UI &ui);
   ~Renderer();
 
@@ -94,7 +94,7 @@ private:
   core::Device &device_;
   core::Swapchain &swapchain_;
   const core::CommandPool &command_pool_;
-  const core::SyncObjects &sync_objects_;
+  core::SyncObjects &sync_objects_;
   resource::ResourceManager &resource_manager_;
   ui::UI &ui_;
 
