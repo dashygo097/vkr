@@ -1,11 +1,16 @@
 #include "vkr/core/swapchain.hh"
 #include "vkr/core/queue_families.hh"
 #include "vkr/logger.hh"
+#include <algorithm>
+#include <limits>
 
 namespace vkr::core {
+
 Swapchain::Swapchain(const Window &window, const Device &device,
-                     const Surface &surface)
-    : window_(window), device_(device), surface_(surface) {
+                     const Surface &surface,
+                     PresentModePolicy presentModePolicy)
+    : window_(window), device_(device), surface_(surface),
+      present_mode_policy_(presentModePolicy) {
   VKR_CORE_INFO("Creating initial swapchain...");
   create();
   VKR_CORE_INFO("Initial swapchain created successfully.");
@@ -25,12 +30,15 @@ void Swapchain::create() {
 
   VkSurfaceFormatKHR surfaceFormat =
       chooseSwapSurfaceFormat(swapchainSupport.formats);
-  VkPresentModeKHR presentMode =
-      chooseSwapPresentMode(swapchainSupport.presentModes);
+
+  VkPresentModeKHR presentMode = chooseSwapPresentMode(
+      swapchainSupport.presentModes, present_mode_policy_);
+
   VkExtent2D extent =
       chooseSwapExtent(window_.glfwWindow(), swapchainSupport.capabilities);
 
   uint32_t imageCount = swapchainSupport.capabilities.minImageCount + 1;
+
   if (swapchainSupport.capabilities.maxImageCount > 0 &&
       imageCount > swapchainSupport.capabilities.maxImageCount) {
     imageCount = swapchainSupport.capabilities.maxImageCount;
@@ -39,7 +47,6 @@ void Swapchain::create() {
   VkSwapchainCreateInfoKHR createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
   createInfo.surface = surface_.surface();
-
   createInfo.minImageCount = imageCount;
   createInfo.imageFormat = surfaceFormat.format;
   createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -57,49 +64,60 @@ void Swapchain::create() {
     createInfo.pQueueFamilyIndices = queueFamilyIndices;
   } else {
     createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    createInfo.queueFamilyIndexCount = 0;
+    createInfo.pQueueFamilyIndices = nullptr;
   }
 
   createInfo.preTransform = swapchainSupport.capabilities.currentTransform;
   createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   createInfo.presentMode = presentMode;
   createInfo.clipped = VK_TRUE;
-
   createInfo.oldSwapchain = VK_NULL_HANDLE;
 
   if (vkCreateSwapchainKHR(device_.device(), &createInfo, nullptr,
                            &vk_swapchain_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create swap chain!");
+    throw std::runtime_error("failed to create swap chain");
   }
 
   vkGetSwapchainImagesKHR(device_.device(), vk_swapchain_, &imageCount,
                           nullptr);
+
   vk_images_.resize(imageCount);
+
   vkGetSwapchainImagesKHR(device_.device(), vk_swapchain_, &imageCount,
                           vk_images_.data());
 
   vk_format_ = surfaceFormat.format;
   vk_extent_ = extent;
+  vk_present_mode_ = presentMode;
 
-  vk_imageviews_.resize(vk_images_.size());
+  VKR_CORE_INFO("Swapchain created: extent={}x{}, images={}, format={}, "
+                "presentMode={}",
+                vk_extent_.width, vk_extent_.height, vk_images_.size(),
+                static_cast<int>(vk_format_),
+                presentModeName(vk_present_mode_));
+
+  vk_imageviews_.resize(vk_images_.size(), VK_NULL_HANDLE);
+
   for (size_t i = 0; i < vk_images_.size(); i++) {
-    VkImageViewCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    createInfo.image = vk_images_[i];
-    createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    createInfo.format = vk_format_;
-    createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    createInfo.subresourceRange.baseMipLevel = 0;
-    createInfo.subresourceRange.levelCount = 1;
-    createInfo.subresourceRange.baseArrayLayer = 0;
-    createInfo.subresourceRange.layerCount = 1;
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = vk_images_[i];
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = vk_format_;
+    viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
 
-    if (vkCreateImageView(device_.device(), &createInfo, nullptr,
+    if (vkCreateImageView(device_.device(), &viewInfo, nullptr,
                           &vk_imageviews_[i]) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create image views!");
+      throw std::runtime_error("failed to create swapchain image view");
     }
   }
 }
@@ -110,17 +128,27 @@ void Swapchain::destroy() {
       vkDestroyImageView(device_.device(), imageView, nullptr);
     }
   }
+
   vk_imageviews_.clear();
+  vk_images_.clear();
 
   if (vk_swapchain_ != VK_NULL_HANDLE) {
     vkDestroySwapchainKHR(device_.device(), vk_swapchain_, nullptr);
     vk_swapchain_ = VK_NULL_HANDLE;
   }
+
+  vk_format_ = VK_FORMAT_UNDEFINED;
+  vk_extent_ = {};
+  vk_present_mode_ = VK_PRESENT_MODE_FIFO_KHR;
 }
 
 auto chooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR> &availableFormats)
     -> VkSurfaceFormatKHR {
+  if (availableFormats.empty()) {
+    throw std::runtime_error("no available swapchain surface formats");
+  }
+
   for (const auto &availableFormat : availableFormats) {
     if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
         availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -131,16 +159,73 @@ auto chooseSwapSurfaceFormat(
   return availableFormats[0];
 }
 
+auto presentModeName(VkPresentModeKHR mode) -> const char * {
+  switch (mode) {
+  case VK_PRESENT_MODE_IMMEDIATE_KHR:
+    return "IMMEDIATE";
+  case VK_PRESENT_MODE_MAILBOX_KHR:
+    return "MAILBOX";
+  case VK_PRESENT_MODE_FIFO_KHR:
+    return "FIFO";
+  case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+    return "FIFO_RELAXED";
+  default:
+    return "UNKNOWN";
+  }
+}
+
+auto hasPresentMode(const std::vector<VkPresentModeKHR> &modes,
+                    VkPresentModeKHR target) -> bool {
+  return std::find(modes.begin(), modes.end(), target) != modes.end();
+}
+
 auto chooseSwapPresentMode(
-    const std::vector<VkPresentModeKHR> &availablePresentModes)
-    -> VkPresentModeKHR {
-  for (const auto &availablePresentMode : availablePresentModes) {
-    if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-      return availablePresentMode;
-    }
+    const std::vector<VkPresentModeKHR> &availablePresentModes,
+    PresentModePolicy policy) -> VkPresentModeKHR {
+  if (availablePresentModes.empty()) {
+    VKR_CORE_INFO("No present modes reported. Falling back to FIFO.");
+    return VK_PRESENT_MODE_FIFO_KHR;
   }
 
-  return VK_PRESENT_MODE_FIFO_KHR;
+  for (auto mode : availablePresentModes) {
+    VKR_CORE_INFO("Available present mode: {}", presentModeName(mode));
+  }
+
+  switch (policy) {
+  case PresentModePolicy::Uncapped:
+    if (hasPresentMode(availablePresentModes, VK_PRESENT_MODE_IMMEDIATE_KHR)) {
+      VKR_CORE_INFO("Selected present mode: IMMEDIATE");
+      return VK_PRESENT_MODE_IMMEDIATE_KHR;
+    }
+
+    if (hasPresentMode(availablePresentModes,
+                       VK_PRESENT_MODE_FIFO_RELAXED_KHR)) {
+      VKR_CORE_INFO("Selected present mode: FIFO_RELAXED fallback");
+      return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+    }
+
+    if (hasPresentMode(availablePresentModes, VK_PRESENT_MODE_MAILBOX_KHR)) {
+      VKR_CORE_INFO("Selected present mode: MAILBOX fallback");
+      return VK_PRESENT_MODE_MAILBOX_KHR;
+    }
+
+    VKR_CORE_INFO("Selected present mode: FIFO fallback");
+    return VK_PRESENT_MODE_FIFO_KHR;
+
+  case PresentModePolicy::Mailbox:
+    if (hasPresentMode(availablePresentModes, VK_PRESENT_MODE_MAILBOX_KHR)) {
+      VKR_CORE_INFO("Selected present mode: MAILBOX");
+      return VK_PRESENT_MODE_MAILBOX_KHR;
+    }
+
+    VKR_CORE_INFO("Selected present mode: FIFO fallback");
+    return VK_PRESENT_MODE_FIFO_KHR;
+
+  case PresentModePolicy::VSync:
+  default:
+    VKR_CORE_INFO("Selected present mode: FIFO");
+    return VK_PRESENT_MODE_FIFO_KHR;
+  }
 }
 
 auto chooseSwapExtent(GLFWwindow *window,
@@ -149,32 +234,36 @@ auto chooseSwapExtent(GLFWwindow *window,
   if (capabilities.currentExtent.width !=
       std::numeric_limits<uint32_t>::max()) {
     return capabilities.currentExtent;
-  } else {
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-
-    VkExtent2D actualExtent = {static_cast<uint32_t>(width),
-                               static_cast<uint32_t>(height)};
-
-    actualExtent.width =
-        std::clamp(actualExtent.width, capabilities.minImageExtent.width,
-                   capabilities.maxImageExtent.width);
-    actualExtent.height =
-        std::clamp(actualExtent.height, capabilities.minImageExtent.height,
-                   capabilities.maxImageExtent.height);
-
-    return actualExtent;
   }
+
+  int width = 0;
+  int height = 0;
+  glfwGetFramebufferSize(window, &width, &height);
+
+  VkExtent2D actualExtent = {
+      static_cast<uint32_t>(width),
+      static_cast<uint32_t>(height),
+  };
+
+  actualExtent.width =
+      std::clamp(actualExtent.width, capabilities.minImageExtent.width,
+                 capabilities.maxImageExtent.width);
+
+  actualExtent.height =
+      std::clamp(actualExtent.height, capabilities.minImageExtent.height,
+                 capabilities.maxImageExtent.height);
+
+  return actualExtent;
 }
 
 auto querySwapchainSupport(VkPhysicalDevice physicalDevice,
                            VkSurfaceKHR surface) -> SwapchainSupportDetails {
-  SwapchainSupportDetails details;
+  SwapchainSupportDetails details{};
 
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
                                             &details.capabilities);
 
-  uint32_t formatCount;
+  uint32_t formatCount = 0;
   vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount,
                                        nullptr);
 
@@ -184,7 +273,7 @@ auto querySwapchainSupport(VkPhysicalDevice physicalDevice,
                                          details.formats.data());
   }
 
-  uint32_t presentModeCount;
+  uint32_t presentModeCount = 0;
   vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface,
                                             &presentModeCount, nullptr);
 
@@ -197,4 +286,5 @@ auto querySwapchainSupport(VkPhysicalDevice physicalDevice,
 
   return details;
 }
+
 } // namespace vkr::core

@@ -38,7 +38,7 @@ public:
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
      pipeline::GraphicsPipeline &graphicsPipeline, pipeline::PipelineMode mode,
-     const Timer &timer);
+     Timer &timer);
   ~UI();
 
   UI(const UI &) = delete;
@@ -82,7 +82,7 @@ private:
   const pipeline::DescriptorPool &descriptor_pool_;
   pipeline::GraphicsPipeline &graphics_pipeline_;
   pipeline::PipelineMode mode_;
-  const Timer &timer_;
+  Timer &timer_;
 
   // components
   std::unique_ptr<ResourceTree> resource_tree_;

@@ -20,8 +20,8 @@ struct VulkanContext {
   std::string title{"Vulkan Application"};
 
   // --- Rendering Mode ---
+  core::PresentModePolicy presentModePolicy{core::PresentModePolicy::Uncapped};
   pipeline::PipelineMode pipelineMode{pipeline::PipelineMode::Default3D};
-  uint32_t maxFPS{120};
 
   // --- Camera Info ---
   bool cameraEnabled{};

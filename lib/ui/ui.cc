@@ -18,7 +18,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
        pipeline::GraphicsPipeline &graphicsPipeline,
-       pipeline::PipelineMode mode, const Timer &timer)
+       pipeline::PipelineMode mode, Timer &timer)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), resource_manager_(resourceManager),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),
@@ -65,7 +65,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
 
   // fps panel
   VKR_UI_INFO("Initializing FPS Panel...");
-  fps_panel_ = std::make_unique<FPSPanel>();
+  fps_panel_ = std::make_unique<FPSPanel>(timer);
   fps_panel_->clear();
   VKR_UI_INFO("FPS Panel initialized successfully.");
 
@@ -305,7 +305,7 @@ void UI::renderPerformancePanel() {
 
   if (ImGui::Begin("Performance", nullptr, windowFlags)) {
     if (fps_panel_) {
-      fps_panel_->render(timer_.fps());
+      fps_panel_->render();
     }
   }
   ImGui::End();

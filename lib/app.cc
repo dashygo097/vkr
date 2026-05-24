@@ -26,7 +26,8 @@ void VulkanApplication::initVulkan() {
       *instance, *surface, ctx.deviceExtensions, ctx.validationLayers);
 
   // swapchain
-  swapchain = std::make_unique<core::Swapchain>(*window, *device, *surface);
+  swapchain = std::make_unique<core::Swapchain>(*window, *device, *surface,
+                                                ctx.presentModePolicy);
 
   // command pool
   commandPool = std::make_unique<core::CommandPool>(*device, *surface);
@@ -135,7 +136,6 @@ void VulkanApplication::mainLoop() {
   bool isLastTabKeyPressed = false;
 
   while (!window->shouldClose()) {
-    timer->maxFPS(ctx.maxFPS);
     timer->beginFrame();
 
     window->pollEvents();

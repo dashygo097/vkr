@@ -1,7 +1,16 @@
 #include "vkr/ui/components/fps_panel.hh"
+#include <algorithm>
 #include <imgui.h>
 
 namespace vkr::ui {
+
+FPSPanel::FPSPanel(Timer &timer) : timer_(timer) {
+  clear();
+
+  if (timer_.maxFPS() > 0.0f) {
+    max_fps_edit_ = timer_.maxFPS();
+  }
+}
 
 void FPSPanel::clear() {
   fps_history_.fill(0.0f);
@@ -11,7 +20,8 @@ void FPSPanel::clear() {
   is_filled_ = false;
 }
 
-void FPSPanel::render(float fps) {
+void FPSPanel::render() {
+  float fps = timer_.fps();
   float oldFPS = fps_history_[fps_index_];
 
   sum_fps_ = sum_fps_ - oldFPS + fps;
@@ -31,7 +41,41 @@ void FPSPanel::render(float fps) {
                                : ImVec4(1.00f, 0.60f, 0.60f, 0.85f);
 
   ImGui::TextColored(fpsColor, "FPS: %.1f", fps);
-  ImGui::Text("Frame Time: %.2f ms", 1000.0f / fps);
+
+  if (fps > 0.0f) {
+    ImGui::Text("Frame Time: %.2f ms", 1000.0f / fps);
+  } else {
+    ImGui::Text("Frame Time: -- ms");
+  }
+
+  ImGui::Text("Average: %.1f FPS", avg_fps_);
+
+  ImGui::Separator();
+
+  bool unlimited = timer_.maxFPS() <= 0.0f;
+  if (ImGui::Checkbox("Unlimited FPS", &unlimited)) {
+    if (unlimited) {
+      timer_.maxFPS(0.0f);
+    } else {
+      if (max_fps_edit_ <= 0.0f) {
+        max_fps_edit_ = 60.0f;
+      }
+      timer_.maxFPS(max_fps_edit_);
+    }
+  }
+
+  if (!unlimited) {
+    if (ImGui::SliderFloat("Max FPS", &max_fps_edit_, 1.0f, 500.0f, "%.0f")) {
+      max_fps_edit_ = std::clamp(max_fps_edit_, 1.0f, 500.0f);
+      timer_.maxFPS(max_fps_edit_);
+    }
+  }
+
+  ImGui::Text("Limit: %s", unlimited ? "Unlimited" : "");
+  if (!unlimited) {
+    ImGui::SameLine();
+    ImGui::Text("%.0f FPS", timer_.maxFPS());
+  }
 
   ImGui::Separator();
 
@@ -42,8 +86,6 @@ void FPSPanel::render(float fps) {
                    fps_index_, nullptr, 0.0f, 200.0f, ImVec2(0, 45));
 
   ImGui::PopStyleColor(2);
-
-  ImGui::Text("Average: %.1f FPS", avg_fps_);
 }
 
 } // namespace vkr::ui
