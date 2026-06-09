@@ -210,31 +210,4 @@ void VulkanApplication::drawFrame() {
   renderer->endFrame(frameData);
 }
 
-void VulkanApplication::cleanup() {
-  onCleanup();
-
-  ui.reset();
-  timer.reset();
-  camera.reset();
-  renderer.reset();
-  syncObjects.reset();
-  offscreenTarget.reset();
-  resourceManager.reset();
-  depthResources.reset();
-  commandBuffers.reset();
-  descriptorSets.reset();
-  descriptorSetLayout.reset();
-  descriptorManager.reset();
-  descriptorPool.reset();
-  commandPool.reset();
-  graphicsPipeline.reset();
-  swapchainRenderPass.reset();
-  offscreenRenderPass.reset();
-  swapchain.reset();
-  device.reset();
-  surface.reset();
-  instance.reset();
-  window.reset();
-}
-
 } // namespace vkr

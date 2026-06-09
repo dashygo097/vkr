@@ -14,7 +14,7 @@ namespace vkr {
 class VulkanApplication {
 public:
   VulkanApplication() = default;
-  virtual ~VulkanApplication() { cleanup(); }
+  virtual ~VulkanApplication() = default;
 
   VulkanApplication(const VulkanApplication &) = delete;
   auto operator=(const VulkanApplication &) -> VulkanApplication & = delete;
@@ -22,7 +22,6 @@ public:
   void run() {
     initVulkan();
     mainLoop();
-    cleanup();
   }
 
   VulkanContext ctx;
@@ -67,7 +66,6 @@ protected:
   virtual void onConfigure() {}
   virtual void onSetup() {}
   virtual void onDrawFrame(uint32_t currentImage) {}
-  virtual void onCleanup() {}
 
   virtual void createUniforms() {}
   virtual auto createDescriptorBindings()
@@ -84,9 +82,6 @@ private:
   void mainLoop();
   void recreateSwapchain();
   void drawFrame();
-
-  // Cleanup method
-  void cleanup();
 };
 
 static void framebufferResizeCallback(GLFWwindow *window, int width,
