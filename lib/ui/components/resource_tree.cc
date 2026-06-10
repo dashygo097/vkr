@@ -31,6 +31,7 @@ void ResourceTree::render() {
     renderCategory("Textures", resource_manager_.listTextureImageNames(),
                    resource_manager_.textureImageCount());
   }
+
   ImGui::EndChild();
 
   renderSelectedResource();

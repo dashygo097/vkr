@@ -4,6 +4,16 @@
 
 namespace vkr::ui {
 
+static auto withAlpha(ImVec4 color, float alpha) -> ImVec4 {
+  color.w = alpha;
+  return color;
+}
+
+static auto mixColor(const ImVec4 &a, const ImVec4 &b, float t) -> ImVec4 {
+  return ImVec4{a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t,
+                a.z + (b.z - a.z) * t, a.w + (b.w - a.w) * t};
+}
+
 FPSPanel::FPSPanel(Timer &timer) : timer_(timer) {
   clear();
 
@@ -37,9 +47,18 @@ void FPSPanel::render() {
   uint32_t count = is_filled_ ? FPS_PANEL_HISTORY_SIZE : fps_index_;
   avg_fps_ = (count > 0) ? (sum_fps_ / count) : 0.0f;
 
-  ImVec4 fpsColor = fps > 59   ? ImVec4(0.60f, 1.00f, 0.80f, 0.85f)
-                    : fps > 29 ? ImVec4(1.00f, 0.95f, 0.55f, 0.85f)
-                               : ImVec4(1.00f, 0.60f, 0.60f, 0.85f);
+  const ImGuiStyle &style = ImGui::GetStyle();
+  const ImVec4 textColor = style.Colors[ImGuiCol_Text];
+  const ImVec4 accentColor = style.Colors[ImGuiCol_CheckMark];
+
+  const ImVec4 goodColor =
+      withAlpha(mixColor(textColor, accentColor, 0.65f), 0.90f);
+  const ImVec4 warnColor = ImVec4(1.00f, 0.82f, 0.28f, 0.90f);
+  const ImVec4 badColor = ImVec4(1.00f, 0.35f, 0.35f, 0.90f);
+
+  ImVec4 fpsColor = fps > 59.0f   ? goodColor
+                    : fps > 29.0f ? warnColor
+                                  : badColor;
 
   ImGui::TextColored(fpsColor, "FPS: %.1f", fps);
 
@@ -75,8 +94,9 @@ void FPSPanel::render() {
 
   ImGui::Separator();
 
-  ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.05f, 0.05f, 0.05f, 0.30f));
-  ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0.70f, 1.00f, 0.85f, 0.70f));
+  ImGui::PushStyleColor(ImGuiCol_FrameBg,
+                        withAlpha(style.Colors[ImGuiCol_FrameBg], 0.55f));
+  ImGui::PushStyleColor(ImGuiCol_PlotLines, withAlpha(accentColor, 0.80f));
 
   ImGui::PlotLines("##FPSGraph", fps_history_.data(), FPS_PANEL_HISTORY_SIZE,
                    fps_index_, nullptr, 0.0f, 200.0f, ImVec2(0, 45));
