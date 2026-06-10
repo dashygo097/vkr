@@ -38,9 +38,7 @@ DescriptorSetLayout::DescriptorSetLayout(
   VKR_PIPE_INFO("Descriptor set layout created successfully.");
 }
 
-DescriptorSetLayout::~DescriptorSetLayout() { cleanup(); }
-
-void DescriptorSetLayout::cleanup() {
+DescriptorSetLayout::~DescriptorSetLayout() {
   if (layout_ != VK_NULL_HANDLE) {
     vkDestroyDescriptorSetLayout(device_.device(), layout_, nullptr);
     layout_ = VK_NULL_HANDLE;

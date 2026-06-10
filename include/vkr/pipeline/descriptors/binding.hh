@@ -58,8 +58,6 @@ private:
 
   // components
   VkDescriptorSetLayout layout_{VK_NULL_HANDLE};
-
-  void cleanup();
 };
 
 } // namespace vkr::pipeline
