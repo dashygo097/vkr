@@ -51,6 +51,7 @@ void VulkanApplication::initVulkan() {
   resourceManager = std::make_unique<resource::ResourceManager>(
       *device, *swapchain, *commandPool);
 
+  // framebuffer set (swapchain)
   resource::FramebufferDesc swapchainfbDesc;
   swapchainfbDesc.extent = swapchain->extent2D();
   swapchainfbDesc.layers = 1;
@@ -63,6 +64,7 @@ void VulkanApplication::initVulkan() {
   resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
                                         swapchainfbDesc);
 
+  // render pass (offscreen)
   pipeline::RenderPassDesc offscreenRenderPassDesc =
       pipeline::makeOffscreenRenderPassDesc(VK_FORMAT_R8G8B8A8_UNORM,
                                             VK_FORMAT_D32_SFLOAT);
@@ -72,6 +74,7 @@ void VulkanApplication::initVulkan() {
       *device, *commandPool, *offscreenRenderPass);
   offscreenTarget->resize(swapchain->extent2D());
 
+  // framebuffer set (offscreen)
   vkr::resource::FramebufferDesc offscreenTargetfbDesc{};
   offscreenTargetfbDesc.extent = offscreenTarget->extent2D();
   offscreenTargetfbDesc.layers = 1;
@@ -97,6 +100,7 @@ void VulkanApplication::initVulkan() {
       createDescriptorBindings();
   descriptorSetLayout = descriptorManager->createLayout(bindings);
 
+  // graphics pipeline
   graphicsPipeline = std::make_unique<pipeline::GraphicsPipeline>(
       *instance, *device, *resourceManager, *swapchainRenderPass,
       *descriptorSetLayout, ctx.pipelineMode);
