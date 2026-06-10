@@ -1,4 +1,4 @@
-#include "vkr/pipeline/descriptors/binding.hh"
+#include "vkr/pipeline/descriptors/layout.hh"
 
 namespace vkr::pipeline {
 

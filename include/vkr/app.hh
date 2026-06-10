@@ -3,6 +3,7 @@
 #include "vkr/core/core.hh"
 #include "vkr/ctx.hh"
 #include "vkr/logger.hh"
+#include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/rendering/renderer.hh"
 #include "vkr/resources/manager.hh"

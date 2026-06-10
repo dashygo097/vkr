@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/pipeline/descriptors/binding.hh"
+#include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/writer.hh"
 #include "vkr/resources/manager.hh"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/pipeline/descriptors/set.hh"
+#include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/resources/manager.hh"
 #include <mutex>
