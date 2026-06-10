@@ -1,10 +1,10 @@
 #pragma once
 
-#include "vkr/core/command_buffer.hh"
-#include "vkr/core/command_pool.hh"
+#include "vkr/core/command/command_buffer.hh"
+#include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
-#include "vkr/core/sync_objects.hh"
+#include "vkr/core/sync/sync_objects.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/resources/buffers/frame_buffer.hh"
 #include "vkr/resources/manager.hh"

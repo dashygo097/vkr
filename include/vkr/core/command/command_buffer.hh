@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command_pool.hh"
+#include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
 
 namespace vkr::core {
@@ -14,11 +14,10 @@ public:
   CommandBuffers(const CommandBuffers &) = delete;
   auto operator=(const CommandBuffers &) -> CommandBuffers & = delete;
 
-  [[nodiscard]] auto commandBuffers() noexcept
-      -> std::vector<VkCommandBuffer> & {
+  [[nodiscard]] auto buffers() noexcept -> std::vector<VkCommandBuffer> & {
     return vk_command_buffers_;
   }
-  [[nodiscard]] auto commandBuffer(uint32_t index) -> VkCommandBuffer & {
+  [[nodiscard]] auto buffer(uint32_t index) -> VkCommandBuffer & {
     return vk_command_buffers_.at(index);
   }
 

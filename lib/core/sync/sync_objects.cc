@@ -1,5 +1,5 @@
-#include "vkr/core/sync_objects.hh"
-#include "vkr/core/command_buffer.hh"
+#include "vkr/core/sync/sync_objects.hh"
+#include "vkr/core/command/command_buffer.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::core {

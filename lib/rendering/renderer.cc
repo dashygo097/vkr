@@ -25,8 +25,7 @@ auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
 
   resetFence(current_frame_);
 
-  VkCommandBuffer commandBuffer =
-      command_buffers_->commandBuffer(current_frame_);
+  VkCommandBuffer commandBuffer = command_buffers_->buffer(current_frame_);
 
   vkResetCommandBuffer(commandBuffer, 0);
 

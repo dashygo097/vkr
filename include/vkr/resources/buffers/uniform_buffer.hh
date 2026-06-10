@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command_buffer.hh"
+#include "vkr/core/command/command_buffer.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
 #include "vkr/resources/buffers/buffer_utils.hh"
