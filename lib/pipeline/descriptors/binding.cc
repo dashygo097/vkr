@@ -4,7 +4,7 @@ namespace vkr::pipeline {
 
 DescriptorSetLayout::DescriptorSetLayout(
     const core::Device &device, const std::vector<DescriptorBinding> &bindings)
-    : device_(device), bindings_(bindings) {
+    : device_(device), bindings_(std::move(bindings)) {
   VKR_PIPE_INFO("Creating descriptor set layout({} bindings)", bindings.size());
 
   std::vector<VkDescriptorSetLayoutBinding> vkBindings;

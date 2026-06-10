@@ -10,8 +10,8 @@ class CornellBoxApp : public vkr::VulkanApplication {
 private:
   auto createDescriptorBindings()
       -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {
-        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
+    return {{"default", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+             VK_SHADER_STAGE_VERTEX_BIT}};
   }
 
   void createResources() override {
@@ -38,15 +38,6 @@ private:
 
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
-  }
-
-  void bindDescriptorSets() override {
-    auto defaultUBO = resourceManager->getUniformBuffer("default");
-    if (defaultUBO && descriptorSets) {
-      descriptorSets->bindUniformBuffer(
-          0, defaultUBO->buffers(),
-          sizeof(vkr::resource::UniformBuffer3DObject));
-    }
   }
 
   void onDrawFrame(uint32_t currentImage) override {

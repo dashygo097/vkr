@@ -43,27 +43,10 @@ private:
 
   auto createDescriptorBindings()
       -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {
-        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
-        {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-         VK_SHADER_STAGE_FRAGMENT_BIT}};
-  }
-
-  void bindDescriptorSets() override {
-    auto defaultUBO = resourceManager->getUniformBuffer("default");
-    auto textureImage = resourceManager->getTextureImage("image1");
-    auto textureImageView = resourceManager->getTextureImageView("image1");
-    auto textureSampler = resourceManager->getTextureSampler("image1");
-    if (defaultUBO && descriptorSets) {
-      descriptorSets->bindUniformBuffer(
-          0, defaultUBO->buffers(),
-          sizeof(vkr::resource::UniformBuffer3DObject));
-    }
-    if (textureImage && descriptorSets) {
-      descriptorSets->bindImageSampler(
-          1, {textureImageView->imageView(), textureImageView->imageView()},
-          textureSampler->sampler());
-    }
+    return {{"default", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+             VK_SHADER_STAGE_VERTEX_BIT},
+            {"image1", 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+             VK_SHADER_STAGE_FRAGMENT_BIT}};
   }
 
   void onDrawFrame(uint32_t currentImage) override {

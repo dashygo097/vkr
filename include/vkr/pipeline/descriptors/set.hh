@@ -7,6 +7,7 @@
 #include "vkr/resources/buffers/uniform_buffer.hh"
 #include "vkr/resources/images/imageview.hh"
 #include "vkr/resources/images/sampler.hh"
+#include "vkr/resources/manager.hh"
 #include <memory>
 #include <vector>
 
@@ -14,13 +15,16 @@ namespace vkr::pipeline {
 
 class DescriptorSets {
 public:
-  DescriptorSets(const core::Device &device, DescriptorSetLayout &layout,
-                 const DescriptorPool &pool,
+  DescriptorSets(const core::Device &device,
+                 resource::ResourceManager &resourceManager,
+                 DescriptorSetLayout &layout, const DescriptorPool &pool,
                  uint32_t frameCount = core::MAX_FRAMES_IN_FLIGHT);
   ~DescriptorSets();
 
   DescriptorSets(const DescriptorSets &) = delete;
   auto operator=(const DescriptorSets &) -> DescriptorSets & = delete;
+
+  void autoBindResources();
 
   void bindUniformBuffer(uint32_t binding, const std::vector<VkBuffer> &buffers,
                          VkDeviceSize size, VkDeviceSize offset = 0);
@@ -46,6 +50,7 @@ public:
 private:
   // dependencies
   const core::Device &device_;
+  resource::ResourceManager &resource_manager_;
   DescriptorSetLayout &layout_;
   const DescriptorPool &pool_;
   uint32_t frame_count_{0};
@@ -54,28 +59,6 @@ private:
   std::vector<VkDescriptorSet> sets_{};
 
   void allocateSets();
-};
-
-class DescriptorManager {
-public:
-  explicit DescriptorManager(const core::Device &device);
-  ~DescriptorManager() = default;
-
-  DescriptorManager(const DescriptorManager &) = delete;
-  auto operator=(const DescriptorManager &) -> DescriptorManager & = delete;
-
-  auto createLayout(const std::vector<DescriptorBinding> &bindings)
-      -> std::shared_ptr<DescriptorSetLayout>;
-
-  auto allocate(DescriptorSetLayout &layout, const DescriptorPool &pool,
-                uint32_t frameCount = core::MAX_FRAMES_IN_FLIGHT)
-      -> std::unique_ptr<DescriptorSets>;
-
-  static auto calculatePoolSizes(uint32_t maxSets) -> DescriptorPoolSizes;
-
-private:
-  // dependencies
-  const core::Device &device_;
 };
 
 } // namespace vkr::pipeline

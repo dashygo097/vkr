@@ -7,6 +7,7 @@
 namespace vkr::pipeline {
 
 struct DescriptorBinding {
+  std::string name;
   uint32_t binding;
   VkDescriptorType type;
   uint32_t count{1};
@@ -35,7 +36,8 @@ struct DescriptorBinding {
 
     return "layout(binding=" + std::to_string(binding) + ", type=" + typeStr +
            ", count=" + std::to_string(count) +
-           ", stageFlags=" + std::to_string(stageFlags) + ")";
+           ", stageFlags=" + std::to_string(stageFlags) + ", resource=" + name +
+           ")";
   }
 };
 
@@ -48,6 +50,11 @@ public:
   DescriptorSetLayout(const DescriptorSetLayout &) = delete;
   auto operator=(const DescriptorSetLayout &) -> DescriptorSetLayout & = delete;
 
+  [[nodiscard]] auto bindings() const noexcept
+      -> const std::vector<DescriptorBinding> & {
+    return bindings_;
+  }
+
   [[nodiscard]] auto layoutRef() noexcept -> VkDescriptorSetLayout & {
     return layout_;
   }
@@ -55,9 +62,9 @@ public:
 private:
   // dependencies
   const core::Device &device_;
-  const std::vector<DescriptorBinding> &bindings_;
 
   // components
+  std::vector<DescriptorBinding> bindings_{};
   VkDescriptorSetLayout layout_{VK_NULL_HANDLE};
 };
 

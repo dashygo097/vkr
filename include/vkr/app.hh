@@ -47,7 +47,6 @@ public:
   std::unique_ptr<pipeline::GraphicsPipeline> graphicsPipeline;
 
   // descriptor
-  std::unique_ptr<pipeline::DescriptorManager> descriptorManager;
   std::shared_ptr<pipeline::DescriptorSetLayout> descriptorSetLayout;
   std::unique_ptr<pipeline::DescriptorPool> descriptorPool;
   std::unique_ptr<pipeline::DescriptorSets> descriptorSets;
@@ -71,7 +70,6 @@ protected:
       -> std::vector<pipeline::DescriptorBinding> {
     return {};
   }
-  virtual void bindDescriptorSets() {}
 
 private:
   // Initialization methods

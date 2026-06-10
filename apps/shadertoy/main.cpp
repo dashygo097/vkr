@@ -24,17 +24,8 @@ private:
 
   auto createDescriptorBindings()
       -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+    return {{"shadertoy", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
              VK_SHADER_STAGE_FRAGMENT_BIT}};
-  }
-
-  void bindDescriptorSets() override {
-    auto shadertoyUBO = resourceManager->getUniformBuffer("shadertoy");
-    if (shadertoyUBO && descriptorSets) {
-      descriptorSets->bindUniformBuffer(
-          0, shadertoyUBO->buffers(),
-          sizeof(vkr::resource::UniformBufferShaderToyObject));
-    }
   }
 
   void onDrawFrame(uint32_t currentImage) override {

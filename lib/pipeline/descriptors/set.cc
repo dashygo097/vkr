@@ -4,9 +4,11 @@
 namespace vkr::pipeline {
 
 DescriptorSets::DescriptorSets(const core::Device &device,
+                               resource::ResourceManager &ResourceManager,
                                DescriptorSetLayout &layout,
                                const DescriptorPool &pool, uint32_t frameCount)
-    : device_(device), layout_(layout), pool_(pool), frame_count_(frameCount) {
+    : device_(device), resource_manager_(ResourceManager), layout_(layout),
+      pool_(pool), frame_count_(frameCount) {
   allocateSets();
 }
 
@@ -32,6 +34,65 @@ void DescriptorSets::allocateSets() {
   if (result != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to allocate descriptor sets. VkResult: {}",
                    std::to_string(result));
+  }
+}
+
+void DescriptorSets::autoBindResources() {
+  for (const auto &binding : layout_.bindings()) {
+    if (binding.name.empty()) {
+      VKR_PIPE_ERROR("Descriptor binding {} has empty name", binding.binding);
+    }
+
+    switch (binding.type) {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+      auto uniformBuffer = resource_manager_.getUniformBuffer(binding.name);
+
+      if (!uniformBuffer) {
+        VKR_PIPE_ERROR("Uniform buffer resource not found: {}", binding.name);
+      }
+
+      bindUniformBuffer(binding.binding, uniformBuffer->buffers(),
+                        uniformBuffer->bufferSize());
+      break;
+    }
+
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+      auto imageView = resource_manager_.getTextureImageView(binding.name);
+      auto sampler = resource_manager_.getTextureSampler(binding.name);
+
+      if (!imageView) {
+        VKR_PIPE_ERROR("Texture image view resource not found: {}",
+                       binding.name);
+      }
+
+      if (!sampler) {
+        VKR_PIPE_ERROR("Texture sampler resource not found: {}", binding.name);
+      }
+
+      std::vector<VkImageView> imageViews(frame_count_, imageView->imageView());
+      bindImageSampler(binding.binding, imageViews, sampler->sampler());
+      break;
+    }
+
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+      VKR_PIPE_ERROR("Auto bind for storage buffer is not implemented: {}",
+                     binding.name);
+      break;
+
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+      VKR_PIPE_ERROR("Auto bind for storage image is not implemented: {}",
+                     binding.name);
+      break;
+
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+      VKR_PIPE_ERROR("Auto bind for input attachment is not implemented: {}",
+                     binding.name);
+      break;
+
+    default:
+      VKR_PIPE_ERROR("Unknown descriptor type for binding {}", binding.binding);
+      break;
+    }
   }
 }
 
@@ -111,33 +172,6 @@ void DescriptorSets::bind(VkCommandBuffer cmd, VkPipelineLayout layout,
   }
   vkCmdBindDescriptorSets(cmd, bindPoint, layout, 0, 1, &sets_[frameIndex], 0,
                           nullptr);
-}
-
-DescriptorManager::DescriptorManager(const core::Device &device)
-    : device_(device) {}
-
-auto DescriptorManager::calculatePoolSizes(uint32_t maxSets)
-    -> DescriptorPoolSizes {
-  DescriptorPoolSizes sizes;
-  sizes.uniformBufferCount = maxSets * 10;
-  sizes.storageBufferCount = maxSets * 10;
-  sizes.combinedImageSamplerCount = maxSets * 10;
-  sizes.storageImageCount = maxSets * 10;
-  sizes.inputAttachmentCount = maxSets * 10;
-  return sizes;
-}
-
-auto DescriptorManager::createLayout(
-    const std::vector<DescriptorBinding> &bindings)
-    -> std::shared_ptr<DescriptorSetLayout> {
-  return std::make_shared<DescriptorSetLayout>(device_, bindings);
-}
-
-auto DescriptorManager::allocate(DescriptorSetLayout &layout,
-                                 const DescriptorPool &pool,
-                                 uint32_t frameCount)
-    -> std::unique_ptr<DescriptorSets> {
-  return std::make_unique<DescriptorSets>(device_, layout, pool, frameCount);
 }
 
 } // namespace vkr::pipeline

@@ -1,4 +1,5 @@
 #include "vkr/app.hh"
+#include "vkr/pipeline/descriptors/binding.hh"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan_core.h>
 
@@ -89,16 +90,20 @@ void VulkanApplication::initVulkan() {
 
   // descriptor pool
   uint32_t maxSets = core::MAX_FRAMES_IN_FLIGHT + 2;
-  pipeline::DescriptorPoolSizes poolSizes =
-      pipeline::DescriptorManager::calculatePoolSizes(maxSets);
-  descriptorPool =
-      std::make_unique<pipeline::DescriptorPool>(*device, maxSets, poolSizes);
+
+  pipeline::DescriptorPoolSizes descPoolSizes;
+  descPoolSizes.uniformBufferCount = maxSets * 10;
+  descPoolSizes.storageBufferCount = maxSets * 10;
+  descPoolSizes.combinedImageSamplerCount = maxSets * 10;
+  descPoolSizes.storageImageCount = maxSets * 10;
+  descPoolSizes.inputAttachmentCount = maxSets * 10;
+
+  descriptorPool = std::make_unique<pipeline::DescriptorPool>(*device, maxSets,
+                                                              descPoolSizes);
 
   // descriptor layout
-  descriptorManager = std::make_unique<pipeline::DescriptorManager>(*device);
-  std::vector<pipeline::DescriptorBinding> bindings =
-      createDescriptorBindings();
-  descriptorSetLayout = descriptorManager->createLayout(bindings);
+  descriptorSetLayout = std::make_shared<pipeline::DescriptorSetLayout>(
+      *device, createDescriptorBindings());
 
   // graphics pipeline
   graphicsPipeline = std::make_unique<pipeline::GraphicsPipeline>(
@@ -107,9 +112,9 @@ void VulkanApplication::initVulkan() {
   graphicsPipeline->buildOffscreen(offscreenRenderPass->renderPass());
 
   // descriptor sets
-  descriptorSets =
-      descriptorManager->allocate(*descriptorSetLayout, *descriptorPool);
-  bindDescriptorSets();
+  descriptorSets = std::make_unique<pipeline::DescriptorSets>(
+      *device, *resourceManager, *descriptorSetLayout, *descriptorPool);
+  descriptorSets->autoBindResources();
 
   // timer
   timer = std::make_unique<Timer>();

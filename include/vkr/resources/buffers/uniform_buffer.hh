@@ -19,6 +19,7 @@ public:
       -> const std::vector<VkDeviceMemory> & = 0;
   [[nodiscard]] virtual auto mapped() const noexcept
       -> const std::vector<void *> & = 0;
+  [[nodiscard]] virtual auto bufferSize() const noexcept -> VkDeviceSize = 0;
 
   virtual void updateRaw(uint32_t currentFrame, const void *data,
                          size_t size) = 0;
@@ -35,25 +36,6 @@ public:
   UniformBuffer(const UniformBuffer &) = delete;
   auto operator=(const UniformBuffer &) -> UniformBuffer & = delete;
 
-  void update(uint32_t currentFrame, const UniformType &newObject) {
-    if (currentFrame >= core::MAX_FRAMES_IN_FLIGHT) {
-      VKR_RES_ERROR("currentFrame exceeds MAX_FRAMES_IN_FLIGHT({})!",
-                    core::MAX_FRAMES_IN_FLIGHT);
-    }
-    if (mapped_[currentFrame] == nullptr) {
-      VKR_RES_ERROR("Mapped memory is null for current frame!");
-    }
-    memcpy(mapped_[currentFrame], &newObject, sizeof(UniformType));
-  }
-
-  void updateRaw(uint32_t currentFrame, const void *data,
-                 size_t size) override {
-    if (size != sizeof(UniformType)) {
-      VKR_RES_ERROR("Size mismatch in uniform buffer update!");
-    }
-    update(currentFrame, *static_cast<const UniformType *>(data));
-  }
-
   [[nodiscard]] auto buffers() const noexcept
       -> const std::vector<VkBuffer> & override {
     return vk_uniform_buffers_;
@@ -67,6 +49,29 @@ public:
   [[nodiscard]] auto mapped() const noexcept
       -> const std::vector<void *> & override {
     return mapped_;
+  }
+
+  [[nodiscard]] auto bufferSize() const noexcept -> VkDeviceSize override {
+    return sizeof(UniformType);
+  }
+
+  void updateRaw(uint32_t currentFrame, const void *data,
+                 size_t size) override {
+    if (size != sizeof(UniformType)) {
+      VKR_RES_ERROR("Size mismatch in uniform buffer update!");
+    }
+    update(currentFrame, *static_cast<const UniformType *>(data));
+  }
+
+  void update(uint32_t currentFrame, const UniformType &newObject) {
+    if (currentFrame >= core::MAX_FRAMES_IN_FLIGHT) {
+      VKR_RES_ERROR("currentFrame exceeds MAX_FRAMES_IN_FLIGHT({})!",
+                    core::MAX_FRAMES_IN_FLIGHT);
+    }
+    if (mapped_[currentFrame] == nullptr) {
+      VKR_RES_ERROR("Mapped memory is null for current frame!");
+    }
+    memcpy(mapped_[currentFrame], &newObject, sizeof(UniformType));
   }
 
 protected:
