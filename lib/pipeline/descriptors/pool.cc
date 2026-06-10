@@ -52,16 +52,21 @@ DescriptorPool::DescriptorPool(const core::Device &device, uint32_t maxSets,
   VKR_PIPE_INFO("Descriptor pool created successfully.");
 }
 
-DescriptorPool::~DescriptorPool() { cleanup(); }
+DescriptorPool::~DescriptorPool() {
+  if (pool_ != VK_NULL_HANDLE) {
+    vkDestroyDescriptorPool(device_.device(), pool_, nullptr);
+    pool_ = VK_NULL_HANDLE;
+  }
+}
 
 auto DescriptorPool::canAllocate() const noexcept -> bool {
   return allocated_sets_ < max_sets_;
 }
 
-void DescriptorPool::cleanup() {
+void DescriptorPool::reset() {
   if (pool_ != VK_NULL_HANDLE) {
-    vkDestroyDescriptorPool(device_.device(), pool_, nullptr);
-    pool_ = VK_NULL_HANDLE;
+    vkResetDescriptorPool(device_.device(), pool_, 0);
+    allocated_sets_ = 0;
   }
 }
 

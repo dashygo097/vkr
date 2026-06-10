@@ -34,8 +34,6 @@ private:
   // components
   VkDescriptorPool pool_{VK_NULL_HANDLE};
   uint32_t allocated_sets_{0};
-
-  void cleanup();
 };
 
 } // namespace vkr::pipeline
