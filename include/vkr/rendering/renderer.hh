@@ -1,15 +1,15 @@
 #pragma once
 
-#include "../core/command_buffer.hh"
-#include "../core/command_pool.hh"
-#include "../core/device.hh"
-#include "../core/swapchain.hh"
-#include "../core/sync_objects.hh"
-#include "../pipeline/render_pass.hh"
-#include "../resources/buffers/frame_buffer.hh"
-#include "../resources/manager.hh"
-#include "../resources/offscreen_target.hh"
-#include "../ui/ui.hh"
+#include "vkr/core/command_buffer.hh"
+#include "vkr/core/command_pool.hh"
+#include "vkr/core/device.hh"
+#include "vkr/core/swapchain.hh"
+#include "vkr/core/sync_objects.hh"
+#include "vkr/pipeline/render_pass.hh"
+#include "vkr/resources/buffers/frame_buffer.hh"
+#include "vkr/resources/manager.hh"
+#include "vkr/resources/offscreen_target.hh"
+#include "vkr/ui/ui.hh"
 
 namespace vkr::render {
 

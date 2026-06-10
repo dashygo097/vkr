@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../core/device.hh"
-#include "../../pipeline/render_pass.hh"
+#include "vkr/core/device.hh"
+#include "vkr/pipeline/render_pass.hh"
 #include <cstddef>
 #include <vector>
 #include <vulkan/vulkan.h>

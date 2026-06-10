@@ -1,8 +1,9 @@
 #pragma once
-#include "../core/device.hh"
-#include "../resources/manager.hh"
-#include "./descriptors/set.hh"
-#include "./render_pass.hh"
+
+#include "vkr/core/device.hh"
+#include "vkr/pipeline/descriptors/set.hh"
+#include "vkr/pipeline/render_pass.hh"
+#include "vkr/resources/manager.hh"
 #include <mutex>
 #include <optional>
 #include <string>

@@ -1,16 +1,16 @@
 #pragma once
 
-#include "./buffers/frame_buffer.hh"
-#include "./buffers/index_buffer.hh"
-#include "./buffers/ubos.hh"
-#include "./buffers/uniform_buffer.hh"
-#include "./buffers/vbos.hh"
-#include "./buffers/vertex_buffer.hh"
-#include "./depth_resources.hh"
-#include "./images/image.hh"
-#include "./images/imageview.hh"
-#include "./images/sampler.hh"
-#include "./mesh.hh"
+#include "vkr/resources/buffers/frame_buffer.hh"
+#include "vkr/resources/buffers/index_buffer.hh"
+#include "vkr/resources/buffers/ubos.hh"
+#include "vkr/resources/buffers/uniform_buffer.hh"
+#include "vkr/resources/buffers/vbos.hh"
+#include "vkr/resources/buffers/vertex_buffer.hh"
+#include "vkr/resources/depth_resources.hh"
+#include "vkr/resources/images/image.hh"
+#include "vkr/resources/images/imageview.hh"
+#include "vkr/resources/images/sampler.hh"
+#include "vkr/resources/mesh.hh"
 #include <memory>
 #include <vector>
 

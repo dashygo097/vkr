@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./surface.hh"
+#include "vkr/core/surface.hh"
 
 namespace vkr::core {
 

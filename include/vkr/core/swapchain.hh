@@ -1,8 +1,8 @@
 #pragma once
 
-#include "./device.hh"
-#include "./surface.hh"
-#include "./window.hh"
+#include "vkr/core/device.hh"
+#include "vkr/core/surface.hh"
+#include "vkr/core/window.hh"
 
 namespace vkr::core {
 

@@ -1,14 +1,14 @@
 #pragma once
 
-#include "./core/core.hh"
-#include "./ctx.hh"
-#include "./logger.hh"
-#include "./pipeline/graphics_pipeline.hh"
-#include "./rendering/renderer.hh"
-#include "./resources/manager.hh"
-#include "./scene/scene.hh"
-#include "./timer.hh"
-#include "./ui/ui.hh"
+#include "vkr/core/core.hh"
+#include "vkr/ctx.hh"
+#include "vkr/logger.hh"
+#include "vkr/pipeline/graphics_pipeline.hh"
+#include "vkr/rendering/renderer.hh"
+#include "vkr/resources/manager.hh"
+#include "vkr/scene/scene.hh"
+#include "vkr/timer.hh"
+#include "vkr/ui/ui.hh"
 
 namespace vkr {
 class VulkanApplication {

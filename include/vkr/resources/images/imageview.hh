@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../core/device.hh"
-#include "./image.hh"
+#include "vkr/core/device.hh"
+#include "vkr/resources/images/image.hh"
 
 namespace vkr::resource {
 class ImageView {

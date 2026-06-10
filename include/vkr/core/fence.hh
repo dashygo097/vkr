@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./device.hh"
+#include "vkr/core/device.hh"
 
 namespace vkr::core {
 

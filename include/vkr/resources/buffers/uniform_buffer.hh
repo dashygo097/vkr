@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../../core/command_buffer.hh"
-#include "../../core/device.hh"
-#include "../../logger.hh"
-#include "./buffer_utils.hh"
-#include "./ubos.hh"
+#include "vkr/core/command_buffer.hh"
+#include "vkr/core/device.hh"
+#include "vkr/logger.hh"
+#include "vkr/resources/buffers/buffer_utils.hh"
+#include "vkr/resources/buffers/ubos.hh"
 #include <glm/glm.hpp>
 
 namespace vkr::resource {

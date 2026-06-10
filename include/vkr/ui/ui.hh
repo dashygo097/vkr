@@ -1,18 +1,18 @@
 #pragma once
 
-#include "../core/command_pool.hh"
-#include "../core/device.hh"
-#include "../core/instance.hh"
-#include "../core/window.hh"
-#include "../pipeline/descriptors/pool.hh"
-#include "../pipeline/graphics_pipeline.hh"
-#include "../pipeline/render_pass.hh"
-#include "../resources/offscreen_target.hh"
-#include "../timer.hh"
-#include "./components/fps_panel.hh"
-#include "./components/logging_panel.hh"
-#include "./components/resource_tree.hh"
-#include "./components/shader_editor.hh"
+#include "vkr/core/command_pool.hh"
+#include "vkr/core/device.hh"
+#include "vkr/core/instance.hh"
+#include "vkr/core/window.hh"
+#include "vkr/pipeline/descriptors/pool.hh"
+#include "vkr/pipeline/graphics_pipeline.hh"
+#include "vkr/pipeline/render_pass.hh"
+#include "vkr/resources/offscreen_target.hh"
+#include "vkr/timer.hh"
+#include "vkr/ui/components/fps_panel.hh"
+#include "vkr/ui/components/logging_panel.hh"
+#include "vkr/ui/components/resource_tree.hh"
+#include "vkr/ui/components/shader_editor.hh"
 #include <memory>
 
 namespace vkr::ui {

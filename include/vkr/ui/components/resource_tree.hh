@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../resources/manager.hh"
+#include "vkr/resources/manager.hh"
 #include <imgui.h>
 #include <string>
 #include <vector>

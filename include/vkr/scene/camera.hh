@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../core/window.hh"
-#include "../pipeline/graphics_pipeline.hh"
-#include "../timer.hh"
+#include "vkr/core/window.hh"
+#include "vkr/pipeline/graphics_pipeline.hh"
+#include "vkr/timer.hh"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

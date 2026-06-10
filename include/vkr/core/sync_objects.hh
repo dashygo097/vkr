@@ -1,7 +1,7 @@
 #pragma once
 
-#include "./device.hh"
-#include "./swapchain.hh"
+#include "vkr/core/device.hh"
+#include "vkr/core/swapchain.hh"
 
 namespace vkr::core {
 

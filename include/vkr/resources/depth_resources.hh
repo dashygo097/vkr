@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../core/device.hh"
-#include "../core/swapchain.hh"
-#include "./images/image.hh"
-#include "./images/imageview.hh"
+#include "vkr/core/device.hh"
+#include "vkr/core/swapchain.hh"
+#include "vkr/resources/images/image.hh"
+#include "vkr/resources/images/imageview.hh"
 
 namespace vkr::resource {
 

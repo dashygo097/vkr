@@ -1,3 +1,3 @@
 #pragma once
 
-#include "./camera.hh"
+#include "vkr/scene/camera.hh"

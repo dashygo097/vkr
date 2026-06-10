@@ -1,7 +1,7 @@
 #pragma once
 
-#include "./command_pool.hh"
-#include "./device.hh"
+#include "vkr/core/command_pool.hh"
+#include "vkr/core/device.hh"
 
 namespace vkr::core {
 static constexpr int MAX_FRAMES_IN_FLIGHT = 2;

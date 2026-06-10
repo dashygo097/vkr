@@ -1,7 +1,7 @@
 #pragma once
 
-#include "./instance.hh"
-#include "./window.hh"
+#include "vkr/core/instance.hh"
+#include "vkr/core/window.hh"
 
 namespace vkr::core {
 

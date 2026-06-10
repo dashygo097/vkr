@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../../core/command_pool.hh"
-#include "../../core/device.hh"
-#include "../../logger.hh"
-#include "./buffer_utils.hh"
+#include "vkr/core/command_pool.hh"
+#include "vkr/core/device.hh"
+#include "vkr/logger.hh"
+#include "vkr/resources/buffers/buffer_utils.hh"
 #include <glm/glm.hpp>
 
 namespace vkr::resource {

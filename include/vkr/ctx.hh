@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./pipeline/graphics_pipeline.hh"
+#include "vkr/pipeline/graphics_pipeline.hh"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>

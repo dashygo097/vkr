@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./logger.hh"
+#include "vkr/logger.hh"
 #include <fstream>
 
 namespace vkr {

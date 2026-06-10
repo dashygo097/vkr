@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../core/command_pool.hh"
-#include "../../core/device.hh"
+#include "vkr/core/command_pool.hh"
+#include "vkr/core/device.hh"
 #include <stb_image.h>
 
 namespace vkr::resource {

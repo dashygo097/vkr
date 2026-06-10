@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../timer.hh"
+#include "vkr/timer.hh"
 #include <array>
 #include <cstdint>
 

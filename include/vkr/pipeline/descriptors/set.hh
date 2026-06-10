@@ -1,11 +1,12 @@
 #pragma once
-#include "../../core/device.hh"
-#include "../../resources/buffers/uniform_buffer.hh"
-#include "../../resources/images/imageview.hh"
-#include "../../resources/images/sampler.hh"
-#include "./binding.hh"
-#include "./pool.hh"
-#include "./writer.hh"
+
+#include "vkr/core/device.hh"
+#include "vkr/pipeline/descriptors/binding.hh"
+#include "vkr/pipeline/descriptors/pool.hh"
+#include "vkr/pipeline/descriptors/writer.hh"
+#include "vkr/resources/buffers/uniform_buffer.hh"
+#include "vkr/resources/images/imageview.hh"
+#include "vkr/resources/images/sampler.hh"
 #include <memory>
 #include <vector>
 
