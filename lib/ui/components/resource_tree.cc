@@ -40,10 +40,10 @@ void ResourceTree::render() {
 void ResourceTree::renderCategory(const char *type,
                                   std::vector<std::string> names,
                                   size_t count) {
-  names.erase(
-      std::remove_if(names.begin(), names.end(),
-                     [](const std::string &name) { return name.empty(); }),
-      names.end());
+  names.erase(std::remove_if(
+                  names.begin(), names.end(),
+                  [](const std::string &name) -> bool { return name.empty(); }),
+              names.end());
 
   std::sort(names.begin(), names.end());
   names.erase(std::unique(names.begin(), names.end()), names.end());

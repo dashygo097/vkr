@@ -131,7 +131,7 @@ auto ShaderEditor::render() -> void {
   const ImVec4 selection = style.Colors[ImGuiCol_TextSelectedBg];
   const ImVec4 frameBg = style.Colors[ImGuiCol_FrameBg];
 
-  auto syncPalette = [&](TextEditor &ed) {
+  auto syncPalette = [&](TextEditor &ed) -> void {
     auto palette = ed.GetPalette();
 
     palette[static_cast<int>(TextEditor::PaletteIndex::Default)] =
@@ -254,18 +254,18 @@ auto ShaderEditor::render() -> void {
   }
 
   auto coords = editor.GetCursorPosition();
-  char info[40];
+  std::array<char, 40> info;
 
-  std::snprintf(info, sizeof(info), "Ln %d   Col %d", coords.mLine + 1,
+  std::snprintf(info.data(), info.size(), "Ln %d   Col %d", coords.mLine + 1,
                 coords.mColumn + 1);
 
-  const float infoW = ImGui::CalcTextSize(info).x;
+  const float infoW = ImGui::CalcTextSize(info.data()).x;
   const float cursorX = ImGui::GetCursorPosX();
   const float rightX = cursorX + ImGui::GetContentRegionAvail().x - infoW;
 
   ImGui::SetCursorPosX(rightX > cursorX ? rightX : cursorX);
 
-  ImGui::TextDisabled("%s", info);
+  ImGui::TextDisabled("%s", info.data());
 }
 
 } // namespace vkr::ui
