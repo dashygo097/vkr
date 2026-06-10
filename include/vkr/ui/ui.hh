@@ -13,6 +13,7 @@
 #include "vkr/ui/components/logging_panel.hh"
 #include "vkr/ui/components/resource_tree.hh"
 #include "vkr/ui/components/shader_editor.hh"
+#include "vkr/ui/theme.hh"
 #include <memory>
 
 namespace vkr::ui {
@@ -45,6 +46,14 @@ public:
   auto operator=(const UI &) -> UI & = delete;
 
   void render(VkCommandBuffer commandBuffer);
+
+  void theme(const ThemeConfig &config) noexcept {
+    theme_config_ = config;
+    Theme::apply(theme_config_);
+  }
+  [[nodiscard]] auto theme() const noexcept -> const ThemeConfig & {
+    return theme_config_;
+  }
 
   void layoutMode(LayoutMode mode) noexcept { layout_mode_ = mode; }
   void switchLayoutMode() noexcept {
@@ -91,6 +100,7 @@ private:
   std::unique_ptr<LoggingPanel> logging_panel_;
 
   // state
+  ThemeConfig theme_config_{};
   LayoutMode layout_mode_{LayoutMode::FullScreen};
   ViewportInfo viewport_info_{};
 
