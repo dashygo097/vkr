@@ -1,15 +1,16 @@
-#include <utility>
-
 #include "vkr/core/window.hh"
 #include "vkr/logger.hh"
+#include <utility>
 
 namespace vkr::core {
+
 Window::Window(std::string title, uint32_t width, uint32_t height)
     : width_(width), height_(height), title_(std::move(title)) {
   VKR_CORE_INFO("Creating window: {} ({}x{})...", title_, width_, height_);
   if (!glfwInit()) {
     VKR_CORE_ERROR("Failed to initialize GLFW!");
   }
+
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
@@ -24,12 +25,16 @@ Window::Window(std::string title, uint32_t width, uint32_t height)
 Window::~Window() {
   if (window_) {
     glfwDestroyWindow(window_);
+    window_ = nullptr;
   }
+
   glfwTerminate();
 }
 
 auto Window::shouldClose() const -> bool {
   return glfwWindowShouldClose(window_);
 }
+
 void Window::pollEvents() const { glfwPollEvents(); }
+
 } // namespace vkr::core

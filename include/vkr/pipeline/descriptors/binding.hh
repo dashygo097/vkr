@@ -5,6 +5,7 @@
 #include <vector>
 
 namespace vkr::pipeline {
+
 struct DescriptorBinding {
   uint32_t binding;
   VkDescriptorType type;

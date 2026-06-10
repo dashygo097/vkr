@@ -137,6 +137,7 @@ void VulkanApplication::mainLoop() {
     timer->beginFrame();
 
     window->pollEvents();
+
     graphicsPipeline->flushPendingRebuild();
 
     bool isNowTabKeyPressed =
@@ -165,16 +166,6 @@ void VulkanApplication::mainLoop() {
   }
 
   device->waitIdle();
-}
-
-void VulkanApplication::recreateSwapchain() {
-  int width = 0, height = 0;
-  glfwGetFramebufferSize(window->glfwWindow(), &width, &height);
-  while (width == 0 || height == 0) {
-    glfwGetFramebufferSize(window->glfwWindow(), &width, &height);
-    glfwWaitEvents();
-  }
-  renderer->recreateSwapchain();
 }
 
 void VulkanApplication::drawFrame() {

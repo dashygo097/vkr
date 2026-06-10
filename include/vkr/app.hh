@@ -79,7 +79,6 @@ private:
 
   // Frame-Level methods
   void mainLoop();
-  void recreateSwapchain();
   void drawFrame();
 };
 
