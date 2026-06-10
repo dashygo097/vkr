@@ -58,13 +58,6 @@ auto DescriptorPool::canAllocate() const noexcept -> bool {
   return allocated_sets_ < max_sets_;
 }
 
-void DescriptorPool::reset() {
-  if (pool_ != VK_NULL_HANDLE) {
-    vkResetDescriptorPool(device_.device(), pool_, 0);
-    allocated_sets_ = 0;
-  }
-}
-
 void DescriptorPool::cleanup() {
   if (pool_ != VK_NULL_HANDLE) {
     vkDestroyDescriptorPool(device_.device(), pool_, nullptr);
