@@ -37,7 +37,7 @@ void DescriptorSets::allocateSets() {
   }
 }
 
-void DescriptorSets::autoBindResources() {
+void DescriptorSets::bindResources() {
   for (const auto &binding : layout_.bindings()) {
     if (binding.name.empty()) {
       VKR_PIPE_ERROR("Descriptor binding {} has empty name", binding.binding);
@@ -51,26 +51,59 @@ void DescriptorSets::autoBindResources() {
         VKR_PIPE_ERROR("Uniform buffer resource not found: {}", binding.name);
       }
 
-      bindUniformBuffer(binding.binding, uniformBuffer->buffers(),
-                        uniformBuffer->bufferSize());
+      const auto &buffers = uniformBuffer->buffers();
+      const auto size = uniformBuffer->bufferSize();
+
+      if (buffers.size() != frame_count_) {
+        VKR_PIPE_ERROR("Buffer count must match frame count({} vs {})",
+                       buffers.size(), frame_count_);
+      }
+      for (uint32_t i = 0; i < frame_count_; i++) {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = buffers[i];
+        bufferInfo.offset = 0;
+        bufferInfo.range = size;
+
+        DescriptorWriter writer(device_);
+        writer.writeBuffer(binding.binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                           &bufferInfo);
+        writer.update(sets_[i]);
+      }
       break;
     }
 
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
       auto imageView = resource_manager_.getTextureImageView(binding.name);
-      auto sampler = resource_manager_.getTextureSampler(binding.name);
+      auto imageSampler = resource_manager_.getTextureSampler(binding.name);
 
       if (!imageView) {
         VKR_PIPE_ERROR("Texture image view resource not found: {}",
                        binding.name);
       }
 
-      if (!sampler) {
+      if (!imageSampler) {
         VKR_PIPE_ERROR("Texture sampler resource not found: {}", binding.name);
       }
 
       std::vector<VkImageView> imageViews(frame_count_, imageView->imageView());
-      bindImageSampler(binding.binding, imageViews, sampler->sampler());
+      const auto &sampler = imageSampler->sampler();
+
+      if (imageViews.size() != frame_count_) {
+        VKR_PIPE_ERROR("Image view count must match frame count({} vs {})",
+                       imageViews.size(), frame_count_);
+      }
+      for (uint32_t i = 0; i < frame_count_; ++i) {
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = imageViews[i];
+        imageInfo.sampler = sampler;
+
+        DescriptorWriter writer(device_);
+        writer.writeImage(binding.binding,
+                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                          &imageInfo);
+        writer.update(sets_[i]);
+      }
       break;
     }
 
@@ -93,67 +126,6 @@ void DescriptorSets::autoBindResources() {
       VKR_PIPE_ERROR("Unknown descriptor type for binding {}", binding.binding);
       break;
     }
-  }
-}
-
-void DescriptorSets::bindUniformBuffer(uint32_t binding,
-                                       const std::vector<VkBuffer> &buffers,
-                                       VkDeviceSize size, VkDeviceSize offset) {
-  if (buffers.size() != frame_count_) {
-    VKR_PIPE_ERROR("Buffer count must match frame count({} vs {})",
-                   buffers.size(), frame_count_);
-  }
-
-  for (uint32_t i = 0; i < frame_count_; ++i) {
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = buffers[i];
-    bufferInfo.offset = offset;
-    bufferInfo.range = size;
-
-    DescriptorWriter writer(device_);
-    writer.writeBuffer(binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo);
-    writer.update(sets_[i]);
-  }
-}
-
-void DescriptorSets::bindStorageBuffer(uint32_t binding,
-                                       const std::vector<VkBuffer> &buffers,
-                                       VkDeviceSize size, VkDeviceSize offset) {
-  if (buffers.size() != frame_count_) {
-    VKR_PIPE_ERROR("Buffer count must match frame count({} vs {})",
-                   buffers.size(), frame_count_);
-  }
-
-  for (uint32_t i = 0; i < frame_count_; ++i) {
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = buffers[i];
-    bufferInfo.offset = offset;
-    bufferInfo.range = size;
-
-    DescriptorWriter writer(device_);
-    writer.writeBuffer(binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
-    writer.update(sets_[i]);
-  }
-}
-
-void DescriptorSets::bindImageSampler(
-    uint32_t binding, const std::vector<VkImageView> &imageViews,
-    VkSampler sampler, VkImageLayout layout) {
-  if (imageViews.size() != frame_count_) {
-    VKR_PIPE_ERROR("Image view count must match frame count({} vs {})",
-                   imageViews.size(), frame_count_);
-  }
-
-  for (uint32_t i = 0; i < frame_count_; ++i) {
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = layout;
-    imageInfo.imageView = imageViews[i];
-    imageInfo.sampler = sampler;
-
-    DescriptorWriter writer(device_);
-    writer.writeImage(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                      &imageInfo);
-    writer.update(sets_[i]);
   }
 }
 

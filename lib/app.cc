@@ -114,7 +114,7 @@ void VulkanApplication::initVulkan() {
   // descriptor sets
   descriptorSets = std::make_unique<pipeline::DescriptorSets>(
       *device, *resourceManager, *descriptorSetLayout, *descriptorPool);
-  descriptorSets->autoBindResources();
+  descriptorSets->bindResources();
 
   // timer
   timer = std::make_unique<Timer>();
