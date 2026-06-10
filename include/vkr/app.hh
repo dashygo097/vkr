@@ -64,10 +64,9 @@ public:
 
 protected:
   virtual void onConfigure() {}
-  virtual void onSetup() {}
   virtual void onDrawFrame(uint32_t currentImage) {}
 
-  virtual void createUniforms() {}
+  virtual void createResources() {}
   virtual auto createDescriptorBindings()
       -> std::vector<pipeline::DescriptorBinding> {
     return {};

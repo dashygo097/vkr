@@ -16,7 +16,7 @@ private:
   glm::vec4 mouseState{0.0f};
   bool mousePressed{false};
 
-  void createUniforms() override {
+  void createResources() override {
     resourceManager
         ->createUniformBuffer<vkr::resource::UniformBufferShaderToyObject>(
             "shadertoy", {});

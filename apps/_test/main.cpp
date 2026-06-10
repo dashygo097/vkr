@@ -26,9 +26,17 @@ private:
   const std::vector<uint16_t> indices1 = {0, 1, 2, 2, 3, 0};
   const std::vector<uint16_t> indices2 = {0, 1, 2, 2, 3, 0};
 
-  void createUniforms() override {
+  void createResources() override {
+    resourceManager->createVertexBuffer<vkr::resource::VertexTextured3D>(
+        "vb1", vertices1);
+    resourceManager->createIndexBuffer("ib1", indices1);
+    resourceManager->createVertexBuffer<vkr::resource::VertexTextured3D>(
+        "vb2", vertices2);
+    resourceManager->createIndexBuffer("ib2", indices2);
+
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
+
     resourceManager->createTexture("image1",
                                    ctx.assetsDir + "textures/avatar.jpg");
   }
@@ -93,15 +101,6 @@ private:
     ctx.cameraFarPlane = 1000.0f;
 
     ctx.pipelineMode = vkr::pipeline::PipelineMode::Textured3D;
-  }
-
-  void onSetup() override {
-    resourceManager->createVertexBuffer<vkr::resource::VertexTextured3D>(
-        "vb1", vertices1);
-    resourceManager->createIndexBuffer("ib1", indices1);
-    resourceManager->createVertexBuffer<vkr::resource::VertexTextured3D>(
-        "vb2", vertices2);
-    resourceManager->createIndexBuffer("ib2", indices2);
   }
 };
 

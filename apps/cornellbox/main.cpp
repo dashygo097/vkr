@@ -14,7 +14,28 @@ private:
         {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
   }
 
-  void createUniforms() override {
+  void createResources() override {
+    vkr::resource::Mesh<vkr::resource::Vertex3D> light(*device, *commandPool);
+    light.load(ctx.assetsDir + "objects/cornellbox/light.obj");
+    vkr::resource::Mesh<vkr::resource::Vertex3D> floor(*device, *commandPool);
+    floor.load(ctx.assetsDir + "objects/cornellbox/floor.obj");
+    vkr::resource::Mesh<vkr::resource::Vertex3D> left(*device, *commandPool);
+    left.load(ctx.assetsDir + "objects/cornellbox/left.obj");
+    vkr::resource::Mesh<vkr::resource::Vertex3D> right(*device, *commandPool);
+    right.load(ctx.assetsDir + "objects/cornellbox/right.obj");
+    vkr::resource::Mesh<vkr::resource::Vertex3D> tallbox(*device, *commandPool);
+    tallbox.load(ctx.assetsDir + "objects/cornellbox/tallbox.obj");
+    vkr::resource::Mesh<vkr::resource::Vertex3D> shortbox(*device,
+                                                          *commandPool);
+    shortbox.load(ctx.assetsDir + "objects/cornellbox/shortbox.obj");
+
+    resourceManager->createMesh("light", light);
+    resourceManager->createMesh("floor", floor);
+    resourceManager->createMesh("left", left);
+    resourceManager->createMesh("right", right);
+    resourceManager->createMesh("tallbox", tallbox);
+    resourceManager->createMesh("shortbox", shortbox);
+
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
   }
@@ -63,29 +84,6 @@ private:
     ctx.cameraFarPlane = 1000.0f;
 
     ctx.pipelineMode = vkr::pipeline::PipelineMode::Default3D;
-  }
-
-  void onSetup() override {
-    vkr::resource::Mesh<vkr::resource::Vertex3D> light(*device, *commandPool);
-    light.load(ctx.assetsDir + "objects/cornellbox/light.obj");
-    vkr::resource::Mesh<vkr::resource::Vertex3D> floor(*device, *commandPool);
-    floor.load(ctx.assetsDir + "objects/cornellbox/floor.obj");
-    vkr::resource::Mesh<vkr::resource::Vertex3D> left(*device, *commandPool);
-    left.load(ctx.assetsDir + "objects/cornellbox/left.obj");
-    vkr::resource::Mesh<vkr::resource::Vertex3D> right(*device, *commandPool);
-    right.load(ctx.assetsDir + "objects/cornellbox/right.obj");
-    vkr::resource::Mesh<vkr::resource::Vertex3D> tallbox(*device, *commandPool);
-    tallbox.load(ctx.assetsDir + "objects/cornellbox/tallbox.obj");
-    vkr::resource::Mesh<vkr::resource::Vertex3D> shortbox(*device,
-                                                          *commandPool);
-    shortbox.load(ctx.assetsDir + "objects/cornellbox/shortbox.obj");
-
-    resourceManager->createMesh("light", light);
-    resourceManager->createMesh("floor", floor);
-    resourceManager->createMesh("left", left);
-    resourceManager->createMesh("right", right);
-    resourceManager->createMesh("tallbox", tallbox);
-    resourceManager->createMesh("shortbox", shortbox);
   }
 };
 

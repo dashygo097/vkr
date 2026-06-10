@@ -82,7 +82,7 @@ void VulkanApplication::initVulkan() {
   resourceManager->createFramebufferSet("offscreen", *offscreenRenderPass,
                                         offscreenTargetfbDesc);
 
-  createUniforms();
+  createResources();
 
   // descriptor pool
   uint32_t maxSets = core::MAX_FRAMES_IN_FLIGHT + 2;
@@ -127,8 +127,6 @@ void VulkanApplication::initVulkan() {
       ctx.cameraMouseSensitivity, ctx.cameraFov, ctx.cameraAspectRatio,
       ctx.cameraNearPlane, ctx.cameraFarPlane);
   ctx.cameraLocked = camera->isLocked();
-
-  onSetup();
 }
 
 void VulkanApplication::mainLoop() {

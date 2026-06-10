@@ -13,7 +13,13 @@ private:
         {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
   }
 
-  void createUniforms() override {
+  void createResources() override {
+    vkr::resource::Mesh<vkr::resource::VertexNormal3D> teapot(*device,
+                                                              *commandPool);
+    teapot.load(ctx.assetsDir + "objects/teapot/teapot.obj");
+
+    resourceManager->createMesh("teapot", teapot);
+
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
   }
@@ -62,14 +68,6 @@ private:
     ctx.cameraFarPlane = 1000.0f;
 
     ctx.pipelineMode = vkr::pipeline::PipelineMode::Normal3D;
-  }
-
-  void onSetup() override {
-    vkr::resource::Mesh<vkr::resource::VertexNormal3D> teapot(*device,
-                                                              *commandPool);
-    teapot.load(ctx.assetsDir + "objects/teapot/teapot.obj");
-
-    resourceManager->createMesh("teapot", teapot);
   }
 };
 

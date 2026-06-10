@@ -15,7 +15,11 @@ class CanvasApp : public vkr::VulkanApplication {
   const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
 
 private:
-  void createUniforms() override {
+  void createResources() override {
+    resourceManager->createVertexBuffer<vkr::resource::Vertex2D>("vertices",
+                                                                 vertices);
+    resourceManager->createIndexBuffer("indices", indices);
+
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
   }
@@ -56,12 +60,6 @@ private:
 
     ctx.pipelineMode = vkr::pipeline::PipelineMode::Default2D;
   }
-
-  void onSetup() override {
-    resourceManager->createVertexBuffer<vkr::resource::Vertex2D>("vertices",
-                                                                 vertices);
-    resourceManager->createIndexBuffer("indices", indices);
-  };
 };
 
 auto main() -> int {
