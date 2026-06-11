@@ -9,15 +9,15 @@
 namespace vkr {
 
 struct VulkanContext {
-  // --- App Info ---
-  std::string appName{};
-  uint32_t appVersion{};
-  std::string assetsDir{DEFAULT_ASSETS_DIR};
-
   // --- Window Info ---
   uint32_t width{};
   uint32_t height{};
   std::string title{"Vulkan Application"};
+
+  // --- App Info ---
+  std::string appName{};
+  uint32_t appVersion{};
+  std::string assetsDir{DEFAULT_ASSETS_DIR};
 
   // --- Rendering Mode ---
   core::PresentModePolicy presentModePolicy{core::PresentModePolicy::Uncapped};

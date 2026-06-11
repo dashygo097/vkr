@@ -18,7 +18,8 @@ struct LogMessage {
 
 class UiLogSink : public spdlog::sinks::base_sink<std::mutex> {
 public:
-  UiLogSink(size_t max_messages = 1000) : max_messages_(max_messages) {}
+  explicit UiLogSink(size_t max_messages = 1000)
+      : max_messages_(max_messages) {}
 
   auto getMessages() -> std::vector<LogMessage> {
     std::lock_guard<std::mutex> lock(this->mutex_);

@@ -1,7 +1,7 @@
 #pragma once
 
+#include "vkr/context.hh"
 #include "vkr/core/core.hh"
-#include "vkr/ctx.hh"
 #include "vkr/logger.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"

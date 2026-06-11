@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace vkr::scene {
+
 class Camera {
 public:
   explicit Camera(const core::Window &window, const Timer &timer,
