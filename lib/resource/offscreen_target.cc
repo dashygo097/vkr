@@ -1,4 +1,4 @@
-#include "vkr/resources/offscreen_target.hh"
+#include "vkr/resource/offscreen_target.hh"
 #include "vkr/logger.hh"
 #include <imgui_impl_vulkan.h>
 

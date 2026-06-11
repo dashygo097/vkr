@@ -3,8 +3,8 @@
 #include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resources/buffers/index_buffer.hh"
-#include "vkr/resources/buffers/vertex_buffer.hh"
+#include "vkr/resource/buffers/index_buffer.hh"
+#include "vkr/resource/buffers/vertex_buffer.hh"
 
 namespace vkr::resource {
 

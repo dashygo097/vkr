@@ -1,4 +1,4 @@
-#include "vkr/resources/images/imageview.hh"
+#include "vkr/resource/images/imageview.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::resource {

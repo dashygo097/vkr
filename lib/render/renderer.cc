@@ -1,4 +1,4 @@
-#include "vkr/rendering/renderer.hh"
+#include "vkr/render/renderer.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::render {

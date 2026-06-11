@@ -3,7 +3,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/render_pass.hh"
-#include "vkr/resources/manager.hh"
+#include "vkr/resource/manager.hh"
 #include <mutex>
 #include <optional>
 #include <string>

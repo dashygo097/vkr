@@ -1,5 +1,5 @@
-#include "vkr/resources/mesh.hh"
-#include "vkr/resources/buffers/vbos.hh"
+#include "vkr/resource/mesh.hh"
+#include "vkr/resource/buffers/vbos.hh"
 #include <tiny_obj_loader.h>
 
 namespace vkr::resource {

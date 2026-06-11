@@ -2,8 +2,8 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
-#include "vkr/resources/images/image.hh"
-#include "vkr/resources/images/imageview.hh"
+#include "vkr/resource/images/image.hh"
+#include "vkr/resource/images/imageview.hh"
 
 namespace vkr::resource {
 

@@ -1,4 +1,4 @@
-#include "vkr/resources/depth_resources.hh"
+#include "vkr/resource/depth_resources.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::resource {

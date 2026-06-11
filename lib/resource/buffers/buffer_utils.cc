@@ -1,6 +1,5 @@
-#include "vkr/resources/buffers/buffer_utils.hh"
+#include "vkr/resource/buffers/buffer_utils.hh"
 #include "vkr/logger.hh"
-#include <stdexcept>
 
 namespace vkr::resource {
 

@@ -3,7 +3,7 @@
 #include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resources/buffers/buffer_utils.hh"
+#include "vkr/resource/buffers/buffer_utils.hh"
 #include <glm/glm.hpp>
 
 namespace vkr::resource {

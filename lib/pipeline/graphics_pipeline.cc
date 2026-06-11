@@ -2,7 +2,6 @@
 #include "vkr/io_utils.hh"
 #include "vkr/logger.hh"
 #include "vkr/pipeline/shader_module.hh"
-#include "vkr/resources/buffers/vertex_buffer.hh"
 #include <filesystem>
 #include <shaderc/shaderc.hpp>
 

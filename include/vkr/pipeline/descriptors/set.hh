@@ -4,7 +4,7 @@
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/writer.hh"
-#include "vkr/resources/manager.hh"
+#include "vkr/resource/manager.hh"
 #include <vector>
 
 namespace vkr::pipeline {

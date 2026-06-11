@@ -1,4 +1,4 @@
-#include "vkr/resources/images/sampler.hh"
+#include "vkr/resource/images/sampler.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::resource {
