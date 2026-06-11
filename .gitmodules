@@ -19,3 +19,6 @@
 [submodule "3rdparty/ImGuiColorTextEdit"]
 	path = 3rdparty/ImGuiColorTextEdit
 	url = https://github.com/dashygo097/ImGuiColorTextEdit.git
+[submodule "3rdparty/tomlplusplus"]
+	path = 3rdparty/tomlplusplus
+	url = https://github.com/marzer/tomlplusplus.git

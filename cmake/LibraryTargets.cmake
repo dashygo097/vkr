@@ -13,11 +13,12 @@ target_link_libraries(vkr PUBLIC Vulkan::Vulkan Vulkan::shaderc_combined)
 # 3rdparty libs to link statically
 target_link_libraries(vkr PUBLIC glfw)
 target_link_libraries(vkr PUBLIC glm::glm-header-only)
-target_link_libraries(vkr PUBLIC imgui)
-target_link_libraries(vkr PUBLIC ImGuiColorTextEdit)
 target_link_libraries(vkr PUBLIC tinyobjloader)
 target_link_libraries(vkr PUBLIC stb)
+target_link_libraries(vkr PUBLIC tomlplusplus::tomlplusplus)
 target_link_libraries(vkr PUBLIC spdlog::spdlog)
+target_link_libraries(vkr PUBLIC imgui)
+target_link_libraries(vkr PUBLIC ImGuiColorTextEdit)
 
 if (APPLE) 
   target_link_libraries(vkr PUBLIC
