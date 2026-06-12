@@ -89,7 +89,9 @@ private:
     ctx.height = 900;
     ctx.title = "ShaderToy Viewer";
 
-    ctx.cameraEnabled = false;
+    ctx.camera = {
+        .locked = true,
+    };
 
     startTime = std::chrono::high_resolution_clock::now();
     lastFrameTime = startTime;

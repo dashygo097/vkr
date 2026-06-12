@@ -47,7 +47,9 @@ private:
     ctx.height = 900;
     ctx.title = "Canvas";
 
-    ctx.cameraEnabled = false;
+    ctx.camera = {
+        .locked = true,
+    };
 
     ctx.pipelineMode = vkr::pipeline::PipelineMode::Default2D;
   }

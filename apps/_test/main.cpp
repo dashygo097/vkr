@@ -60,10 +60,10 @@ private:
 
     if (ui->viewportInfo().height > 0 &&
         ui->layoutMode() == vkr::ui::LayoutMode::Standard) {
-      ctx.cameraAspectRatio = ui->viewportInfo().width /
-                              static_cast<float>(ui->viewportInfo().height);
+      ctx.camera.aspectRatio = ui->viewportInfo().width /
+                               static_cast<float>(ui->viewportInfo().height);
     } else {
-      ctx.cameraAspectRatio = ctx.width / static_cast<float>(ctx.height);
+      ctx.camera.aspectRatio = ctx.width / static_cast<float>(ctx.height);
     }
   }
 
@@ -75,13 +75,11 @@ private:
     ctx.height = 900;
     ctx.title = "Test";
 
-    ctx.cameraEnabled = true;
-    ctx.cameraMovementSpeed = 5.0f;
-    ctx.cameraMouseSensitivity = 0.5f;
-    ctx.cameraFov = 45.0f;
-    ctx.cameraAspectRatio = ctx.width / static_cast<float>(ctx.height);
-    ctx.cameraNearPlane = 0.01f;
-    ctx.cameraFarPlane = 1000.0f;
+    ctx.camera = {
+        .movementSpeed = 5.0f,
+        .mouseSensitivity = 0.5f,
+        .aspectRatio = ctx.width / static_cast<float>(ctx.height),
+    };
 
     ctx.pipelineMode = vkr::pipeline::PipelineMode::Textured3D;
   }

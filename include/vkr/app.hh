@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vkr/archive/toml.hh"
 #include "vkr/context.hh"
 #include "vkr/core/core.hh"
 #include "vkr/logger.hh"
@@ -11,7 +12,10 @@
 #include "vkr/timer.hh"
 #include "vkr/ui/ui.hh"
 
+#include <filesystem>
+
 namespace vkr {
+
 class VulkanApplication {
 public:
   VulkanApplication() = default;
@@ -22,7 +26,14 @@ public:
 
   void run() {
     initVulkan();
-    mainLoop();
+
+    try {
+      mainLoop();
+      saveSnapshot();
+    } catch (...) {
+      saveSnapshot();
+      throw;
+    }
   }
 
   VulkanContext ctx;
@@ -72,19 +83,48 @@ protected:
     return {};
   }
 
+  [[nodiscard]] virtual auto snapshotPath() const -> std::filesystem::path {
+    return "snapshot.toml";
+  }
+
 private:
-  // Initialization methods
   void initVulkan();
 
-  // Frame-Level methods
   void mainLoop();
   void drawFrame();
+
+  void loadSnapshot() {
+    const auto path = snapshotPath();
+
+    if (!std::filesystem::exists(path)) {
+      VKR_ARCHIVE_INFO("snapshot not found, using default config: {}",
+                       path.string());
+      return;
+    }
+
+    if (!vkr::archive::loadTomlFile(path, ctx)) {
+      VKR_ARCHIVE_WARN("failed to load snapshot, using default config: {}",
+                       path.string());
+    }
+  }
+
+  void saveSnapshot() {
+    const auto path = snapshotPath();
+
+    if (!vkr::archive::saveTomlFile(path, ctx)) {
+      VKR_ARCHIVE_WARN("failed to save snapshot: {}", path.string());
+    }
+  }
 };
 
 static void framebufferResizeCallback(GLFWwindow *window, int width,
                                       int height) {
-  auto app =
+  auto *app =
       reinterpret_cast<VulkanApplication *>(glfwGetWindowUserPointer(window));
+  if (!app) {
+    return;
+  }
+
   app->ctx.framebufferResized = true;
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib>
 #include <memory>
 #include <mutex>
 #include <spdlog/pattern_formatter.h>
@@ -7,6 +8,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace vkr {
@@ -82,11 +84,12 @@ public:
       level_name = " UNKN ";
       break;
     }
+
     dest.append(level_name.data(), level_name.data() + level_name.size());
   }
 
   [[nodiscard]] auto clone() const
-      -> std::unique_ptr<custom_flag_formatter> override {
+      -> std::unique_ptr<spdlog::custom_flag_formatter> override {
     return std::make_unique<Formatter>();
   }
 };
@@ -114,6 +117,9 @@ public:
   static auto getUiLogger() -> std::shared_ptr<spdlog::logger> & {
     return ui_logger_;
   }
+  static auto getArchiveLogger() -> std::shared_ptr<spdlog::logger> & {
+    return archive_logger_;
+  }
 
 private:
   static std::shared_ptr<UiLogSink> ui_sink_;
@@ -123,10 +129,11 @@ private:
   static std::shared_ptr<spdlog::logger> render_logger_;
   static std::shared_ptr<spdlog::logger> scene_logger_;
   static std::shared_ptr<spdlog::logger> ui_logger_;
+  static std::shared_ptr<spdlog::logger> archive_logger_;
 };
+
 } // namespace vkr
 
-// Logging Macros
 #define VKR_CORE_TRACE(...) ::vkr::Logger::getCoreLogger()->trace(__VA_ARGS__);
 #define VKR_CORE_DEBUG(...) ::vkr::Logger::getCoreLogger()->debug(__VA_ARGS__);
 #define VKR_CORE_INFO(...) ::vkr::Logger::getCoreLogger()->info(__VA_ARGS__);
@@ -207,5 +214,21 @@ private:
 #define VKR_UI_ERROR(...)                                                      \
   do {                                                                         \
     ::vkr::Logger::getUiLogger()->error(__VA_ARGS__);                          \
+    std::abort();                                                              \
+  } while (0);
+
+#define VKR_ARCHIVE_TRACE(...)                                                 \
+  ::vkr::Logger::getArchiveLogger()->trace(__VA_ARGS__);
+#define VKR_ARCHIVE_DEBUG(...)                                                 \
+  ::vkr::Logger::getArchiveLogger()->debug(__VA_ARGS__);
+#define VKR_ARCHIVE_INFO(...)                                                  \
+  ::vkr::Logger::getArchiveLogger()->info(__VA_ARGS__);
+#define VKR_ARCHIVE_WARN(...)                                                  \
+  ::vkr::Logger::getArchiveLogger()->warn(__VA_ARGS__);
+#define VKR_ARCHIVE_CRIT(...)                                                  \
+  ::vkr::Logger::getArchiveLogger()->critical(__VA_ARGS__);
+#define VKR_ARCHIVE_ERROR(...)                                                 \
+  do {                                                                         \
+    ::vkr::Logger::getArchiveLogger()->error(__VA_ARGS__);                     \
     std::abort();                                                              \
   } while (0);

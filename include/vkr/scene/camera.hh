@@ -4,18 +4,63 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/timer.hh"
 #include <GLFW/glfw3.h>
+#include <glm/common.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace vkr::scene {
 
+struct CameraDesc {
+  // config
+  bool locked{false};
+  float movementSpeed{0.0f};
+  float mouseSensitivity{0.0f};
+  float fov{45.0f};
+  float aspectRatio{0.0f};
+  float nearPlane{0.1f};
+  float farPlane{1000.0f};
+
+  // states
+  glm::vec3 pos{0.0f, 0.0f, 0.0f};
+  glm::vec3 front{0.0f, 0.0f, -1.0f};
+  glm::vec3 up{0.0f, 1.0f, 0.0f};
+  glm::vec3 right{1.0f, 0.0f, 0.0f};
+  glm::vec3 worldUp{0.0f, 1.0f, 0.0f};
+  float yaw{-90.0f};
+  float pitch{0.0f};
+
+  // not serialized states
+  bool firstMouse{true};
+  float lastX{0.0f};
+  float lastY{0.0f};
+
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return aspectRatio > 0.0f && nearPlane > 0.0f && farPlane > nearPlane;
+  }
+
+  template <typename Archive> auto serialize(Archive &ar) -> void {
+    ar("locked", locked);
+    ar("movementSpeed", movementSpeed);
+    ar("mouseSensitivity", mouseSensitivity);
+    ar("fov", fov);
+    ar("aspectRatio", aspectRatio);
+    ar("nearPlane", nearPlane);
+    ar("farPlane", farPlane);
+
+    ar("pos", pos);
+    ar("front", front);
+    ar("up", up);
+    ar("right", right);
+    ar("worldUp", worldUp);
+    ar("yaw", yaw);
+    ar("pitch", pitch);
+  }
+};
+
 class Camera {
 public:
   explicit Camera(const core::Window &window, const Timer &timer,
-                  pipeline::PipelineMode mode, const float &movementSpeed,
-                  const float &mouseSensitivity, const float &fov,
-                  const float &aspectRatio, const float &nearPlane,
-                  const float &farPlane);
+                  pipeline::PipelineMode mode, CameraDesc &desc);
   ~Camera() = default;
 
   Camera(const Camera &) = delete;
@@ -23,95 +68,91 @@ public:
 
   void track();
 
-  [[nodiscard]] auto pos() const noexcept -> glm::vec3 { return pos_; }
+  [[nodiscard]] auto pos() const noexcept -> glm::vec3 { return desc_.pos; }
 
-  // update camera vectors
   [[nodiscard]] auto getView() const -> glm::mat4 {
-    return glm::lookAt(pos_, pos_ + front_, up_);
+    return glm::lookAt(desc_.pos, desc_.pos + desc_.front, desc_.up);
   }
+
   [[nodiscard]] auto getProjection() const -> glm::mat4 {
-    glm::mat4 proj = glm::perspective(glm::radians(fov_), aspect_ratio_,
-                                      near_plane_, far_plane_);
+    glm::mat4 proj =
+        glm::perspective(glm::radians(desc_.fov), desc_.aspectRatio,
+                         desc_.nearPlane, desc_.farPlane);
     proj[1][1] *= -1;
     return proj;
   }
 
   void mouseMove(float xOffset, float yOffset) {
-    yaw_ += xOffset * mouse_sensitivity_;
-    pitch_ += yOffset * mouse_sensitivity_;
-    if (pitch_ > 89.0f) {
-      pitch_ = 89.0f;
+    desc_.yaw += xOffset * desc_.mouseSensitivity;
+    desc_.pitch += yOffset * desc_.mouseSensitivity;
+
+    if (desc_.pitch > 89.0f) {
+      desc_.pitch = 89.0f;
     }
-    if (pitch_ < -89.0f) {
-      pitch_ = -89.0f;
+    if (desc_.pitch < -89.0f) {
+      desc_.pitch = -89.0f;
     }
 
-    glm::vec3 frontTemp;
-    frontTemp.x = cos(glm::radians(yaw_)) * cos(glm::radians(pitch_));
-    frontTemp.y = sin(glm::radians(pitch_));
-    frontTemp.z = sin(glm::radians(yaw_)) * cos(glm::radians(pitch_));
+    updateVectors();
+  };
 
-    front_ = glm::normalize(frontTemp);
-    right_ = glm::normalize(glm::cross(front_, world_up_));
-    up_ = glm::normalize(glm::cross(right_, front_));
-  }
-
-  // controls
   void moveForward(float deltaTime) {
-    pos_ += front_ * movement_speed_ * deltaTime;
-  }
-  void moveBackward(float deltaTime) {
-    pos_ -= front_ * movement_speed_ * deltaTime;
-  }
-  void moveLeft(float deltaTime) {
-    pos_ -= right_ * movement_speed_ * deltaTime;
-  }
-  void moveRight(float deltaTime) {
-    pos_ += right_ * movement_speed_ * deltaTime;
-  }
-  void moveUp(float deltaTime) {
-    pos_ += world_up_ * movement_speed_ * deltaTime;
-  }
-  void moveDown(float deltaTime) {
-    pos_ -= world_up_ * movement_speed_ * deltaTime;
+    desc_.pos += desc_.front * desc_.movementSpeed * deltaTime;
   }
 
-  void toggleLock() noexcept { locked_ = !locked_; }
-  void lock(bool lock) noexcept { locked_ = lock; }
-  [[nodiscard]] auto isLocked() const noexcept -> bool { return locked_; }
+  void moveBackward(float deltaTime) {
+    desc_.pos -= desc_.front * desc_.movementSpeed * deltaTime;
+  }
+
+  void moveLeft(float deltaTime) {
+    desc_.pos -= desc_.right * desc_.movementSpeed * deltaTime;
+  }
+
+  void moveRight(float deltaTime) {
+    desc_.pos += desc_.right * desc_.movementSpeed * deltaTime;
+  }
+
+  void moveUp(float deltaTime) {
+    desc_.pos += desc_.worldUp * desc_.movementSpeed * deltaTime;
+  }
+
+  void moveDown(float deltaTime) {
+    desc_.pos -= desc_.worldUp * desc_.movementSpeed * deltaTime;
+  }
+
+  void toggleLock() noexcept { lock(!desc_.locked); }
+
+  void lock(bool locked) noexcept { desc_.locked = locked; }
+
+  [[nodiscard]] auto isLocked() const noexcept -> bool { return desc_.locked; }
 
 private:
   // dependencies
   const core::Window &window_;
   const Timer &timer_;
   const pipeline::PipelineMode mode_;
-  const float &movement_speed_;
-  const float &mouse_sensitivity_;
-  const float &aspect_ratio_;
-  const float &near_plane_;
-  const float &far_plane_;
 
   // components
-  glm::vec3 pos_{glm::vec3(0.0f, 0.0f, 0.0f)};
-  glm::vec3 front_{glm::vec3(0.0f, 0.0f, -1.0f)};
-  glm::vec3 up_{glm::vec3(0.0f, 1.0f, 0.0f)};
-  glm::vec3 right_{glm::vec3(1.0f, 0.0f, 0.0f)};
-  glm::vec3 world_up_{glm::vec3(0.0f, 1.0f, 0.0f)};
-  float yaw_{-90.0f};
-  float pitch_{0.0f};
-  float fov_;
-  float scroll_offset_{0.0f};
+  CameraDesc &desc_;
 
-  // state
-  bool locked_{false};
-  float first_mouse_{true};
-  float last_x_{0.0f};
-  float last_y_{0.0f};
+  // helpers
+  void updateVectors() {
+    glm::vec3 frontTemp;
+    frontTemp.x =
+        std::cos(glm::radians(desc_.yaw)) * std::cos(glm::radians(desc_.pitch));
+    frontTemp.y = std::sin(glm::radians(desc_.pitch));
+    frontTemp.z =
+        std::sin(glm::radians(desc_.yaw)) * std::cos(glm::radians(desc_.pitch));
+
+    desc_.front = glm::normalize(frontTemp);
+    desc_.right = glm::normalize(glm::cross(desc_.front, desc_.worldUp));
+    desc_.up = glm::normalize(glm::cross(desc_.right, desc_.front));
+  };
 
   static void scrollCallback(GLFWwindow *window, double xoffset,
                              double yoffset) {
     auto *cam = static_cast<Camera *>(glfwGetWindowUserPointer(window));
-    if (!cam || cam->locked_) {
+    if (!cam || cam->desc_.locked) {
       return;
     }
 
@@ -119,8 +160,8 @@ private:
     constexpr float kMaxFov = 120.0f;
     constexpr float kZoomSpeed = 2.0f;
 
-    cam->fov_ -= static_cast<float>(yoffset) * kZoomSpeed;
-    cam->fov_ = glm::clamp(cam->fov_, kMinFov, kMaxFov);
+    cam->desc_.fov -= static_cast<float>(yoffset) * kZoomSpeed;
+    cam->desc_.fov = glm::clamp(cam->desc_.fov, kMinFov, kMaxFov);
   }
 };
 

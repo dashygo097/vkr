@@ -7,6 +7,10 @@ namespace vkr {
 void VulkanApplication::initVulkan() {
   Logger::init();
   onConfigure();
+  loadSnapshot();
+  if (!ctx.isValid()) {
+    VKR_CORE_ERROR("invalid Vulkan context config");
+  }
 
   // window
   window = std::make_unique<core::Window>(ctx.title, ctx.width, ctx.height);
@@ -130,11 +134,8 @@ void VulkanApplication::initVulkan() {
       *device, *swapchain, *commandPool, *syncObjects, *resourceManager, *ui);
 
   // camera
-  camera = std::make_unique<scene::Camera>(
-      *window, *timer, ctx.pipelineMode, ctx.cameraMovementSpeed,
-      ctx.cameraMouseSensitivity, ctx.cameraFov, ctx.cameraAspectRatio,
-      ctx.cameraNearPlane, ctx.cameraFarPlane);
-  ctx.cameraLocked = camera->isLocked();
+  camera = std::make_unique<scene::Camera>(*window, *timer, ctx.pipelineMode,
+                                           ctx.camera);
 }
 
 void VulkanApplication::mainLoop() {
@@ -151,7 +152,7 @@ void VulkanApplication::mainLoop() {
     bool isNowTabKeyPressed =
         glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
 
-    if (ctx.cameraEnabled) {
+    if (!camera->isLocked()) {
       camera->track();
     }
 

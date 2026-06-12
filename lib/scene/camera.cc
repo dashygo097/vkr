@@ -2,25 +2,22 @@
 #include "GLFW/glfw3.h"
 
 namespace vkr::scene {
+
 Camera::Camera(const core::Window &window, const Timer &timer,
-               pipeline::PipelineMode mode, const float &movementSpeed,
-               const float &mouseSensitivity, const float &fov,
-               const float &aspectRatio, const float &nearPlane,
-               const float &farPlane)
-    : window_(window), timer_(timer), mode_(mode),
-      movement_speed_(movementSpeed), mouse_sensitivity_(mouseSensitivity),
-      fov_(fov), aspect_ratio_(aspectRatio), near_plane_(nearPlane),
-      far_plane_(farPlane), last_x_(window.width() / 2.0),
-      last_y_(window.height() / 2.0) {
-  right_ = glm::normalize(glm::cross(front_, world_up_));
-  up_ = glm::normalize(glm::cross(right_, front_));
+               pipeline::PipelineMode mode, CameraDesc &desc)
+    : window_(window), timer_(timer), mode_(mode), desc_(desc) {
+  desc_.lastX = static_cast<float>(window.width()) / 2.0f;
+  desc_.lastY = static_cast<float>(window.height()) / 2.0f;
+
+  updateVectors();
 
   glfwSetWindowUserPointer(window_.glfwWindow(), this);
   glfwSetScrollCallback(window_.glfwWindow(), scrollCallback);
 }
 
 void Camera::track() {
-  if (locked_) {
+  if (desc_.locked) {
+    desc_.firstMouse = true;
     return;
   }
 
@@ -47,17 +44,17 @@ void Camera::track() {
 
   double xpos, ypos;
   glfwGetCursorPos(window_.glfwWindow(), &xpos, &ypos);
-  if (first_mouse_) {
-    last_x_ = xpos;
-    last_y_ = ypos;
-    first_mouse_ = false;
+  if (desc_.firstMouse) {
+    desc_.lastX = xpos;
+    desc_.lastY = ypos;
+    desc_.firstMouse = false;
     return;
   }
-  auto xoffset = static_cast<float>(xpos - last_x_);
-  auto yoffset = static_cast<float>(last_y_ - ypos);
+  auto xoffset = static_cast<float>(xpos - desc_.lastX);
+  auto yoffset = static_cast<float>(desc_.lastY - ypos);
 
-  last_x_ = xpos;
-  last_y_ = ypos;
+  desc_.lastX = xpos;
+  desc_.lastY = ypos;
 
   if (glfwGetMouseButton(window_.glfwWindow(), GLFW_MOUSE_BUTTON_LEFT) ==
       GLFW_PRESS) {
