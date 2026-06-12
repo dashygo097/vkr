@@ -10,6 +10,20 @@ target_include_directories(vkr PUBLIC
 target_include_directories(vkr PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(vkr PUBLIC Vulkan::Vulkan Vulkan::shaderc_combined)
 
+if (APPLE)
+
+elseif(UNIX)
+  target_link_libraries(vkr PUBLIC
+    SPIRV-Tools-opt
+    SPIRV-Tools
+    glslang
+    SPIRV
+    MachineIndependent
+    GenericCodeGen
+  )
+
+endif()
+
 # 3rdparty libs to link statically
 target_link_libraries(vkr PUBLIC glfw)
 target_link_libraries(vkr PUBLIC glm::glm-header-only)

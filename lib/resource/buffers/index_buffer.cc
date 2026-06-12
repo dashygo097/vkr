@@ -1,5 +1,6 @@
 #include "vkr/resource/buffers/index_buffer.hh"
 #include "vkr/resource/buffers/buffer_utils.hh"
+#include <cstring>
 
 namespace vkr::resource {
 IndexBuffer::IndexBuffer(const core::Device &device,

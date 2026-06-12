@@ -1,6 +1,7 @@
 #include "vkr/core/core_utils.hh"
 #include "vkr/core/instance.hh"
 #include <GLFW/glfw3.h>
+#include <cstring>
 
 namespace vkr::core {
 auto getRequiredExtensions(const std::vector<const char *> &preExtensions)

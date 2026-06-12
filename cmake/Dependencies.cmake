@@ -15,15 +15,15 @@ if (APPLE)
   set(HAS_VULKAN TRUE)
   set(HAS_MOLTENVK TRUE)
 
-elseif(WIN32)
-  find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
-  message(STATUS "Vulkan support for Windows enabled")
-
-  set(HAS_VULKAN TRUE)
-
 elseif(UNIX)
   find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
   message(STATUS "Vulkan support for Linux enabled")
+
+  set(HAS_VULKAN TRUE)
+
+elseif(WIN32)
+  find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
+  message(STATUS "Vulkan support for Windows enabled")
 
   set(HAS_VULKAN TRUE)
 

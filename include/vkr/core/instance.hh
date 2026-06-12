@@ -1,6 +1,8 @@
 #pragma once
 
 #include "vkr/core/debug_messenger.hh"
+#include <memory>
+#include <string>
 #include <vector>
 
 namespace vkr::core {
