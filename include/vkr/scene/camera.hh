@@ -68,12 +68,14 @@ public:
 
   void track();
 
-  [[nodiscard]] auto pos() const noexcept -> glm::vec3 { return desc_.pos; }
+  [[nodiscard]] auto desc() const noexcept -> const CameraDesc & {
+    return desc_;
+  }
 
+  [[nodiscard]] auto pos() const noexcept -> glm::vec3 { return desc_.pos; }
   [[nodiscard]] auto getView() const -> glm::mat4 {
     return glm::lookAt(desc_.pos, desc_.pos + desc_.front, desc_.up);
   }
-
   [[nodiscard]] auto getProjection() const -> glm::mat4 {
     glm::mat4 proj =
         glm::perspective(glm::radians(desc_.fov), desc_.aspectRatio,

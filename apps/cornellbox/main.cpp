@@ -53,22 +53,26 @@ private:
       ctx.camera.aspectRatio = ui->viewportInfo().width /
                                static_cast<float>(ui->viewportInfo().height);
     } else {
-      ctx.camera.aspectRatio = ctx.width / static_cast<float>(ctx.height);
+      ctx.camera.aspectRatio = ctx.window.ratio();
     }
   }
 
   void onConfigure() override {
-    ctx.appName = "cornellbox";
-    ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
+    ctx.window = {
+        .title = "Cornell Box",
+        .width = 1200,
+        .height = 900,
+    };
 
-    ctx.width = 1200;
-    ctx.height = 900;
-    ctx.title = "Cornell Box";
+    ctx.instance = {
+        .name = "cornellbox",
+        .version = VK_MAKE_VERSION(1, 0, 0),
+    };
 
     ctx.camera = {
         .movementSpeed = 5.0f,
         .mouseSensitivity = 0.5f,
-        .aspectRatio = ctx.width / static_cast<float>(ctx.height),
+        .aspectRatio = ctx.window.ratio(),
     };
 
     ctx.pipelineMode = vkr::pipeline::PipelineMode::Default3D;

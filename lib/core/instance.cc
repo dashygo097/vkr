@@ -3,24 +3,22 @@
 #include "vkr/logger.hh"
 
 namespace vkr::core {
-Instance::Instance(std::string appName, uint32_t appVersion,
-                   const std::vector<const char *> &preExtensions,
-                   const std::vector<const char *> &validationLayers)
-    : name_(appName), version_(appVersion) {
-  VKR_CORE_INFO("Creating Vulkan Instance: {} ({}.{}.{})...", appName,
-                VK_VERSION_MAJOR(appVersion), VK_VERSION_MINOR(appVersion),
-                VK_VERSION_PATCH(appVersion));
+Instance::Instance(InstanceDesc &desc) : desc_(desc) {
+  VKR_CORE_INFO("Creating Vulkan Instance: {} ({}.{}.{})...", desc_.name,
+                VK_VERSION_MAJOR(desc_.version),
+                VK_VERSION_MINOR(desc_.version),
+                VK_VERSION_PATCH(desc_.version));
 
 #ifndef NDEBUG
-  if (!checkValidationLayerSupport(validationLayers)) {
+  if (!checkValidationLayerSupport(desc_.validationLayers)) {
     VKR_CORE_ERROR("validation layers requested, but not available!");
   }
 #endif
 
   VkApplicationInfo appInfo{};
   appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  appInfo.pApplicationName = appName.c_str();
-  appInfo.applicationVersion = appVersion;
+  appInfo.pApplicationName = desc_.name.c_str();
+  appInfo.applicationVersion = desc_.version;
   appInfo.pEngineName = "vkr";
   appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
   appInfo.apiVersion = VK_API_VERSION_1_0;
@@ -30,14 +28,15 @@ Instance::Instance(std::string appName, uint32_t appVersion,
   createInfo.pApplicationInfo = &appInfo;
   createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
-  auto extensions = getRequiredExtensions(preExtensions);
+  auto extensions = getRequiredExtensions(desc_.extensions);
   createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
   createInfo.ppEnabledExtensionNames = extensions.data();
 
   VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 #ifndef NDEBUG
-  createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-  createInfo.ppEnabledLayerNames = validationLayers.data();
+  createInfo.enabledLayerCount =
+      static_cast<uint32_t>(desc_.validationLayers.size());
+  createInfo.ppEnabledLayerNames = desc_.validationLayers.data();
 
   DebugMessenger::populateCreateInfo(debugCreateInfo);
   createInfo.pNext = &debugCreateInfo;

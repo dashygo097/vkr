@@ -5,28 +5,47 @@
 
 namespace vkr::core {
 
+struct InstanceDesc {
+  std::string name{};
+  uint32_t version{VK_MAKE_VERSION(1, 0, 0)};
+  std::vector<const char *> extensions{
+#ifdef __APPLE__
+      VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+#endif
+      VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+  };
+  std::vector<const char *> validationLayers{"VK_LAYER_KHRONOS_validation"};
+
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return !name.empty() && version != 0;
+  }
+
+  template <typename Archive> auto serialize(Archive &ar) -> void {
+    ar("name", name);
+    ar("version", version);
+  }
+};
+
 class Instance {
 public:
-  explicit Instance(std::string appName, uint32_t appVersion,
-                    const std::vector<const char *> &preExtensions,
-                    const std::vector<const char *> &validationLayers);
+  explicit Instance(InstanceDesc &desc);
+  ~Instance();
 
   Instance(const Instance &) = delete;
   auto operator=(const Instance &) -> Instance & = delete;
 
-  ~Instance();
+  [[nodiscard]] auto desc() const noexcept -> const InstanceDesc & {
+    return desc_;
+  }
 
-  [[nodiscard]] auto name() const noexcept -> std::string { return name_; }
-  [[nodiscard]] auto version() const noexcept -> uint32_t { return version_; }
   [[nodiscard]] auto instance() const noexcept -> VkInstance {
     return vk_instance_;
   }
 
 private:
   // components
-  std::string name_{};
-  uint32_t version_;
   VkInstance vk_instance_{VK_NULL_HANDLE};
+  InstanceDesc &desc_;
 
 #ifndef NDEBUG
   std::unique_ptr<DebugMessenger> debug_messenger_;

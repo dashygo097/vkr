@@ -411,10 +411,10 @@ void GraphicsPipeline::loadDefaultSources() {
   }
   const auto &[defaultVert, defaultFrag] = it->second;
 
-  if (!instance_.name().empty()) {
-    std::string appDir = "shaders/" + instance_.name();
-    std::string appVert = appDir + "/" + instance_.name() + ".vert";
-    std::string appFrag = appDir + "/" + instance_.name() + ".frag";
+  if (!instance_.desc().name.empty()) {
+    std::string appDir = "shaders/" + instance_.desc().name;
+    std::string appVert = appDir + "/" + instance_.desc().name + ".vert";
+    std::string appFrag = appDir + "/" + instance_.desc().name + ".frag";
 
     if (!fs::exists(appVert) || !fs::exists(appFrag)) {
       std::error_code ec;

@@ -40,12 +40,16 @@ private:
   }
 
   void onConfigure() override {
-    ctx.appName = "canvas";
-    ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
+    ctx.window = {
+        .title = "Canvas",
+        .width = 1200,
+        .height = 900,
+    };
 
-    ctx.width = 1200;
-    ctx.height = 900;
-    ctx.title = "Canvas";
+    ctx.instance = {
+        .name = "canvas",
+        .version = VK_MAKE_VERSION(1, 0, 0),
+    };
 
     ctx.camera = {
         .locked = true,

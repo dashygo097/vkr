@@ -51,22 +51,22 @@ private:
         glfwGetMouseButton(window->glfwWindow(), GLFW_MOUSE_BUTTON_LEFT);
     if (leftButton == GLFW_PRESS && !mousePressed) {
       mouseState.z = static_cast<float>(mouseX);
-      mouseState.w = static_cast<float>(ctx.height - mouseY);
+      mouseState.w = static_cast<float>(ctx.window.height - mouseY);
       mousePressed = true;
     } else if (leftButton == GLFW_RELEASE) {
       mousePressed = false;
     }
 
     mouseState.x = static_cast<float>(mouseX);
-    mouseState.y = static_cast<float>(ctx.height - mouseY);
+    mouseState.y = static_cast<float>(ctx.window.height - mouseY);
 
     std::time_t t = std::time(nullptr);
     std::tm *now = std::localtime(&t);
 
     vkr::resource::UniformBufferShaderToyObject ubo{};
-    ubo.iResolution = glm::vec3(
-        static_cast<float>(ctx.width), static_cast<float>(ctx.height),
-        static_cast<float>(ctx.width) / static_cast<float>(ctx.height));
+    ubo.iResolution = glm::vec3(static_cast<float>(ctx.window.width),
+                                static_cast<float>(ctx.window.height),
+                                static_cast<float>(ctx.window.ratio()));
     ubo.iTime = totalTime;
     ubo.iTimeDelta = deltaTime;
     ubo.iFrameRate = (deltaTime > 0.0f) ? (1.0f / deltaTime) : 60.0f;
@@ -82,12 +82,16 @@ private:
   }
 
   void onConfigure() override {
-    ctx.appName = "shadertoy";
-    ctx.appVersion = VK_MAKE_VERSION(1, 0, 0);
+    ctx.window = {
+        .title = "ShaderToy Viewer",
+        .width = 1200,
+        .height = 900,
+    };
 
-    ctx.width = 1200;
-    ctx.height = 900;
-    ctx.title = "ShaderToy Viewer";
+    ctx.instance = {
+        .name = "shadertoy",
+        .version = VK_MAKE_VERSION(1, 0, 0),
+    };
 
     ctx.camera = {
         .locked = true,

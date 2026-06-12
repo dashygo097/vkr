@@ -3,6 +3,7 @@
 #include "vkr/util/io.hh"
 
 namespace vkr::pipeline {
+
 ShaderModule::ShaderModule(const core::Device &device,
                            const std::string &filePath)
     : device_(device) {

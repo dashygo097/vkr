@@ -6,13 +6,37 @@
 
 namespace vkr::core {
 
+struct WindowDesc {
+  std::string title{};
+  uint32_t width{};
+  uint32_t height{};
+
+  [[nodiscard]] auto ratio() const noexcept -> float {
+    return static_cast<float>(width) / static_cast<float>(height);
+  }
+
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return !title.empty() && width > 0 && height > 0;
+  }
+
+  template <typename Archive> auto serialize(Archive &ar) -> void {
+    ar("title", title);
+    ar("width", width);
+    ar("height", height);
+  }
+};
+
 class Window {
 public:
-  explicit Window(std::string title, uint32_t width, uint32_t height);
+  explicit Window(WindowDesc &desc);
   ~Window();
 
   Window(const Window &) = delete;
   auto operator=(const Window &) -> Window & = delete;
+
+  [[nodiscard]] auto desc() const noexcept -> const WindowDesc & {
+    return desc_;
+  }
 
   [[nodiscard]] auto shouldClose() const -> bool;
   void pollEvents() const;
@@ -21,16 +45,10 @@ public:
     return window_;
   }
 
-  [[nodiscard]] auto width() const noexcept -> uint32_t { return width_; }
-  [[nodiscard]] auto height() const noexcept -> uint32_t { return height_; }
-  [[nodiscard]] auto title() const noexcept -> std::string { return title_; }
-
 private:
   // components
   GLFWwindow *window_{nullptr};
-  uint32_t width_;
-  uint32_t height_;
-  std::string title_;
+  WindowDesc &desc_;
 };
 
 } // namespace vkr::core

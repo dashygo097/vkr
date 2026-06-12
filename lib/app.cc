@@ -13,21 +13,20 @@ void VulkanApplication::initVulkan() {
   }
 
   // window
-  window = std::make_unique<core::Window>(ctx.title, ctx.width, ctx.height);
+  window = std::make_unique<core::Window>(ctx.window);
   glfwSetWindowUserPointer(window->glfwWindow(), this);
   glfwSetFramebufferSizeCallback(window->glfwWindow(),
                                  framebufferResizeCallback);
 
   // instance
-  instance = std::make_unique<core::Instance>(
-      ctx.appName, ctx.appVersion, ctx.preExtensions, ctx.validationLayers);
+  instance = std::make_unique<core::Instance>(ctx.instance);
 
   // surface
   surface = std::make_unique<core::Surface>(*instance, *window);
 
   // device
   device = std::make_unique<core::Device>(
-      *instance, *surface, ctx.deviceExtensions, ctx.validationLayers);
+      *instance, *surface, ctx.deviceExtensions, ctx.instance.validationLayers);
 
   // swapchain
   swapchain = std::make_unique<core::Swapchain>(*window, *device, *surface,

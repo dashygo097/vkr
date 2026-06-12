@@ -6,8 +6,8 @@ namespace vkr::scene {
 Camera::Camera(const core::Window &window, const util::Timer &timer,
                pipeline::PipelineMode mode, CameraDesc &desc)
     : window_(window), timer_(timer), mode_(mode), desc_(desc) {
-  desc_.lastX = static_cast<float>(window.width()) / 2.0f;
-  desc_.lastY = static_cast<float>(window.height()) / 2.0f;
+  desc_.lastX = static_cast<float>(window.desc().width) / 2.0f;
+  desc_.lastY = static_cast<float>(window.desc().height) / 2.0f;
 
   updateVectors();
 
