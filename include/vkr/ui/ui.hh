@@ -67,6 +67,8 @@ public:
     }
   }
 
+  [[nodiscard]] auto shouldClose() -> bool { return should_close_; }
+
   void viewportInfo(const ViewportInfo &info) noexcept {
     viewport_info_ = info;
   }
@@ -103,6 +105,7 @@ private:
   ThemeConfig theme_config_{};
   LayoutMode layout_mode_{LayoutMode::FullScreen};
   ViewportInfo viewport_info_{};
+  bool should_close_{false};
 
   // helpers
   // Full screen mode

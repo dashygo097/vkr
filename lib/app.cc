@@ -1,5 +1,4 @@
 #include "vkr/app.hh"
-#include "vkr/pipeline/descriptors/binding.hh"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan_core.h>
 
@@ -142,7 +141,7 @@ void VulkanApplication::mainLoop() {
   timer->start();
   bool isLastTabKeyPressed = false;
 
-  while (!window->shouldClose()) {
+  while (!window->shouldClose() && !ui->shouldClose()) {
     timer->beginFrame();
 
     window->pollEvents();

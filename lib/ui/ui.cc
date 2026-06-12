@@ -192,6 +192,7 @@ void UI::renderDockspace() {
   if (ImGui::BeginMenuBar()) {
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("Exit")) {
+        should_close_ = true;
       }
       ImGui::EndMenu();
     }
