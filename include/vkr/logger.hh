@@ -99,6 +99,9 @@ public:
   static void init();
 
   static auto getUiSink() -> std::shared_ptr<UiLogSink> & { return ui_sink_; }
+  static auto getUtilLogger() -> std::shared_ptr<spdlog::logger> & {
+    return util_logger_;
+  }
   static auto getCoreLogger() -> std::shared_ptr<spdlog::logger> & {
     return core_logger_;
   }
@@ -117,22 +120,31 @@ public:
   static auto getUiLogger() -> std::shared_ptr<spdlog::logger> & {
     return ui_logger_;
   }
-  static auto getArchiveLogger() -> std::shared_ptr<spdlog::logger> & {
-    return archive_logger_;
-  }
 
 private:
   static std::shared_ptr<UiLogSink> ui_sink_;
+  static std::shared_ptr<spdlog::logger> util_logger_;
   static std::shared_ptr<spdlog::logger> core_logger_;
   static std::shared_ptr<spdlog::logger> resource_logger_;
   static std::shared_ptr<spdlog::logger> pipeline_logger_;
   static std::shared_ptr<spdlog::logger> render_logger_;
   static std::shared_ptr<spdlog::logger> scene_logger_;
   static std::shared_ptr<spdlog::logger> ui_logger_;
-  static std::shared_ptr<spdlog::logger> archive_logger_;
 };
 
 } // namespace vkr
+
+#define VKR_UTIL_TRACE(...) ::vkr::Logger::getUtilLogger()->trace(__VA_ARGS__);
+#define VKR_UTIL_DEBUG(...) ::vkr::Logger::getUtilLogger()->debug(__VA_ARGS__);
+#define VKR_UTIL_INFO(...) ::vkr::Logger::getUtilLogger()->info(__VA_ARGS__);
+#define VKR_UTIL_WARN(...) ::vkr::Logger::getUtilLogger()->warn(__VA_ARGS__);
+#define VKR_UTIL_CRIT(...)                                                     \
+  ::vkr::Logger::getUtilLogger()->critical(__VA_ARGS__);
+#define VKR_UTIL_ERROR(...)                                                    \
+  do {                                                                         \
+    ::vkr::Logger::getUtilLogger()->error(__VA_ARGS__);                        \
+    std::abort();                                                              \
+  } while (0);
 
 #define VKR_CORE_TRACE(...) ::vkr::Logger::getCoreLogger()->trace(__VA_ARGS__);
 #define VKR_CORE_DEBUG(...) ::vkr::Logger::getCoreLogger()->debug(__VA_ARGS__);
@@ -214,21 +226,5 @@ private:
 #define VKR_UI_ERROR(...)                                                      \
   do {                                                                         \
     ::vkr::Logger::getUiLogger()->error(__VA_ARGS__);                          \
-    std::abort();                                                              \
-  } while (0);
-
-#define VKR_ARCHIVE_TRACE(...)                                                 \
-  ::vkr::Logger::getArchiveLogger()->trace(__VA_ARGS__);
-#define VKR_ARCHIVE_DEBUG(...)                                                 \
-  ::vkr::Logger::getArchiveLogger()->debug(__VA_ARGS__);
-#define VKR_ARCHIVE_INFO(...)                                                  \
-  ::vkr::Logger::getArchiveLogger()->info(__VA_ARGS__);
-#define VKR_ARCHIVE_WARN(...)                                                  \
-  ::vkr::Logger::getArchiveLogger()->warn(__VA_ARGS__);
-#define VKR_ARCHIVE_CRIT(...)                                                  \
-  ::vkr::Logger::getArchiveLogger()->critical(__VA_ARGS__);
-#define VKR_ARCHIVE_ERROR(...)                                                 \
-  do {                                                                         \
-    ::vkr::Logger::getArchiveLogger()->error(__VA_ARGS__);                     \
     std::abort();                                                              \
   } while (0);

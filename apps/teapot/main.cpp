@@ -3,7 +3,6 @@
 #include <iostream>
 #include <vector>
 #include <vkr.hh>
-#include <vkr/archive/toml.hh>
 #include <vulkan/vulkan.h>
 
 class TeapotApp : public vkr::VulkanApplication {

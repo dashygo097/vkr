@@ -1,8 +1,8 @@
-#include "vkr/timer.hh"
+#include "vkr/util/timer.hh"
 #include <algorithm>
 #include <thread>
 
-namespace vkr {
+namespace vkr::util {
 
 Timer::Timer() { start(); }
 
@@ -102,4 +102,4 @@ void Timer::pushFrameTime(float frameTime) {
   delta_time_ = sum / static_cast<float>(frame_time_count_);
 }
 
-} // namespace vkr
+} // namespace vkr::util

@@ -1,7 +1,7 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
-#include "vkr/io_utils.hh"
 #include "vkr/logger.hh"
 #include "vkr/pipeline/shader_module.hh"
+#include "vkr/util/io.hh"
 #include <filesystem>
 #include <shaderc/shaderc.hpp>
 
@@ -257,8 +257,8 @@ auto GraphicsPipeline::rebuild(const std::string &vertShaderPath,
 
   std::vector<uint32_t> vertSpv, fragSpv;
   try {
-    vertSpv = fread_uint32(vertShaderPath);
-    fragSpv = fread_uint32(fragShaderPath);
+    vertSpv = util::fread_uint32(vertShaderPath);
+    fragSpv = util::fread_uint32(fragShaderPath);
   } catch (const std::exception &e) {
     VKR_PIPE_ERROR("Reload failed: {}", e.what());
     return false;
@@ -313,10 +313,10 @@ auto GraphicsPipeline::flushPendingRebuild() -> bool {
 
   if (ok) {
     if (!vert_src_path_.empty()) {
-      fwrite_string(vert_src_path_, req.vertSrc);
+      util::fwrite_string(vert_src_path_, req.vertSrc);
     }
     if (!frag_src_path_.empty()) {
-      fwrite_string(frag_src_path_, req.fragSrc);
+      util::fwrite_string(frag_src_path_, req.fragSrc);
     }
     vert_src_ = req.vertSrc;
     frag_src_ = req.fragSrc;
@@ -444,8 +444,8 @@ void GraphicsPipeline::loadDefaultSources() {
     if (fs::exists(appVert) && fs::exists(appFrag)) {
       vert_src_path_ = appVert;
       frag_src_path_ = appFrag;
-      vert_src_ = fread_string(appVert);
-      frag_src_ = fread_string(appFrag);
+      vert_src_ = util::fread_string(appVert);
+      frag_src_ = util::fread_string(appFrag);
       VKR_PIPE_INFO("Loaded app shaders: {} | {}", appVert, appFrag);
       return;
     }
@@ -457,8 +457,8 @@ void GraphicsPipeline::loadDefaultSources() {
 
   vert_src_path_ = "";
   frag_src_path_ = "";
-  vert_src_ = fread_string(defaultVert);
-  frag_src_ = fread_string(defaultFrag);
+  vert_src_ = util::fread_string(defaultVert);
+  frag_src_ = util::fread_string(defaultFrag);
   VKR_PIPE_INFO("Loaded mode-default shaders: {} / {} (read-only)", defaultVert,
                 defaultFrag);
 }

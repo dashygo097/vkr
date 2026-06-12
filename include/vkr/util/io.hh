@@ -3,7 +3,8 @@
 #include "vkr/logger.hh"
 #include <fstream>
 
-namespace vkr {
+namespace vkr::util {
+
 static auto fread_char(const std::string &path) -> std::vector<char> {
   std::ifstream file(path, std::ios::ate | std::ios::binary);
   if (!file.is_open()) {
@@ -50,4 +51,4 @@ static void fwrite_string(const std::string &path, const std::string &content) {
   VKR_CORE_INFO("Shader source saved to: {}", path);
 }
 
-} // namespace vkr
+} // namespace vkr::util

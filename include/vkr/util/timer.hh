@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace vkr {
+namespace vkr::util {
 
 static constexpr size_t FRAME_TIME_HISTORY_SIZE = 60;
 
@@ -66,4 +66,4 @@ private:
   void pushFrameTime(float frameTime);
 };
 
-} // namespace vkr
+} // namespace vkr::util

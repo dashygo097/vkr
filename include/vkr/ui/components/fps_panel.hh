@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/timer.hh"
+#include "vkr/util/timer.hh"
 #include <array>
 #include <cstdint>
 
@@ -9,7 +9,7 @@ static constexpr uint32_t FPS_PANEL_HISTORY_SIZE = 256;
 
 class FPSPanel {
 public:
-  explicit FPSPanel(Timer &timer);
+  explicit FPSPanel(util::Timer &timer);
   ~FPSPanel() = default;
 
   FPSPanel(const FPSPanel &) = delete;
@@ -20,7 +20,7 @@ public:
 
 private:
   // dependencies
-  Timer &timer_;
+  util::Timer &timer_;
 
   // components
   std::array<float, FPS_PANEL_HISTORY_SIZE> fps_history_{};

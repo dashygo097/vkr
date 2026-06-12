@@ -1,6 +1,6 @@
 #include "vkr/pipeline/shader_module.hh"
-#include "vkr/io_utils.hh"
 #include "vkr/logger.hh"
+#include "vkr/util/io.hh"
 
 namespace vkr::pipeline {
 ShaderModule::ShaderModule(const core::Device &device,
@@ -8,7 +8,7 @@ ShaderModule::ShaderModule(const core::Device &device,
     : device_(device) {
   VKR_PIPE_INFO("Creating shader module from file: {}...", filePath);
 
-  auto code = fread_char(filePath);
+  auto code = util::fread_char(filePath);
   VkShaderModuleCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   createInfo.codeSize = code.size();

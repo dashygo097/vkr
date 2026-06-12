@@ -120,7 +120,7 @@ void VulkanApplication::initVulkan() {
   descriptorSets->bindResources();
 
   // timer
-  timer = std::make_unique<Timer>();
+  timer = std::make_unique<util::Timer>();
 
   // ui
   ui = std::make_unique<ui::UI>(

@@ -17,7 +17,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
        pipeline::GraphicsPipeline &graphicsPipeline,
-       pipeline::PipelineMode mode, Timer &timer)
+       pipeline::PipelineMode mode, util::Timer &timer)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), resource_manager_(resourceManager),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),

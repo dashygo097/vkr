@@ -8,12 +8,12 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/resource/offscreen_target.hh"
-#include "vkr/timer.hh"
 #include "vkr/ui/components/fps_panel.hh"
 #include "vkr/ui/components/logging_panel.hh"
 #include "vkr/ui/components/resource_tree.hh"
 #include "vkr/ui/components/shader_editor.hh"
 #include "vkr/ui/theme.hh"
+#include "vkr/util/timer.hh"
 #include <memory>
 
 namespace vkr::ui {
@@ -39,7 +39,7 @@ public:
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
      pipeline::GraphicsPipeline &graphicsPipeline, pipeline::PipelineMode mode,
-     Timer &timer);
+     util::Timer &timer);
   ~UI();
 
   UI(const UI &) = delete;
@@ -93,7 +93,7 @@ private:
   const pipeline::DescriptorPool &descriptor_pool_;
   pipeline::GraphicsPipeline &graphics_pipeline_;
   pipeline::PipelineMode mode_;
-  Timer &timer_;
+  util::Timer &timer_;
 
   // components
   std::unique_ptr<ResourceTree> resource_tree_;

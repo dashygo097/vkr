@@ -1,6 +1,5 @@
 #pragma once
 
-#include "vkr/archive/toml.hh"
 #include "vkr/context.hh"
 #include "vkr/core/core.hh"
 #include "vkr/logger.hh"
@@ -9,8 +8,9 @@
 #include "vkr/render/renderer.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/scene/scene.hh"
-#include "vkr/timer.hh"
 #include "vkr/ui/ui.hh"
+#include "vkr/util/timer.hh"
+#include "vkr/util/toml.hh"
 
 #include <filesystem>
 
@@ -71,7 +71,7 @@ public:
 
   // components
   std::unique_ptr<scene::Camera> camera;
-  std::unique_ptr<Timer> timer;
+  std::unique_ptr<util::Timer> timer;
 
 protected:
   virtual void onConfigure() {}
@@ -97,22 +97,22 @@ private:
     const auto path = snapshotPath();
 
     if (!std::filesystem::exists(path)) {
-      VKR_ARCHIVE_INFO("snapshot not found, using default config: {}",
-                       path.string());
+      VKR_UTIL_INFO("snapshot not found, using default config: {}",
+                    path.string());
       return;
     }
 
-    if (!vkr::archive::loadTomlFile(path, ctx)) {
-      VKR_ARCHIVE_WARN("failed to load snapshot, using default config: {}",
-                       path.string());
+    if (!vkr::util::loadTomlFile(path, ctx)) {
+      VKR_UTIL_WARN("failed to load snapshot, using default config: {}",
+                    path.string());
     }
   }
 
   void saveSnapshot() {
     const auto path = snapshotPath();
 
-    if (!vkr::archive::saveTomlFile(path, ctx)) {
-      VKR_ARCHIVE_WARN("failed to save snapshot: {}", path.string());
+    if (!vkr::util::saveTomlFile(path, ctx)) {
+      VKR_UTIL_WARN("failed to save snapshot: {}", path.string());
     }
   }
 };

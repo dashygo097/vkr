@@ -12,7 +12,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace vkr::archive {
+namespace vkr::util {
 
 template <typename T> struct IsGlmVec3 : std::false_type {};
 
@@ -196,17 +196,17 @@ auto saveTomlFile(const std::filesystem::path &path, const T &value) -> bool {
 
   std::ofstream file(path);
   if (!file) {
-    VKR_ARCHIVE_WARN("failed to open TOML file for writing: {}", path.string());
+    VKR_UTIL_WARN("failed to open TOML file for writing: {}", path.string());
     return false;
   }
 
   file << root;
   if (!file.good()) {
-    VKR_ARCHIVE_WARN("failed to write TOML file: {}", path.string());
+    VKR_UTIL_WARN("failed to write TOML file: {}", path.string());
     return false;
   }
 
-  VKR_ARCHIVE_INFO("saved TOML file: {}", path.string());
+  VKR_UTIL_INFO("saved TOML file: {}", path.string());
   return true;
 }
 
@@ -221,19 +221,19 @@ auto loadTomlFile(const std::filesystem::path &path, T &value) -> bool {
 
     if constexpr (HasIsValid<T>::value) {
       if (!next.isValid()) {
-        VKR_ARCHIVE_WARN("invalid TOML data: {}", path.string());
+        VKR_UTIL_WARN("invalid TOML data: {}", path.string());
         return false;
       }
     }
 
     value = next;
-    VKR_ARCHIVE_INFO("loaded TOML file: {}", path.string());
+    VKR_UTIL_INFO("loaded TOML file: {}", path.string());
     return true;
   } catch (const toml::parse_error &e) {
-    VKR_ARCHIVE_WARN("failed to parse TOML file '{}': {}", path.string(),
-                     e.description());
+    VKR_UTIL_WARN("failed to parse TOML file '{}': {}", path.string(),
+                  e.description());
     return false;
   }
 }
 
-} // namespace vkr::archive
+} // namespace vkr::util
