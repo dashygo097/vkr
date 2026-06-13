@@ -3,17 +3,35 @@
 #include "vkr/core/instance.hh"
 #include "vkr/core/surface.hh"
 
+#ifdef __APPLE__
+#include <vulkan/vulkan_beta.h>
+#endif
+
 namespace vkr::core {
+
+struct DeviceDesc {
+  std::vector<const char *> extensions{
+      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+#ifdef __APPLE__
+      VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+#endif
+  };
+
+  [[nodiscard]] auto isValid() const noexcept -> bool { return true; }
+
+  template <typename Archive> auto serialize(Archive &ar) -> void {}
+};
 
 class Device {
 public:
   explicit Device(const Instance &instance, const Surface &surface,
-                  const std::vector<const char *> &deviceExtensions,
-                  const std::vector<const char *> &validationLayers);
+                  DeviceDesc &deviceDesc);
   ~Device();
 
   Device(const Device &) = delete;
   auto operator=(const Device &) -> Device & = delete;
+
+  [[nodiscard]] auto desc() const noexcept -> DeviceDesc { return desc_; }
 
   void waitIdle();
 
@@ -40,10 +58,10 @@ private:
   VkDevice vk_logical_device_{VK_NULL_HANDLE};
   VkQueue vk_graphics_queue_{VK_NULL_HANDLE};
   VkQueue vk_present_queue_{VK_NULL_HANDLE};
+  DeviceDesc &desc_;
 
   void pickPhysicalDevice();
-  void createLogicalDevice(std::vector<const char *> deviceExtensions,
-                           std::vector<const char *> validationLayers);
+  void createLogicalDevice();
 
   [[nodiscard]] auto isSuitable(VkPhysicalDevice physicalDevice) -> bool;
 };

@@ -25,8 +25,7 @@ void VulkanApplication::initVulkan() {
   surface = std::make_unique<core::Surface>(*instance, *window);
 
   // device
-  device = std::make_unique<core::Device>(
-      *instance, *surface, ctx.deviceExtensions, ctx.instance.validationLayers);
+  device = std::make_unique<core::Device>(*instance, *surface, ctx.device);
 
   // swapchain
   swapchain = std::make_unique<core::Swapchain>(*window, *device, *surface,

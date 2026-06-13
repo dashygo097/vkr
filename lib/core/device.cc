@@ -6,16 +6,14 @@
 
 namespace vkr::core {
 Device::Device(const Instance &instance, const Surface &surface,
-               const std::vector<const char *> &deviceExtensions,
-               const std::vector<const char *> &validationLayers)
-    : instance_(instance), surface_(surface) {
+               DeviceDesc &deviceDesc)
+    : instance_(instance), surface_(surface), desc_(deviceDesc) {
   VKR_CORE_INFO("Creating logical device...");
 
   pickPhysicalDevice();
+  createLogicalDevice();
 
-  createLogicalDevice(deviceExtensions, validationLayers);
-
-  for (const auto &ext : deviceExtensions) {
+  for (const auto &ext : desc_.extensions) {
     VKR_CORE_TRACE("Enabled Extension: {}", ext);
   }
 
@@ -76,8 +74,7 @@ void Device::pickPhysicalDevice() {
   }
 }
 
-void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
-                                 std::vector<const char *> validationLayers) {
+void Device::createLogicalDevice() {
   QueueFamilyIndices indices(vk_physical_device_, surface_);
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -107,12 +104,13 @@ void Device::createLogicalDevice(std::vector<const char *> deviceExtensions,
   createInfo.pEnabledFeatures = &deviceFeatures;
 
   createInfo.enabledExtensionCount =
-      static_cast<uint32_t>(deviceExtensions.size());
-  createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+      static_cast<uint32_t>(desc_.extensions.size());
+  createInfo.ppEnabledExtensionNames = desc_.extensions.data();
 
 #ifndef NDEBUG
-  createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-  createInfo.ppEnabledLayerNames = validationLayers.data();
+  createInfo.enabledLayerCount =
+      static_cast<uint32_t>(instance_.desc().validationLayers.size());
+  createInfo.ppEnabledLayerNames = instance_.desc().validationLayers.data();
 #else
   createInfo.enabledLayerCount = 0;
 #endif
