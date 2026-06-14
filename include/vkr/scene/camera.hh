@@ -35,7 +35,7 @@ struct CameraDesc {
   float lastY{0.0f};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
-    return aspectRatio > 0.0f && nearPlane > 0.0f && farPlane > nearPlane;
+    return nearPlane > 0.0f && farPlane > nearPlane;
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {

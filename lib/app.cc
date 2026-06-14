@@ -8,6 +8,7 @@ void VulkanApplication::initVulkan() {
   Logger::init();
   onConfigure();
   loadSnapshot();
+
   if (!ctx.isValid()) {
     VKR_CORE_ERROR("invalid Vulkan context config");
   }
@@ -29,7 +30,7 @@ void VulkanApplication::initVulkan() {
 
   // swapchain
   swapchain = std::make_unique<core::Swapchain>(*window, *device, *surface,
-                                                ctx.presentModePolicy);
+                                                ctx.swapchain);
 
   // command pool
   commandPool = std::make_unique<core::CommandPool>(*device, *surface);

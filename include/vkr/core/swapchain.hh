@@ -12,6 +12,16 @@ enum class PresentModePolicy {
   Uncapped,
 };
 
+struct SwapchainDesc {
+  PresentModePolicy present_mode_policy{PresentModePolicy::Uncapped};
+
+  [[nodiscard]] auto isValid() const noexcept -> bool { return true; }
+
+  template <typename Archive> auto serialize(Archive &ar) -> void {
+    ar("present", present_mode_policy);
+  }
+};
+
 struct SwapchainSupportDetails {
   VkSurfaceCapabilitiesKHR capabilities{};
   std::vector<VkSurfaceFormatKHR> formats{};
@@ -37,29 +47,20 @@ auto presentModeName(VkPresentModeKHR mode) -> const char *;
 
 class Swapchain {
 public:
-  explicit Swapchain(
-      const Window &window, const Device &device, const Surface &surface,
-      PresentModePolicy presentModePolicy = PresentModePolicy::Uncapped);
+  explicit Swapchain(const Window &window, const Device &device,
+                     const Surface &surface, SwapchainDesc &desc);
   ~Swapchain();
 
   Swapchain(const Swapchain &) = delete;
   auto operator=(const Swapchain &) -> Swapchain & = delete;
 
+  [[nodiscard]] auto desc() const noexcept -> const SwapchainDesc & {
+    return desc_;
+  }
+
   void create();
   void destroy();
   void recreate();
-
-  void setPresentModePolicy(PresentModePolicy policy) noexcept {
-    present_mode_policy_ = policy;
-  }
-
-  [[nodiscard]] auto presentModePolicy() const noexcept -> PresentModePolicy {
-    return present_mode_policy_;
-  }
-
-  [[nodiscard]] auto presentMode() const noexcept -> VkPresentModeKHR {
-    return vk_present_mode_;
-  }
 
   [[nodiscard]] auto swapchain() const noexcept -> VkSwapchainKHR {
     return vk_swapchain_;
@@ -98,9 +99,6 @@ private:
   const Device &device_;
   const Surface &surface_;
 
-  // config
-  PresentModePolicy present_mode_policy_{PresentModePolicy::Uncapped};
-
   // components
   VkSwapchainKHR vk_swapchain_{VK_NULL_HANDLE};
   std::vector<VkImage> vk_images_{};
@@ -108,6 +106,7 @@ private:
   VkFormat vk_format_{VK_FORMAT_UNDEFINED};
   VkExtent2D vk_extent_{};
   VkPresentModeKHR vk_present_mode_{VK_PRESENT_MODE_FIFO_KHR};
+  SwapchainDesc &desc_;
 };
 
 } // namespace vkr::core

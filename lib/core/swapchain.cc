@@ -7,10 +7,8 @@
 namespace vkr::core {
 
 Swapchain::Swapchain(const Window &window, const Device &device,
-                     const Surface &surface,
-                     PresentModePolicy presentModePolicy)
-    : window_(window), device_(device), surface_(surface),
-      present_mode_policy_(presentModePolicy) {
+                     const Surface &surface, SwapchainDesc &desc)
+    : window_(window), device_(device), surface_(surface), desc_(desc) {
   VKR_CORE_INFO("Creating initial swapchain...");
   create();
   VKR_CORE_INFO("Initial swapchain created successfully.");
@@ -32,7 +30,7 @@ void Swapchain::create() {
       chooseSwapSurfaceFormat(swapchainSupport.formats);
 
   VkPresentModeKHR presentMode = chooseSwapPresentMode(
-      swapchainSupport.presentModes, present_mode_policy_);
+      swapchainSupport.presentModes, desc_.present_mode_policy);
 
   VkExtent2D extent =
       chooseSwapExtent(window_.glfwWindow(), swapchainSupport.capabilities);

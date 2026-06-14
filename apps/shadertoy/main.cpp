@@ -100,7 +100,6 @@ private:
     startTime = std::chrono::high_resolution_clock::now();
     lastFrameTime = startTime;
 
-    ctx.presentModePolicy = vkr::core::PresentModePolicy::VSync;
     ctx.pipelineMode = vkr::pipeline::PipelineMode::NoVertices;
   }
 };

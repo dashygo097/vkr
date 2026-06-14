@@ -1,5 +1,4 @@
 #include "vkr/core/core_utils.hh"
-#include "vkr/core/instance.hh"
 #include <GLFW/glfw3.h>
 #include <cstring>
 
@@ -48,4 +47,5 @@ auto checkValidationLayerSupport(
 
   return true;
 };
+
 } // namespace vkr::core

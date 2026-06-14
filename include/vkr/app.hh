@@ -11,7 +11,6 @@
 #include "vkr/ui/ui.hh"
 #include "vkr/util/timer.hh"
 #include "vkr/util/toml.hh"
-
 #include <filesystem>
 
 namespace vkr {
