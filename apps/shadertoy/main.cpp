@@ -93,6 +93,10 @@ private:
         .version = VK_MAKE_VERSION(1, 0, 0),
     };
 
+    ctx.swapchain = {
+        .present_mode_policy = vkr::core::PresentModePolicy::VSync,
+    };
+
     ctx.camera = {
         .locked = true,
     };
