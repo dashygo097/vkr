@@ -15,18 +15,18 @@ private:
 
   void createResources() override {
     vkr::resource::Mesh<vkr::resource::Vertex3D> light(*device, *commandPool);
-    light.load(ctx.assetsDir + "objects/cornellbox/light.obj");
+    light.load(assetSystem->resolve("objects/cornellbox/light.obj"));
     vkr::resource::Mesh<vkr::resource::Vertex3D> floor(*device, *commandPool);
-    floor.load(ctx.assetsDir + "objects/cornellbox/floor.obj");
+    floor.load(assetSystem->resolve("objects/cornellbox/floor.obj"));
     vkr::resource::Mesh<vkr::resource::Vertex3D> left(*device, *commandPool);
-    left.load(ctx.assetsDir + "objects/cornellbox/left.obj");
+    left.load(assetSystem->resolve("objects/cornellbox/left.obj"));
     vkr::resource::Mesh<vkr::resource::Vertex3D> right(*device, *commandPool);
-    right.load(ctx.assetsDir + "objects/cornellbox/right.obj");
+    right.load(assetSystem->resolve("objects/cornellbox/right.obj"));
     vkr::resource::Mesh<vkr::resource::Vertex3D> tallbox(*device, *commandPool);
-    tallbox.load(ctx.assetsDir + "objects/cornellbox/tallbox.obj");
+    tallbox.load(assetSystem->resolve("objects/cornellbox/tallbox.obj"));
     vkr::resource::Mesh<vkr::resource::Vertex3D> shortbox(*device,
                                                           *commandPool);
-    shortbox.load(ctx.assetsDir + "objects/cornellbox/shortbox.obj");
+    shortbox.load(assetSystem->resolve("objects/cornellbox/shortbox.obj"));
 
     resourceManager->createMesh("light", light);
     resourceManager->createMesh("floor", floor);

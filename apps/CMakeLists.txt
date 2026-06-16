@@ -20,7 +20,6 @@ function(add_app_target APP_NAME APP_DIR)
   target_link_libraries(${APP_NAME} PRIVATE vkr)
 
   set(APP_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin/${APP_NAME})
-  file(MAKE_DIRECTORY ${APP_OUTPUT_DIR})
 
   set_target_properties(${APP_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${APP_OUTPUT_DIR}
@@ -33,6 +32,15 @@ function(add_app_target APP_NAME APP_DIR)
       RUNTIME_OUTPUT_DIRECTORY_${CONFIG_TYPE_UPPER} ${APP_OUTPUT_DIR}
     )
   endforeach()
+
+  if(EXISTS ${APP_DIR}/assets)
+    add_custom_command(TARGET ${APP_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${APP_DIR}/assets
+        ${APP_OUTPUT_DIR}/assets
+      COMMENT "Copying assets for ${APP_NAME}"
+    )
+  endif()
 
   print_info("  -- Adding Executable: ${APP_NAME} -> ${APP_OUTPUT_DIR}\n" "92")
 

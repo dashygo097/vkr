@@ -35,7 +35,7 @@ void Logger::init() {
   sinks.push_back(ui_sink_);
 
   util_logger_ =
-      std::make_shared<spdlog::logger>("util ", sinks.begin(), sinks.end());
+      std::make_shared<spdlog::logger>("util    ", sinks.begin(), sinks.end());
   core_logger_ =
       std::make_shared<spdlog::logger>("core    ", sinks.begin(), sinks.end());
   resource_logger_ =

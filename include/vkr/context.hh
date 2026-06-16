@@ -6,15 +6,15 @@
 #include "vkr/core/window.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/scene/camera.hh"
+#include "vkr/util/asset.hh"
 #include <GLFW/glfw3.h>
-#include <string>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_beta.h>
 
 namespace vkr {
 
 struct VulkanContext {
-  std::string assetsDir{DEFAULT_ASSETS_DIR};
+  util::AssetDesc asset{};
   core::WindowDesc window{};
   core::InstanceDesc instance{};
   core::DeviceDesc device{};
@@ -27,11 +27,12 @@ struct VulkanContext {
   bool framebufferResized{};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
-    return window.isValid() && instance.isValid() && device.isValid() &&
-           swapchain.isValid() && camera.isValid();
+    return asset.isValid() && window.isValid() && instance.isValid() &&
+           device.isValid() && swapchain.isValid() && camera.isValid();
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
+    ar("asset", asset);
     ar("window", window);
     ar("instance", instance);
     ar("device", device);

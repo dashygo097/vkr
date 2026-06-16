@@ -9,6 +9,7 @@
 #include "vkr/resource/manager.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/ui/ui.hh"
+#include "vkr/util/asset.hh"
 #include "vkr/util/timer.hh"
 #include "vkr/util/toml.hh"
 #include <filesystem>
@@ -38,6 +39,8 @@ public:
   VulkanContext ctx;
 
   // core
+  std::unique_ptr<util::AssetSystem> assetSystem;
+
   std::unique_ptr<core::Window> window;
   std::unique_ptr<core::Instance> instance;
   std::unique_ptr<core::Surface> surface;

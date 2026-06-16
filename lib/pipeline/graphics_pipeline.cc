@@ -369,35 +369,35 @@ static const std::unordered_map<PipelineMode,
                                 std::pair<std::string, std::string>>
     kDefaultSourcePaths = {
         {PipelineMode::Default2D,
-         {std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/default2d/default2d.vert",
-          std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/default2d/default2d.frag"}},
+         {std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/default2d/default2d.vert",
+          std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/default2d/default2d.frag"}},
         {PipelineMode::Textured2D,
-         {std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defautls/texture2d/texture2d.vert",
-          std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/texture2d/texture2d.frag"}},
+         {std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/texture2d/texture2d.vert",
+          std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/texture2d/texture2d.frag"}},
         {PipelineMode::Default3D,
-         {std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/default3d/default3d.vert",
-          std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/default3d/default3d.frag"}},
+         {std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/default3d/default3d.vert",
+          std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/default3d/default3d.frag"}},
         {PipelineMode::Normal3D,
-         {std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/normal3d/normal3d.vert",
-          std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/normal3d/normal3d.frag"}},
+         {std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/normal3d/normal3d.vert",
+          std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/normal3d/normal3d.frag"}},
         {PipelineMode::Textured3D,
-         {std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/texture3d/texture3d.vert",
-          std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/texture3d/texture3d.frag"}},
+         {std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/texture3d/texture3d.vert",
+          std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/texture3d/texture3d.frag"}},
         {PipelineMode::NoVertices,
-         {std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/shadertoy/shadertoy.vert",
-          std::string(DEFAULT_ASSETS_DIR) +
-              "shaders/defaults/shadertoy/shadertoy.frag"}},
+         {std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/shadertoy/shadertoy.vert",
+          std::string(ENGINE_ASSETS_DIR) +
+              "assets/shaders/shadertoy/shadertoy.frag"}},
 };
 
 void GraphicsPipeline::loadDefaultSources() {
@@ -412,7 +412,7 @@ void GraphicsPipeline::loadDefaultSources() {
   const auto &[defaultVert, defaultFrag] = it->second;
 
   if (!instance_.desc().name.empty()) {
-    std::string appDir = "shaders/" + instance_.desc().name;
+    std::string appDir = "assets/shaders/" + instance_.desc().name;
     std::string appVert = appDir + "/" + instance_.desc().name + ".vert";
     std::string appFrag = appDir + "/" + instance_.desc().name + ".frag";
 

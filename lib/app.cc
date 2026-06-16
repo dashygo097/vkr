@@ -13,6 +13,9 @@ void VulkanApplication::initVulkan() {
     VKR_CORE_ERROR("invalid Vulkan context config");
   }
 
+  // asset
+  assetSystem = std::make_unique<util::AssetSystem>(ctx.asset);
+
   // window
   window = std::make_unique<core::Window>(ctx.window);
   glfwSetWindowUserPointer(window->glfwWindow(), this);

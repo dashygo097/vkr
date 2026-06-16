@@ -37,8 +37,8 @@ private:
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
 
-    resourceManager->createTexture("image1",
-                                   ctx.assetsDir + "textures/avatar.jpg");
+    resourceManager->createTexture(
+        "image1", assetSystem->resolve("textures/avatar.jpg").string());
   }
 
   auto createDescriptorBindings()

@@ -16,7 +16,7 @@ private:
   void createResources() override {
     vkr::resource::Mesh<vkr::resource::VertexNormal3D> teapot(*device,
                                                               *commandPool);
-    teapot.load(ctx.assetsDir + "objects/teapot/teapot.obj");
+    teapot.load(assetSystem->resolve("objects/teapot/teapot.obj"));
 
     resourceManager->createMesh("teapot", teapot);
 
