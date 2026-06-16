@@ -39,17 +39,17 @@ class AssetSystem {
 public:
   explicit AssetSystem(const AssetDesc &desc) : desc_(std::move(desc)) {
     if (!desc_.isValid()) {
-      VKR_UTIL_ERROR("invalid asset descriptor");
+      VKR_UTIL_ERROR("Invalid asset descriptor");
     }
 
     VKR_UTIL_INFO(
-        "asset engine root: {}",
+        "Asset engine root: {}",
         std::filesystem::path(desc_.engineRoot).lexically_normal().string());
     VKR_UTIL_INFO(
-        "asset app root: {}",
+        "Asset app root: {}",
         std::filesystem::path(desc_.appRoot).lexically_normal().string());
     VKR_UTIL_INFO(
-        "asset user root: {}",
+        "Asset user root: {}",
         std::filesystem::path(desc_.userRoot).lexically_normal().string());
   }
 
@@ -62,7 +62,7 @@ public:
     auto result = tryResolve(logicalPath);
 
     if (!result) {
-      VKR_UTIL_ERROR("asset not found: {}", std::string(logicalPath));
+      VKR_UTIL_ERROR("Asset not found: {}", std::string(logicalPath));
     }
 
     return *result;
@@ -88,7 +88,7 @@ public:
 
     if (path.is_absolute()) {
       if (!desc_.allowAbsolutePath) {
-        VKR_UTIL_WARN("absolute asset path rejected: {}", path.string());
+        VKR_UTIL_WARN("Absolute asset path rejected: {}", path.string());
         return std::nullopt;
       }
 
@@ -135,7 +135,7 @@ public:
 
     std::ifstream file(path);
     if (!file) {
-      VKR_UTIL_ERROR("failed to open text asset: {}", path.string());
+      VKR_UTIL_ERROR("Failed to open text asset: {}", path.string());
     }
 
     std::ostringstream ss;
@@ -185,7 +185,7 @@ private:
     auto rel = std::filesystem::path(std::string(relativePath));
 
     if (!isSafeRelativePath(rel)) {
-      VKR_UTIL_WARN("unsafe asset path rejected: {}", rel.string());
+      VKR_UTIL_WARN("Unsafe asset path rejected: {}", rel.string());
       return std::nullopt;
     }
 
