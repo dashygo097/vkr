@@ -20,9 +20,6 @@ struct AssetDesc {
   std::string engineRoot{std::string{ENGINE_ASSETS_DIR} + "assets/"};
   std::string appRoot{"assets"};
   std::string userRoot{"."};
-  bool preferAppRoot{true};
-  bool allowAbsolutePath{false};
-  bool requireExists{true};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return !engineRoot.empty() && !appRoot.empty() && !userRoot.empty();
@@ -87,31 +84,19 @@ public:
     auto path = std::filesystem::path(raw);
 
     if (path.is_absolute()) {
-      if (!desc_.allowAbsolutePath) {
-        VKR_UTIL_WARN("Absolute asset path rejected: {}", path.string());
-        return std::nullopt;
-      }
-
       auto normalized = path.lexically_normal();
-      if (!desc_.requireExists || std::filesystem::exists(normalized)) {
+      if (std::filesystem::exists(normalized)) {
         return normalized;
       }
 
       return std::nullopt;
     }
 
-    if (desc_.preferAppRoot) {
-      if (auto app = resolveFromRoot(rootPath(AssetRootKind::App), raw)) {
-        return app;
-      }
-      return resolveFromRoot(rootPath(AssetRootKind::Engine), raw);
+    if (auto app = resolveFromRoot(rootPath(AssetRootKind::App), raw)) {
+      return app;
     }
 
-    if (auto engine = resolveFromRoot(rootPath(AssetRootKind::Engine), raw)) {
-      return engine;
-    }
-
-    return resolveFromRoot(rootPath(AssetRootKind::App), raw);
+    return resolveFromRoot(rootPath(AssetRootKind::Engine), raw);
   }
 
   [[nodiscard]] auto resolveEngine(std::string_view path) const
@@ -191,7 +176,7 @@ private:
 
     auto candidate = (root / rel).lexically_normal();
 
-    if (!desc_.requireExists || std::filesystem::exists(candidate)) {
+    if (std::filesystem::exists(candidate)) {
       return candidate;
     }
 
