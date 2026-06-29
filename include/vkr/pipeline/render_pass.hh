@@ -49,6 +49,14 @@ struct RenderPassDesc {
   [[nodiscard]] auto attachmentCount() const noexcept -> uint32_t {
     return static_cast<uint32_t>(colors.size() + (depth.enabled ? 1 : 0));
   }
+
+  // factories
+  [[nodiscard]] static auto makeSwapchain(VkFormat colorFormat,
+                                          VkFormat depthFormat)
+      -> RenderPassDesc;
+  [[nodiscard]] static auto makeOffscreen(VkFormat colorFormat,
+                                          VkFormat depthFormat)
+      -> RenderPassDesc;
 };
 
 class RenderPass {
@@ -79,12 +87,5 @@ private:
   RenderPassDesc desc_{};
   VkRenderPass vk_render_pass_{VK_NULL_HANDLE};
 };
-
-// factories
-auto makeSwapchainRenderPassDesc(const core::Device &device,
-                                 const core::Swapchain &swapchain)
-    -> RenderPassDesc;
-auto makeOffscreenRenderPassDesc(VkFormat colorFormat, VkFormat depthFormat)
-    -> RenderPassDesc;
 
 } // namespace vkr::pipeline

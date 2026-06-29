@@ -45,17 +45,17 @@ void VulkanApplication::initVulkan() {
   // sync objects
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
-  // render pass (swapchain)
-  pipeline::RenderPassDesc swapchainRenderPassDesc =
-      pipeline::makeSwapchainRenderPassDesc(*device, *swapchain);
-  swapchainRenderPass = std::make_unique<pipeline::RenderPass>(*device);
-  swapchainRenderPass->update(swapchainRenderPassDesc);
-
   // resource manager
   depthResources = std::make_unique<resource::DepthResources>(
       *device, *swapchain, *commandPool);
   resourceManager = std::make_unique<resource::ResourceManager>(
       *device, *swapchain, *commandPool);
+
+  // render pass (swapchain)
+  swapchainRenderPass = std::make_unique<pipeline::RenderPass>(*device);
+  swapchainRenderPass->update(pipeline::RenderPassDesc::makeSwapchain(
+      swapchain->format(),
+      vkr::resource::findDepthFormat(device->physicalDevice())));
 
   // framebuffer set (swapchain)
   resource::FramebufferDesc swapchainfbDesc;
@@ -71,11 +71,9 @@ void VulkanApplication::initVulkan() {
                                         swapchainfbDesc);
 
   // render pass (offscreen)
-  pipeline::RenderPassDesc offscreenRenderPassDesc =
-      pipeline::makeOffscreenRenderPassDesc(VK_FORMAT_R8G8B8A8_UNORM,
-                                            VK_FORMAT_D32_SFLOAT);
   offscreenRenderPass = std::make_unique<pipeline::RenderPass>(*device);
-  offscreenRenderPass->update(offscreenRenderPassDesc);
+  offscreenRenderPass->update(pipeline::RenderPassDesc::makeOffscreen(
+      VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D32_SFLOAT));
   offscreenTarget = std::make_unique<resource::OffscreenTarget>(
       *device, *commandPool, *offscreenRenderPass);
   offscreenTarget->resize(swapchain->extent2D());

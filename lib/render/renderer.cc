@@ -200,23 +200,6 @@ void Renderer::drawUI(const FrameData &frameData) {
   ui_.render(frameData.commandBuffer);
 }
 
-void Renderer::recreateSwapchain() {
-  device_.waitIdle();
-
-  swapchain_.recreate();
-
-  if (swapchain_recreate_callback_) {
-    swapchain_recreate_callback_();
-    return;
-  }
-
-  auto framebufferSet = resource_manager_.getFramebufferSet("swapchain");
-  if (framebufferSet) {
-    framebufferSet->destroy();
-    framebufferSet->create();
-  }
-}
-
 void Renderer::waitForFence(uint32_t frameIndex) {
   vkWaitForFences(device_.device(), 1,
                   &sync_objects_.inFlightFences()[frameIndex], VK_TRUE,
@@ -235,7 +218,6 @@ auto Renderer::acquireNextImage(uint32_t &imageIndex) -> bool {
       &imageIndex);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-    recreateSwapchain();
     return false;
   }
 
@@ -292,10 +274,7 @@ void Renderer::present(uint32_t imageIndex) {
 
   VkResult result = vkQueuePresentKHR(device_.presentQueue(), &presentInfo);
 
-  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-      framebuffer_resized_) {
-    framebuffer_resized_ = false;
-    recreateSwapchain();
+  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
     return;
   }
 

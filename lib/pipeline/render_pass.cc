@@ -1,6 +1,5 @@
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/depth_resources.hh"
 
 namespace vkr::pipeline {
 
@@ -105,13 +104,12 @@ void RenderPass::update(const RenderPassDesc &desc) {
   create();
 }
 
-auto makeSwapchainRenderPassDesc(const core::Device &device,
-                                 const core::Swapchain &swapchain)
+auto RenderPassDesc::makeSwapchain(VkFormat colorFormat, VkFormat depthFormat)
     -> RenderPassDesc {
   RenderPassDesc desc{};
 
   RenderPassColorAttachmentDesc color{};
-  color.format = swapchain.format();
+  color.format = colorFormat;
   color.samples = VK_SAMPLE_COUNT_1_BIT;
   color.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -123,7 +121,7 @@ auto makeSwapchainRenderPassDesc(const core::Device &device,
   desc.colors.push_back(color);
 
   desc.depth.enabled = true;
-  desc.depth.format = resource::findDepthFormat(device.physicalDevice());
+  desc.depth.format = depthFormat;
   desc.depth.samples = VK_SAMPLE_COUNT_1_BIT;
   desc.depth.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   desc.depth.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -148,7 +146,7 @@ auto makeSwapchainRenderPassDesc(const core::Device &device,
   return desc;
 }
 
-auto makeOffscreenRenderPassDesc(VkFormat colorFormat, VkFormat depthFormat)
+auto RenderPassDesc::makeOffscreen(VkFormat colorFormat, VkFormat depthFormat)
     -> RenderPassDesc {
   RenderPassDesc desc{};
 

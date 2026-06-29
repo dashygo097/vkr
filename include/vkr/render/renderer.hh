@@ -30,8 +30,6 @@ struct RenderPassBeginDesc {
 
 class Renderer {
 public:
-  using SwapchainRecreateCallback = std::function<void()>;
-
   explicit Renderer(core::Device &device, core::Swapchain &swapchain,
                     const core::CommandPool &commandPool,
                     core::SyncObjects &syncObjects,
@@ -75,18 +73,8 @@ public:
   void drawGeometry(const FrameData &frameData);
   void drawUI(const FrameData &frameData);
 
-  void recreateSwapchain();
-
-  void setSwapchainRecreateCallback(SwapchainRecreateCallback callback) {
-    swapchain_recreate_callback_ = std::move(callback);
-  }
-
   [[nodiscard]] auto currentFrameIndex() const noexcept -> uint32_t {
     return current_frame_;
-  }
-
-  void setFramebufferResized(bool value) noexcept {
-    framebuffer_resized_ = value;
   }
 
 private:
@@ -103,8 +91,6 @@ private:
 
   // state
   uint32_t current_frame_{0};
-  bool framebuffer_resized_{false};
-  SwapchainRecreateCallback swapchain_recreate_callback_{};
 
   void waitForFence(uint32_t frameIndex);
   void resetFence(uint32_t frameIndex);
