@@ -6,15 +6,18 @@ DepthResources::DepthResources(const core::Device &device,
                                const core::Swapchain &swapchain,
                                const core::CommandPool &commandPool)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool) {
+  const auto depthFormat = findDepthFormat(device_.physicalDevice());
+
   image_ = std::make_unique<Image>(device_, command_pool_);
   imageview_ = std::make_unique<ImageView>(device_);
-  image_->create(swapchain_.extent2D().width, swapchain_.extent2D().height,
-                 findDepthFormat(device_.physicalDevice()),
-                 VK_IMAGE_TILING_OPTIMAL,
-                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-  imageview_->create(*image_, findDepthFormat(device_.physicalDevice()),
-                     VK_IMAGE_ASPECT_DEPTH_BIT);
+
+  auto desc = ImageDesc::depthAttachment(
+      swapchain_.extent2D().width, swapchain_.extent2D().height, depthFormat);
+
+  desc.finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+  image_->update(desc);
+  imageview_->create(*image_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 auto findSupportedFormat(VkPhysicalDevice physicalDevice,

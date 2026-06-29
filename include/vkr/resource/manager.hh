@@ -111,8 +111,10 @@ public:
     auto image = std::make_shared<Image>(device_, command_pool_);
     auto imageview = std::make_shared<ImageView>(device_);
     auto sampler = std::make_shared<Sampler>(device_);
-    image->create(filePath);
+
+    image->update(ImageDesc::textureFile(filePath));
     imageview->create(*image, VK_FORMAT_R8G8B8A8_SRGB);
+
     texture_images_[name] = std::move(image);
     texture_imageviews_[name] = std::move(imageview);
     texture_samplers_[name] = std::move(sampler);

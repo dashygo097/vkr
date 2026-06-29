@@ -27,10 +27,10 @@ private:
   bool status_is_error_{false};
 
   CompileCallback on_compile_;
-  int active_tab_{0}; // 0 = vert, 1 = frag
+  int active_tab_{0};
 
-  // helpers
   static auto makeEditor() -> TextEditor;
+  static auto makeGlslLanguageDefinition() -> TextEditor::LanguageDefinition;
   static auto materialDarkPalette() -> TextEditor::Palette;
   static auto parseErrors(const std::string &log) -> TextEditor::ErrorMarkers;
 };
