@@ -76,6 +76,7 @@ public:
 
 protected:
   void create() {
+
     VkDeviceSize bufferSize = sizeof(UniformType);
     vk_uniform_buffers_.resize(core::MAX_FRAMES_IN_FLIGHT);
     vk_memories_.resize(core::MAX_FRAMES_IN_FLIGHT);
@@ -112,7 +113,7 @@ protected:
     vk_uniform_buffers_.clear();
   }
 
-protected:
+private:
   // dependencies
   const core::Device &device_;
 
