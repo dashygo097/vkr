@@ -17,7 +17,7 @@ DepthResources::DepthResources(const core::Device &device,
   desc.finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
   image_->update(desc);
-  imageview_->create(*image_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+  imageview_->update(ImageViewDesc::depth2D(image_->image(), depthFormat));
 }
 
 auto findSupportedFormat(VkPhysicalDevice physicalDevice,

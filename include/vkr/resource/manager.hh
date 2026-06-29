@@ -113,7 +113,7 @@ public:
     auto sampler = std::make_shared<Sampler>(device_);
 
     image->update(ImageDesc::textureFile(filePath));
-    imageview->create(*image, VK_FORMAT_R8G8B8A8_SRGB);
+    imageview->update(ImageViewDesc::fromImage(*image));
 
     texture_images_[name] = std::move(image);
     texture_imageviews_[name] = std::move(imageview);
