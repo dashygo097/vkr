@@ -1,276 +1,399 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <glm/glm.hpp>
+#include <vector>
 #include <vulkan/vulkan.h>
-
-#define BIND_OBJECT(name)                                                      \
-  bindingDescription.binding = 0;                                              \
-  bindingDescription.stride = sizeof(name);                                    \
-  bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-#define BIND_2D_ATTRS(name, obj, index)                                        \
-  attributeDescriptions[index].binding = 0;                                    \
-  attributeDescriptions[index].location = index;                               \
-  attributeDescriptions[index].format = VK_FORMAT_R32G32_SFLOAT;               \
-  attributeDescriptions[index].offset = offsetof(name, obj);
-
-#define BIND_3D_ATTRS(name, obj, index)                                        \
-  attributeDescriptions[index].binding = 0;                                    \
-  attributeDescriptions[index].location = index;                               \
-  attributeDescriptions[index].format = VK_FORMAT_R32G32B32_SFLOAT;            \
-  attributeDescriptions[index].offset = offsetof(name, obj);
 
 namespace vkr::resource {
 
+struct VertexInputDesc {
+  std::vector<VkVertexInputBindingDescription> bindings{};
+  std::vector<VkVertexInputAttributeDescription> attributes{};
+
+  [[nodiscard]] static auto none() -> VertexInputDesc { return {}; }
+
+  [[nodiscard]] auto isEmpty() const noexcept -> bool {
+    return bindings.empty() && attributes.empty();
+  }
+
+  [[nodiscard]] auto createInfo() const noexcept
+      -> VkPipelineVertexInputStateCreateInfo {
+    VkPipelineVertexInputStateCreateInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    info.vertexBindingDescriptionCount = static_cast<uint32_t>(bindings.size());
+    info.pVertexBindingDescriptions =
+        bindings.empty() ? nullptr : bindings.data();
+    info.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(attributes.size());
+    info.pVertexAttributeDescriptions =
+        attributes.empty() ? nullptr : attributes.data();
+    return info;
+  }
+};
+
 struct Vertex2D {
-public:
-  glm::vec2 pos;
-  glm::vec3 color;
+  glm::vec2 pos{};
+  glm::vec3 color{};
 
   Vertex2D() = default;
-  explicit Vertex2D(glm::vec2 pos, glm::vec3 color = glm::vec3(0.0f))
+  explicit Vertex2D(glm::vec2 pos, glm::vec3 color = glm::vec3{0.0f})
       : pos(pos), color(color) {}
-  ~Vertex2D() = default;
 
-  auto operator==(const Vertex2D &other) const -> bool {
+  [[nodiscard]] auto operator==(const Vertex2D &other) const -> bool {
     return pos == other.pos && color == other.color;
   }
 
-  static auto getBindingDescription() -> VkVertexInputBindingDescription {
-    VkVertexInputBindingDescription bindingDescription{};
-
-    BIND_OBJECT(Vertex2D)
-
-    return bindingDescription;
+  [[nodiscard]] static auto getBindingDescription(uint32_t binding = 0)
+      -> VkVertexInputBindingDescription {
+    VkVertexInputBindingDescription desc{};
+    desc.binding = binding;
+    desc.stride = sizeof(Vertex2D);
+    desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    return desc;
   }
 
-  static auto getAttributeDescriptions()
+  [[nodiscard]] static auto getAttributeDescriptions(uint32_t binding = 0)
       -> std::vector<VkVertexInputAttributeDescription> {
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-    attributeDescriptions.resize(2);
+    VkVertexInputAttributeDescription posDesc{};
+    posDesc.binding = binding;
+    posDesc.location = 0;
+    posDesc.format = VK_FORMAT_R32G32_SFLOAT;
+    posDesc.offset = offsetof(Vertex2D, pos);
 
-    BIND_2D_ATTRS(Vertex2D, pos, 0)
-    BIND_3D_ATTRS(Vertex2D, color, 1)
+    VkVertexInputAttributeDescription colorDesc{};
+    colorDesc.binding = binding;
+    colorDesc.location = 1;
+    colorDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    colorDesc.offset = offsetof(Vertex2D, color);
 
-    return attributeDescriptions;
+    return {posDesc, colorDesc};
+  }
+
+  [[nodiscard]] static auto vertexInputDesc(uint32_t binding = 0)
+      -> VertexInputDesc {
+    VertexInputDesc desc{};
+    desc.bindings.push_back(getBindingDescription(binding));
+    desc.attributes = getAttributeDescriptions(binding);
+    return desc;
   }
 };
 
 struct VertexTextured2D {
-public:
-  glm::vec2 pos;
-  glm::vec3 color;
-  glm::vec2 texCoord;
+  glm::vec2 pos{};
+  glm::vec3 color{};
+  glm::vec2 texCoord{};
 
   VertexTextured2D() = default;
-  explicit VertexTextured2D(glm::vec2 pos, glm::vec3 color = glm::vec3(0.0f),
-                            glm::vec2 texCoord = glm::vec2(0.0f))
+  explicit VertexTextured2D(glm::vec2 pos, glm::vec3 color = glm::vec3{0.0f},
+                            glm::vec2 texCoord = glm::vec2{0.0f})
       : pos(pos), color(color), texCoord(texCoord) {}
-  ~VertexTextured2D() = default;
 
   explicit VertexTextured2D(const Vertex2D &v)
-      : pos(v.pos), color(v.color), texCoord(glm::vec2(0.0f)) {}
+      : pos(v.pos), color(v.color), texCoord(glm::vec2{0.0f}) {}
 
-  auto operator==(const VertexTextured2D &other) const -> bool {
+  [[nodiscard]] auto operator==(const VertexTextured2D &other) const -> bool {
     return pos == other.pos && color == other.color &&
            texCoord == other.texCoord;
   }
 
-  static auto getBindingDescription() -> VkVertexInputBindingDescription {
-    VkVertexInputBindingDescription bindingDescription{};
-
-    BIND_OBJECT(VertexTextured2D)
-
-    return bindingDescription;
+  [[nodiscard]] static auto getBindingDescription(uint32_t binding = 0)
+      -> VkVertexInputBindingDescription {
+    VkVertexInputBindingDescription desc{};
+    desc.binding = binding;
+    desc.stride = sizeof(VertexTextured2D);
+    desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    return desc;
   }
 
-  static auto getAttributeDescriptions()
+  [[nodiscard]] static auto getAttributeDescriptions(uint32_t binding = 0)
       -> std::vector<VkVertexInputAttributeDescription> {
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-    attributeDescriptions.resize(3);
+    VkVertexInputAttributeDescription posDesc{};
+    posDesc.binding = binding;
+    posDesc.location = 0;
+    posDesc.format = VK_FORMAT_R32G32_SFLOAT;
+    posDesc.offset = offsetof(VertexTextured2D, pos);
 
-    BIND_2D_ATTRS(VertexTextured2D, pos, 0)
-    BIND_3D_ATTRS(VertexTextured2D, color, 1)
-    BIND_2D_ATTRS(VertexTextured2D, texCoord, 2)
+    VkVertexInputAttributeDescription colorDesc{};
+    colorDesc.binding = binding;
+    colorDesc.location = 1;
+    colorDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    colorDesc.offset = offsetof(VertexTextured2D, color);
 
-    return attributeDescriptions;
+    VkVertexInputAttributeDescription texCoordDesc{};
+    texCoordDesc.binding = binding;
+    texCoordDesc.location = 2;
+    texCoordDesc.format = VK_FORMAT_R32G32_SFLOAT;
+    texCoordDesc.offset = offsetof(VertexTextured2D, texCoord);
+
+    return {posDesc, colorDesc, texCoordDesc};
+  }
+
+  [[nodiscard]] static auto vertexInputDesc(uint32_t binding = 0)
+      -> VertexInputDesc {
+    VertexInputDesc desc{};
+    desc.bindings.push_back(getBindingDescription(binding));
+    desc.attributes = getAttributeDescriptions(binding);
+    return desc;
   }
 };
 
 struct Vertex3D {
-public:
-  glm::vec3 pos;
-  glm::vec3 color;
+  glm::vec3 pos{};
+  glm::vec3 color{};
 
   Vertex3D() = default;
-  explicit Vertex3D(glm::vec3 pos, glm::vec3 color = glm::vec3(0.0f))
+  explicit Vertex3D(glm::vec3 pos, glm::vec3 color = glm::vec3{0.0f})
       : pos(pos), color(color) {}
-  ~Vertex3D() = default;
 
-  auto operator==(const Vertex3D &other) const -> bool {
+  [[nodiscard]] auto operator==(const Vertex3D &other) const -> bool {
     return pos == other.pos && color == other.color;
   }
 
-  static auto getBindingDescription() -> VkVertexInputBindingDescription {
-    VkVertexInputBindingDescription bindingDescription{};
-
-    BIND_OBJECT(Vertex3D)
-
-    return bindingDescription;
+  [[nodiscard]] static auto getBindingDescription(uint32_t binding = 0)
+      -> VkVertexInputBindingDescription {
+    VkVertexInputBindingDescription desc{};
+    desc.binding = binding;
+    desc.stride = sizeof(Vertex3D);
+    desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    return desc;
   }
 
-  static auto getAttributeDescriptions()
+  [[nodiscard]] static auto getAttributeDescriptions(uint32_t binding = 0)
       -> std::vector<VkVertexInputAttributeDescription> {
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-    attributeDescriptions.resize(2);
+    VkVertexInputAttributeDescription posDesc{};
+    posDesc.binding = binding;
+    posDesc.location = 0;
+    posDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    posDesc.offset = offsetof(Vertex3D, pos);
 
-    BIND_3D_ATTRS(Vertex3D, pos, 0)
-    BIND_3D_ATTRS(Vertex3D, color, 1)
+    VkVertexInputAttributeDescription colorDesc{};
+    colorDesc.binding = binding;
+    colorDesc.location = 1;
+    colorDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    colorDesc.offset = offsetof(Vertex3D, color);
 
-    return attributeDescriptions;
+    return {posDesc, colorDesc};
+  }
+
+  [[nodiscard]] static auto vertexInputDesc(uint32_t binding = 0)
+      -> VertexInputDesc {
+    VertexInputDesc desc{};
+    desc.bindings.push_back(getBindingDescription(binding));
+    desc.attributes = getAttributeDescriptions(binding);
+    return desc;
   }
 };
 
 struct VertexNormal3D {
-  glm::vec3 pos;
-  glm::vec3 color;
-  glm::vec3 normal;
+  glm::vec3 pos{};
+  glm::vec3 color{};
+  glm::vec3 normal{};
 
   VertexNormal3D() = default;
-  explicit VertexNormal3D(glm::vec3 pos, glm::vec3 color = glm::vec3(0.0f),
-                          glm::vec3 normal = glm::vec3(0.0f))
+  explicit VertexNormal3D(glm::vec3 pos, glm::vec3 color = glm::vec3{0.0f},
+                          glm::vec3 normal = glm::vec3{0.0f})
       : pos(pos), color(color), normal(normal) {}
-  ~VertexNormal3D() = default;
 
   explicit VertexNormal3D(const Vertex3D &v)
-      : pos(v.pos), color(v.color), normal(glm::vec3(0.0f)) {}
+      : pos(v.pos), color(v.color), normal(glm::vec3{0.0f}) {}
 
-  auto operator==(const VertexNormal3D &other) const -> bool {
+  [[nodiscard]] auto operator==(const VertexNormal3D &other) const -> bool {
     return pos == other.pos && color == other.color && normal == other.normal;
   }
 
-  static auto getBindingDescription() -> VkVertexInputBindingDescription {
-    VkVertexInputBindingDescription bindingDescription{};
-
-    BIND_OBJECT(VertexNormal3D)
-
-    return bindingDescription;
+  [[nodiscard]] static auto getBindingDescription(uint32_t binding = 0)
+      -> VkVertexInputBindingDescription {
+    VkVertexInputBindingDescription desc{};
+    desc.binding = binding;
+    desc.stride = sizeof(VertexNormal3D);
+    desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    return desc;
   }
 
-  static auto getAttributeDescriptions()
+  [[nodiscard]] static auto getAttributeDescriptions(uint32_t binding = 0)
       -> std::vector<VkVertexInputAttributeDescription> {
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-    attributeDescriptions.resize(3);
+    VkVertexInputAttributeDescription posDesc{};
+    posDesc.binding = binding;
+    posDesc.location = 0;
+    posDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    posDesc.offset = offsetof(VertexNormal3D, pos);
 
-    BIND_3D_ATTRS(VertexNormal3D, pos, 0)
-    BIND_3D_ATTRS(VertexNormal3D, color, 1)
-    BIND_3D_ATTRS(VertexNormal3D, normal, 2)
+    VkVertexInputAttributeDescription colorDesc{};
+    colorDesc.binding = binding;
+    colorDesc.location = 1;
+    colorDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    colorDesc.offset = offsetof(VertexNormal3D, color);
 
-    return attributeDescriptions;
+    VkVertexInputAttributeDescription normalDesc{};
+    normalDesc.binding = binding;
+    normalDesc.location = 2;
+    normalDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    normalDesc.offset = offsetof(VertexNormal3D, normal);
+
+    return {posDesc, colorDesc, normalDesc};
+  }
+
+  [[nodiscard]] static auto vertexInputDesc(uint32_t binding = 0)
+      -> VertexInputDesc {
+    VertexInputDesc desc{};
+    desc.bindings.push_back(getBindingDescription(binding));
+    desc.attributes = getAttributeDescriptions(binding);
+    return desc;
   }
 };
 
 struct VertexTextured3D {
-  glm::vec3 pos;
-  glm::vec3 color;
-  glm::vec2 texCoord;
+  glm::vec3 pos{};
+  glm::vec3 color{};
+  glm::vec2 texCoord{};
 
   VertexTextured3D() = default;
-  explicit VertexTextured3D(glm::vec3 pos, glm::vec3 color = glm::vec3(0.0f),
-                            glm::vec2 texCoord = glm::vec2(0.0f))
+  explicit VertexTextured3D(glm::vec3 pos, glm::vec3 color = glm::vec3{0.0f},
+                            glm::vec2 texCoord = glm::vec2{0.0f})
       : pos(pos), color(color), texCoord(texCoord) {}
-  ~VertexTextured3D() = default;
 
   explicit VertexTextured3D(const Vertex3D &v)
-      : pos(v.pos), color(v.color), texCoord(glm::vec2(0.0f)) {}
+      : pos(v.pos), color(v.color), texCoord(glm::vec2{0.0f}) {}
 
-  auto operator==(const VertexTextured3D &other) const -> bool {
+  [[nodiscard]] auto operator==(const VertexTextured3D &other) const -> bool {
     return pos == other.pos && color == other.color &&
            texCoord == other.texCoord;
   }
 
-  static auto getBindingDescription() -> VkVertexInputBindingDescription {
-    VkVertexInputBindingDescription bindingDescription{};
-
-    BIND_OBJECT(VertexTextured3D)
-
-    return bindingDescription;
+  [[nodiscard]] static auto getBindingDescription(uint32_t binding = 0)
+      -> VkVertexInputBindingDescription {
+    VkVertexInputBindingDescription desc{};
+    desc.binding = binding;
+    desc.stride = sizeof(VertexTextured3D);
+    desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    return desc;
   }
 
-  static auto getAttributeDescriptions()
+  [[nodiscard]] static auto getAttributeDescriptions(uint32_t binding = 0)
       -> std::vector<VkVertexInputAttributeDescription> {
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-    attributeDescriptions.resize(3);
+    VkVertexInputAttributeDescription posDesc{};
+    posDesc.binding = binding;
+    posDesc.location = 0;
+    posDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    posDesc.offset = offsetof(VertexTextured3D, pos);
 
-    BIND_3D_ATTRS(VertexTextured3D, pos, 0)
-    BIND_3D_ATTRS(VertexTextured3D, color, 1)
-    BIND_2D_ATTRS(VertexTextured3D, texCoord, 2)
+    VkVertexInputAttributeDescription colorDesc{};
+    colorDesc.binding = binding;
+    colorDesc.location = 1;
+    colorDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    colorDesc.offset = offsetof(VertexTextured3D, color);
 
-    return attributeDescriptions;
+    VkVertexInputAttributeDescription texCoordDesc{};
+    texCoordDesc.binding = binding;
+    texCoordDesc.location = 2;
+    texCoordDesc.format = VK_FORMAT_R32G32_SFLOAT;
+    texCoordDesc.offset = offsetof(VertexTextured3D, texCoord);
+
+    return {posDesc, colorDesc, texCoordDesc};
+  }
+
+  [[nodiscard]] static auto vertexInputDesc(uint32_t binding = 0)
+      -> VertexInputDesc {
+    VertexInputDesc desc{};
+    desc.bindings.push_back(getBindingDescription(binding));
+    desc.attributes = getAttributeDescriptions(binding);
+    return desc;
   }
 };
 
 struct VertexNormalTexture3D {
-  glm::vec3 pos;
-  glm::vec3 color;
-  glm::vec3 normal;
-  glm::vec2 texCoord;
+  glm::vec3 pos{};
+  glm::vec3 color{};
+  glm::vec3 normal{};
+  glm::vec2 texCoord{};
 
   VertexNormalTexture3D() = default;
   explicit VertexNormalTexture3D(glm::vec3 pos,
-                                 glm::vec3 color = glm::vec3(0.0f),
-                                 glm::vec3 normal = glm::vec3(0.0f),
-                                 glm::vec2 texCoord = glm::vec2(0.0f))
+                                 glm::vec3 color = glm::vec3{0.0f},
+                                 glm::vec3 normal = glm::vec3{0.0f},
+                                 glm::vec2 texCoord = glm::vec2{0.0f})
       : pos(pos), color(color), normal(normal), texCoord(texCoord) {}
-  ~VertexNormalTexture3D() = default;
 
   explicit VertexNormalTexture3D(const Vertex3D &v)
-      : pos(v.pos), color(v.color), normal(glm::vec3(0.0f)),
-        texCoord(glm::vec3(0.0f)) {}
+      : pos(v.pos), color(v.color), normal(glm::vec3{0.0f}),
+        texCoord(glm::vec2{0.0f}) {}
+
   explicit VertexNormalTexture3D(const VertexNormal3D &v)
       : pos(v.pos), color(v.color), normal(v.normal),
-        texCoord(glm::vec2(0.0f)) {}
+        texCoord(glm::vec2{0.0f}) {}
+
   explicit VertexNormalTexture3D(const VertexTextured3D &v)
-      : pos(v.pos), color(v.color), normal(glm::vec3(0.0f)),
+      : pos(v.pos), color(v.color), normal(glm::vec3{0.0f}),
         texCoord(v.texCoord) {}
 
-  auto operator==(const VertexNormalTexture3D &other) const -> bool {
-    return pos == other.pos && color == other.color &&
-           texCoord == other.texCoord && normal == other.normal;
+  [[nodiscard]] auto operator==(const VertexNormalTexture3D &other) const
+      -> bool {
+    return pos == other.pos && color == other.color && normal == other.normal &&
+           texCoord == other.texCoord;
   }
 
-  static auto getBindingDescription() -> VkVertexInputBindingDescription {
-    VkVertexInputBindingDescription bindingDescription{};
-
-    BIND_OBJECT(VertexNormalTexture3D)
-
-    return bindingDescription;
+  [[nodiscard]] static auto getBindingDescription(uint32_t binding = 0)
+      -> VkVertexInputBindingDescription {
+    VkVertexInputBindingDescription desc{};
+    desc.binding = binding;
+    desc.stride = sizeof(VertexNormalTexture3D);
+    desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    return desc;
   }
 
-  static auto getAttributeDescriptions()
+  [[nodiscard]] static auto getAttributeDescriptions(uint32_t binding = 0)
       -> std::vector<VkVertexInputAttributeDescription> {
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-    attributeDescriptions.resize(4);
+    VkVertexInputAttributeDescription posDesc{};
+    posDesc.binding = binding;
+    posDesc.location = 0;
+    posDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    posDesc.offset = offsetof(VertexNormalTexture3D, pos);
 
-    BIND_3D_ATTRS(VertexNormalTexture3D, pos, 0)
-    BIND_3D_ATTRS(VertexNormalTexture3D, color, 1)
-    BIND_3D_ATTRS(VertexNormalTexture3D, normal, 2)
-    BIND_2D_ATTRS(VertexNormalTexture3D, texCoord, 3)
+    VkVertexInputAttributeDescription colorDesc{};
+    colorDesc.binding = binding;
+    colorDesc.location = 1;
+    colorDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    colorDesc.offset = offsetof(VertexNormalTexture3D, color);
 
-    return attributeDescriptions;
+    VkVertexInputAttributeDescription normalDesc{};
+    normalDesc.binding = binding;
+    normalDesc.location = 2;
+    normalDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    normalDesc.offset = offsetof(VertexNormalTexture3D, normal);
+
+    VkVertexInputAttributeDescription texCoordDesc{};
+    texCoordDesc.binding = binding;
+    texCoordDesc.location = 3;
+    texCoordDesc.format = VK_FORMAT_R32G32_SFLOAT;
+    texCoordDesc.offset = offsetof(VertexNormalTexture3D, texCoord);
+
+    return {posDesc, colorDesc, normalDesc, texCoordDesc};
+  }
+
+  [[nodiscard]] static auto vertexInputDesc(uint32_t binding = 0)
+      -> VertexInputDesc {
+    VertexInputDesc desc{};
+    desc.bindings.push_back(getBindingDescription(binding));
+    desc.attributes = getAttributeDescriptions(binding);
+    return desc;
   }
 };
 
 } // namespace vkr::resource
 
 namespace std {
+
 template <typename T, glm::qualifier Q> struct hash<glm::vec<2, T, Q>> {
   auto operator()(const glm::vec<2, T, Q> &vec) const noexcept -> size_t {
     size_t h1 = hash<T>{}(vec.x);
     size_t h2 = hash<T>{}(vec.y);
-    return (h1 ^ (h2 << 1));
+    return h1 ^ (h2 << 1);
   }
 };
+
 template <typename T, glm::qualifier Q> struct hash<glm::vec<3, T, Q>> {
   auto operator()(const glm::vec<3, T, Q> &vec) const noexcept -> size_t {
     size_t h1 = hash<T>{}(vec.x);
@@ -281,41 +404,44 @@ template <typename T, glm::qualifier Q> struct hash<glm::vec<3, T, Q>> {
 };
 
 template <> struct hash<vkr::resource::Vertex3D> {
-  auto operator()(vkr::resource::Vertex3D const &vertex) const -> size_t {
-    return ((hash<glm::vec3>()(vertex.pos) ^
-             (hash<glm::vec3>()(vertex.color) << 1)) >>
+  auto operator()(const vkr::resource::Vertex3D &vertex) const noexcept
+      -> size_t {
+    return ((hash<glm::vec3>{}(vertex.pos) ^
+             (hash<glm::vec3>{}(vertex.color) << 1)) >>
             1);
   }
 };
 
 template <> struct hash<vkr::resource::VertexNormal3D> {
-  auto operator()(vkr::resource::VertexNormal3D const &vertex) const -> size_t {
-    return (((hash<glm::vec3>()(vertex.pos) ^
-              (hash<glm::vec3>()(vertex.color) << 1)) >>
+  auto operator()(const vkr::resource::VertexNormal3D &vertex) const noexcept
+      -> size_t {
+    return (((hash<glm::vec3>{}(vertex.pos) ^
+              (hash<glm::vec3>{}(vertex.color) << 1)) >>
              1) ^
-            (hash<glm::vec3>()(vertex.normal) << 1));
+            (hash<glm::vec3>{}(vertex.normal) << 1));
   }
 };
 
 template <> struct hash<vkr::resource::VertexTextured3D> {
-  auto operator()(vkr::resource::VertexTextured3D const &vertex) const
+  auto operator()(const vkr::resource::VertexTextured3D &vertex) const noexcept
       -> size_t {
-    return (((hash<glm::vec3>()(vertex.pos) ^
-              (hash<glm::vec3>()(vertex.color) << 1)) >>
+    return (((hash<glm::vec3>{}(vertex.pos) ^
+              (hash<glm::vec3>{}(vertex.color) << 1)) >>
              1) ^
-            (hash<glm::vec2>()(vertex.texCoord) << 1));
+            (hash<glm::vec2>{}(vertex.texCoord) << 1));
   }
 };
 
 template <> struct hash<vkr::resource::VertexNormalTexture3D> {
-  auto operator()(vkr::resource::VertexNormalTexture3D const &vertex) const
+  auto
+  operator()(const vkr::resource::VertexNormalTexture3D &vertex) const noexcept
       -> size_t {
-    return ((((hash<glm::vec3>()(vertex.pos) ^
-               (hash<glm::vec3>()(vertex.color) << 1)) >>
+    return ((((hash<glm::vec3>{}(vertex.pos) ^
+               (hash<glm::vec3>{}(vertex.color) << 1)) >>
               1) ^
-             (hash<glm::vec3>()(vertex.normal) << 1)) >>
+             (hash<glm::vec3>{}(vertex.normal) << 1)) >>
             1) ^
-           (hash<glm::vec2>()(vertex.texCoord) << 1);
+           (hash<glm::vec2>{}(vertex.texCoord) << 1);
   }
 };
 
