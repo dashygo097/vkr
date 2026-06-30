@@ -114,6 +114,7 @@ public:
 
     image->update(ImageDesc::textureFile(filePath));
     imageview->update(ImageViewDesc::fromImage(*image));
+    sampler->update(SamplerDesc::linearRepeat());
 
     texture_images_[name] = std::move(image);
     texture_imageviews_[name] = std::move(imageview);
