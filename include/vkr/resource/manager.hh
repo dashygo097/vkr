@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vkr/core/swapchain.hh"
 #include "vkr/resource/buffers/index_buffer.hh"
 #include "vkr/resource/buffers/uniform_buffer.hh"
 #include "vkr/resource/buffers/vertex_buffer.hh"

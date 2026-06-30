@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/core/swapchain.hh"
 
 namespace vkr::pipeline {
 
