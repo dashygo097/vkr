@@ -24,9 +24,7 @@ template <typename VertexType> class VertexBuffer : public IVertexBuffer {
 public:
   explicit VertexBuffer(const core::Device &device,
                         const core::CommandPool &commandPool)
-      : device_(device), command_pool_(commandPool) {
-    create();
-  }
+      : device_(device), command_pool_(commandPool) {}
 
   ~VertexBuffer() override { destroy(); }
 
