@@ -62,9 +62,6 @@ public:
   ShaderModule(const ShaderModule &) = delete;
   auto operator=(const ShaderModule &) -> ShaderModule & = delete;
 
-  ShaderModule(ShaderModule &&other) noexcept;
-  auto operator=(ShaderModule &&other) noexcept -> ShaderModule &;
-
   void create();
   void destroy();
   void update(const ShaderModuleDesc &desc);

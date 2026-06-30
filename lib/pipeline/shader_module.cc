@@ -3,37 +3,12 @@
 #include "vkr/util/io.hh"
 #include <cstddef>
 #include <cstdint>
-#include <utility>
 
 namespace vkr::pipeline {
 
 ShaderModule::ShaderModule(const core::Device &device) : device_(&device) {}
 
 ShaderModule::~ShaderModule() { destroy(); }
-
-ShaderModule::ShaderModule(ShaderModule &&other) noexcept
-    : device_(other.device_), desc_(std::move(other.desc_)),
-      vk_shader_module_(other.vk_shader_module_) {
-  other.device_ = nullptr;
-  other.vk_shader_module_ = VK_NULL_HANDLE;
-}
-
-auto ShaderModule::operator=(ShaderModule &&other) noexcept -> ShaderModule & {
-  if (this == &other) {
-    return *this;
-  }
-
-  destroy();
-
-  device_ = other.device_;
-  desc_ = std::move(other.desc_);
-  vk_shader_module_ = other.vk_shader_module_;
-
-  other.device_ = nullptr;
-  other.vk_shader_module_ = VK_NULL_HANDLE;
-
-  return *this;
-}
 
 void ShaderModule::create() {
   destroy();
