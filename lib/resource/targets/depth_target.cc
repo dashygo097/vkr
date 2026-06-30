@@ -1,10 +1,10 @@
-#include "vkr/resource/depth_resources.hh"
+#include "vkr/resource/targets/depth_target.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::resource {
-DepthResources::DepthResources(const core::Device &device,
-                               const core::Swapchain &swapchain,
-                               const core::CommandPool &commandPool)
+DepthTarget::DepthTarget(const core::Device &device,
+                         const core::Swapchain &swapchain,
+                         const core::CommandPool &commandPool)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool) {
   const auto depthFormat = findDepthFormat(device_.physicalDevice());
 

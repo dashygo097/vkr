@@ -1,7 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
-#include "vkr/resource/images/image.hh"
+#include "vkr/resource/gpu/image.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/buffer_utils.hh"
+#include "vkr/resource/gpu/buffer_utils.hh"
 #include <cstring>
 #include <stb_image.h>
 

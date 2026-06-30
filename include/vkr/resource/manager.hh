@@ -1,16 +1,13 @@
 #pragma once
 
-#include "vkr/resource/buffers/frame_buffer.hh"
 #include "vkr/resource/buffers/index_buffer.hh"
-#include "vkr/resource/buffers/ubos.hh"
 #include "vkr/resource/buffers/uniform_buffer.hh"
-#include "vkr/resource/buffers/vbos.hh"
 #include "vkr/resource/buffers/vertex_buffer.hh"
-#include "vkr/resource/depth_resources.hh"
-#include "vkr/resource/images/image.hh"
-#include "vkr/resource/images/imageview.hh"
-#include "vkr/resource/images/sampler.hh"
+#include "vkr/resource/gpu/image.hh"
+#include "vkr/resource/gpu/image_view.hh"
+#include "vkr/resource/gpu/sampler.hh"
 #include "vkr/resource/mesh.hh"
+#include "vkr/resource/targets/frame_buffer.hh"
 #include <memory>
 #include <vector>
 
@@ -245,4 +242,5 @@ private:
       texture_imageviews_;
   std::unordered_map<std::string, std::shared_ptr<Sampler>> texture_samplers_;
 };
+
 } // namespace vkr::resource

@@ -1,5 +1,5 @@
 #include "vkr/resource/buffers/index_buffer.hh"
-#include "vkr/resource/buffers/buffer_utils.hh"
+#include "vkr/resource/gpu/buffer_utils.hh"
 #include <cstring>
 
 namespace vkr::resource {

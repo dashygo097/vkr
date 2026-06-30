@@ -3,8 +3,8 @@
 #include "vkr/core/command/command_buffer.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/buffer_utils.hh"
 #include "vkr/resource/buffers/ubos.hh"
+#include "vkr/resource/gpu/buffer_utils.hh"
 #include <glm/glm.hpp>
 
 namespace vkr::resource {

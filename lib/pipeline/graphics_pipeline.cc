@@ -1,6 +1,7 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/logger.hh"
 #include "vkr/pipeline/shader_module.hh"
+#include "vkr/resource/buffers/vbos.hh"
 #include "vkr/util/io.hh"
 #include <filesystem>
 #include <shaderc/shaderc.hpp>

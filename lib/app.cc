@@ -46,8 +46,8 @@ void VulkanApplication::initVulkan() {
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
   // resource manager
-  depthResources = std::make_unique<resource::DepthResources>(
-      *device, *swapchain, *commandPool);
+  depthTarget = std::make_unique<resource::DepthTarget>(*device, *swapchain,
+                                                        *commandPool);
   resourceManager = std::make_unique<resource::ResourceManager>(
       *device, *swapchain, *commandPool);
 
@@ -64,7 +64,7 @@ void VulkanApplication::initVulkan() {
   swapchainfbDesc.attachments.reserve(swapchain->images().size());
   for (auto imageView : swapchain->imageViews()) {
     swapchainfbDesc.attachments.push_back(
-        {imageView, depthResources->imageView()});
+        {imageView, depthTarget->imageView()});
   }
 
   resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,

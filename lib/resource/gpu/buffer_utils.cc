@@ -1,4 +1,4 @@
-#include "vkr/resource/buffers/buffer_utils.hh"
+#include "vkr/resource/gpu/buffer_utils.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::resource {

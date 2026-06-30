@@ -1,13 +1,13 @@
 #pragma once
 
 #include "vkr/context.hh"
-#include "vkr/core/core.hh"
 #include "vkr/logger.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/render/renderer.hh"
 #include "vkr/resource/manager.hh"
-#include "vkr/scene/scene.hh"
+#include "vkr/resource/targets/depth_target.hh"
+#include "vkr/scene/camera.hh"
 #include "vkr/ui/ui.hh"
 #include "vkr/util/asset.hh"
 #include "vkr/util/timer.hh"
@@ -51,7 +51,7 @@ public:
   std::unique_ptr<core::SyncObjects> syncObjects;
 
   // resource management
-  std::unique_ptr<resource::DepthResources> depthResources;
+  std::unique_ptr<resource::DepthTarget> depthTarget;
   std::unique_ptr<resource::ResourceManager> resourceManager;
   std::unique_ptr<resource::OffscreenTarget> offscreenTarget;
 

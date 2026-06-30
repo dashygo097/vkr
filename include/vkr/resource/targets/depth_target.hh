@@ -2,21 +2,21 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
-#include "vkr/resource/images/image.hh"
-#include "vkr/resource/images/imageview.hh"
+#include "vkr/resource/gpu/image.hh"
+#include "vkr/resource/gpu/image_view.hh"
 
 namespace vkr::resource {
 
-class DepthResources {
+class DepthTarget {
 public:
-  explicit DepthResources(const core::Device &device,
-                          const core::Swapchain &swapchain,
-                          const core::CommandPool &commandPool);
+  explicit DepthTarget(const core::Device &device,
+                       const core::Swapchain &swapchain,
+                       const core::CommandPool &commandPool);
 
-  ~DepthResources() = default;
+  ~DepthTarget() = default;
 
-  DepthResources(const DepthResources &) = delete;
-  auto operator=(const DepthResources &) -> DepthResources & = delete;
+  DepthTarget(const DepthTarget &) = delete;
+  auto operator=(const DepthTarget &) -> DepthTarget & = delete;
 
   [[nodiscard]] auto image() const noexcept -> VkImage {
     return image_->image();
