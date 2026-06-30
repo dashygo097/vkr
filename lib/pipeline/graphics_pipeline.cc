@@ -2,9 +2,11 @@
 #include "vkr/logger.hh"
 #include "vkr/pipeline/shader_module.hh"
 #include "vkr/resource/buffers/vbos.hh"
+#include "vkr/util/compiler.hh"
 #include "vkr/util/io.hh"
 #include <filesystem>
-#include <shaderc/shaderc.hpp>
+#include <unordered_map>
+#include <utility>
 
 namespace vkr::pipeline {
 
@@ -19,14 +21,24 @@ GraphicsPipeline::GraphicsPipeline(
   VKR_PIPE_INFO("Graphics pipeline initializing...");
 
   loadDefaultSources();
+
   std::string vertErr = "Default vertex shader compilation failed!";
   std::string fragErr = "Default fragment shader compilation failed!";
 
   auto vertSpv = compileGlsl(vert_src_, true, vertErr);
   auto fragSpv = compileGlsl(frag_src_, false, fragErr);
 
-  if (!build(vertSpv, fragSpv))
+  if (vertSpv.empty()) {
+    VKR_PIPE_ERROR("{}", vertErr);
+  }
+
+  if (fragSpv.empty()) {
+    VKR_PIPE_ERROR("{}", fragErr);
+  }
+
+  if (!build(vertSpv, fragSpv)) {
     VKR_PIPE_ERROR("Failed to build graphics pipeline from default sources!");
+  }
 
   VKR_PIPE_INFO("Graphics pipeline initialized!");
 }
@@ -41,8 +53,21 @@ auto GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
                                  VkRenderPass targetRenderPass,
                                  VkPipelineLayout &outLayout,
                                  VkPipeline &outPipeline) -> bool {
-  ShaderModule vertShader(device_, vertSpv);
-  ShaderModule fragShader(device_, fragSpv);
+  if (vertSpv.empty() || fragSpv.empty()) {
+    VKR_PIPE_ERROR("Cannot build graphics pipeline with empty shader SPIR-V!");
+    return false;
+  }
+
+  if (targetRenderPass == VK_NULL_HANDLE) {
+    VKR_PIPE_ERROR("Cannot build graphics pipeline with null render pass!");
+    return false;
+  }
+
+  ShaderModule vertShader(device_);
+  ShaderModule fragShader(device_);
+
+  vertShader.update(ShaderModuleDesc::spirvCode(vertSpv));
+  fragShader.update(ShaderModuleDesc::spirvCode(fragSpv));
 
   VkPipelineShaderStageCreateInfo vertStage{};
   vertStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -61,8 +86,9 @@ auto GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
   VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
   vertexInputInfo.sType =
       VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  VkVertexInputBindingDescription bindingDescription;
-  std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+
+  VkVertexInputBindingDescription bindingDescription{};
+  std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
   switch (mode_) {
   case PipelineMode::Default2D:
@@ -116,6 +142,8 @@ auto GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
   case PipelineMode::NoVertices:
     vertexInputInfo.vertexBindingDescriptionCount = 0;
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.pVertexBindingDescriptions = nullptr;
+    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
     break;
   }
 
@@ -123,6 +151,7 @@ auto GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
   inputAssembly.sType =
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
   inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  inputAssembly.primitiveRestartEnable = VK_FALSE;
 
   VkPipelineViewportStateCreateInfo viewportState{};
   viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -131,17 +160,21 @@ auto GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
 
   VkPipelineRasterizationStateCreateInfo rasterizer{};
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+  rasterizer.depthClampEnable = VK_FALSE;
+  rasterizer.rasterizerDiscardEnable = VK_FALSE;
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = mode_ == PipelineMode::NoVertices
                             ? VK_CULL_MODE_NONE
                             : VK_CULL_MODE_BACK_BIT;
   rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+  rasterizer.depthBiasEnable = VK_FALSE;
 
   VkPipelineMultisampleStateCreateInfo multisampling{};
   multisampling.sType =
       VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
   multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+  multisampling.sampleShadingEnable = VK_FALSE;
 
   VkPipelineDepthStencilStateCreateInfo depthStencil{};
   depthStencil.sType =
@@ -149,8 +182,11 @@ auto GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
   depthStencil.depthTestEnable = VK_TRUE;
   depthStencil.depthWriteEnable = VK_TRUE;
   depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+  depthStencil.depthBoundsTestEnable = VK_FALSE;
+  depthStencil.stencilTestEnable = VK_FALSE;
 
   VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+  colorBlendAttachment.blendEnable = VK_FALSE;
   colorBlendAttachment.colorWriteMask =
       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
       VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -158,11 +194,13 @@ auto GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
   VkPipelineColorBlendStateCreateInfo colorBlending{};
   colorBlending.sType =
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+  colorBlending.logicOpEnable = VK_FALSE;
   colorBlending.attachmentCount = 1;
   colorBlending.pAttachments = &colorBlendAttachment;
 
   std::vector<VkDynamicState> dynStates = {VK_DYNAMIC_STATE_VIEWPORT,
                                            VK_DYNAMIC_STATE_SCISSOR};
+
   VkPipelineDynamicStateCreateInfo dynamicState{};
   dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
   dynamicState.dynamicStateCount = static_cast<uint32_t>(dynStates.size());
@@ -221,24 +259,28 @@ void GraphicsPipeline::buildOffscreen(VkRenderPass offscreenRenderPass) {
   offscreen_render_pass_ = offscreenRenderPass;
   destroyOffscreenHandles();
 
-  std::string err;
-  auto vertSpv = compileGlsl(vert_src_, true, err);
+  std::string vertErr;
+  std::string fragErr;
+
+  auto vertSpv = compileGlsl(vert_src_, true, vertErr);
   if (vertSpv.empty()) {
-    VKR_PIPE_ERROR("Offscreen pipeline: vertex compile failed: {}", err);
+    VKR_PIPE_ERROR("Offscreen pipeline: vertex compile failed: {}", vertErr);
     return;
   }
-  auto fragSpv = compileGlsl(frag_src_, false, err);
+
+  auto fragSpv = compileGlsl(frag_src_, false, fragErr);
   if (fragSpv.empty()) {
-    VKR_PIPE_ERROR("Offscreen pipeline: fragment compile failed: {}", err);
+    VKR_PIPE_ERROR("Offscreen pipeline: fragment compile failed: {}", fragErr);
     return;
   }
 
   if (!buildInto(vertSpv, fragSpv, offscreenRenderPass, vk_offscreen_layout_,
                  vk_offscreen_pipeline_)) {
     VKR_PIPE_ERROR("Failed to build offscreen pipeline!");
-  } else {
-    VKR_PIPE_INFO("Offscreen pipeline built successfully.");
+    return;
   }
+
+  VKR_PIPE_INFO("Offscreen pipeline built successfully.");
 }
 
 void GraphicsPipeline::destroyOffscreenHandles() {
@@ -246,6 +288,7 @@ void GraphicsPipeline::destroyOffscreenHandles() {
     vkDestroyPipeline(device_.device(), vk_offscreen_pipeline_, nullptr);
     vk_offscreen_pipeline_ = VK_NULL_HANDLE;
   }
+
   if (vk_offscreen_layout_ != VK_NULL_HANDLE) {
     vkDestroyPipelineLayout(device_.device(), vk_offscreen_layout_, nullptr);
     vk_offscreen_layout_ = VK_NULL_HANDLE;
@@ -254,23 +297,40 @@ void GraphicsPipeline::destroyOffscreenHandles() {
 
 auto GraphicsPipeline::rebuild(const std::string &vertShaderPath,
                                const std::string &fragShaderPath) -> bool {
-  VKR_PIPE_INFO("Hot-reloading pipeline from files...");
+  VKR_PIPE_INFO("Hot-reloading pipeline from GLSL files...");
 
-  std::vector<uint32_t> vertSpv, fragSpv;
-  try {
-    vertSpv = util::fread_uint32(vertShaderPath);
-    fragSpv = util::fread_uint32(fragShaderPath);
-  } catch (const std::exception &e) {
-    VKR_PIPE_ERROR("Reload failed: {}", e.what());
+  std::string vertErr;
+  std::string fragErr;
+
+  auto vertSrc = util::fread_string(vertShaderPath);
+  auto fragSrc = util::fread_string(fragShaderPath);
+
+  auto vertSpv = compileGlsl(vertSrc, true, vertErr);
+  if (vertSpv.empty()) {
+    VKR_PIPE_ERROR("Reload failed: {}", vertErr);
+    return false;
+  }
+
+  auto fragSpv = compileGlsl(fragSrc, false, fragErr);
+  if (fragSpv.empty()) {
+    VKR_PIPE_ERROR("Reload failed: {}", fragErr);
     return false;
   }
 
   vkDeviceWaitIdle(device_.device());
+
   destroyHandles();
   bool ok = build(vertSpv, fragSpv);
 
-  if (ok && offscreen_render_pass_ != VK_NULL_HANDLE) {
-    buildOffscreen(offscreen_render_pass_);
+  if (ok) {
+    vert_src_path_ = vertShaderPath;
+    frag_src_path_ = fragShaderPath;
+    vert_src_ = std::move(vertSrc);
+    frag_src_ = std::move(fragSrc);
+
+    if (offscreen_render_pass_ != VK_NULL_HANDLE) {
+      buildOffscreen(offscreen_render_pass_);
+    }
   }
 
   VKR_PIPE_INFO("Pipeline hot-reload {}.", ok ? "succeeded" : "FAILED");
@@ -280,16 +340,18 @@ auto GraphicsPipeline::rebuild(const std::string &vertShaderPath,
 void GraphicsPipeline::requestRebuildFromSource(
     const std::string &vertSrc, const std::string &fragSrc,
     std::function<void(bool, const std::string &)> callback) {
+  std::string vertErr;
+  std::string fragErr;
 
-  std::string err;
-  auto vertSpv = compileGlsl(vertSrc, true, err);
+  auto vertSpv = compileGlsl(vertSrc, true, vertErr);
   if (vertSpv.empty()) {
-    callback(false, err);
+    callback(false, vertErr);
     return;
   }
-  auto fragSpv = compileGlsl(fragSrc, false, err);
+
+  auto fragSpv = compileGlsl(fragSrc, false, fragErr);
   if (fragSpv.empty()) {
-    callback(false, err);
+    callback(false, fragErr);
     return;
   }
 
@@ -300,15 +362,21 @@ void GraphicsPipeline::requestRebuildFromSource(
 }
 
 auto GraphicsPipeline::flushPendingRebuild() -> bool {
-  std::scoped_lock lock(pending_mutex_);
-  if (!pending_rebuild_) {
-    return false;
+  PendingRebuild req;
+
+  {
+    std::scoped_lock lock(pending_mutex_);
+
+    if (!pending_rebuild_) {
+      return false;
+    }
+
+    req = std::move(*pending_rebuild_);
+    pending_rebuild_.reset();
   }
 
-  PendingRebuild req = std::move(*pending_rebuild_);
-  pending_rebuild_.reset();
-
   vkDeviceWaitIdle(device_.device());
+
   destroyHandles();
   bool ok = build(req.vertSpv, req.fragSpv);
 
@@ -316,11 +384,13 @@ auto GraphicsPipeline::flushPendingRebuild() -> bool {
     if (!vert_src_path_.empty()) {
       util::fwrite_string(vert_src_path_, req.vertSrc);
     }
+
     if (!frag_src_path_.empty()) {
       util::fwrite_string(frag_src_path_, req.fragSrc);
     }
-    vert_src_ = req.vertSrc;
-    frag_src_ = req.fragSrc;
+
+    vert_src_ = std::move(req.vertSrc);
+    frag_src_ = std::move(req.fragSrc);
 
     if (offscreen_render_pass_ != VK_NULL_HANDLE) {
       buildOffscreen(offscreen_render_pass_);
@@ -335,24 +405,19 @@ auto GraphicsPipeline::flushPendingRebuild() -> bool {
 auto GraphicsPipeline::compileGlsl(const std::string &src, bool isVertex,
                                    std::string &outError)
     -> std::vector<uint32_t> {
-  shaderc::Compiler compiler;
-  shaderc::CompileOptions opts;
-  opts.SetOptimizationLevel(shaderc_optimization_level_performance);
-  opts.SetTargetEnvironment(shaderc_target_env_vulkan,
-                            shaderc_env_version_vulkan_1_0);
+  auto desc = util::ShaderCompileDesc::glslSource(
+      isVertex ? shaderc_glsl_vertex_shader : shaderc_glsl_fragment_shader, src,
+      isVertex ? "vertex" : "fragment");
 
-  auto kind =
-      isVertex ? shaderc_glsl_vertex_shader : shaderc_glsl_fragment_shader;
-  const char *label = isVertex ? "vertex" : "fragment";
+  auto result = util::ShaderCompiler::compileGlsl(desc);
 
-  shaderc::SpvCompilationResult result =
-      compiler.CompileGlslToSpv(src, kind, label, opts);
-
-  if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-    outError = result.GetErrorMessage();
+  if (!result) {
+    outError = result.error;
     return {};
   }
-  return {result.cbegin(), result.cend()};
+
+  outError.clear();
+  return std::move(result.spv);
 }
 
 void GraphicsPipeline::destroyHandles() {
@@ -360,6 +425,7 @@ void GraphicsPipeline::destroyHandles() {
     vkDestroyPipeline(device_.device(), vk_graphics_pipeline_, nullptr);
     vk_graphics_pipeline_ = VK_NULL_HANDLE;
   }
+
   if (vk_pipeline_layout_ != VK_NULL_HANDLE) {
     vkDestroyPipelineLayout(device_.device(), vk_pipeline_layout_, nullptr);
     vk_pipeline_layout_ = VK_NULL_HANDLE;
@@ -410,6 +476,7 @@ void GraphicsPipeline::loadDefaultSources() {
         "No default source paths found for the current PipelineMode.");
     return;
   }
+
   const auto &[defaultVert, defaultFrag] = it->second;
 
   if (!instance_.desc().name.empty()) {
@@ -420,6 +487,7 @@ void GraphicsPipeline::loadDefaultSources() {
     if (!fs::exists(appVert) || !fs::exists(appFrag)) {
       std::error_code ec;
       fs::create_directories(appDir, ec);
+
       if (ec) {
         VKR_PIPE_WARN("Could not create shader directory '{}': {} — "
                       "falling back to read-only mode defaults.",
@@ -427,15 +495,17 @@ void GraphicsPipeline::loadDefaultSources() {
       } else {
         fs::copy_file(defaultVert, appVert, fs::copy_options::skip_existing,
                       ec);
-        if (ec)
+        if (ec) {
           VKR_PIPE_WARN("Could not copy '{}' → '{}': {}", defaultVert, appVert,
                         ec.message());
+        }
 
         fs::copy_file(defaultFrag, appFrag, fs::copy_options::skip_existing,
                       ec);
-        if (ec)
+        if (ec) {
           VKR_PIPE_WARN("Could not copy '{}' → '{}': {}", defaultFrag, appFrag,
                         ec.message());
+        }
 
         VKR_PIPE_INFO("Created app shaders from defaults: {} / {}", appVert,
                       appFrag);

@@ -10,7 +10,7 @@ static auto fread_char(const std::string &path) -> std::vector<char> {
   if (!file.is_open()) {
     VKR_CORE_ERROR("Failed to open file: {}", path);
   }
-  auto fileSize = (size_t)file.tellg();
+  auto fileSize = static_cast<size_t>(file.tellg());
   std::vector<char> buffer(fileSize);
   file.seekg(0);
   file.read(buffer.data(), fileSize);
@@ -37,8 +37,8 @@ static auto fread_string(const std::string &path) -> std::string {
   if (!f.is_open())
     VKR_CORE_ERROR("Failed to open file: {}", path);
   VKR_CORE_INFO("Read shader source from file: {}", path);
-  return std::string((std::istreambuf_iterator<char>(f)),
-                     std::istreambuf_iterator<char>());
+  return std::string{(std::istreambuf_iterator<char>(f)),
+                     std::istreambuf_iterator<char>()};
 }
 
 static void fwrite_string(const std::string &path, const std::string &content) {

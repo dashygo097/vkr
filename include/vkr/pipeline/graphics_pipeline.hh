@@ -1,13 +1,16 @@
 #pragma once
 
 #include "vkr/core/device.hh"
+#include "vkr/core/instance.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/resource/manager.hh"
+#include <functional>
 #include <mutex>
 #include <optional>
 #include <string>
 #include <vector>
+#include <vulkan/vulkan.h>
 
 namespace vkr::pipeline {
 
@@ -29,6 +32,7 @@ public:
                             DescriptorSetLayout &descriptorSetLayout,
                             PipelineMode mode = PipelineMode::Default3D);
   ~GraphicsPipeline();
+
   GraphicsPipeline(const GraphicsPipeline &) = delete;
   auto operator=(const GraphicsPipeline &) -> GraphicsPipeline & = delete;
 
@@ -47,19 +51,24 @@ public:
   [[nodiscard]] auto pipelineLayout() const noexcept -> VkPipelineLayout {
     return vk_pipeline_layout_;
   }
+
   [[nodiscard]] auto pipeline() const noexcept -> VkPipeline {
     return vk_graphics_pipeline_;
   }
+
   [[nodiscard]] auto offscreenPipelineLayout() const noexcept
       -> VkPipelineLayout {
     return vk_offscreen_layout_;
   }
+
   [[nodiscard]] auto offscreenPipeline() const noexcept -> VkPipeline {
     return vk_offscreen_pipeline_;
   }
+
   [[nodiscard]] auto vertexSource() const noexcept -> const std::string & {
     return vert_src_;
   }
+
   [[nodiscard]] auto fragmentSource() const noexcept -> const std::string & {
     return frag_src_;
   }
@@ -94,6 +103,7 @@ private:
     std::vector<uint32_t> fragSpv;
     std::function<void(bool, const std::string &)> callback;
   };
+
   std::optional<PendingRebuild> pending_rebuild_;
   std::mutex pending_mutex_;
 
@@ -110,6 +120,7 @@ private:
 
   auto compileGlsl(const std::string &src, bool isVertex, std::string &outError)
       -> std::vector<uint32_t>;
+
   void loadDefaultSources();
 };
 
