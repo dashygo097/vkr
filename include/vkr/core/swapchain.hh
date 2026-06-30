@@ -100,13 +100,13 @@ private:
   const Surface &surface_;
 
   // components
+  SwapchainDesc &desc_;
   VkSwapchainKHR vk_swapchain_{VK_NULL_HANDLE};
   std::vector<VkImage> vk_images_{};
   std::vector<VkImageView> vk_imageviews_{};
   VkFormat vk_format_{VK_FORMAT_UNDEFINED};
   VkExtent2D vk_extent_{};
   VkPresentModeKHR vk_present_mode_{VK_PRESENT_MODE_FIFO_KHR};
-  SwapchainDesc &desc_;
 };
 
 } // namespace vkr::core

@@ -78,7 +78,7 @@ void Theme::applyDarkBase(ImGuiStyle &style) {
   colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.05f, 0.06f, 0.07f, 1.00f);
 }
 
-void Theme::apply(const ThemeConfig &config) {
+void Theme::apply(const ThemeDesc &config) {
   if (config.dark) {
     ImGui::StyleColorsDark();
   } else {

@@ -6,6 +6,7 @@
 #include "vkr/core/window.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/scene/camera.hh"
+#include "vkr/ui/theme.hh"
 #include "vkr/util/asset.hh"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
@@ -20,6 +21,7 @@ struct VulkanContext {
   core::DeviceDesc device{};
   core::SwapchainDesc swapchain{};
   scene::CameraDesc camera{};
+  ui::ThemeDesc theme{};
 
   pipeline::PipelineMode pipelineMode{pipeline::PipelineMode::Default3D};
 
@@ -28,7 +30,8 @@ struct VulkanContext {
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return asset.isValid() && window.isValid() && instance.isValid() &&
-           device.isValid() && swapchain.isValid() && camera.isValid();
+           device.isValid() && swapchain.isValid() && camera.isValid() &&
+           theme.isValid();
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
@@ -38,6 +41,7 @@ struct VulkanContext {
     ar("device", device);
     ar("swapchain", swapchain);
     ar("camera", camera);
+    ar("theme", theme);
   }
 };
 

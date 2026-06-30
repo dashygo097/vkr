@@ -31,7 +31,9 @@ public:
   Device(const Device &) = delete;
   auto operator=(const Device &) -> Device & = delete;
 
-  [[nodiscard]] auto desc() const noexcept -> DeviceDesc { return desc_; }
+  [[nodiscard]] auto desc() const noexcept -> const DeviceDesc & {
+    return desc_;
+  }
 
   void waitIdle();
 
@@ -54,11 +56,11 @@ private:
   const Surface &surface_;
 
   // components
+  DeviceDesc &desc_;
   VkPhysicalDevice vk_physical_device_{VK_NULL_HANDLE};
   VkDevice vk_logical_device_{VK_NULL_HANDLE};
   VkQueue vk_graphics_queue_{VK_NULL_HANDLE};
   VkQueue vk_present_queue_{VK_NULL_HANDLE};
-  DeviceDesc &desc_;
 
   void pickPhysicalDevice();
   void createLogicalDevice();

@@ -46,8 +46,8 @@ public:
 
 private:
   // components
-  VkInstance vk_instance_{VK_NULL_HANDLE};
   InstanceDesc &desc_;
+  VkInstance vk_instance_{VK_NULL_HANDLE};
 
 #ifndef NDEBUG
   std::unique_ptr<DebugMessenger> debug_messenger_;

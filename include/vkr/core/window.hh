@@ -47,8 +47,8 @@ public:
 
 private:
   // components
-  GLFWwindow *window_{nullptr};
   WindowDesc &desc_;
+  GLFWwindow *window_{nullptr};
 };
 
 } // namespace vkr::core

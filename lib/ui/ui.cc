@@ -16,13 +16,13 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        resource::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
-       pipeline::GraphicsPipeline &graphicsPipeline,
-       pipeline::PipelineMode mode, util::Timer &timer)
+       pipeline::GraphicsPipeline &graphicsPipeline, util::Timer &timer,
+       pipeline::PipelineMode mode, ThemeDesc &desc)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), resource_manager_(resourceManager),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),
       descriptor_pool_(descriptorPool), graphics_pipeline_(graphicsPipeline),
-      mode_(mode), timer_(timer) {
+      timer_(timer), mode_(mode), desc_(desc) {
 
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
@@ -32,11 +32,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-  theme_config_.accent = ThemeAccent::Red;
-  theme_config_.dark = true;
-  theme_config_.rounding = 4.0f;
-  theme_config_.alpha = 1.0f;
-  Theme::apply(theme_config_);
+  Theme::apply(desc_);
 
   ImGuiStyle &style = ImGui::GetStyle();
   if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -213,45 +209,43 @@ void UI::renderDockspace() {
         ImGui::PushItemWidth(110.0f);
 
         if (ImGui::MenuItem("Blue", nullptr,
-                            theme_config_.accent == ThemeAccent::Blue)) {
-          theme_config_.accent = ThemeAccent::Blue;
-          Theme::apply(theme_config_);
+                            desc_.accent == ThemeAccent::Blue)) {
+          desc_.accent = ThemeAccent::Blue;
+          Theme::apply(desc_);
         }
 
-        if (ImGui::MenuItem("Red", nullptr,
-                            theme_config_.accent == ThemeAccent::Red)) {
-          theme_config_.accent = ThemeAccent::Red;
-          Theme::apply(theme_config_);
+        if (ImGui::MenuItem("Red", nullptr, desc_.accent == ThemeAccent::Red)) {
+          desc_.accent = ThemeAccent::Red;
+          Theme::apply(desc_);
         }
 
         if (ImGui::MenuItem("Green", nullptr,
-                            theme_config_.accent == ThemeAccent::Green)) {
-          theme_config_.accent = ThemeAccent::Green;
-          Theme::apply(theme_config_);
+                            desc_.accent == ThemeAccent::Green)) {
+          desc_.accent = ThemeAccent::Green;
+          Theme::apply(desc_);
         }
 
         if (ImGui::MenuItem("Purple", nullptr,
-                            theme_config_.accent == ThemeAccent::Purple)) {
-          theme_config_.accent = ThemeAccent::Purple;
-          Theme::apply(theme_config_);
+                            desc_.accent == ThemeAccent::Purple)) {
+          desc_.accent = ThemeAccent::Purple;
+          Theme::apply(desc_);
         }
 
         if (ImGui::MenuItem("Amber", nullptr,
-                            theme_config_.accent == ThemeAccent::Amber)) {
-          theme_config_.accent = ThemeAccent::Amber;
-          Theme::apply(theme_config_);
+                            desc_.accent == ThemeAccent::Amber)) {
+          desc_.accent = ThemeAccent::Amber;
+          Theme::apply(desc_);
         }
 
         ImGui::Separator();
 
-        if (ImGui::SliderFloat("Rounding", &theme_config_.rounding, 0.0f, 12.0f,
+        if (ImGui::SliderFloat("Rounding", &desc_.rounding, 0.0f, 12.0f,
                                "%.1f")) {
-          Theme::apply(theme_config_);
+          Theme::apply(desc_);
         }
 
-        if (ImGui::SliderFloat("Alpha", &theme_config_.alpha, 0.10f, 1.00f,
-                               "%.2f")) {
-          Theme::apply(theme_config_);
+        if (ImGui::SliderFloat("Alpha", &desc_.alpha, 0.10f, 1.00f, "%.2f")) {
+          Theme::apply(desc_);
         }
 
         ImGui::EndMenu();

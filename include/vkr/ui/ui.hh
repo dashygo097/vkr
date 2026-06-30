@@ -24,9 +24,12 @@ enum LayoutMode {
 };
 
 struct ViewportInfo {
-  float x, y, width, height;
-  bool isFocused;
-  bool isHovered;
+  float x{0.0f};
+  float y{0.0f};
+  float width{0.0f};
+  float height{0.0f};
+  bool isFocused{false};
+  bool isHovered{false};
 };
 
 class UI {
@@ -38,8 +41,8 @@ public:
      resource::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
-     pipeline::GraphicsPipeline &graphicsPipeline, pipeline::PipelineMode mode,
-     util::Timer &timer);
+     pipeline::GraphicsPipeline &graphicsPipeline, util::Timer &timer,
+     pipeline::PipelineMode mode, ThemeDesc &desc);
   ~UI();
 
   UI(const UI &) = delete;
@@ -47,15 +50,12 @@ public:
 
   void render(VkCommandBuffer commandBuffer);
 
-  void theme(const ThemeConfig &config) noexcept {
-    theme_config_ = config;
-    Theme::apply(theme_config_);
-  }
-  [[nodiscard]] auto theme() const noexcept -> const ThemeConfig & {
-    return theme_config_;
+  [[nodiscard]] auto desc() const noexcept -> const ThemeDesc & {
+    return desc_;
   }
 
   void layoutMode(LayoutMode mode) noexcept { layout_mode_ = mode; }
+
   void switchLayoutMode() noexcept {
     switch (layout_mode_) {
     case LayoutMode::FullScreen:
@@ -67,7 +67,9 @@ public:
     }
   }
 
-  [[nodiscard]] auto shouldClose() -> bool { return should_close_; }
+  [[nodiscard]] auto shouldClose() const noexcept -> bool {
+    return should_close_;
+  }
 
   void viewportInfo(const ViewportInfo &info) noexcept {
     viewport_info_ = info;
@@ -76,12 +78,12 @@ public:
   [[nodiscard]] auto layoutMode() const noexcept -> LayoutMode {
     return layout_mode_;
   }
+
   [[nodiscard]] auto viewportInfo() const noexcept -> const ViewportInfo & {
     return viewport_info_;
   }
 
 private:
-  // dependencies
   const core::Window &window_;
   const core::Instance &instance_;
   const core::Surface &surface_;
@@ -95,23 +97,17 @@ private:
   pipeline::PipelineMode mode_;
   util::Timer &timer_;
 
-  // components
+  ThemeDesc &desc_;
   std::unique_ptr<ResourceTree> resource_tree_;
   std::unique_ptr<FPSPanel> fps_panel_;
   std::unique_ptr<ShaderEditor> shader_editor_;
   std::unique_ptr<LoggingPanel> logging_panel_;
 
-  // state
-  ThemeConfig theme_config_{};
   LayoutMode layout_mode_{LayoutMode::FullScreen};
   ViewportInfo viewport_info_{};
   bool should_close_{false};
 
-  // helpers
-  // Full screen mode
   void renderFullScreen();
-
-  // Standard mode
   void renderDockspace();
   void setupDockingLayout();
   void renderMainViewport();
@@ -120,4 +116,5 @@ private:
   void renderPerformancePanel();
   void renderShaderEditor();
 };
+
 } // namespace vkr::ui
