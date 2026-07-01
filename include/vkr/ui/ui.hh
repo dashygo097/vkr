@@ -40,9 +40,8 @@ public:
      const resource::ResourceManager &resourceManager,
      resource::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
-     const pipeline::DescriptorPool &descriptorPool,
-     pipeline::GraphicsPipeline &graphicsPipeline, util::Timer &timer,
-     pipeline::PipelineMode mode, ThemeDesc &desc);
+     const pipeline::DescriptorPool &descriptorPool, util::Timer &timer,
+     ThemeDesc &desc);
   ~UI();
 
   UI(const UI &) = delete;
@@ -93,8 +92,6 @@ private:
   resource::OffscreenTarget &offscreen_target_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
-  pipeline::GraphicsPipeline &graphics_pipeline_;
-  pipeline::PipelineMode mode_;
   util::Timer &timer_;
 
   ThemeDesc &desc_;

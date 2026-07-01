@@ -28,6 +28,32 @@ private:
              VK_SHADER_STAGE_FRAGMENT_BIT}};
   }
 
+  void createPipelines() override {
+    vkr::pipeline::GraphicsPipelineDesc shadertoy{};
+    shadertoy.name = "shadertoy";
+    shadertoy.renderPass = offscreenRenderPass->renderPass();
+    shadertoy.layout.setLayouts = {descriptorSetLayout->layoutRef()};
+    shadertoy.vertexInput = vkr::resource::VertexInputDesc::none();
+
+    shadertoy.shaders = {
+        vkr::pipeline::GraphicsShaderStageDesc::vertex(
+            vkr::pipeline::ShaderModuleDesc::vertexGlslFile(
+                assetSystem->resolve("shaders/shadertoy/shadertoy.vert")
+                    .string())),
+        vkr::pipeline::GraphicsShaderStageDesc::fragment(
+            vkr::pipeline::ShaderModuleDesc::fragmentGlslFile(
+                assetSystem->resolve("shaders/shadertoy/shadertoy.frag")
+                    .string())),
+    };
+
+    shadertoy.depthStencil =
+        vkr::pipeline::GraphicsDepthStencilDesc::disabled();
+    shadertoy.rasterization =
+        vkr::pipeline::GraphicsRasterizationDesc::noCull();
+
+    pipelineLibrary->create(shadertoy);
+  }
+
   void onDrawFrame(uint32_t currentImage) override {
     auto shadertoyUBO = resourceManager->getUniformBuffer("shadertoy");
     if (!shadertoyUBO) {
@@ -103,8 +129,6 @@ private:
 
     startTime = std::chrono::high_resolution_clock::now();
     lastFrameTime = startTime;
-
-    ctx.pipelineMode = vkr::pipeline::PipelineMode::NoVertices;
   }
 };
 

@@ -30,6 +30,30 @@ private:
              VK_SHADER_STAGE_VERTEX_BIT}};
   }
 
+  void createPipelines() override {
+    vkr::pipeline::GraphicsPipelineDesc canvas{};
+    canvas.name = "canvas";
+    canvas.renderPass = offscreenRenderPass->renderPass();
+    canvas.layout.setLayouts = {descriptorSetLayout->layoutRef()};
+    canvas.vertexInput = vkr::resource::Vertex2D::vertexInputDesc();
+
+    canvas.shaders = {
+        vkr::pipeline::GraphicsShaderStageDesc::vertex(
+            vkr::pipeline::ShaderModuleDesc::vertexGlslFile(
+                assetSystem->resolve("shaders/default2d/default2d.vert")
+                    .string())),
+        vkr::pipeline::GraphicsShaderStageDesc::fragment(
+            vkr::pipeline::ShaderModuleDesc::fragmentGlslFile(
+                assetSystem->resolve("shaders/default2d/default2d.frag")
+                    .string())),
+    };
+
+    canvas.depthStencil = vkr::pipeline::GraphicsDepthStencilDesc::disabled();
+    canvas.rasterization = vkr::pipeline::GraphicsRasterizationDesc::noCull();
+
+    pipelineLibrary->create(canvas);
+  }
+
   void onDrawFrame(uint32_t currentImage) override {
     vkr::resource::UniformBuffer3DObject ubo{};
     ubo.model = glm::mat4(1.0f);
@@ -54,8 +78,6 @@ private:
     ctx.camera = {
         .locked = true,
     };
-
-    ctx.pipelineMode = vkr::pipeline::PipelineMode::Default2D;
   }
 };
 

@@ -15,14 +15,12 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const resource::ResourceManager &resourceManager,
        resource::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
-       const pipeline::DescriptorPool &descriptorPool,
-       pipeline::GraphicsPipeline &graphicsPipeline, util::Timer &timer,
-       pipeline::PipelineMode mode, ThemeDesc &desc)
+       const pipeline::DescriptorPool &descriptorPool, util::Timer &timer,
+       ThemeDesc &desc)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), resource_manager_(resourceManager),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),
-      descriptor_pool_(descriptorPool), graphics_pipeline_(graphicsPipeline),
-      timer_(timer), mode_(mode), desc_(desc) {
+      descriptor_pool_(descriptorPool), timer_(timer), desc_(desc) {
 
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
@@ -73,21 +71,26 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   // shader editor
   VKR_UI_INFO("Initializing Shader Editor...");
   shader_editor_ = std::make_unique<ShaderEditor>(
-      [this](const std::string &vert, const std::string &frag) -> void {
-        std::string err;
-        graphics_pipeline_.requestRebuildFromSource(
-            vert, frag, [this](bool ok, const std::string &err) -> void {
-              shader_editor_->setStatus(ok ? "Compiled successfully." : err,
-                                        !ok);
-            });
-        shader_editor_->setStatus("Compiling...", false);
+      [this](const std::string &, const std::string &) -> void {
+        shader_editor_->setStatus(
+            "Shader hot reload moved out of GraphicsPipeline. "
+            "Use render::PipelineLibrary / RenderGraph pipeline nodes later.",
+            true);
       });
 
-  shader_editor_->setSource(ShaderType::Vertex,
-                            graphics_pipeline_.vertexSource());
-  shader_editor_->setSource(ShaderType::Fragment,
-                            graphics_pipeline_.fragmentSource());
-  shader_editor_->setStatus("Loaded default shaders.", false);
+  shader_editor_->setSource(
+      ShaderType::Vertex,
+      "// Shader hot reload is disabled for the new GraphicsPipeline.\n"
+      "// GraphicsPipeline is now descriptor-driven and does not own "
+      "sources.\n");
+
+  shader_editor_->setSource(
+      ShaderType::Fragment,
+      "// Shader hot reload is disabled for the new GraphicsPipeline.\n"
+      "// Add it back through render::PipelineLibrary later.\n");
+
+  shader_editor_->setStatus("Shader editor disabled for new pipeline model.",
+                            false);
   VKR_UI_INFO("Shader Editor initialized successfully.");
 
   // logging panel

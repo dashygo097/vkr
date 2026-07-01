@@ -49,6 +49,32 @@ private:
              VK_SHADER_STAGE_FRAGMENT_BIT}};
   }
 
+  void createPipelines() override {
+    vkr::pipeline::GraphicsPipelineDesc textured{};
+    textured.name = "textured";
+    textured.renderPass = offscreenRenderPass->renderPass();
+    textured.layout.setLayouts = {descriptorSetLayout->layoutRef()};
+    textured.vertexInput = vkr::resource::VertexTextured3D::vertexInputDesc();
+
+    textured.shaders = {
+        vkr::pipeline::GraphicsShaderStageDesc::vertex(
+            vkr::pipeline::ShaderModuleDesc::vertexGlslFile(
+                assetSystem->resolve("shaders/texture3d/texture3d.vert")
+                    .string())),
+        vkr::pipeline::GraphicsShaderStageDesc::fragment(
+            vkr::pipeline::ShaderModuleDesc::fragmentGlslFile(
+                assetSystem->resolve("shaders/texture3d/texture3d.frag")
+                    .string())),
+    };
+
+    textured.depthStencil.depthTestEnable = VK_TRUE;
+    textured.depthStencil.depthWriteEnable = VK_TRUE;
+    textured.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    textured.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+
+    pipelineLibrary->create(textured);
+  }
+
   void onDrawFrame(uint32_t currentImage) override {
     vkr::resource::UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -84,8 +110,6 @@ private:
         .mouseSensitivity = 0.5f,
         .aspectRatio = ctx.window.ratio(),
     };
-
-    ctx.pipelineMode = vkr::pipeline::PipelineMode::Textured3D;
   }
 };
 

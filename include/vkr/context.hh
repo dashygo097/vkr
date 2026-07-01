@@ -23,8 +23,6 @@ struct VulkanContext {
   scene::CameraDesc camera{};
   ui::ThemeDesc theme{};
 
-  pipeline::PipelineMode pipelineMode{pipeline::PipelineMode::Default3D};
-
   uint32_t currentFrame{};
   bool framebufferResized{};
 

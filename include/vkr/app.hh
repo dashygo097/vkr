@@ -3,7 +3,7 @@
 #include "vkr/context.hh"
 #include "vkr/logger.hh"
 #include "vkr/pipeline/descriptors/set.hh"
-#include "vkr/pipeline/graphics_pipeline.hh"
+#include "vkr/render/pipeline_library.hh"
 #include "vkr/render/renderer.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/depth_target.hh"
@@ -13,6 +13,8 @@
 #include "vkr/util/timer.hh"
 #include "vkr/util/toml.hh"
 #include <filesystem>
+#include <memory>
+#include <vector>
 
 namespace vkr {
 
@@ -52,13 +54,15 @@ public:
 
   // resource management
   std::unique_ptr<resource::DepthTarget> depthTarget;
-  std::unique_ptr<resource::ResourceManager> resourceManager;
   std::unique_ptr<resource::OffscreenTarget> offscreenTarget;
+  std::unique_ptr<resource::ResourceManager> resourceManager;
 
-  // pipeline
+  // render pass
   std::unique_ptr<pipeline::RenderPass> swapchainRenderPass;
   std::unique_ptr<pipeline::RenderPass> offscreenRenderPass;
-  std::unique_ptr<pipeline::GraphicsPipeline> graphicsPipeline;
+
+  // pipeline management
+  std::unique_ptr<render::PipelineLibrary> pipelineLibrary;
 
   // descriptor
   std::shared_ptr<pipeline::DescriptorSetLayout> descriptorSetLayout;
@@ -78,8 +82,8 @@ public:
 protected:
   virtual void onConfigure() {}
   virtual void onDrawFrame(uint32_t currentImage) {}
-
   virtual void createResources() {}
+  virtual void createPipelines() {}
   virtual auto createDescriptorBindings()
       -> std::vector<pipeline::DescriptorBinding> {
     return {};

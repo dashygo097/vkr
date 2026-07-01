@@ -24,6 +24,32 @@ private:
         "default", {});
   }
 
+  void createPipelines() override {
+    vkr::pipeline::GraphicsPipelineDesc normal{};
+    normal.name = "normal3d";
+    normal.renderPass = offscreenRenderPass->renderPass();
+    normal.layout.setLayouts = {descriptorSetLayout->layoutRef()};
+    normal.vertexInput = vkr::resource::VertexNormal3D::vertexInputDesc();
+
+    normal.shaders = {
+        vkr::pipeline::GraphicsShaderStageDesc::vertex(
+            vkr::pipeline::ShaderModuleDesc::vertexGlslFile(
+                assetSystem->resolve("shaders/normal3d/normal3d.vert")
+                    .string())),
+        vkr::pipeline::GraphicsShaderStageDesc::fragment(
+            vkr::pipeline::ShaderModuleDesc::fragmentGlslFile(
+                assetSystem->resolve("shaders/normal3d/normal3d.frag")
+                    .string())),
+    };
+
+    normal.depthStencil.depthTestEnable = VK_TRUE;
+    normal.depthStencil.depthWriteEnable = VK_TRUE;
+    normal.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    normal.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+
+    pipelineLibrary->create(normal);
+  }
+
   void onDrawFrame(uint32_t currentImage) override {
     vkr::resource::UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -59,8 +85,6 @@ private:
         .mouseSensitivity = 0.5f,
         .aspectRatio = ctx.window.ratio(),
     };
-
-    ctx.pipelineMode = vkr::pipeline::PipelineMode::Normal3D;
   }
 };
 

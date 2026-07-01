@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vkr/core/window.hh"
-#include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/util/timer.hh"
 #include <GLFW/glfw3.h>
 #include <glm/common.hpp>
@@ -60,7 +59,7 @@ struct CameraDesc {
 class Camera {
 public:
   explicit Camera(const core::Window &window, const util::Timer &timer,
-                  pipeline::PipelineMode mode, CameraDesc &desc);
+                  CameraDesc &desc);
   ~Camera() = default;
 
   Camera(const Camera &) = delete;
@@ -132,7 +131,6 @@ private:
   // dependencies
   const core::Window &window_;
   const util::Timer &timer_;
-  const pipeline::PipelineMode mode_;
 
   // components
   CameraDesc &desc_;

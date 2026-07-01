@@ -1,537 +1,152 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/logger.hh"
-#include "vkr/pipeline/shader_module.hh"
-#include "vkr/resource/buffers/vbos.hh"
-#include "vkr/util/compiler.hh"
-#include "vkr/util/io.hh"
-#include <filesystem>
-#include <unordered_map>
-#include <utility>
 
 namespace vkr::pipeline {
 
-GraphicsPipeline::GraphicsPipeline(
-    const core::Instance &instance, const core::Device &device,
-    const resource::ResourceManager &resourceManager,
-    const RenderPass &renderPass, DescriptorSetLayout &descriptorSetLayout,
-    PipelineMode mode)
-    : instance_(instance), device_(device), resource_manager_(resourceManager),
-      render_pass_(renderPass), descriptor_set_layout_(descriptorSetLayout),
-      mode_(mode) {
-  VKR_PIPE_INFO("Graphics pipeline initializing...");
+GraphicsPipeline::GraphicsPipeline(const core::Device &device)
+    : device_(&device) {}
 
-  loadDefaultSources();
+GraphicsPipeline::~GraphicsPipeline() { destroy(); }
 
-  std::string vertErr = "Default vertex shader compilation failed!";
-  std::string fragErr = "Default fragment shader compilation failed!";
-
-  auto vertSpv = compileGlsl(vert_src_, true, vertErr);
-  auto fragSpv = compileGlsl(frag_src_, false, fragErr);
-
-  if (vertSpv.empty()) {
-    VKR_PIPE_ERROR("{}", vertErr);
+void GraphicsPipeline::create() {
+  if (device_ == nullptr) {
+    VKR_PIPE_ERROR("Cannot create graphics pipeline without device");
+    return;
   }
 
-  if (fragSpv.empty()) {
-    VKR_PIPE_ERROR("{}", fragErr);
+  if (!desc_.isValid()) {
+    VKR_PIPE_ERROR("Invalid graphics pipeline descriptor");
+    return;
   }
 
-  if (!build(vertSpv, fragSpv)) {
-    VKR_PIPE_ERROR("Failed to build graphics pipeline from default sources!");
+  std::vector<std::unique_ptr<ShaderModule>> shaderModules{};
+  auto shaderStages = createShaderStages(shaderModules);
+
+  if (shaderStages.size() != desc_.shaders.size()) {
+    VKR_PIPE_ERROR("Failed to create graphics pipeline shader stages");
+    return;
   }
 
-  VKR_PIPE_INFO("Graphics pipeline initialized!");
-}
+  auto vertexInput = desc_.vertexInput.createInfo();
+  auto inputAssembly = desc_.inputAssembly.createInfo();
+  auto viewport = desc_.viewport.createInfo();
+  auto rasterization = desc_.rasterization.createInfo();
+  auto multisample = desc_.multisample.createInfo();
+  auto depthStencil = desc_.depthStencil.createInfo();
+  auto colorBlend = desc_.colorBlend.createInfo();
+  auto dynamicState = desc_.dynamicState.createInfo();
 
-GraphicsPipeline::~GraphicsPipeline() {
-  destroyOffscreenHandles();
-  destroyHandles();
-}
-
-auto GraphicsPipeline::buildInto(const std::vector<uint32_t> &vertSpv,
-                                 const std::vector<uint32_t> &fragSpv,
-                                 VkRenderPass targetRenderPass,
-                                 VkPipelineLayout &outLayout,
-                                 VkPipeline &outPipeline) -> bool {
-  if (vertSpv.empty() || fragSpv.empty()) {
-    VKR_PIPE_ERROR("Cannot build graphics pipeline with empty shader SPIR-V!");
-    return false;
-  }
-
-  if (targetRenderPass == VK_NULL_HANDLE) {
-    VKR_PIPE_ERROR("Cannot build graphics pipeline with null render pass!");
-    return false;
-  }
-
-  ShaderModule vertShader(device_);
-  ShaderModule fragShader(device_);
-
-  vertShader.update(ShaderModuleDesc::spirvCode(vertSpv));
-  fragShader.update(ShaderModuleDesc::spirvCode(fragSpv));
-
-  VkPipelineShaderStageCreateInfo vertStage{};
-  vertStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  vertStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
-  vertStage.module = vertShader.module();
-  vertStage.pName = "main";
-
-  VkPipelineShaderStageCreateInfo fragStage{};
-  fragStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  fragStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  fragStage.module = fragShader.module();
-  fragStage.pName = "main";
-
-  VkPipelineShaderStageCreateInfo stages[] = {vertStage, fragStage};
-
-  VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-  vertexInputInfo.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-  VkVertexInputBindingDescription bindingDescription{};
-  std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-  switch (mode_) {
-  case PipelineMode::Default2D:
-    bindingDescription = resource::Vertex2D::getBindingDescription();
-    attributeDescriptions = resource::Vertex2D::getAttributeDescriptions();
-    vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.vertexAttributeDescriptionCount =
-        static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-    break;
-  case PipelineMode::Textured2D:
-    bindingDescription = resource::VertexTextured2D::getBindingDescription();
-    attributeDescriptions =
-        resource::VertexTextured2D::getAttributeDescriptions();
-    vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.vertexAttributeDescriptionCount =
-        static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-    break;
-  case PipelineMode::Default3D:
-    bindingDescription = resource::Vertex3D::getBindingDescription();
-    attributeDescriptions = resource::Vertex3D::getAttributeDescriptions();
-    vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.vertexAttributeDescriptionCount =
-        static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-    break;
-  case PipelineMode::Normal3D:
-    bindingDescription = resource::VertexNormal3D::getBindingDescription();
-    attributeDescriptions =
-        resource::VertexNormal3D::getAttributeDescriptions();
-    vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.vertexAttributeDescriptionCount =
-        static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-    break;
-  case PipelineMode::Textured3D:
-    bindingDescription = resource::VertexTextured3D::getBindingDescription();
-    attributeDescriptions =
-        resource::VertexTextured3D::getAttributeDescriptions();
-    vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.vertexAttributeDescriptionCount =
-        static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-    break;
-  case PipelineMode::NoVertices:
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputInfo.pVertexBindingDescriptions = nullptr;
-    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-    break;
-  }
-
-  VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-  inputAssembly.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-  inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-  VkPipelineViewportStateCreateInfo viewportState{};
-  viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-  viewportState.viewportCount = 1;
-  viewportState.scissorCount = 1;
-
-  VkPipelineRasterizationStateCreateInfo rasterizer{};
-  rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-  rasterizer.depthClampEnable = VK_FALSE;
-  rasterizer.rasterizerDiscardEnable = VK_FALSE;
-  rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-  rasterizer.lineWidth = 1.0f;
-  rasterizer.cullMode = mode_ == PipelineMode::NoVertices
-                            ? VK_CULL_MODE_NONE
-                            : VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-  rasterizer.depthBiasEnable = VK_FALSE;
-
-  VkPipelineMultisampleStateCreateInfo multisampling{};
-  multisampling.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-  multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-  multisampling.sampleShadingEnable = VK_FALSE;
-
-  VkPipelineDepthStencilStateCreateInfo depthStencil{};
-  depthStencil.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-  depthStencil.depthTestEnable = VK_TRUE;
-  depthStencil.depthWriteEnable = VK_TRUE;
-  depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-  depthStencil.depthBoundsTestEnable = VK_FALSE;
-  depthStencil.stencilTestEnable = VK_FALSE;
-
-  VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-  colorBlendAttachment.blendEnable = VK_FALSE;
-  colorBlendAttachment.colorWriteMask =
-      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-
-  VkPipelineColorBlendStateCreateInfo colorBlending{};
-  colorBlending.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-  colorBlending.logicOpEnable = VK_FALSE;
-  colorBlending.attachmentCount = 1;
-  colorBlending.pAttachments = &colorBlendAttachment;
-
-  std::vector<VkDynamicState> dynStates = {VK_DYNAMIC_STATE_VIEWPORT,
-                                           VK_DYNAMIC_STATE_SCISSOR};
-
-  VkPipelineDynamicStateCreateInfo dynamicState{};
-  dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-  dynamicState.dynamicStateCount = static_cast<uint32_t>(dynStates.size());
-  dynamicState.pDynamicStates = dynStates.data();
-
-  VkPipelineLayoutCreateInfo layoutInfo{};
-  layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  layoutInfo.setLayoutCount = 1;
-  layoutInfo.pSetLayouts = &descriptor_set_layout_.layoutRef();
-
-  VkPipelineLayout newLayout{VK_NULL_HANDLE};
-  if (vkCreatePipelineLayout(device_.device(), &layoutInfo, nullptr,
-                             &newLayout) != VK_SUCCESS) {
-    VKR_PIPE_ERROR("Failed to create pipeline layout!");
-    return false;
+  vk_pipeline_layout_ = createPipelineLayout();
+  if (vk_pipeline_layout_ == VK_NULL_HANDLE) {
+    VKR_PIPE_ERROR("Failed to create graphics pipeline layout");
+    return;
   }
 
   VkGraphicsPipelineCreateInfo pipelineInfo{};
   pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-  pipelineInfo.stageCount = 2;
-  pipelineInfo.pStages = stages;
-  pipelineInfo.pVertexInputState = &vertexInputInfo;
+  pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+  pipelineInfo.pStages = shaderStages.data();
+  pipelineInfo.pVertexInputState = &vertexInput;
   pipelineInfo.pInputAssemblyState = &inputAssembly;
-  pipelineInfo.pViewportState = &viewportState;
-  pipelineInfo.pRasterizationState = &rasterizer;
-  pipelineInfo.pMultisampleState = &multisampling;
+  pipelineInfo.pViewportState = &viewport;
+  pipelineInfo.pRasterizationState = &rasterization;
+  pipelineInfo.pMultisampleState = &multisample;
   pipelineInfo.pDepthStencilState = &depthStencil;
-  pipelineInfo.pColorBlendState = &colorBlending;
+  pipelineInfo.pColorBlendState = &colorBlend;
   pipelineInfo.pDynamicState = &dynamicState;
-  pipelineInfo.layout = newLayout;
-  pipelineInfo.renderPass = targetRenderPass;
-  pipelineInfo.subpass = 0;
+  pipelineInfo.layout = vk_pipeline_layout_;
+  pipelineInfo.renderPass = desc_.renderPass;
+  pipelineInfo.subpass = desc_.subpass;
+  pipelineInfo.basePipelineHandle = desc_.basePipeline;
+  pipelineInfo.basePipelineIndex = desc_.basePipelineIndex;
 
-  VkPipeline newPipeline{VK_NULL_HANDLE};
-  if (vkCreateGraphicsPipelines(device_.device(), VK_NULL_HANDLE, 1,
+  if (vkCreateGraphicsPipelines(device_->device(), VK_NULL_HANDLE, 1,
                                 &pipelineInfo, nullptr,
-                                &newPipeline) != VK_SUCCESS) {
-    vkDestroyPipelineLayout(device_.device(), newLayout, nullptr);
-    VKR_PIPE_ERROR("Failed to create graphics pipeline!");
-    return false;
-  }
-
-  outLayout = newLayout;
-  outPipeline = newPipeline;
-  return true;
-}
-
-auto GraphicsPipeline::build(const std::vector<uint32_t> &vertSpv,
-                             const std::vector<uint32_t> &fragSpv) -> bool {
-  return buildInto(vertSpv, fragSpv, render_pass_.renderPass(),
-                   vk_pipeline_layout_, vk_graphics_pipeline_);
-}
-
-void GraphicsPipeline::buildOffscreen(VkRenderPass offscreenRenderPass) {
-  VKR_PIPE_INFO("Building offscreen pipeline...");
-  offscreen_render_pass_ = offscreenRenderPass;
-  destroyOffscreenHandles();
-
-  std::string vertErr;
-  std::string fragErr;
-
-  auto vertSpv = compileGlsl(vert_src_, true, vertErr);
-  if (vertSpv.empty()) {
-    VKR_PIPE_ERROR("Offscreen pipeline: vertex compile failed: {}", vertErr);
+                                &vk_graphics_pipeline_) != VK_SUCCESS) {
+    VKR_PIPE_ERROR("Failed to create graphics pipeline");
+    vkDestroyPipelineLayout(device_->device(), vk_pipeline_layout_, nullptr);
+    vk_pipeline_layout_ = VK_NULL_HANDLE;
+    vk_graphics_pipeline_ = VK_NULL_HANDLE;
     return;
   }
 
-  auto fragSpv = compileGlsl(frag_src_, false, fragErr);
-  if (fragSpv.empty()) {
-    VKR_PIPE_ERROR("Offscreen pipeline: fragment compile failed: {}", fragErr);
+  VKR_PIPE_INFO("Graphics pipeline created");
+}
+
+void GraphicsPipeline::destroy() {
+  if (device_ == nullptr) {
+    vk_graphics_pipeline_ = VK_NULL_HANDLE;
+    vk_pipeline_layout_ = VK_NULL_HANDLE;
     return;
   }
 
-  if (!buildInto(vertSpv, fragSpv, offscreenRenderPass, vk_offscreen_layout_,
-                 vk_offscreen_pipeline_)) {
-    VKR_PIPE_ERROR("Failed to build offscreen pipeline!");
-    return;
-  }
-
-  VKR_PIPE_INFO("Offscreen pipeline built successfully.");
-}
-
-void GraphicsPipeline::destroyOffscreenHandles() {
-  if (vk_offscreen_pipeline_ != VK_NULL_HANDLE) {
-    vkDestroyPipeline(device_.device(), vk_offscreen_pipeline_, nullptr);
-    vk_offscreen_pipeline_ = VK_NULL_HANDLE;
-  }
-
-  if (vk_offscreen_layout_ != VK_NULL_HANDLE) {
-    vkDestroyPipelineLayout(device_.device(), vk_offscreen_layout_, nullptr);
-    vk_offscreen_layout_ = VK_NULL_HANDLE;
-  }
-}
-
-auto GraphicsPipeline::rebuild(const std::string &vertShaderPath,
-                               const std::string &fragShaderPath) -> bool {
-  VKR_PIPE_INFO("Hot-reloading pipeline from GLSL files...");
-
-  std::string vertErr;
-  std::string fragErr;
-
-  auto vertSrc = util::fread_string(vertShaderPath);
-  auto fragSrc = util::fread_string(fragShaderPath);
-
-  auto vertSpv = compileGlsl(vertSrc, true, vertErr);
-  if (vertSpv.empty()) {
-    VKR_PIPE_ERROR("Reload failed: {}", vertErr);
-    return false;
-  }
-
-  auto fragSpv = compileGlsl(fragSrc, false, fragErr);
-  if (fragSpv.empty()) {
-    VKR_PIPE_ERROR("Reload failed: {}", fragErr);
-    return false;
-  }
-
-  vkDeviceWaitIdle(device_.device());
-
-  destroyHandles();
-  bool ok = build(vertSpv, fragSpv);
-
-  if (ok) {
-    vert_src_path_ = vertShaderPath;
-    frag_src_path_ = fragShaderPath;
-    vert_src_ = std::move(vertSrc);
-    frag_src_ = std::move(fragSrc);
-
-    if (offscreen_render_pass_ != VK_NULL_HANDLE) {
-      buildOffscreen(offscreen_render_pass_);
-    }
-  }
-
-  VKR_PIPE_INFO("Pipeline hot-reload {}.", ok ? "succeeded" : "FAILED");
-  return ok;
-}
-
-void GraphicsPipeline::requestRebuildFromSource(
-    const std::string &vertSrc, const std::string &fragSrc,
-    std::function<void(bool, const std::string &)> callback) {
-  std::string vertErr;
-  std::string fragErr;
-
-  auto vertSpv = compileGlsl(vertSrc, true, vertErr);
-  if (vertSpv.empty()) {
-    callback(false, vertErr);
-    return;
-  }
-
-  auto fragSpv = compileGlsl(fragSrc, false, fragErr);
-  if (fragSpv.empty()) {
-    callback(false, fragErr);
-    return;
-  }
-
-  std::scoped_lock lock(pending_mutex_);
-  pending_rebuild_ = PendingRebuild{vertSrc, fragSrc, std::move(vertSpv),
-                                    std::move(fragSpv), std::move(callback)};
-  VKR_PIPE_INFO("Rebuild staged, will apply at next frame boundary.");
-}
-
-auto GraphicsPipeline::flushPendingRebuild() -> bool {
-  PendingRebuild req;
-
-  {
-    std::scoped_lock lock(pending_mutex_);
-
-    if (!pending_rebuild_) {
-      return false;
-    }
-
-    req = std::move(*pending_rebuild_);
-    pending_rebuild_.reset();
-  }
-
-  vkDeviceWaitIdle(device_.device());
-
-  destroyHandles();
-  bool ok = build(req.vertSpv, req.fragSpv);
-
-  if (ok) {
-    if (!vert_src_path_.empty()) {
-      util::fwrite_string(vert_src_path_, req.vertSrc);
-    }
-
-    if (!frag_src_path_.empty()) {
-      util::fwrite_string(frag_src_path_, req.fragSrc);
-    }
-
-    vert_src_ = std::move(req.vertSrc);
-    frag_src_ = std::move(req.fragSrc);
-
-    if (offscreen_render_pass_ != VK_NULL_HANDLE) {
-      buildOffscreen(offscreen_render_pass_);
-    }
-  }
-
-  req.callback(ok, ok ? "" : "Pipeline build step failed.");
-  VKR_PIPE_INFO("Deferred rebuild {}.", ok ? "succeeded" : "FAILED");
-  return true;
-}
-
-auto GraphicsPipeline::compileGlsl(const std::string &src, bool isVertex,
-                                   std::string &outError)
-    -> std::vector<uint32_t> {
-  auto desc = util::ShaderCompileDesc::glslSource(
-      isVertex ? shaderc_glsl_vertex_shader : shaderc_glsl_fragment_shader, src,
-      isVertex ? "vertex" : "fragment");
-
-  auto result = util::ShaderCompiler::compileGlsl(desc);
-
-  if (!result) {
-    outError = result.error;
-    return {};
-  }
-
-  outError.clear();
-  return std::move(result.spv);
-}
-
-void GraphicsPipeline::destroyHandles() {
   if (vk_graphics_pipeline_ != VK_NULL_HANDLE) {
-    vkDestroyPipeline(device_.device(), vk_graphics_pipeline_, nullptr);
+    vkDestroyPipeline(device_->device(), vk_graphics_pipeline_, nullptr);
     vk_graphics_pipeline_ = VK_NULL_HANDLE;
   }
 
   if (vk_pipeline_layout_ != VK_NULL_HANDLE) {
-    vkDestroyPipelineLayout(device_.device(), vk_pipeline_layout_, nullptr);
+    vkDestroyPipelineLayout(device_->device(), vk_pipeline_layout_, nullptr);
     vk_pipeline_layout_ = VK_NULL_HANDLE;
   }
 }
 
-static const std::unordered_map<PipelineMode,
-                                std::pair<std::string, std::string>>
-    kDefaultSourcePaths = {
-        {PipelineMode::Default2D,
-         {std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/default2d/default2d.vert",
-          std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/default2d/default2d.frag"}},
-        {PipelineMode::Textured2D,
-         {std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/texture2d/texture2d.vert",
-          std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/texture2d/texture2d.frag"}},
-        {PipelineMode::Default3D,
-         {std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/default3d/default3d.vert",
-          std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/default3d/default3d.frag"}},
-        {PipelineMode::Normal3D,
-         {std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/normal3d/normal3d.vert",
-          std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/normal3d/normal3d.frag"}},
-        {PipelineMode::Textured3D,
-         {std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/texture3d/texture3d.vert",
-          std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/texture3d/texture3d.frag"}},
-        {PipelineMode::NoVertices,
-         {std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/shadertoy/shadertoy.vert",
-          std::string(ENGINE_ASSETS_DIR) +
-              "assets/shaders/shadertoy/shadertoy.frag"}},
-};
+void GraphicsPipeline::update(const GraphicsPipelineDesc &desc) {
+  destroy();
+  desc_ = desc;
+  create();
+}
 
-void GraphicsPipeline::loadDefaultSources() {
-  namespace fs = std::filesystem;
+auto GraphicsPipeline::createPipelineLayout() const -> VkPipelineLayout {
+  VkPipelineLayoutCreateInfo layoutInfo{};
+  layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  layoutInfo.setLayoutCount =
+      static_cast<uint32_t>(desc_.layout.setLayouts.size());
+  layoutInfo.pSetLayouts = desc_.layout.setLayouts.empty()
+                               ? nullptr
+                               : desc_.layout.setLayouts.data();
+  layoutInfo.pushConstantRangeCount =
+      static_cast<uint32_t>(desc_.layout.pushConstants.size());
+  layoutInfo.pPushConstantRanges = desc_.layout.pushConstants.empty()
+                                       ? nullptr
+                                       : desc_.layout.pushConstants.data();
 
-  auto it = kDefaultSourcePaths.find(mode_);
-  if (it == kDefaultSourcePaths.end()) {
-    VKR_PIPE_WARN(
-        "No default source paths found for the current PipelineMode.");
-    return;
+  VkPipelineLayout layout{VK_NULL_HANDLE};
+  if (vkCreatePipelineLayout(device_->device(), &layoutInfo, nullptr,
+                             &layout) != VK_SUCCESS) {
+    return VK_NULL_HANDLE;
   }
 
-  const auto &[defaultVert, defaultFrag] = it->second;
+  return layout;
+}
 
-  if (!instance_.desc().name.empty()) {
-    std::string appDir = "assets/shaders/" + instance_.desc().name;
-    std::string appVert = appDir + "/" + instance_.desc().name + ".vert";
-    std::string appFrag = appDir + "/" + instance_.desc().name + ".frag";
+auto GraphicsPipeline::createShaderStages(
+    std::vector<std::unique_ptr<ShaderModule>> &modules) const
+    -> std::vector<VkPipelineShaderStageCreateInfo> {
+  std::vector<VkPipelineShaderStageCreateInfo> stages{};
+  modules.clear();
+  modules.reserve(desc_.shaders.size());
+  stages.reserve(desc_.shaders.size());
 
-    if (!fs::exists(appVert) || !fs::exists(appFrag)) {
-      std::error_code ec;
-      fs::create_directories(appDir, ec);
+  for (const auto &shader : desc_.shaders) {
+    modules.push_back(std::make_unique<ShaderModule>(*device_));
+    modules.back()->update(shader.module);
 
-      if (ec) {
-        VKR_PIPE_WARN("Could not create shader directory '{}': {} — "
-                      "falling back to read-only mode defaults.",
-                      appDir, ec.message());
-      } else {
-        fs::copy_file(defaultVert, appVert, fs::copy_options::skip_existing,
-                      ec);
-        if (ec) {
-          VKR_PIPE_WARN("Could not copy '{}' → '{}': {}", defaultVert, appVert,
-                        ec.message());
-        }
-
-        fs::copy_file(defaultFrag, appFrag, fs::copy_options::skip_existing,
-                      ec);
-        if (ec) {
-          VKR_PIPE_WARN("Could not copy '{}' → '{}': {}", defaultFrag, appFrag,
-                        ec.message());
-        }
-
-        VKR_PIPE_INFO("Created app shaders from defaults: {} / {}", appVert,
-                      appFrag);
-      }
+    if (!modules.back()->valid()) {
+      VKR_PIPE_ERROR("Failed to create shader module");
+      return {};
     }
 
-    if (fs::exists(appVert) && fs::exists(appFrag)) {
-      vert_src_path_ = appVert;
-      frag_src_path_ = appFrag;
-      vert_src_ = util::fread_string(appVert);
-      frag_src_ = util::fread_string(appFrag);
-      VKR_PIPE_INFO("Loaded app shaders: {} | {}", appVert, appFrag);
-      return;
-    }
+    VkPipelineShaderStageCreateInfo stage{};
+    stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stage.stage = shader.stage;
+    stage.module = modules.back()->module();
+    stage.pName = shader.entryPoint.c_str();
 
-    VKR_PIPE_WARN("App shaders still unavailable at {} / {} — "
-                  "falling back to read-only mode defaults.",
-                  appVert, appFrag);
+    stages.push_back(stage);
   }
 
-  vert_src_path_ = "";
-  frag_src_path_ = "";
-  vert_src_ = util::fread_string(defaultVert);
-  frag_src_ = util::fread_string(defaultFrag);
-  VKR_PIPE_INFO("Loaded mode-default shaders: {} / {} (read-only)", defaultVert,
-                defaultFrag);
+  return stages;
 }
 
 } // namespace vkr::pipeline
