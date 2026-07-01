@@ -34,7 +34,7 @@ public:
                     const core::CommandPool &commandPool,
                     core::SyncObjects &syncObjects,
                     resource::ResourceManager &resourceManager, ui::UI &ui);
-  ~Renderer();
+  ~Renderer() = default;
 
   Renderer(const Renderer &) = delete;
   auto operator=(const Renderer &) -> Renderer & = delete;

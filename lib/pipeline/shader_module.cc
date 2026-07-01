@@ -1,8 +1,8 @@
 #include "vkr/pipeline/shader_module.hh"
 #include "vkr/logger.hh"
 #include "vkr/util/io.hh"
-#include <cstddef>
-#include <cstdint>
+#include <exception>
+#include <utility>
 
 namespace vkr::pipeline {
 
@@ -11,62 +11,84 @@ ShaderModule::ShaderModule(const core::Device &device) : device_(&device) {}
 ShaderModule::~ShaderModule() { destroy(); }
 
 void ShaderModule::create() {
-  destroy();
-
   if (device_ == nullptr) {
     VKR_PIPE_ERROR("Cannot create shader module without device");
+    return;
   }
 
   if (!desc_.isValid()) {
-    VKR_PIPE_ERROR("Invalid ShaderModuleDesc");
+    VKR_PIPE_ERROR("Invalid shader module descriptor");
+    return;
   }
 
-  auto code = loadSpirvCode();
-  createFromCode(code);
+  auto code = loadSpirv();
+
+  if (code.empty()) {
+    VKR_PIPE_ERROR("Shader module SPIR-V is empty");
+    return;
+  }
+
+  VkShaderModuleCreateInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  info.codeSize = code.size() * sizeof(uint32_t);
+  info.pCode = code.data();
+
+  if (vkCreateShaderModule(device_->device(), &info, nullptr, &vk_module_) !=
+      VK_SUCCESS) {
+    VKR_PIPE_ERROR("Failed to create shader module");
+    vk_module_ = VK_NULL_HANDLE;
+    return;
+  }
+
+  VKR_PIPE_INFO("Shader module created");
 }
 
 void ShaderModule::destroy() {
-  if (device_ != nullptr && vk_shader_module_ != VK_NULL_HANDLE) {
-    vkDestroyShaderModule(device_->device(), vk_shader_module_, nullptr);
-    vk_shader_module_ = VK_NULL_HANDLE;
-  }
-}
-
-auto ShaderModule::loadSpirvCode() const -> std::vector<uint32_t> {
-  switch (desc_.sourceKind) {
-  case ShaderSourceKind::SpirvFile:
-    VKR_PIPE_INFO("Loading SPIR-V shader: {}", desc_.path);
-    return util::fread_uint32(desc_.path);
-
-  case ShaderSourceKind::SpirvCode:
-    return desc_.code;
+  if (device_ == nullptr) {
+    vk_module_ = VK_NULL_HANDLE;
+    return;
   }
 
-  VKR_PIPE_ERROR("Unsupported shader source kind");
-}
-
-void ShaderModule::createFromCode(const std::vector<uint32_t> &code) {
-  if (code.empty()) {
-    VKR_PIPE_ERROR("Cannot create shader module from empty SPIR-V code");
+  if (vk_module_ != VK_NULL_HANDLE) {
+    vkDestroyShaderModule(device_->device(), vk_module_, nullptr);
+    vk_module_ = VK_NULL_HANDLE;
   }
-
-  VkShaderModuleCreateInfo createInfo{};
-  createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  createInfo.codeSize = code.size() * sizeof(uint32_t);
-  createInfo.pCode = code.data();
-
-  if (vkCreateShaderModule(device_->device(), &createInfo, nullptr,
-                           &vk_shader_module_) != VK_SUCCESS) {
-    VKR_PIPE_ERROR("Failed to create shader module");
-  }
-
-  VKR_PIPE_INFO("Shader module created successfully");
 }
 
 void ShaderModule::update(const ShaderModuleDesc &desc) {
   destroy();
   desc_ = desc;
   create();
+}
+
+auto ShaderModule::loadSpirv() const -> std::vector<uint32_t> {
+  switch (desc_.sourceKind) {
+  case ShaderModuleSourceKind::SpirvCode:
+    return desc_.spirv;
+
+  case ShaderModuleSourceKind::SpirvFile:
+    try {
+      return util::fread_uint32(desc_.spirvPath);
+    } catch (const std::exception &e) {
+      VKR_PIPE_ERROR("Failed to read SPIR-V file '{}': {}", desc_.spirvPath,
+                     e.what());
+      return {};
+    }
+
+  case ShaderModuleSourceKind::Glsl: {
+    auto result = util::ShaderCompiler::compileGlsl(desc_.compile);
+
+    if (!result) {
+      VKR_PIPE_ERROR("Shader compilation failed '{}': {}", desc_.compile.label,
+                     result.error);
+      return {};
+    }
+
+    return std::move(result.spv);
+  }
+  }
+
+  return {};
 }
 
 } // namespace vkr::pipeline

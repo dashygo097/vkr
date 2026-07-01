@@ -13,8 +13,6 @@ Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
       std::make_unique<core::CommandBuffers>(device_, command_pool_);
 }
 
-Renderer::~Renderer() = default;
-
 auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
   waitForFence(current_frame_);
 
