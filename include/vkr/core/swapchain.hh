@@ -13,12 +13,12 @@ enum class PresentModePolicy {
 };
 
 struct SwapchainDesc {
-  PresentModePolicy present_mode_policy{PresentModePolicy::Uncapped};
+  PresentModePolicy presentModePolicy{PresentModePolicy::Uncapped};
 
   [[nodiscard]] auto isValid() const noexcept -> bool { return true; }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
-    ar("present", present_mode_policy);
+    ar("present", presentModePolicy);
   }
 };
 

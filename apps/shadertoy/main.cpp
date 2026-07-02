@@ -120,7 +120,7 @@ private:
     };
 
     ctx.swapchain = {
-        .present_mode_policy = vkr::core::PresentModePolicy::VSync,
+        .presentModePolicy = vkr::core::PresentModePolicy::VSync,
     };
 
     ctx.camera = {

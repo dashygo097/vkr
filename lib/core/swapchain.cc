@@ -30,7 +30,7 @@ void Swapchain::create() {
       chooseSwapSurfaceFormat(swapchainSupport.formats);
 
   VkPresentModeKHR presentMode = chooseSwapPresentMode(
-      swapchainSupport.presentModes, desc_.present_mode_policy);
+      swapchainSupport.presentModes, desc_.presentModePolicy);
 
   VkExtent2D extent =
       chooseSwapExtent(window_.glfwWindow(), swapchainSupport.capabilities);
@@ -74,7 +74,7 @@ void Swapchain::create() {
 
   if (vkCreateSwapchainKHR(device_.device(), &createInfo, nullptr,
                            &vk_swapchain_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create swap chain");
+    VKR_CORE_ERROR("failed to create swap chain");
   }
 
   vkGetSwapchainImagesKHR(device_.device(), vk_swapchain_, &imageCount,
@@ -115,7 +115,7 @@ void Swapchain::create() {
 
     if (vkCreateImageView(device_.device(), &viewInfo, nullptr,
                           &vk_imageviews_[i]) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create swapchain image view");
+      VKR_CORE_ERROR("failed to create swapchain image view");
     }
   }
 }
@@ -144,7 +144,7 @@ auto chooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR> &availableFormats)
     -> VkSurfaceFormatKHR {
   if (availableFormats.empty()) {
-    throw std::runtime_error("no available swapchain surface formats");
+    VKR_CORE_ERROR("no available swapchain surface formats");
   }
 
   for (const auto &availableFormat : availableFormats) {
