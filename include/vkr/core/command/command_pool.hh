@@ -19,8 +19,8 @@ public:
 
 private:
   // dependencies
-  const Device &device_;
   const Surface &surface_;
+  const Device &device_;
 
   // components
   VkCommandPool vk_command_pool_{VK_NULL_HANDLE};
