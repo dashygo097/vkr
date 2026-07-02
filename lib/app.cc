@@ -46,8 +46,12 @@ void VulkanApplication::initVulkan() {
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
   // resource manager
-  depthTarget = std::make_unique<resource::DepthTarget>(*device, *swapchain,
-                                                        *commandPool);
+  depthTarget = std::make_unique<resource::DepthTarget>(*device, *commandPool);
+  depthTarget->update(resource::DepthTargetDesc{
+      .width = swapchain->extent2D().width,
+      .height = swapchain->extent2D().height,
+      .format = vkr::resource::findDepthFormat(device->physicalDevice())});
+
   resourceManager = std::make_unique<resource::ResourceManager>(
       *device, *swapchain, *commandPool);
 
