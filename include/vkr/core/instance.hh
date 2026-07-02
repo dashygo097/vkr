@@ -16,11 +16,31 @@ struct InstanceDesc {
 #endif
       VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
   };
-  std::vector<const char *> validationLayers{"VK_LAYER_KHRONOS_validation"};
+  std::vector<const char *> validationLayers{
+#ifdef NDEBUG
+#else
+      "VK_LAYER_KHRONOS_validation",
+#endif
+  };
 
-  [[nodiscard]] auto isValid() const noexcept -> bool {
-    return !name.empty() && version != 0;
+  [[nodiscard]] auto hasExtension(const char *extension) const noexcept
+      -> bool {
+    return std::find(extensions.begin(), extensions.end(), extension) !=
+           extensions.end();
   }
+
+#ifdef __APPLE__
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return !name.empty() && version != 0 &&
+           hasExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) &&
+           hasExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+  }
+#else
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return !name.empty() && version != 0 &&
+           hasExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+  }
+#endif
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
     ar("name", name);

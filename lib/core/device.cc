@@ -1,6 +1,5 @@
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
-#include "vkr/core/queue_families.hh"
 #include "vkr/logger.hh"
 #include <set>
 
@@ -62,7 +61,34 @@ void Device::pickPhysicalDevice() {
     VKR_CORE_TRACE("  -- Vendor ID: {:#06x}", deviceProperties.vendorID);
     VKR_CORE_TRACE("  -- Device ID: {:#06x}", deviceProperties.deviceID);
 
-    if (isSuitable(device)) {
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
+                                             nullptr);
+    if (!queueFamilyCount) {
+      VKR_CORE_ERROR("No queue families found on the physical device.");
+    }
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
+                                             queueFamilies.data());
+
+    for (uint32_t i = 0; i < queueFamilies.size(); i++) {
+      const auto &queueFamily = queueFamilies[i];
+      if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        graphics_family_ = i;
+      }
+      VkBool32 presentSupport = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_.surface(),
+                                           &presentSupport);
+      if (presentSupport) {
+        present_family_ = i;
+      }
+      if (isComplete()) {
+        break;
+      }
+    }
+
+    if (isComplete()) {
       vk_physical_device_ = device;
       VKR_CORE_INFO("Selected device: {}", deviceProperties.deviceName);
       break;
@@ -70,16 +96,13 @@ void Device::pickPhysicalDevice() {
   }
 
   if (vk_physical_device_ == VK_NULL_HANDLE) {
-    throw std::runtime_error("failed to find a suitable GPU!");
+    VKR_CORE_ERROR("failed to find a suitable GPU!");
   }
 }
 
 void Device::createLogicalDevice() {
-  QueueFamilyIndices indices(surface_.surface(), vk_physical_device_);
-
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-  std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily(),
-                                            indices.presentFamily()};
+  std::set<uint32_t> uniqueQueueFamilies = {graphics_family_, present_family_};
 
   float queuePriority = 1.0f;
   for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -120,15 +143,9 @@ void Device::createLogicalDevice() {
     VKR_CORE_ERROR("Failed to create logical device!");
   }
 
-  vkGetDeviceQueue(vk_logical_device_, indices.graphicsFamily(), 0,
+  vkGetDeviceQueue(vk_logical_device_, graphics_family_, 0,
                    &vk_graphics_queue_);
-  vkGetDeviceQueue(vk_logical_device_, indices.presentFamily(), 0,
-                   &vk_present_queue_);
-}
-
-auto Device::isSuitable(VkPhysicalDevice physicalDevice) -> bool {
-  QueueFamilyIndices indices(surface_.surface(), physicalDevice);
-  return indices.isComplete();
+  vkGetDeviceQueue(vk_logical_device_, present_family_, 0, &vk_present_queue_);
 }
 
 } // namespace vkr::core

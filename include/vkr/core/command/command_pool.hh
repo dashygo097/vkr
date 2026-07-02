@@ -7,7 +7,7 @@ namespace vkr::core {
 
 class CommandPool {
 public:
-  explicit CommandPool(const Device &device, const Surface &surface);
+  explicit CommandPool(const Surface &surface, const Device &device);
   ~CommandPool();
 
   CommandPool(const CommandPool &) = delete;

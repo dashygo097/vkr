@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vkr/core/instance.hh"
-#include "vkr/core/queue_families.hh"
 #include "vkr/core/surface.hh"
 
 #ifdef __APPLE__
@@ -59,6 +58,12 @@ public:
   [[nodiscard]] auto physicalDevice() const noexcept -> VkPhysicalDevice {
     return vk_physical_device_;
   }
+  [[nodiscard]] auto graphicsFamily() const -> uint32_t {
+    return graphics_family_;
+  }
+  [[nodiscard]] auto presentFamily() const -> uint32_t {
+    return present_family_;
+  }
   [[nodiscard]] auto graphicsQueue() const noexcept -> VkQueue {
     return vk_graphics_queue_;
   }
@@ -75,12 +80,20 @@ private:
   DeviceDesc &desc_;
   VkPhysicalDevice vk_physical_device_{VK_NULL_HANDLE};
   VkDevice vk_logical_device_{VK_NULL_HANDLE};
+
+  uint32_t graphics_family_{VK_QUEUE_FAMILY_IGNORED};
+  uint32_t present_family_{VK_QUEUE_FAMILY_IGNORED};
+
   VkQueue vk_graphics_queue_{VK_NULL_HANDLE};
   VkQueue vk_present_queue_{VK_NULL_HANDLE};
 
+  // helpers
   void pickPhysicalDevice();
   void createLogicalDevice();
-
-  [[nodiscard]] auto isSuitable(VkPhysicalDevice physicalDevice) -> bool;
+  [[nodiscard]] auto isComplete() const noexcept -> bool {
+    bool graphicsComplete = graphics_family_ != VK_QUEUE_FAMILY_IGNORED;
+    bool presentComplete = present_family_ != VK_QUEUE_FAMILY_IGNORED;
+    return graphicsComplete && presentComplete;
+  }
 };
 } // namespace vkr::core

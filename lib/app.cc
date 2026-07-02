@@ -32,11 +32,11 @@ void VulkanApplication::initVulkan() {
   device = std::make_unique<core::Device>(*instance, *surface, ctx.device);
 
   // swapchain
-  swapchain = std::make_unique<core::Swapchain>(*window, *device, *surface,
+  swapchain = std::make_unique<core::Swapchain>(*window, *surface, *device,
                                                 ctx.swapchain);
 
   // command pool
-  commandPool = std::make_unique<core::CommandPool>(*device, *surface);
+  commandPool = std::make_unique<core::CommandPool>(*surface, *device);
 
   // command buffers
   commandBuffers =

@@ -1,6 +1,5 @@
 #include "vkr/ui/ui.hh"
 #include "vkr/core/core_utils.hh"
-#include "vkr/core/queue_families.hh"
 #include "vkr/logger.hh"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -48,9 +47,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   initInfo.Instance = instance_.instance();
   initInfo.PhysicalDevice = device_.physicalDevice();
   initInfo.Device = device_.device();
-  initInfo.QueueFamily =
-      core::QueueFamilyIndices(surface_.surface(), device_.physicalDevice())
-          .graphicsFamily();
+  initInfo.QueueFamily = device_.graphicsFamily();
   initInfo.Queue = device_.graphicsQueue();
   initInfo.PipelineCache = VK_NULL_HANDLE;
   initInfo.DescriptorPool = descriptor_pool_.pool();

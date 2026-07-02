@@ -1,18 +1,15 @@
 #include "vkr/core/command/command_buffer.hh"
-#include "vkr/core/queue_families.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::core {
-CommandPool::CommandPool(const Device &device, const Surface &surface)
-    : device_(device), surface_(surface) {
+CommandPool::CommandPool(const Surface &surface, const Device &device)
+    : surface_(surface), device_(device) {
   VKR_CORE_INFO("Creating command pool...");
-  QueueFamilyIndices queueFamilyIndices(surface_.surface(),
-                                        device_.physicalDevice());
 
   VkCommandPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily();
+  poolInfo.queueFamilyIndex = device_.graphicsFamily();
 
   if (vkCreateCommandPool(device_.device(), &poolInfo, nullptr,
                           &vk_command_pool_) != VK_SUCCESS) {

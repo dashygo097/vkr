@@ -17,7 +17,7 @@ public:
   }
 
 private:
-  // dependenciesi
+  // dependencies
   const Device &device_;
   const VkImage &image_;
 

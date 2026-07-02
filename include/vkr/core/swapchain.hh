@@ -47,8 +47,8 @@ auto presentModeName(VkPresentModeKHR mode) -> const char *;
 
 class Swapchain {
 public:
-  explicit Swapchain(const Window &window, const Device &device,
-                     const Surface &surface, SwapchainDesc &desc);
+  explicit Swapchain(const Window &window, const Surface &surface,
+                     const Device &device, SwapchainDesc &desc);
   ~Swapchain();
 
   Swapchain(const Swapchain &) = delete;
@@ -96,8 +96,8 @@ public:
 private:
   // dependencies
   const Window &window_;
-  const Device &device_;
   const Surface &surface_;
+  const Device &device_;
 
   // components
   SwapchainDesc &desc_;

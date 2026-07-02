@@ -1,14 +1,13 @@
 #include "vkr/core/swapchain.hh"
-#include "vkr/core/queue_families.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
 #include <limits>
 
 namespace vkr::core {
 
-Swapchain::Swapchain(const Window &window, const Device &device,
-                     const Surface &surface, SwapchainDesc &desc)
-    : window_(window), device_(device), surface_(surface), desc_(desc) {
+Swapchain::Swapchain(const Window &window, const Surface &surface,
+                     const Device &device, SwapchainDesc &desc)
+    : window_(window), surface_(surface), device_(device), desc_(desc) {
   VKR_CORE_INFO("Creating initial swapchain...");
   create();
   VKR_CORE_INFO("Initial swapchain created successfully.");
@@ -52,11 +51,10 @@ void Swapchain::create() {
   createInfo.imageArrayLayers = 1;
   createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-  QueueFamilyIndices indices(surface_.surface(), device_.physicalDevice());
-  uint32_t queueFamilyIndices[] = {indices.graphicsFamily(),
-                                   indices.presentFamily()};
+  uint32_t queueFamilyIndices[] = {device_.graphicsFamily(),
+                                   device_.presentFamily()};
 
-  if (indices.graphicsFamily() != indices.presentFamily()) {
+  if (device_.graphicsFamily() != device_.presentFamily()) {
     createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
     createInfo.queueFamilyIndexCount = 2;
     createInfo.pQueueFamilyIndices = queueFamilyIndices;
