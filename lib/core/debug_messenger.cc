@@ -1,9 +1,9 @@
 #include "vkr/core/debug_messenger.hh"
 #include "vkr/logger.hh"
-#include <iostream>
 
 namespace vkr::core {
-DebugMessenger::DebugMessenger(VkInstance instance) : instance_(instance) {
+DebugMessenger::DebugMessenger(const VkInstance &instance)
+    : instance_(instance) {
   VKR_CORE_INFO("Creating Debug Messenger...");
 
   VkDebugUtilsMessengerCreateInfoEXT createInfo{};
@@ -14,7 +14,7 @@ DebugMessenger::DebugMessenger(VkInstance instance) : instance_(instance) {
 
   if (func &&
       func(instance_, &createInfo, nullptr, &vk_messenger_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create debug messenger!");
+    VKR_CORE_ERROR("failed to create debug messenger!");
   }
 
   VKR_CORE_INFO("Debug Messenger created successfully.");

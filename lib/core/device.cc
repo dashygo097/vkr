@@ -75,7 +75,7 @@ void Device::pickPhysicalDevice() {
 }
 
 void Device::createLogicalDevice() {
-  QueueFamilyIndices indices(vk_physical_device_, surface_);
+  QueueFamilyIndices indices(surface_.surface(), vk_physical_device_);
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
   std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily(),
@@ -127,7 +127,7 @@ void Device::createLogicalDevice() {
 }
 
 auto Device::isSuitable(VkPhysicalDevice physicalDevice) -> bool {
-  QueueFamilyIndices indices(physicalDevice, surface_);
+  QueueFamilyIndices indices(surface_.surface(), physicalDevice);
   return indices.isComplete();
 }
 

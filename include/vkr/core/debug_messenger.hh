@@ -6,7 +6,7 @@ namespace vkr::core {
 
 class DebugMessenger final {
 public:
-  explicit DebugMessenger(VkInstance instance);
+  explicit DebugMessenger(const VkInstance &instance);
   ~DebugMessenger();
 
   DebugMessenger(const DebugMessenger &) = delete;
@@ -21,7 +21,7 @@ public:
 
 private:
   // dependencies
-  VkInstance instance_{VK_NULL_HANDLE};
+  const VkInstance &instance_{VK_NULL_HANDLE};
 
   // components
   VkDebugUtilsMessengerEXT vk_messenger_{VK_NULL_HANDLE};

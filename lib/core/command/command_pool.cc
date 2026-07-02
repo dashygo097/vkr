@@ -6,7 +6,8 @@ namespace vkr::core {
 CommandPool::CommandPool(const Device &device, const Surface &surface)
     : device_(device), surface_(surface) {
   VKR_CORE_INFO("Creating command pool...");
-  QueueFamilyIndices queueFamilyIndices(device_.physicalDevice(), surface_);
+  QueueFamilyIndices queueFamilyIndices(surface_.surface(),
+                                        device_.physicalDevice());
 
   VkCommandPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

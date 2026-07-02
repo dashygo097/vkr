@@ -52,7 +52,7 @@ void Swapchain::create() {
   createInfo.imageArrayLayers = 1;
   createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-  QueueFamilyIndices indices(device_.physicalDevice(), surface_);
+  QueueFamilyIndices indices(surface_.surface(), device_.physicalDevice());
   uint32_t queueFamilyIndices[] = {indices.graphicsFamily(),
                                    indices.presentFamily()};
 

@@ -1,14 +1,13 @@
 #pragma once
 
-#include "vkr/core/surface.hh"
+#include <vulkan/vulkan.h>
 
 namespace vkr::core {
 
 class QueueFamilyIndices {
 public:
-  // NOTE: All enabled for now
-  explicit QueueFamilyIndices(const VkPhysicalDevice &physicalDevice,
-                              const Surface &surface);
+  explicit QueueFamilyIndices(const VkSurfaceKHR &surface,
+                              const VkPhysicalDevice &physicalDevice);
   ~QueueFamilyIndices() = default;
 
   [[nodiscard]] auto isComplete() const -> bool {
@@ -26,7 +25,7 @@ public:
 
 private:
   // dependencies
-  const Surface &surface_;
+  const VkSurfaceKHR &surface_;
   const VkPhysicalDevice &vk_physical_device_;
 
   // components

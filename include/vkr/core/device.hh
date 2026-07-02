@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vkr/core/instance.hh"
+#include "vkr/core/queue_families.hh"
 #include "vkr/core/surface.hh"
 
 #ifdef __APPLE__
@@ -17,7 +18,22 @@ struct DeviceDesc {
 #endif
   };
 
-  [[nodiscard]] auto isValid() const noexcept -> bool { return true; }
+  [[nodiscard]] auto hasExtension(const char *extension) const noexcept
+      -> bool {
+    return std::find(extensions.begin(), extensions.end(), extension) !=
+           extensions.end();
+  }
+
+#ifdef __APPLE__
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return hasExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME) &&
+           hasExtension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+  }
+#else
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return hasExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+  }
+#endif
 
   template <typename Archive> auto serialize(Archive &ar) -> void {}
 };

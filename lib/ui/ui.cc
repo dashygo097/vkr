@@ -49,7 +49,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   initInfo.PhysicalDevice = device_.physicalDevice();
   initInfo.Device = device_.device();
   initInfo.QueueFamily =
-      core::QueueFamilyIndices(device_.physicalDevice(), surface_)
+      core::QueueFamilyIndices(surface_.surface(), device_.physicalDevice())
           .graphicsFamily();
   initInfo.Queue = device_.graphicsQueue();
   initInfo.PipelineCache = VK_NULL_HANDLE;
