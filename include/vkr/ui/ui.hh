@@ -6,7 +6,7 @@
 #include "vkr/core/window.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/render_pass.hh"
-#include "vkr/resource/targets/offscreen_target.hh"
+#include "vkr/resource/targets/offscreen.hh"
 #include "vkr/ui/components/fps_panel.hh"
 #include "vkr/ui/components/logging_panel.hh"
 #include "vkr/ui/components/resource_tree.hh"

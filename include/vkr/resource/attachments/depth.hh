@@ -6,29 +6,29 @@
 
 namespace vkr::resource {
 
-struct DepthTargetDesc {
+struct DepthAttachmentDesc {
   uint32_t width{};
   uint32_t height{};
   VkFormat format{VK_FORMAT_UNDEFINED};
 };
 
-class DepthTarget {
+class DepthAttachment {
 public:
-  explicit DepthTarget(const core::Device &device,
-                       const core::CommandPool &commandPool);
+  explicit DepthAttachment(const core::Device &device,
+                           const core::CommandPool &commandPool);
 
-  ~DepthTarget();
+  ~DepthAttachment();
 
-  DepthTarget(const DepthTarget &) = delete;
-  auto operator=(const DepthTarget &) -> DepthTarget & = delete;
+  DepthAttachment(const DepthAttachment &) = delete;
+  auto operator=(const DepthAttachment &) -> DepthAttachment & = delete;
 
-  [[nodiscard]] auto desc() const noexcept -> const DepthTargetDesc & {
+  [[nodiscard]] auto desc() const noexcept -> const DepthAttachmentDesc & {
     return desc_;
   }
 
   void create();
   void destory();
-  void update(const DepthTargetDesc &desc);
+  void update(const DepthAttachmentDesc &desc);
 
   [[nodiscard]] auto image() const noexcept -> VkImage {
     return image_->image();
@@ -43,8 +43,7 @@ private:
   const core::CommandPool &command_pool_;
 
   // components
-  DepthTargetDesc desc_{};
-  ImageDesc image_desc_{};
+  DepthAttachmentDesc desc_{};
   std::unique_ptr<Image> image_;
   std::unique_ptr<ImageView> image_view_;
 };

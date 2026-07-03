@@ -6,9 +6,9 @@
 #include "vkr/core/swapchain.hh"
 #include "vkr/core/sync/sync_objects.hh"
 #include "vkr/pipeline/render_pass.hh"
+#include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
-#include "vkr/resource/targets/frame_buffer.hh"
-#include "vkr/resource/targets/offscreen_target.hh"
+#include "vkr/resource/targets/offscreen.hh"
 #include "vkr/ui/ui.hh"
 
 namespace vkr::render {

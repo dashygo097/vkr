@@ -46,11 +46,12 @@ void VulkanApplication::initVulkan() {
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
   // resource manager
-  depthTarget = std::make_unique<resource::DepthTarget>(*device, *commandPool);
-  depthTarget->update(
-      resource::DepthTargetDesc{.width = swapchain->extent2D().width,
-                                .height = swapchain->extent2D().height,
-                                .format = VK_FORMAT_D32_SFLOAT});
+  depthAttachment =
+      std::make_unique<resource::DepthAttachment>(*device, *commandPool);
+  depthAttachment->update(
+      resource::DepthAttachmentDesc{.width = swapchain->extent2D().width,
+                                    .height = swapchain->extent2D().height,
+                                    .format = VK_FORMAT_D32_SFLOAT});
 
   resourceManager = std::make_unique<resource::ResourceManager>(
       *device, *swapchain, *commandPool);
@@ -58,7 +59,7 @@ void VulkanApplication::initVulkan() {
   // render pass: swapchain
   swapchainRenderPass = std::make_unique<pipeline::RenderPass>(*device);
   swapchainRenderPass->update(pipeline::RenderPassDesc::makeSwapchain(
-      swapchain->format(), depthTarget->desc().format));
+      swapchain->format(), depthAttachment->desc().format));
 
   // framebuffer set: swapchain
   resource::FramebufferDesc swapchainFbDesc{};
@@ -69,7 +70,7 @@ void VulkanApplication::initVulkan() {
 
   for (auto imageView : swapchain->imageViews()) {
     swapchainFbDesc.attachments.push_back(
-        {imageView, depthTarget->imageView()});
+        {imageView, depthAttachment->imageView()});
   }
 
   resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
@@ -81,8 +82,8 @@ void VulkanApplication::initVulkan() {
       VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D32_SFLOAT));
 
   // offscreen target
-  offscreenTarget = std::make_unique<resource::OffscreenTarget>(
-      *device, *commandPool, *offscreenRenderPass);
+  offscreenTarget =
+      std::make_unique<resource::OffscreenTarget>(*device, *commandPool);
   offscreenTarget->resize(swapchain->extent2D());
 
   // framebuffer set: offscreen

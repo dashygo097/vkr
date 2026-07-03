@@ -1,13 +1,12 @@
-#include "vkr/resource/targets/offscreen_target.hh"
+#include "vkr/resource/targets/offscreen.hh"
 #include "vkr/logger.hh"
 #include <imgui_impl_vulkan.h>
 
 namespace vkr::resource {
 
 OffscreenTarget::OffscreenTarget(const core::Device &device,
-                                 const core::CommandPool &commandPool,
-                                 const pipeline::RenderPass &renderPass)
-    : device_(device), command_pool_(commandPool), render_pass_(renderPass) {}
+                                 const core::CommandPool &commandPool)
+    : device_(device), command_pool_(commandPool) {}
 
 OffscreenTarget::~OffscreenTarget() { destroy(); }
 

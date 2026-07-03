@@ -2,15 +2,13 @@
 
 #include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/pipeline/render_pass.hh"
 
 namespace vkr::resource {
 
 class OffscreenTarget {
 public:
   OffscreenTarget(const core::Device &device,
-                  const core::CommandPool &commandPool,
-                  const pipeline::RenderPass &renderPass);
+                  const core::CommandPool &commandPool);
   ~OffscreenTarget();
 
   OffscreenTarget(const OffscreenTarget &) = delete;
@@ -57,7 +55,6 @@ private:
   // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  const pipeline::RenderPass &render_pass_;
   VkExtent2D extent_{};
 
   // components

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vkr/core/swapchain.hh"
+#include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/buffers/index_buffer.hh"
 #include "vkr/resource/buffers/uniform_buffer.hh"
 #include "vkr/resource/buffers/vertex_buffer.hh"
@@ -8,7 +9,6 @@
 #include "vkr/resource/gpu/image_view.hh"
 #include "vkr/resource/gpu/sampler.hh"
 #include "vkr/resource/mesh.hh"
-#include "vkr/resource/targets/frame_buffer.hh"
 #include <memory>
 #include <vector>
 
