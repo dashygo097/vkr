@@ -20,8 +20,8 @@ void FramebufferSet::create() {
     framebufferInfo.renderPass = render_pass_.renderPass();
     framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
     framebufferInfo.pAttachments = attachments.data();
-    framebufferInfo.width = desc_.extent.width;
-    framebufferInfo.height = desc_.extent.height;
+    framebufferInfo.width = desc_.width;
+    framebufferInfo.height = desc_.height;
     framebufferInfo.layers = desc_.layers;
 
     if (vkCreateFramebuffer(device_.device(), &framebufferInfo, nullptr,

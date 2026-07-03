@@ -7,8 +7,8 @@
 namespace vkr::resource {
 
 struct DepthTargetDesc {
-  uint32_t width{0};
-  uint32_t height{0};
+  uint32_t width{};
+  uint32_t height{};
   VkFormat format{VK_FORMAT_UNDEFINED};
 };
 

@@ -78,10 +78,10 @@ void Swapchain::create() {
   vkGetSwapchainImagesKHR(device_.device(), vk_swapchain_, &imageCount,
                           nullptr);
 
-  vk_images_.resize(imageCount);
+  vk_color_images_.resize(imageCount);
 
   vkGetSwapchainImagesKHR(device_.device(), vk_swapchain_, &imageCount,
-                          vk_images_.data());
+                          vk_color_images_.data());
 
   vk_format_ = surfaceFormat.format;
   vk_extent_ = extent;
@@ -89,16 +89,16 @@ void Swapchain::create() {
 
   VKR_CORE_INFO("Swapchain created: extent={}x{}, images={}, format={}, "
                 "presentMode={}",
-                vk_extent_.width, vk_extent_.height, vk_images_.size(),
+                vk_extent_.width, vk_extent_.height, vk_color_images_.size(),
                 static_cast<int>(vk_format_),
                 presentModeName(vk_present_mode_));
 
-  vk_imageviews_.resize(vk_images_.size(), VK_NULL_HANDLE);
+  vk_color_image_views_.resize(vk_color_images_.size(), VK_NULL_HANDLE);
 
-  for (size_t i = 0; i < vk_images_.size(); i++) {
+  for (size_t i = 0; i < vk_color_images_.size(); i++) {
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = vk_images_[i];
+    viewInfo.image = vk_color_images_[i];
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format = vk_format_;
     viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -112,21 +112,21 @@ void Swapchain::create() {
     viewInfo.subresourceRange.layerCount = 1;
 
     if (vkCreateImageView(device_.device(), &viewInfo, nullptr,
-                          &vk_imageviews_[i]) != VK_SUCCESS) {
+                          &vk_color_image_views_[i]) != VK_SUCCESS) {
       VKR_CORE_ERROR("failed to create swapchain image view");
     }
   }
 }
 
 void Swapchain::destroy() {
-  for (auto imageView : vk_imageviews_) {
+  for (auto imageView : vk_color_image_views_) {
     if (imageView != VK_NULL_HANDLE) {
       vkDestroyImageView(device_.device(), imageView, nullptr);
     }
   }
 
-  vk_imageviews_.clear();
-  vk_images_.clear();
+  vk_color_image_views_.clear();
+  vk_color_images_.clear();
 
   if (vk_swapchain_ != VK_NULL_HANDLE) {
     vkDestroySwapchainKHR(device_.device(), vk_swapchain_, nullptr);

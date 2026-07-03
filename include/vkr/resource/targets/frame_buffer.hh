@@ -9,7 +9,8 @@
 namespace vkr::resource {
 
 struct FramebufferDesc {
-  VkExtent2D extent{};
+  uint32_t width{};
+  uint32_t height{};
   uint32_t layers{1};
   std::vector<std::vector<VkImageView>> attachments{};
 };

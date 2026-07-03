@@ -36,7 +36,7 @@ void VulkanApplication::initVulkan() {
                                                 ctx.swapchain);
 
   // command pool
-  commandPool = std::make_unique<core::CommandPool>(*surface, *device);
+  commandPool = std::make_unique<core::CommandPool>(*device);
 
   // command buffers
   commandBuffers =
@@ -63,7 +63,8 @@ void VulkanApplication::initVulkan() {
 
   // framebuffer set: swapchain
   resource::FramebufferDesc swapchainFbDesc{};
-  swapchainFbDesc.extent = swapchain->extent2D();
+  swapchainFbDesc.width = swapchain->extent2D().width;
+  swapchainFbDesc.height = swapchain->extent2D().height;
   swapchainFbDesc.layers = 1;
   swapchainFbDesc.attachments.reserve(swapchain->images().size());
 
@@ -87,7 +88,8 @@ void VulkanApplication::initVulkan() {
 
   // framebuffer set: offscreen
   resource::FramebufferDesc offscreenFbDesc{};
-  offscreenFbDesc.extent = offscreenTarget->extent2D();
+  offscreenFbDesc.width = offscreenTarget->extent2D().width;
+  offscreenFbDesc.height = offscreenTarget->extent2D().height;
   offscreenFbDesc.layers = 1;
   offscreenFbDesc.attachments = {
       {offscreenTarget->colorView(), offscreenTarget->depthView()},

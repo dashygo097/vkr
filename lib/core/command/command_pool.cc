@@ -1,9 +1,8 @@
-#include "vkr/core/command/command_buffer.hh"
+#include "vkr/core/command/command_pool.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::core {
-CommandPool::CommandPool(const Surface &surface, const Device &device)
-    : surface_(surface), device_(device) {
+CommandPool::CommandPool(const Device &device) : device_(device) {
   VKR_CORE_INFO("Creating command pool...");
 
   VkCommandPoolCreateInfo poolInfo{};

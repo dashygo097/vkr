@@ -1,13 +1,12 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/core/surface.hh"
 
 namespace vkr::core {
 
 class CommandPool {
 public:
-  explicit CommandPool(const Surface &surface, const Device &device);
+  explicit CommandPool(const Device &device);
   ~CommandPool();
 
   CommandPool(const CommandPool &) = delete;
@@ -19,7 +18,6 @@ public:
 
 private:
   // dependencies
-  const Surface &surface_;
   const Device &device_;
 
   // components

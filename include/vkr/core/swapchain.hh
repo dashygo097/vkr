@@ -67,24 +67,24 @@ public:
   }
 
   [[nodiscard]] auto images() const noexcept -> const std::vector<VkImage> & {
-    return vk_images_;
+    return vk_color_images_;
   }
 
   [[nodiscard]] auto image(size_t index) const -> VkImage {
-    return vk_images_.at(index);
+    return vk_color_images_.at(index);
   }
 
   [[nodiscard]] auto imageViews() const noexcept
       -> const std::vector<VkImageView> & {
-    return vk_imageviews_;
+    return vk_color_image_views_;
   }
 
   [[nodiscard]] auto imageView(size_t index) const -> VkImageView {
-    return vk_imageviews_.at(index);
+    return vk_color_image_views_.at(index);
   }
 
   [[nodiscard]] auto imageCount() const noexcept -> size_t {
-    return vk_images_.size();
+    return vk_color_images_.size();
   }
 
   [[nodiscard]] auto format() const noexcept -> VkFormat { return vk_format_; }
@@ -102,8 +102,8 @@ private:
   // components
   SwapchainDesc &desc_;
   VkSwapchainKHR vk_swapchain_{VK_NULL_HANDLE};
-  std::vector<VkImage> vk_images_{};
-  std::vector<VkImageView> vk_imageviews_{};
+  std::vector<VkImage> vk_color_images_{};
+  std::vector<VkImageView> vk_color_image_views_{};
   VkFormat vk_format_{VK_FORMAT_UNDEFINED};
   VkExtent2D vk_extent_{};
   VkPresentModeKHR vk_present_mode_{VK_PRESENT_MODE_FIFO_KHR};
