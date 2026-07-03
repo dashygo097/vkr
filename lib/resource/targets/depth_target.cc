@@ -50,31 +50,4 @@ void DepthTarget::update(const DepthTargetDesc &desc) {
   image_view_->update(ImageViewDesc::depth2D(image_->image(), desc_.format));
 }
 
-auto findSupportedFormat(VkPhysicalDevice physicalDevice,
-                         const std::vector<VkFormat> &candidates,
-                         VkImageTiling tiling, VkFormatFeatureFlags features)
-    -> VkFormat {
-  for (VkFormat format : candidates) {
-    VkFormatProperties props;
-    vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
-    if (tiling == VK_IMAGE_TILING_LINEAR &&
-        (props.linearTilingFeatures & features) == features) {
-      return format;
-    } else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
-               (props.optimalTilingFeatures & features) == features) {
-      return format;
-    }
-  }
-
-  VKR_RES_ERROR("failed to find supported format!");
-}
-
-auto findDepthFormat(VkPhysicalDevice physicalDevice) -> VkFormat {
-  return findSupportedFormat(
-      physicalDevice,
-      {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
-       VK_FORMAT_D24_UNORM_S8_UINT},
-      VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-}
-
 } // namespace vkr::resource

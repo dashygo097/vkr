@@ -49,11 +49,4 @@ private:
   std::unique_ptr<ImageView> image_view_;
 };
 
-// helpers
-auto findSupportedFormat(VkPhysicalDevice physicalDevice,
-                         const std::vector<VkFormat> &candidates,
-                         VkImageTiling tiling, VkFormatFeatureFlags features)
-    -> VkFormat;
-auto findDepthFormat(VkPhysicalDevice physicalDevice) -> VkFormat;
-
 } // namespace vkr::resource

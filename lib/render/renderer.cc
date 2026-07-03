@@ -36,7 +36,7 @@ auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
 
   if (vkBeginCommandBuffer(outFrameData.commandBuffer, &beginInfo) !=
       VK_SUCCESS) {
-    throw std::runtime_error("failed to begin recording command buffer");
+    VKR_RENDER_ERROR("failed to begin recording command buffer");
   }
 
   return true;
@@ -44,7 +44,7 @@ auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
 
 void Renderer::endFrame(const FrameData &frameData) {
   if (vkEndCommandBuffer(frameData.commandBuffer) != VK_SUCCESS) {
-    throw std::runtime_error("failed to record command buffer");
+    VKR_RENDER_ERROR("failed to record command buffer");
   }
 
   submitCommandBuffer(frameData);
@@ -220,7 +220,7 @@ auto Renderer::acquireNextImage(uint32_t &imageIndex) -> bool {
   }
 
   if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-    throw std::runtime_error("failed to acquire swap chain image");
+    VKR_RENDER_ERROR("failed to acquire swap chain image");
   }
 
   return true;
@@ -251,7 +251,7 @@ void Renderer::submitCommandBuffer(const FrameData &frameData) {
   if (vkQueueSubmit(device_.graphicsQueue(), 1, &submitInfo,
                     sync_objects_.inFlightFences()[frameData.frameIndex]) !=
       VK_SUCCESS) {
-    throw std::runtime_error("failed to submit draw command buffer");
+    VKR_RENDER_ERROR("failed to submit draw command buffer");
   }
 }
 
@@ -277,7 +277,7 @@ void Renderer::present(uint32_t imageIndex) {
   }
 
   if (result != VK_SUCCESS) {
-    throw std::runtime_error("failed to present swap chain image");
+    VKR_RENDER_ERROR("failed to present swap chain image");
   }
 }
 

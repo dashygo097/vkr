@@ -47,10 +47,10 @@ void VulkanApplication::initVulkan() {
 
   // resource manager
   depthTarget = std::make_unique<resource::DepthTarget>(*device, *commandPool);
-  depthTarget->update(resource::DepthTargetDesc{
-      .width = swapchain->extent2D().width,
-      .height = swapchain->extent2D().height,
-      .format = vkr::resource::findDepthFormat(device->physicalDevice())});
+  depthTarget->update(
+      resource::DepthTargetDesc{.width = swapchain->extent2D().width,
+                                .height = swapchain->extent2D().height,
+                                .format = VK_FORMAT_D32_SFLOAT});
 
   resourceManager = std::make_unique<resource::ResourceManager>(
       *device, *swapchain, *commandPool);
@@ -58,8 +58,7 @@ void VulkanApplication::initVulkan() {
   // render pass: swapchain
   swapchainRenderPass = std::make_unique<pipeline::RenderPass>(*device);
   swapchainRenderPass->update(pipeline::RenderPassDesc::makeSwapchain(
-      swapchain->format(),
-      vkr::resource::findDepthFormat(device->physicalDevice())));
+      swapchain->format(), depthTarget->desc().format));
 
   // framebuffer set: swapchain
   resource::FramebufferDesc swapchainFbDesc{};

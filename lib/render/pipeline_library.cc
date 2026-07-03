@@ -1,6 +1,5 @@
 #include "vkr/render/pipeline_library.hh"
 #include "vkr/logger.hh"
-#include <stdexcept>
 #include <utility>
 
 namespace vkr::render {
@@ -13,15 +12,14 @@ PipelineLibrary::~PipelineLibrary() { clear(); }
 auto PipelineLibrary::create(const pipeline::GraphicsPipelineDesc &desc)
     -> pipeline::GraphicsPipeline & {
   if (!desc.isValid()) {
-    throw std::runtime_error("cannot create invalid graphics pipeline");
+    VKR_RENDER_ERROR("cannot create invalid graphics pipeline");
   }
 
   auto pipeline = std::make_unique<pipeline::GraphicsPipeline>(device_);
   pipeline->update(desc);
 
   if (!pipeline->valid()) {
-    throw std::runtime_error("failed to create graphics pipeline '" +
-                             desc.name + "'");
+    VKR_RENDER_ERROR("failed to create graphics pipeline '" + desc.name + "'");
   }
 
   auto [it, inserted] =
@@ -44,8 +42,7 @@ auto PipelineLibrary::update(const pipeline::GraphicsPipelineDesc &desc)
   it->second->update(desc);
 
   if (!it->second->valid()) {
-    throw std::runtime_error("failed to update graphics pipeline '" +
-                             desc.name + "'");
+    VKR_RENDER_ERROR("failed to update graphics pipeline '" + desc.name + "'");
   }
 
   VKR_RENDER_INFO("Updated graphics pipeline '{}'", desc.name);
@@ -74,7 +71,7 @@ auto PipelineLibrary::get(const std::string &name)
   auto it = pipelines_.find(name);
 
   if (it == pipelines_.end()) {
-    throw std::runtime_error("graphics pipeline not found: " + name);
+    VKR_RENDER_ERROR("graphics pipeline not found: " + name);
   }
 
   return *it->second;
@@ -85,7 +82,7 @@ auto PipelineLibrary::get(const std::string &name) const
   auto it = pipelines_.find(name);
 
   if (it == pipelines_.end()) {
-    throw std::runtime_error("graphics pipeline not found: " + name);
+    VKR_RENDER_ERROR("graphics pipeline not found: " + name);
   }
 
   return *it->second;
@@ -93,7 +90,7 @@ auto PipelineLibrary::get(const std::string &name) const
 
 auto PipelineLibrary::first() -> pipeline::GraphicsPipeline & {
   if (pipelines_.empty()) {
-    throw std::runtime_error("pipeline library is empty");
+    VKR_RENDER_ERROR("pipeline library is empty");
   }
 
   return *pipelines_.begin()->second;
@@ -101,7 +98,7 @@ auto PipelineLibrary::first() -> pipeline::GraphicsPipeline & {
 
 auto PipelineLibrary::first() const -> const pipeline::GraphicsPipeline & {
   if (pipelines_.empty()) {
-    throw std::runtime_error("pipeline library is empty");
+    VKR_RENDER_ERROR("pipeline library is empty");
   }
 
   return *pipelines_.begin()->second;
