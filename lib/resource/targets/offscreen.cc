@@ -1,146 +1,109 @@
 #include "vkr/resource/targets/offscreen.hh"
 #include "vkr/logger.hh"
-#include <imgui_impl_vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 namespace vkr::resource {
 
 OffscreenTarget::OffscreenTarget(const core::Device &device,
                                  const core::CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {}
+    : device_(device), command_pool_(commandPool) {
+  color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
+}
 
-OffscreenTarget::~OffscreenTarget() { destroy(); }
+OffscreenTarget::~OffscreenTarget() { destory(); }
 
-void OffscreenTarget::resize(VkExtent2D extent) {
-  vkDeviceWaitIdle(device_.device());
-
-  if (imgui_ds_ != VK_NULL_HANDLE) {
-    ImGui_ImplVulkan_RemoveTexture(imgui_ds_);
-    imgui_ds_ = VK_NULL_HANDLE;
+void OffscreenTarget::validate() const {
+  if (desc_.color.format == VK_FORMAT_UNDEFINED) {
+    VKR_RENDER_ERROR("OffscreenTarget color attachment has undefined format");
   }
 
-  destroy();
-  extent_ = extent;
-  create();
+  if (desc_.color.width == 0 || desc_.color.height == 0) {
+    VKR_RENDER_ERROR("OffscreenTarget color attachment has invalid size: {}x{}",
+                     desc_.color.width, desc_.color.height);
+  }
+
+  if (!desc_.depth) {
+    return;
+  }
+
+  if (desc_.depth->format == VK_FORMAT_UNDEFINED) {
+    VKR_RENDER_ERROR("OffscreenTarget depth attachment has undefined format");
+  }
+
+  if (desc_.depth->width == 0 || desc_.depth->height == 0) {
+    VKR_RENDER_ERROR("OffscreenTarget depth attachment has invalid size: {}x{}",
+                     desc_.depth->width, desc_.depth->height);
+  }
+
+  if (desc_.depth->width != desc_.color.width ||
+      desc_.depth->height != desc_.color.height) {
+    VKR_RENDER_ERROR(
+        "OffscreenTarget color/depth size mismatch: color={}x{}, depth={}x{}",
+        desc_.color.width, desc_.color.height, desc_.depth->width,
+        desc_.depth->height);
+  }
 }
 
 void OffscreenTarget::create() {
-  VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
-  VkFormat depthFormat = VK_FORMAT_D32_SFLOAT;
+  validate();
 
-  auto makeImage = [&](uint32_t w, uint32_t h, VkFormat fmt,
-                       VkImageUsageFlags usage, VkImage &img,
-                       VkDeviceMemory &mem) -> void {
-    VkImageCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    info.imageType = VK_IMAGE_TYPE_2D;
-    info.format = fmt;
-    info.extent = {w, h, 1};
-    info.mipLevels = 1;
-    info.arrayLayers = 1;
-    info.samples = VK_SAMPLE_COUNT_1_BIT;
-    info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    info.usage = usage;
-    info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    vkCreateImage(device_.device(), &info, nullptr, &img);
-
-    VkMemoryRequirements req;
-    vkGetImageMemoryRequirements(device_.device(), img, &req);
-    VkMemoryAllocateInfo alloc{};
-    alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    alloc.allocationSize = req.size;
-    alloc.memoryTypeIndex =
-        findMemoryType(req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    vkAllocateMemory(device_.device(), &alloc, nullptr, &mem);
-    vkBindImageMemory(device_.device(), img, mem, 0);
-  };
-
-  auto makeView = [&](VkImage img, VkFormat fmt,
-                      VkImageAspectFlags aspect) -> VkImageView {
-    VkImageViewCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    info.image = img;
-    info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    info.format = fmt;
-    info.subresourceRange.aspectMask = aspect;
-    info.subresourceRange.levelCount = 1;
-    info.subresourceRange.layerCount = 1;
-    VkImageView view;
-    vkCreateImageView(device_.device(), &info, nullptr, &view);
-    return view;
-  };
-
-  makeImage(extent_.width, extent_.height, colorFormat,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            color_image_, color_memory_);
-  color_view_ = makeView(color_image_, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-
-  makeImage(extent_.width, extent_.height, depthFormat,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depth_image_,
-            depth_memory_);
-  depth_view_ = makeView(depth_image_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-  VkSamplerCreateInfo samp{};
-  samp.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-  samp.magFilter = VK_FILTER_LINEAR;
-  samp.minFilter = VK_FILTER_LINEAR;
-  samp.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  samp.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  samp.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  vkCreateSampler(device_.device(), &samp, nullptr, &sampler_);
-
-  VKR_RENDER_INFO("OffscreenTarget created ({}x{})", extent_.width,
-                  extent_.height);
-}
-
-void OffscreenTarget::destroy() {
-  auto d = device_.device();
-  if (sampler_) {
-    vkDestroySampler(d, sampler_, nullptr);
-    sampler_ = VK_NULL_HANDLE;
+  if (!color_) {
+    color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
+    color_->update(desc_.color);
   }
-  if (color_view_) {
-    vkDestroyImageView(d, color_view_, nullptr);
-    color_view_ = VK_NULL_HANDLE;
-  }
-  if (color_image_) {
-    vkDestroyImage(d, color_image_, nullptr);
-    color_image_ = VK_NULL_HANDLE;
-  }
-  if (color_memory_) {
-    vkFreeMemory(d, color_memory_, nullptr);
-    color_memory_ = VK_NULL_HANDLE;
-  }
-  if (depth_view_) {
-    vkDestroyImageView(d, depth_view_, nullptr);
-    depth_view_ = VK_NULL_HANDLE;
-  }
-  if (depth_image_) {
-    vkDestroyImage(d, depth_image_, nullptr);
-    depth_image_ = VK_NULL_HANDLE;
-  }
-  if (depth_memory_) {
-    vkFreeMemory(d, depth_memory_, nullptr);
-    depth_memory_ = VK_NULL_HANDLE;
-  }
-}
 
-void OffscreenTarget::registerWithImGui(VkDescriptorPool descriptorPool) {
-  imgui_ds_ = ImGui_ImplVulkan_AddTexture(
-      sampler_, color_view_, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  VKR_RENDER_INFO("OffscreenTarget registered with ImGui.");
-}
+  color_->create();
 
-auto OffscreenTarget::findMemoryType(uint32_t filter,
-                                     VkMemoryPropertyFlags props) -> uint32_t {
-  VkPhysicalDeviceMemoryProperties memProps;
-  vkGetPhysicalDeviceMemoryProperties(device_.physicalDevice(), &memProps);
-  for (uint32_t i = 0; i < memProps.memoryTypeCount; i++) {
-    if ((filter & (1 << i)) &&
-        (memProps.memoryTypes[i].propertyFlags & props) == props) {
-      return i;
+  if (desc_.depth) {
+    if (!depth_) {
+      depth_ = std::make_unique<DepthAttachment>(device_, command_pool_);
+      depth_->update(*desc_.depth);
     }
+
+    depth_->create();
   }
-  VKR_RENDER_ERROR("No suitable memory type for offscreen target");
+
+  VKR_RENDER_INFO("OffscreenTarget created: {}x{}, depth={}", desc_.color.width,
+                  desc_.color.height, depth_ ? "yes" : "no");
+}
+
+void OffscreenTarget::destory() {
+  depth_.reset();
+  color_.reset();
+}
+
+void OffscreenTarget::update(const OffscreenTargetDesc &desc) {
+  desc_ = desc;
+  validate();
+
+  if (!color_) {
+    color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
+  }
+
+  color_->update(desc_.color);
+
+  if (desc_.depth) {
+    if (!depth_) {
+      depth_ = std::make_unique<DepthAttachment>(device_, command_pool_);
+    }
+
+    depth_->update(*desc_.depth);
+  } else {
+    depth_.reset();
+  }
+}
+
+auto OffscreenTarget::attachmentViews() const -> std::vector<VkImageView> {
+  std::vector<VkImageView> views{};
+  views.reserve(depth_ ? 2 : 1);
+
+  views.push_back(color_->imageView());
+
+  if (depth_) {
+    views.push_back(depth_->imageView());
+  }
+
+  return views;
 }
 
 } // namespace vkr::resource

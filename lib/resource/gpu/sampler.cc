@@ -26,9 +26,9 @@ void Sampler::create() {
     }
 
     effective.maxAnisotropy = std::clamp(
-        effective.maxAnisotropy, 1.0F, properties.limits.maxSamplerAnisotropy);
+        effective.maxAnisotropy, 1.0f, properties.limits.maxSamplerAnisotropy);
   } else {
-    effective.maxAnisotropy = 1.0F;
+    effective.maxAnisotropy = 1.0f;
   }
 
   VkSamplerCreateInfo samplerInfo{};

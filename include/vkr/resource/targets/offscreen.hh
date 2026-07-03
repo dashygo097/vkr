@@ -2,79 +2,70 @@
 
 #include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
+#include "vkr/resource/attachments/color.hh"
+#include "vkr/resource/attachments/depth.hh"
 
 namespace vkr::resource {
+
+struct OffscreenTargetDesc {
+  ColorAttachmentDesc color{};
+  std::optional<DepthAttachmentDesc> depth{};
+};
 
 class OffscreenTarget {
 public:
   OffscreenTarget(const core::Device &device,
                   const core::CommandPool &commandPool);
+
   ~OffscreenTarget();
 
   OffscreenTarget(const OffscreenTarget &) = delete;
   auto operator=(const OffscreenTarget &) -> OffscreenTarget & = delete;
 
+  [[nodiscard]] auto desc() const noexcept -> const OffscreenTargetDesc & {
+    return desc_;
+  }
+
   void create();
-  void destroy();
-  void resize(VkExtent2D extent);
+  void destory();
+  void update(const OffscreenTargetDesc &desc);
 
-  [[nodiscard]] auto colorView() const noexcept -> VkImageView {
-    return color_view_;
-  }
-  [[nodiscard]] auto depthView() const noexcept -> VkImageView {
-    return depth_view_;
-  }
-  [[nodiscard]] auto sampler() const noexcept -> VkSampler { return sampler_; }
-  [[nodiscard]] auto imguiDescriptorSet() const noexcept -> VkDescriptorSet {
-    return imgui_ds_;
-  }
-  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D { return extent_; }
+  [[nodiscard]] auto color() noexcept -> ColorAttachment & { return *color_; }
 
-  void registerWithImGui(VkDescriptorPool descriptorPool);
-
-  void requestResize(VkExtent2D extent) noexcept {
-    pending_extent_ = extent;
-    resize_pending_ = true;
+  [[nodiscard]] auto color() const noexcept -> const ColorAttachment & {
+    return *color_;
   }
 
-  auto flushPendingResize(VkDescriptorPool pool) -> bool {
-    if (!resize_pending_) {
-      return false;
-    }
-    resize_pending_ = false;
-    resize(pending_extent_);
-    registerWithImGui(pool);
-    return true;
+  [[nodiscard]] auto depth() noexcept -> DepthAttachment * {
+    return depth_.get();
   }
 
-  [[nodiscard]] auto isResizePending() const noexcept -> bool {
-    return resize_pending_;
+  [[nodiscard]] auto depth() const noexcept -> const DepthAttachment * {
+    return depth_.get();
   }
+
+  [[nodiscard]] auto hasDepth() const noexcept -> bool {
+    return depth_ != nullptr;
+  }
+
+  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D {
+    return {desc_.color.width, desc_.color.height};
+  }
+
+  [[nodiscard]] auto attachmentViews() const -> std::vector<VkImageView>;
 
 private:
   // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  VkExtent2D extent_{};
 
   // components
-  VkImage color_image_{VK_NULL_HANDLE};
-  VkDeviceMemory color_memory_{VK_NULL_HANDLE};
-  VkImageView color_view_{VK_NULL_HANDLE};
-
-  VkImage depth_image_{VK_NULL_HANDLE};
-  VkDeviceMemory depth_memory_{VK_NULL_HANDLE};
-  VkImageView depth_view_{VK_NULL_HANDLE};
-
-  VkSampler sampler_{VK_NULL_HANDLE};
-  VkDescriptorSet imgui_ds_{VK_NULL_HANDLE};
-
-  // states
-  bool resize_pending_{false};
-  VkExtent2D pending_extent_{};
+  OffscreenTargetDesc desc_{};
+  std::unique_ptr<ColorAttachment> color_;
+  std::unique_ptr<DepthAttachment> depth_;
 
   // helpers
-  auto findMemoryType(uint32_t filter, VkMemoryPropertyFlags props) -> uint32_t;
+  void validate() const;
 };
 
 } // namespace vkr::resource

@@ -4,8 +4,11 @@
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
 #include "vkr/core/window.hh"
+#include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
+#include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/render_pass.hh"
+#include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
 #include "vkr/ui/components/fps_panel.hh"
 #include "vkr/ui/components/logging_panel.hh"
@@ -36,7 +39,7 @@ public:
   UI(const core::Window &window, const core::Instance &instance,
      const core::Surface &surface, const core::Device &device,
      const core::CommandPool &commandPool,
-     const resource::ResourceManager &resourceManager,
+     resource::ResourceManager &resourceManager,
      resource::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool, util::Timer &timer,
@@ -87,7 +90,7 @@ private:
   const core::Surface &surface_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  const resource::ResourceManager &resource_manager_;
+  resource::ResourceManager &resource_manager_;
   resource::OffscreenTarget &offscreen_target_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
@@ -98,6 +101,8 @@ private:
   std::unique_ptr<FPSPanel> fps_panel_;
   std::unique_ptr<ShaderEditor> shader_editor_;
   std::unique_ptr<LoggingPanel> logging_panel_;
+  std::unique_ptr<pipeline::DescriptorSetLayout> offscreen_descriptor_layout_;
+  std::unique_ptr<pipeline::DescriptorSets> offscreen_descriptor_sets_;
 
   LayoutMode layout_mode_{LayoutMode::FullScreen};
   ViewportInfo viewport_info_{};

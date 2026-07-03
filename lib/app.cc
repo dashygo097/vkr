@@ -76,24 +76,37 @@ void VulkanApplication::initVulkan() {
   resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
                                         swapchainFbDesc);
 
+  // offscreen target
+  resource::OffscreenTargetDesc offscreenDesc{};
+  offscreenDesc.color.width = swapchain->extent2D().width;
+  offscreenDesc.color.height = swapchain->extent2D().height;
+  offscreenDesc.color.format = VK_FORMAT_R8G8B8A8_UNORM;
+  offscreenDesc.color.usage =
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  offscreenDesc.color.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  offscreenDesc.color.createSampler = true;
+  offscreenDesc.depth =
+      resource::DepthAttachmentDesc{.width = swapchain->extent2D().width,
+                                    .height = swapchain->extent2D().height,
+                                    .format = VK_FORMAT_D32_SFLOAT};
+
+  offscreenTarget =
+      std::make_unique<resource::OffscreenTarget>(*device, *commandPool);
+  offscreenTarget->update(offscreenDesc);
+  offscreenTarget->create();
+
   // render pass: offscreen
   offscreenRenderPass = std::make_unique<pipeline::RenderPass>(*device);
   offscreenRenderPass->update(pipeline::RenderPassDesc::makeOffscreen(
-      VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D32_SFLOAT));
-
-  // offscreen target
-  offscreenTarget =
-      std::make_unique<resource::OffscreenTarget>(*device, *commandPool);
-  offscreenTarget->resize(swapchain->extent2D());
+      offscreenTarget->color().desc().format,
+      offscreenTarget->depth()->desc().format));
 
   // framebuffer set: offscreen
   resource::FramebufferDesc offscreenFbDesc{};
   offscreenFbDesc.width = offscreenTarget->extent2D().width;
   offscreenFbDesc.height = offscreenTarget->extent2D().height;
   offscreenFbDesc.layers = 1;
-  offscreenFbDesc.attachments = {
-      {offscreenTarget->colorView(), offscreenTarget->depthView()},
-  };
+  offscreenFbDesc.attachments = {offscreenTarget->attachmentViews()};
 
   resourceManager->createFramebufferSet("offscreen", *offscreenRenderPass,
                                         offscreenFbDesc);
@@ -139,8 +152,6 @@ void VulkanApplication::initVulkan() {
                                 *commandPool, *resourceManager,
                                 *offscreenTarget, *swapchainRenderPass,
                                 *descriptorPool, *timer, ctx.theme);
-
-  offscreenTarget->registerWithImGui(descriptorPool->pool());
 
   // renderer
   renderer = std::make_unique<render::Renderer>(
@@ -192,8 +203,6 @@ void VulkanApplication::drawFrame() {
   if (!renderer->beginFrame(frameData)) {
     return;
   }
-
-  offscreenTarget->flushPendingResize(descriptorPool->pool());
 
   onDrawFrame(frameData.frameIndex);
 

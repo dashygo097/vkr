@@ -11,7 +11,7 @@ namespace vkr::ui {
 UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool,
-       const resource::ResourceManager &resourceManager,
+       resource::ResourceManager &resourceManager,
        resource::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool, util::Timer &timer,
@@ -59,6 +59,31 @@ UI::UI(const core::Window &window, const core::Instance &instance,
 
   ImGui_ImplVulkan_Init(&initInfo);
 
+  std::vector<pipeline::DescriptorBinding> offscreenBindings = {
+      {.name = "offscreen",
+       .binding = 0,
+       .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+       .count = 1,
+       .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}};
+
+  offscreen_descriptor_layout_ =
+      std::make_unique<pipeline::DescriptorSetLayout>(device_,
+                                                      offscreenBindings);
+
+  offscreen_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
+      device_, resource_manager_, *offscreen_descriptor_layout_,
+      descriptor_pool_, 1);
+
+  VkDescriptorImageInfo offscreenImageInfo{};
+  offscreenImageInfo.sampler = offscreen_target_.color().sampler();
+  offscreenImageInfo.imageView = offscreen_target_.color().imageView();
+  offscreenImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+  pipeline::DescriptorWriter writer(device_);
+  writer.writeImage(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    &offscreenImageInfo);
+  offscreen_descriptor_sets_->bindToFrame(0, writer);
+
   // fps panel
   VKR_UI_INFO("Initializing FPS Panel...");
   fps_panel_ = std::make_unique<FPSPanel>(timer);
@@ -104,6 +129,9 @@ UI::UI(const core::Window &window, const core::Instance &instance,
 }
 
 UI::~UI() {
+  offscreen_descriptor_sets_.reset();
+  offscreen_descriptor_layout_.reset();
+
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
@@ -146,12 +174,14 @@ void UI::renderFullScreen() {
       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
   if (ImGui::Begin("Fullscreen Viewport", nullptr, flags)) {
-    if (offscreen_target_.imguiDescriptorSet()) {
+    if (offscreen_descriptor_sets_ &&
+        !offscreen_descriptor_sets_->sets().empty()) {
       ImGui::Image(
-          reinterpret_cast<ImTextureID>(offscreen_target_.imguiDescriptorSet()),
+          reinterpret_cast<ImTextureID>(offscreen_descriptor_sets_->sets()[0]),
           ImGui::GetContentRegionAvail());
     }
   }
+
   ImGui::End();
   ImGui::PopStyleVar(2);
 }
@@ -192,6 +222,7 @@ void UI::renderDockspace() {
       }
       ImGui::EndMenu();
     }
+
     if (ImGui::BeginMenu("View")) {
       if (ImGui::MenuItem("Full Screen", nullptr,
                           layout_mode_ == LayoutMode::FullScreen)) {
@@ -253,6 +284,7 @@ void UI::renderDockspace() {
 
       ImGui::EndMenu();
     }
+
     ImGui::EndMenuBar();
   }
 
@@ -308,16 +340,19 @@ void UI::renderMainViewport() {
 
   if (ImGui::Begin("Viewport", nullptr, windowFlags)) {
     ImVec2 panelSize = ImGui::GetContentRegionAvail();
+
     if (panelSize.x < 1.0f) {
       panelSize.x = 1.0f;
     }
+
     if (panelSize.y < 1.0f) {
       panelSize.y = 1.0f;
     }
 
-    if (offscreen_target_.imguiDescriptorSet() != VK_NULL_HANDLE) {
+    if (offscreen_descriptor_sets_ &&
+        !offscreen_descriptor_sets_->sets().empty()) {
       ImGui::Image(
-          reinterpret_cast<ImTextureID>(offscreen_target_.imguiDescriptorSet()),
+          reinterpret_cast<ImTextureID>(offscreen_descriptor_sets_->sets()[0]),
           panelSize);
     } else {
       ImGui::TextDisabled("(no offscreen target)");
@@ -333,6 +368,7 @@ void UI::renderMainViewport() {
     viewport_info_.isFocused = ImGui::IsWindowFocused();
     viewport_info_.isHovered = ImGui::IsWindowHovered();
   }
+
   ImGui::End();
   ImGui::PopStyleVar();
 }
@@ -347,6 +383,7 @@ void UI::renderResourcePanel() {
       resource_tree_->render();
     }
   }
+
   ImGui::End();
 }
 
@@ -360,6 +397,7 @@ void UI::renderPerformancePanel() {
       fps_panel_->render();
     }
   }
+
   ImGui::End();
 }
 
@@ -367,9 +405,11 @@ void UI::renderShaderEditor() {
   ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
                                  ImGuiWindowFlags_NoResize |
                                  ImGuiWindowFlags_NoCollapse;
+
   if (ImGui::Begin("Shader Editor", nullptr, windowFlags)) {
     shader_editor_->render();
   }
+
   ImGui::End();
 }
 
@@ -377,11 +417,13 @@ void UI::renderLoggingPanel() {
   ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
                                  ImGuiWindowFlags_NoResize |
                                  ImGuiWindowFlags_NoCollapse;
+
   if (ImGui::Begin("Logging", nullptr, windowFlags)) {
     if (logging_panel_) {
       logging_panel_->render();
     }
   }
+
   ImGui::End();
 }
 
