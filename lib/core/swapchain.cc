@@ -1,7 +1,5 @@
 #include "vkr/core/swapchain.hh"
 #include "vkr/logger.hh"
-#include <algorithm>
-#include <limits>
 
 namespace vkr::core {
 
@@ -65,11 +63,11 @@ Swapchain::Swapchain(const Window &window, const Surface &surface,
                           nullptr);
   desc_.imageCount = actualImageCount;
 
-  VKR_CORE_INFO("Swapchain created: extent={}x{}, images={}, format={}, "
-                "presentMode={}",
-                desc_.extent.width, desc_.extent.height, desc_.imageCount,
-                static_cast<int>(desc_.surfaceFormat.format),
-                presentModeName(desc_.presentMode));
+  VKR_CORE_INFO(
+      "Swapchain created: extent={}x{}, images={}, format={}, presentMode={}",
+      desc_.extent.width, desc_.extent.height, desc_.imageCount,
+      static_cast<int>(desc_.surfaceFormat.format),
+      static_cast<int>(desc_.presentMode));
 
   VKR_CORE_INFO("Initial swapchain created successfully.");
 }
@@ -102,45 +100,22 @@ auto chooseSwapSurfaceFormat(
   return availableFormats[0];
 }
 
-auto presentModeName(VkPresentModeKHR mode) -> const char * {
-  switch (mode) {
-  case VK_PRESENT_MODE_IMMEDIATE_KHR:
-    return "IMMEDIATE";
-  case VK_PRESENT_MODE_MAILBOX_KHR:
-    return "MAILBOX";
-  case VK_PRESENT_MODE_FIFO_KHR:
-    return "FIFO";
-  case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
-    return "FIFO_RELAXED";
-  default:
-    return "UNKNOWN";
-  }
-}
-
-auto hasPresentMode(const std::vector<VkPresentModeKHR> &modes,
-                    VkPresentModeKHR target) -> bool {
-  return std::find(modes.begin(), modes.end(), target) != modes.end();
-}
-
 auto chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR> &availablePresentModes,
     VkPresentModeKHR requestedMode) -> VkPresentModeKHR {
   if (availablePresentModes.empty()) {
-    VKR_CORE_INFO("No present modes reported. Falling back to FIFO.");
+    VKR_CORE_WARN("no available swapchain present modes, falling back to FIFO");
     return VK_PRESENT_MODE_FIFO_KHR;
   }
 
-  for (auto mode : availablePresentModes) {
-    VKR_CORE_INFO("Available present mode: {}", presentModeName(mode));
-  }
-
-  if (hasPresentMode(availablePresentModes, requestedMode)) {
-    VKR_CORE_INFO("Selected present mode: {}", presentModeName(requestedMode));
+  if (std::find(availablePresentModes.begin(), availablePresentModes.end(),
+                requestedMode) != availablePresentModes.end()) {
+    VKR_CORE_INFO("requested present mode found: {}",
+                  static_cast<int>(requestedMode));
     return requestedMode;
   }
 
-  VKR_CORE_INFO("Requested present mode {} unavailable. Falling back to FIFO.",
-                presentModeName(requestedMode));
+  VKR_CORE_WARN("requested present mode not found, falling back to FIFO");
   return VK_PRESENT_MODE_FIFO_KHR;
 }
 

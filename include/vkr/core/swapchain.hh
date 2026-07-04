@@ -39,8 +39,6 @@ auto chooseSwapExtent(GLFWwindow *window,
                       const VkSurfaceCapabilitiesKHR &capabilities)
     -> VkExtent2D;
 
-auto presentModeName(VkPresentModeKHR mode) -> const char *;
-
 class Swapchain {
 public:
   explicit Swapchain(const Window &window, const Surface &surface,

@@ -119,6 +119,10 @@ private:
         .version = VK_MAKE_VERSION(1, 0, 0),
     };
 
+    ctx.swapchain = {
+        .presentMode = VK_PRESENT_MODE_FIFO_KHR,
+    };
+
     ctx.camera = {
         .locked = true,
     };
