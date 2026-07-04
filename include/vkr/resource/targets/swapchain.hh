@@ -4,6 +4,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
 #include "vkr/resource/attachments/depth.hh"
+#include "vkr/resource/gpu/image_view.hh"
 
 namespace vkr::resource {
 
@@ -30,12 +31,30 @@ public:
   void destory();
   void update(const SwapchainTargetDesc &desc);
 
-  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D {
-    return swapchain_.extent2D();
+  [[nodiscard]] auto images() const noexcept -> const std::vector<VkImage> & {
+    return vk_color_images_;
+  }
+
+  [[nodiscard]] auto image(size_t index) const -> VkImage {
+    return vk_color_images_.at(index);
+  }
+
+  [[nodiscard]] auto imageViews() const -> std::vector<VkImageView>;
+
+  [[nodiscard]] auto imageView(size_t index) const -> VkImageView {
+    return color_image_views_.at(index)->imageView();
+  }
+
+  [[nodiscard]] auto imageCount() const noexcept -> size_t {
+    return vk_color_images_.size();
   }
 
   [[nodiscard]] auto format() const noexcept -> VkFormat {
     return swapchain_.format();
+  }
+
+  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D {
+    return swapchain_.extent2D();
   }
 
   [[nodiscard]] auto depth() noexcept -> DepthAttachment * {
@@ -64,6 +83,8 @@ private:
 
   // components
   SwapchainTargetDesc desc_{};
+  std::vector<VkImage> vk_color_images_{};
+  std::vector<std::unique_ptr<ImageView>> color_image_views_{};
   std::unique_ptr<DepthAttachment> depth_;
 };
 

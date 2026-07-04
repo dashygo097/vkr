@@ -6,30 +6,26 @@
 
 namespace vkr::core {
 
-enum class PresentModePolicy {
-  VSync,
-  Mailbox,
-  Uncapped,
-};
-
 struct SwapchainDesc {
-  PresentModePolicy presentModePolicy{PresentModePolicy::Uncapped};
+  VkPresentModeKHR presentMode{VK_PRESENT_MODE_IMMEDIATE_KHR};
+
+  VkSurfaceCapabilitiesKHR capabilities{};
+  std::vector<VkSurfaceFormatKHR> formats{};
+  std::vector<VkPresentModeKHR> presentModes{};
+
+  VkSurfaceFormatKHR surfaceFormat{};
+  VkExtent2D extent{};
+  uint32_t imageCount{0};
 
   [[nodiscard]] auto isValid() const noexcept -> bool { return true; }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
-    ar("present", presentModePolicy);
+    ar("present", presentMode);
   }
 };
 
-struct SwapchainSupportDetails {
-  VkSurfaceCapabilitiesKHR capabilities{};
-  std::vector<VkSurfaceFormatKHR> formats{};
-  std::vector<VkPresentModeKHR> presentModes{};
-};
-
-auto querySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
-    -> SwapchainSupportDetails;
+void querySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR surface,
+                           SwapchainDesc &desc);
 
 auto chooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR> &availableFormats)
@@ -37,7 +33,7 @@ auto chooseSwapSurfaceFormat(
 
 auto chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR> &availablePresentModes,
-    PresentModePolicy policy) -> VkPresentModeKHR;
+    VkPresentModeKHR requestedMode) -> VkPresentModeKHR;
 
 auto chooseSwapExtent(GLFWwindow *window,
                       const VkSurfaceCapabilitiesKHR &capabilities)
@@ -58,39 +54,24 @@ public:
     return desc_;
   }
 
-  void create();
-  void destroy();
-  void recreate();
-
   [[nodiscard]] auto swapchain() const noexcept -> VkSwapchainKHR {
     return vk_swapchain_;
   }
 
-  [[nodiscard]] auto images() const noexcept -> const std::vector<VkImage> & {
-    return vk_color_images_;
+  [[nodiscard]] auto format() const noexcept -> VkFormat {
+    return desc_.surfaceFormat.format;
   }
 
-  [[nodiscard]] auto image(size_t index) const -> VkImage {
-    return vk_color_images_.at(index);
-  }
-
-  [[nodiscard]] auto imageViews() const noexcept
-      -> const std::vector<VkImageView> & {
-    return vk_color_image_views_;
-  }
-
-  [[nodiscard]] auto imageView(size_t index) const -> VkImageView {
-    return vk_color_image_views_.at(index);
+  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D {
+    return desc_.extent;
   }
 
   [[nodiscard]] auto imageCount() const noexcept -> size_t {
-    return vk_color_images_.size();
+    return desc_.imageCount;
   }
 
-  [[nodiscard]] auto format() const noexcept -> VkFormat { return vk_format_; }
-
-  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D {
-    return vk_extent_;
+  [[nodiscard]] auto presentMode() const noexcept -> VkPresentModeKHR {
+    return desc_.presentMode;
   }
 
 private:
@@ -102,11 +83,6 @@ private:
   // components
   SwapchainDesc &desc_;
   VkSwapchainKHR vk_swapchain_{VK_NULL_HANDLE};
-  std::vector<VkImage> vk_color_images_{};
-  std::vector<VkImageView> vk_color_image_views_{};
-  VkFormat vk_format_{VK_FORMAT_UNDEFINED};
-  VkExtent2D vk_extent_{};
-  VkPresentModeKHR vk_present_mode_{VK_PRESENT_MODE_FIFO_KHR};
 };
 
 } // namespace vkr::core

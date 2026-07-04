@@ -73,9 +73,6 @@ void VulkanApplication::initVulkan() {
   resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
                                         swapchainFbDesc);
 
-  resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
-                                        swapchainFbDesc);
-
   // offscreen target
   resource::OffscreenTargetDesc offscreenDesc{};
   offscreenDesc.color.width = swapchain->extent2D().width;

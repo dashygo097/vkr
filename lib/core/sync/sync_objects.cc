@@ -10,7 +10,7 @@ SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
   vk_image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
   vk_in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
 
-  vk_render_finished_semaphores.resize(swapchain_.images().size());
+  vk_render_finished_semaphores.resize(swapchain_.imageCount());
 
   VkSemaphoreCreateInfo semaphoreInfo{};
   semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -28,7 +28,7 @@ SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
     }
   }
 
-  for (size_t i = 0; i < swapchain_.images().size(); i++) {
+  for (size_t i = 0; i < swapchain_.imageCount(); i++) {
     if (vkCreateSemaphore(device_.device(), &semaphoreInfo, nullptr,
                           &vk_render_finished_semaphores[i]) != VK_SUCCESS) {
       VKR_CORE_ERROR(

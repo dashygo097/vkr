@@ -4,7 +4,6 @@
 #include "vkr/core/instance.hh"
 #include "vkr/core/swapchain.hh"
 #include "vkr/core/window.hh"
-#include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/ui/theme.hh"
 #include "vkr/util/asset.hh"
