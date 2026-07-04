@@ -5,8 +5,8 @@
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/render/pipeline_library.hh"
 #include "vkr/render/renderer.hh"
-#include "vkr/resource/attachments/depth.hh"
 #include "vkr/resource/manager.hh"
+#include "vkr/resource/targets/swapchain.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/ui/ui.hh"
 #include "vkr/util/asset.hh"
@@ -53,7 +53,7 @@ public:
   std::unique_ptr<core::SyncObjects> syncObjects;
 
   // resource management
-  std::unique_ptr<resource::DepthAttachment> depthAttachment;
+  std::unique_ptr<resource::SwapchainTarget> swapchainTarget;
   std::unique_ptr<resource::OffscreenTarget> offscreenTarget;
   std::unique_ptr<resource::ResourceManager> resourceManager;
 

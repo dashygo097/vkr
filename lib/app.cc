@@ -46,12 +46,14 @@ void VulkanApplication::initVulkan() {
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
   // resource manager
-  depthAttachment =
-      std::make_unique<resource::DepthAttachment>(*device, *commandPool);
-  depthAttachment->update(
-      resource::DepthAttachmentDesc{.width = swapchain->extent2D().width,
-                                    .height = swapchain->extent2D().height,
-                                    .format = VK_FORMAT_D32_SFLOAT});
+  swapchainTarget = std::make_unique<resource::SwapchainTarget>(
+      *device, *commandPool, *swapchain);
+
+  resource::SwapchainTargetDesc swapchainTargetDesc{};
+  swapchainTargetDesc.depth =
+      resource::DepthAttachmentDesc{.format = VK_FORMAT_D32_SFLOAT};
+
+  swapchainTarget->update(swapchainTargetDesc);
 
   resourceManager = std::make_unique<resource::ResourceManager>(
       *device, *swapchain, *commandPool);
@@ -59,19 +61,17 @@ void VulkanApplication::initVulkan() {
   // render pass: swapchain
   swapchainRenderPass = std::make_unique<pipeline::RenderPass>(*device);
   swapchainRenderPass->update(pipeline::RenderPassDesc::makeSwapchain(
-      swapchain->format(), depthAttachment->desc().format));
+      swapchainTarget->format(), swapchainTarget->depth()->desc().format));
 
   // framebuffer set: swapchain
   resource::FramebufferDesc swapchainFbDesc{};
-  swapchainFbDesc.width = swapchain->extent2D().width;
-  swapchainFbDesc.height = swapchain->extent2D().height;
+  swapchainFbDesc.width = swapchainTarget->extent2D().width;
+  swapchainFbDesc.height = swapchainTarget->extent2D().height;
   swapchainFbDesc.layers = 1;
-  swapchainFbDesc.attachments.reserve(swapchain->images().size());
+  swapchainFbDesc.attachments = swapchainTarget->attachmentViews();
 
-  for (auto imageView : swapchain->imageViews()) {
-    swapchainFbDesc.attachments.push_back(
-        {imageView, depthAttachment->imageView()});
-  }
+  resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
+                                        swapchainFbDesc);
 
   resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
                                         swapchainFbDesc);
