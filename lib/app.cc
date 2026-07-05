@@ -90,7 +90,6 @@ void VulkanApplication::initVulkan() {
   offscreenTarget =
       std::make_unique<resource::OffscreenTarget>(*device, *commandPool);
   offscreenTarget->update(offscreenDesc);
-  offscreenTarget->create();
 
   // render pass: offscreen
   offscreenRenderPass = std::make_unique<pipeline::RenderPass>(*device);
