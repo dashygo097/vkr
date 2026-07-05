@@ -40,8 +40,8 @@ void SwapchainTarget::create() {
 
   if (desc_.depth) {
     DepthAttachmentDesc depthDesc = *desc_.depth;
-    depthDesc.width = swapchain_.extent2D().width;
-    depthDesc.height = swapchain_.extent2D().height;
+    depthDesc.width = swapchain_.width();
+    depthDesc.height = swapchain_.height();
 
     if (depthDesc.format == VK_FORMAT_UNDEFINED) {
       VKR_RES_ERROR("SwapchainTarget depth attachment has undefined format");
@@ -53,8 +53,8 @@ void SwapchainTarget::create() {
   }
 
   VKR_RES_INFO("SwapchainTarget created: extent={}x{}, images={}, depth={}",
-               swapchain_.extent2D().width, swapchain_.extent2D().height,
-               vk_color_images_.size(), depth_ ? "yes" : "no");
+               swapchain_.width(), swapchain_.height(), vk_color_images_.size(),
+               depth_ ? "yes" : "no");
 }
 
 void SwapchainTarget::destory() {

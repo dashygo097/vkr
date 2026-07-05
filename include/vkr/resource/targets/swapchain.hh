@@ -4,6 +4,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
 #include "vkr/resource/attachments/depth.hh"
+#include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/gpu/image_view.hh"
 
 namespace vkr::resource {
@@ -53,8 +54,12 @@ public:
     return swapchain_.format();
   }
 
-  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D {
-    return swapchain_.extent2D();
+  [[nodiscard]] auto width() const noexcept -> uint32_t {
+    return swapchain_.width();
+  }
+
+  [[nodiscard]] auto height() const noexcept -> uint32_t {
+    return swapchain_.height();
   }
 
   [[nodiscard]] auto depth() noexcept -> DepthAttachment * {

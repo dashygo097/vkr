@@ -10,6 +10,10 @@ struct DepthAttachmentDesc {
   uint32_t width{};
   uint32_t height{};
   VkFormat format{VK_FORMAT_UNDEFINED};
+
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return width != 0 && height != 0 && format != VK_FORMAT_UNDEFINED;
+  }
 };
 
 class DepthAttachment {

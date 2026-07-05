@@ -16,6 +16,10 @@ struct ColorAttachmentDesc {
   VkImageLayout finalLayout{VK_IMAGE_LAYOUT_UNDEFINED};
   bool createSampler{false};
   SamplerDesc sampler{SamplerDesc::linearClampToEdge()};
+
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return width != 0 && height != 0 && format != VK_FORMAT_UNDEFINED;
+  }
 };
 
 class ColorAttachment {

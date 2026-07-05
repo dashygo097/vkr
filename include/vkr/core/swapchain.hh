@@ -14,10 +14,13 @@ struct SwapchainDesc {
   std::vector<VkPresentModeKHR> presentModes{};
 
   VkSurfaceFormatKHR surfaceFormat{};
-  VkExtent2D extent{};
+  uint32_t width{};
+  uint32_t height{};
   uint32_t imageCount{0};
 
-  [[nodiscard]] auto isValid() const noexcept -> bool { return true; }
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return width == 0 || height == 0;
+  }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
     ar("present", presentMode);
@@ -60,8 +63,10 @@ public:
     return desc_.surfaceFormat.format;
   }
 
-  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D {
-    return desc_.extent;
+  [[nodiscard]] auto width() const noexcept -> uint32_t { return desc_.width; }
+
+  [[nodiscard]] auto height() const noexcept -> uint32_t {
+    return desc_.height;
   }
 
   [[nodiscard]] auto imageCount() const noexcept -> size_t {

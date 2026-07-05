@@ -96,7 +96,7 @@ void Renderer::beginSwapchainPass(
   desc.framebufferIndex = frameData.imageIndex;
   desc.renderArea = {
       .offset = {0, 0},
-      .extent = swapchain_.extent2D(),
+      .extent = {swapchain_.width(), swapchain_.height()},
   };
   desc.clearValues = std::move(clearValues);
 
@@ -157,7 +157,7 @@ void Renderer::setViewportAndScissor(const FrameData &frameData,
 }
 
 void Renderer::setViewportAndScissor(const FrameData &frameData) {
-  setViewportAndScissor(frameData, swapchain_.extent2D());
+  setViewportAndScissor(frameData, {swapchain_.width(), swapchain_.height()});
 }
 
 void Renderer::setOffscreenViewportAndScissor(

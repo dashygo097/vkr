@@ -13,7 +13,9 @@ Swapchain::Swapchain(const Window &window, const Surface &surface,
   desc_.surfaceFormat = chooseSwapSurfaceFormat(desc_.formats);
   desc_.presentMode =
       chooseSwapPresentMode(desc_.presentModes, desc_.presentMode);
-  desc_.extent = chooseSwapExtent(window_.glfwWindow(), desc_.capabilities);
+  auto extent = chooseSwapExtent(window_.glfwWindow(), desc_.capabilities);
+  desc_.width = extent.width;
+  desc_.height = extent.height;
 
   uint32_t imageCount = desc_.capabilities.minImageCount + 1;
 
@@ -30,7 +32,7 @@ Swapchain::Swapchain(const Window &window, const Surface &surface,
   createInfo.minImageCount = desc_.imageCount;
   createInfo.imageFormat = desc_.surfaceFormat.format;
   createInfo.imageColorSpace = desc_.surfaceFormat.colorSpace;
-  createInfo.imageExtent = desc_.extent;
+  createInfo.imageExtent = {desc_.width, desc_.height};
   createInfo.imageArrayLayers = 1;
   createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
@@ -65,7 +67,7 @@ Swapchain::Swapchain(const Window &window, const Surface &surface,
 
   VKR_CORE_INFO(
       "Swapchain created: extent={}x{}, images={}, format={}, presentMode={}",
-      desc_.extent.width, desc_.extent.height, desc_.imageCount,
+      desc_.width, desc_.height, desc_.imageCount,
       static_cast<int>(desc_.surfaceFormat.format),
       static_cast<int>(desc_.presentMode));
 
@@ -78,7 +80,8 @@ Swapchain::~Swapchain() {
     vk_swapchain_ = VK_NULL_HANDLE;
   }
 
-  desc_.extent = {};
+  desc_.width = 0;
+  desc_.height = 0;
   desc_.imageCount = 0;
   desc_.surfaceFormat = {};
 }

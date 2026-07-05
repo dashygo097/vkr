@@ -65,8 +65,8 @@ void VulkanApplication::initVulkan() {
 
   // framebuffer set: swapchain
   resource::FramebufferDesc swapchainFbDesc{};
-  swapchainFbDesc.width = swapchainTarget->extent2D().width;
-  swapchainFbDesc.height = swapchainTarget->extent2D().height;
+  swapchainFbDesc.width = swapchainTarget->width();
+  swapchainFbDesc.height = swapchainTarget->height();
   swapchainFbDesc.layers = 1;
   swapchainFbDesc.attachments = swapchainTarget->attachmentViews();
 
@@ -75,16 +75,16 @@ void VulkanApplication::initVulkan() {
 
   // offscreen target
   resource::OffscreenTargetDesc offscreenDesc{};
-  offscreenDesc.color.width = swapchain->extent2D().width;
-  offscreenDesc.color.height = swapchain->extent2D().height;
+  offscreenDesc.color.width = swapchain->width();
+  offscreenDesc.color.height = swapchain->height();
   offscreenDesc.color.format = VK_FORMAT_R8G8B8A8_UNORM;
   offscreenDesc.color.usage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   offscreenDesc.color.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   offscreenDesc.color.createSampler = true;
   offscreenDesc.depth =
-      resource::DepthAttachmentDesc{.width = swapchain->extent2D().width,
-                                    .height = swapchain->extent2D().height,
+      resource::DepthAttachmentDesc{.width = swapchain->width(),
+                                    .height = swapchain->height(),
                                     .format = VK_FORMAT_D32_SFLOAT};
 
   offscreenTarget =
