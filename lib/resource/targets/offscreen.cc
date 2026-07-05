@@ -12,40 +12,10 @@ OffscreenTarget::OffscreenTarget(const core::Device &device,
 
 OffscreenTarget::~OffscreenTarget() { destory(); }
 
-void OffscreenTarget::validate() const {
-  if (desc_.color.format == VK_FORMAT_UNDEFINED) {
-    VKR_RENDER_ERROR("OffscreenTarget color attachment has undefined format");
-  }
-
-  if (desc_.color.width == 0 || desc_.color.height == 0) {
-    VKR_RENDER_ERROR("OffscreenTarget color attachment has invalid size: {}x{}",
-                     desc_.color.width, desc_.color.height);
-  }
-
-  if (!desc_.depth) {
-    return;
-  }
-
-  if (desc_.depth->format == VK_FORMAT_UNDEFINED) {
-    VKR_RENDER_ERROR("OffscreenTarget depth attachment has undefined format");
-  }
-
-  if (desc_.depth->width == 0 || desc_.depth->height == 0) {
-    VKR_RENDER_ERROR("OffscreenTarget depth attachment has invalid size: {}x{}",
-                     desc_.depth->width, desc_.depth->height);
-  }
-
-  if (desc_.depth->width != desc_.color.width ||
-      desc_.depth->height != desc_.color.height) {
-    VKR_RENDER_ERROR(
-        "OffscreenTarget color/depth size mismatch: color={}x{}, depth={}x{}",
-        desc_.color.width, desc_.color.height, desc_.depth->width,
-        desc_.depth->height);
-  }
-}
-
 void OffscreenTarget::create() {
-  validate();
+  if (!desc_.isValid()) {
+    VKR_RES_ERROR("OffscreenTargetDesc params not valid!")
+  }
 
   if (!color_) {
     color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
@@ -63,8 +33,8 @@ void OffscreenTarget::create() {
     depth_->create();
   }
 
-  VKR_RENDER_INFO("OffscreenTarget created: {}x{}, depth={}", desc_.color.width,
-                  desc_.color.height, depth_ ? "yes" : "no");
+  VKR_RES_INFO("OffscreenTarget created: {}x{}, depth={}", desc_.color.width,
+               desc_.color.height, depth_ ? "yes" : "no");
 }
 
 void OffscreenTarget::destory() {
@@ -74,7 +44,9 @@ void OffscreenTarget::destory() {
 
 void OffscreenTarget::update(const OffscreenTargetDesc &desc) {
   desc_ = desc;
-  validate();
+  if (!desc_.isValid()) {
+    VKR_RES_ERROR("OffscreenTargetDesc params not valid!")
+  }
 
   if (!color_) {
     color_ = std::make_unique<ColorAttachment>(device_, command_pool_);

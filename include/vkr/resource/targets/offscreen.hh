@@ -10,6 +10,28 @@ namespace vkr::resource {
 struct OffscreenTargetDesc {
   ColorAttachmentDesc color{};
   std::optional<DepthAttachmentDesc> depth{};
+
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    if (color.format == VK_FORMAT_UNDEFINED || color.width == 0 ||
+        color.height == 0) {
+      return false;
+    }
+
+    if (!depth) {
+      return true;
+    }
+
+    if (depth->format == VK_FORMAT_UNDEFINED || depth->width == 0 ||
+        depth->height == 0) {
+      return false;
+    }
+
+    if (depth->width != color.width || depth->height != color.height) {
+      return false;
+    }
+
+    return true;
+  }
 };
 
 class OffscreenTarget {
@@ -63,9 +85,6 @@ private:
   OffscreenTargetDesc desc_{};
   std::unique_ptr<ColorAttachment> color_;
   std::unique_ptr<DepthAttachment> depth_;
-
-  // helpers
-  void validate() const;
 };
 
 } // namespace vkr::resource
