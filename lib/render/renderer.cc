@@ -244,7 +244,7 @@ void Renderer::ensureFrameInactive(const char *op) const {
 auto Renderer::acquireNextImage(uint32_t &imageIndex) -> bool {
   VkResult result = vkAcquireNextImageKHR(
       device_.device(), swapchain_.swapchain(), UINT64_MAX,
-      sync_objects_.imageAvailableSemaphores()[current_frame_], VK_NULL_HANDLE,
+      sync_objects_.imageAvailableSemaphore(current_frame_), VK_NULL_HANDLE,
       &imageIndex);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -291,7 +291,7 @@ void Renderer::present(uint32_t imageIndex) {
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
   VkSemaphore signalSemaphores[] = {
-      sync_objects_.renderFinishedSemaphores()[imageIndex]};
+      sync_objects_.renderFinishedSemaphore(imageIndex)};
 
   presentInfo.waitSemaphoreCount = 1;
   presentInfo.pWaitSemaphores = signalSemaphores;
