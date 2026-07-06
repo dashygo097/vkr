@@ -13,18 +13,10 @@
 
 namespace vkr::render {
 
-struct FrameData {
-  uint32_t imageIndex{0};
-  uint32_t frameIndex{0};
-  VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
-};
-
 struct RenderPassBeginDesc {
   uint32_t framebufferIndex{0};
-
   VkRect2D renderArea{};
   std::vector<VkClearValue> clearValues{};
-
   VkSubpassContents contents{VK_SUBPASS_CONTENTS_INLINE};
 };
 
@@ -39,43 +31,48 @@ public:
   Renderer(const Renderer &) = delete;
   auto operator=(const Renderer &) -> Renderer & = delete;
 
-  auto beginFrame(FrameData &outFrameData) -> bool;
-  void endFrame(const FrameData &frameData);
+  auto beginFrame() -> bool;
+  void endFrame();
 
-  // Generic pass API
-  void beginPass(const FrameData &frameData,
-                 const resource::FramebufferSet &framebufferSet,
-                 const pipeline::RenderPass &renderPass,
-                 const RenderPassBeginDesc &desc);
-  void endPass(const FrameData &frameData);
+  [[nodiscard]] auto commandBuffer() const -> VkCommandBuffer {
+    ensureFrameActive("commandBuffer");
+    return command_buffer_;
+  }
 
-  // Swapchain pass
-  void beginSwapchainPass(const FrameData &frameData,
-                          const resource::FramebufferSet &framebufferSet,
-                          const pipeline::RenderPass &renderPass);
+  [[nodiscard]] auto frameIndex() const noexcept -> uint32_t {
+    return frame_index_;
+  }
 
-  // Offscreen pass
-  void beginOffscreenPass(const FrameData &frameData,
-                          const resource::FramebufferSet &framebufferSet,
-                          const pipeline::RenderPass &renderPass,
-                          const resource::OffscreenTarget &target);
-
-  void bindPipeline(const FrameData &frameData, VkPipeline pipeline,
-                    VkPipelineLayout pipelineLayout,
-                    const std::vector<VkDescriptorSet> &descriptorSets);
-
-  void setViewportAndScissor(const FrameData &frameData, VkExtent2D extent);
-  void setViewportAndScissor(const FrameData &frameData);
-
-  void setOffscreenViewportAndScissor(const FrameData &frameData,
-                                      const resource::OffscreenTarget &target);
-
-  void drawGeometry(const FrameData &frameData);
-  void drawUI(const FrameData &frameData);
+  [[nodiscard]] auto imageIndex() const noexcept -> uint32_t {
+    return image_index_;
+  }
 
   [[nodiscard]] auto currentFrameIndex() const noexcept -> uint32_t {
     return current_frame_;
   }
+
+  void beginPass(const resource::FramebufferSet &framebufferSet,
+                 const pipeline::RenderPass &renderPass,
+                 const RenderPassBeginDesc &desc);
+  void endPass();
+
+  void beginSwapchainPass(const resource::FramebufferSet &framebufferSet,
+                          const pipeline::RenderPass &renderPass);
+
+  void beginOffscreenPass(const resource::FramebufferSet &framebufferSet,
+                          const pipeline::RenderPass &renderPass,
+                          const resource::OffscreenTarget &target);
+
+  void bindPipeline(VkPipeline pipeline, VkPipelineLayout pipelineLayout,
+                    const std::vector<VkDescriptorSet> &descriptorSets);
+
+  void setViewportAndScissor(VkExtent2D extent);
+  void setViewportAndScissor();
+
+  void setOffscreenViewportAndScissor(const resource::OffscreenTarget &target);
+
+  void drawGeometry();
+  void drawUI();
 
 private:
   // dependencies
@@ -91,11 +88,17 @@ private:
 
   // state
   uint32_t current_frame_{0};
+  uint32_t image_index_{0};
+  uint32_t frame_index_{0};
+  VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
+  bool frame_active_{false};
 
-  void waitForFence(uint32_t frameIndex);
-  void resetFence(uint32_t frameIndex);
+  // helpers
+  void ensureFrameActive(const char *op) const;
+  void ensureFrameInactive(const char *op) const;
+
   auto acquireNextImage(uint32_t &imageIndex) -> bool;
-  void submitCommandBuffer(const FrameData &frameData);
+  void submitCommandBuffer();
   void present(uint32_t imageIndex);
 };
 

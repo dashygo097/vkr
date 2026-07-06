@@ -13,50 +13,59 @@ Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
       std::make_unique<core::CommandBuffers>(device_, command_pool_);
 }
 
-auto Renderer::beginFrame(FrameData &outFrameData) -> bool {
-  waitForFence(current_frame_);
+auto Renderer::beginFrame() -> bool {
+  ensureFrameInactive("beginFrame");
+
+  sync_objects_.waitForFrame(current_frame_);
 
   uint32_t imageIndex = 0;
   if (!acquireNextImage(imageIndex)) {
     return false;
   }
 
-  resetFence(current_frame_);
+  sync_objects_.resetFrame(current_frame_);
 
   VkCommandBuffer commandBuffer = command_buffers_->buffer(current_frame_);
-
   vkResetCommandBuffer(commandBuffer, 0);
 
-  outFrameData.imageIndex = imageIndex;
-  outFrameData.frameIndex = current_frame_;
-  outFrameData.commandBuffer = commandBuffer;
+  image_index_ = imageIndex;
+  frame_index_ = current_frame_;
+  command_buffer_ = commandBuffer;
 
   VkCommandBufferBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-  if (vkBeginCommandBuffer(outFrameData.commandBuffer, &beginInfo) !=
-      VK_SUCCESS) {
+  if (vkBeginCommandBuffer(command_buffer_, &beginInfo) != VK_SUCCESS) {
     VKR_RENDER_ERROR("failed to begin recording command buffer");
   }
 
+  frame_active_ = true;
   return true;
 }
 
-void Renderer::endFrame(const FrameData &frameData) {
-  if (vkEndCommandBuffer(frameData.commandBuffer) != VK_SUCCESS) {
+void Renderer::endFrame() {
+  ensureFrameActive("endFrame");
+
+  if (vkEndCommandBuffer(command_buffer_) != VK_SUCCESS) {
     VKR_RENDER_ERROR("failed to record command buffer");
   }
 
-  submitCommandBuffer(frameData);
-  present(frameData.imageIndex);
+  submitCommandBuffer();
+  present(image_index_);
 
   current_frame_ = (current_frame_ + 1) % core::MAX_FRAMES_IN_FLIGHT;
+
+  image_index_ = 0;
+  frame_index_ = 0;
+  command_buffer_ = VK_NULL_HANDLE;
+  frame_active_ = false;
 }
 
-void Renderer::beginPass(const FrameData &frameData,
-                         const resource::FramebufferSet &framebufferSet,
+void Renderer::beginPass(const resource::FramebufferSet &framebufferSet,
                          const pipeline::RenderPass &renderPass,
                          const RenderPassBeginDesc &desc) {
+  ensureFrameActive("beginPass");
+
   if (desc.framebufferIndex >= framebufferSet.buffers().size()) {
     VKR_RENDER_ERROR("Framebuffer index {} out of range, framebuffer count {}",
                      desc.framebufferIndex, framebufferSet.buffers().size());
@@ -77,36 +86,40 @@ void Renderer::beginPass(const FrameData &frameData,
   info.pClearValues =
       desc.clearValues.empty() ? nullptr : desc.clearValues.data();
 
-  vkCmdBeginRenderPass(frameData.commandBuffer, &info, desc.contents);
+  vkCmdBeginRenderPass(command_buffer_, &info, desc.contents);
 }
 
-void Renderer::endPass(const FrameData &frameData) {
-  vkCmdEndRenderPass(frameData.commandBuffer);
+void Renderer::endPass() {
+  ensureFrameActive("endPass");
+  vkCmdEndRenderPass(command_buffer_);
 }
 
 void Renderer::beginSwapchainPass(
-    const FrameData &frameData, const resource::FramebufferSet &framebufferSet,
+    const resource::FramebufferSet &framebufferSet,
     const pipeline::RenderPass &renderPass) {
+  ensureFrameActive("beginSwapchainPass");
 
   std::vector<VkClearValue> clearValues(2);
   clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
   clearValues[1].depthStencil = {1.0f, 0};
 
   RenderPassBeginDesc desc{};
-  desc.framebufferIndex = frameData.imageIndex;
+  desc.framebufferIndex = image_index_;
   desc.renderArea = {
       .offset = {0, 0},
       .extent = {swapchain_.width(), swapchain_.height()},
   };
   desc.clearValues = std::move(clearValues);
 
-  beginPass(frameData, framebufferSet, renderPass, desc);
+  beginPass(framebufferSet, renderPass, desc);
 }
 
 void Renderer::beginOffscreenPass(
-    const FrameData &frameData, const resource::FramebufferSet &framebufferSet,
+    const resource::FramebufferSet &framebufferSet,
     const pipeline::RenderPass &renderPass,
     const resource::OffscreenTarget &target) {
+  ensureFrameActive("beginOffscreenPass");
+
   std::vector<VkClearValue> clearValues(2);
   clearValues[0].color = {{0.05f, 0.05f, 0.05f, 1.0f}};
   clearValues[1].depthStencil = {1.0f, 0};
@@ -115,30 +128,46 @@ void Renderer::beginOffscreenPass(
   desc.framebufferIndex = 0;
   desc.renderArea = {
       .offset = {0, 0},
-      .extent = target.extent2D(),
+      .extent = {target.width(), target.height()},
   };
   desc.clearValues = std::move(clearValues);
 
-  beginPass(frameData, framebufferSet, renderPass, desc);
+  beginPass(framebufferSet, renderPass, desc);
 }
 
 void Renderer::bindPipeline(
-    const FrameData &frameData, VkPipeline pipeline,
-    VkPipelineLayout pipelineLayout,
+    VkPipeline pipeline, VkPipelineLayout pipelineLayout,
     const std::vector<VkDescriptorSet> &descriptorSets) {
-  vkCmdBindPipeline(frameData.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    pipeline);
+  ensureFrameActive("bindPipeline");
 
-  if (!descriptorSets.empty()) {
-    vkCmdBindDescriptorSets(frameData.commandBuffer,
-                            VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0,
-                            1, &descriptorSets[frameData.frameIndex], 0,
-                            nullptr);
+  if (pipeline == VK_NULL_HANDLE) {
+    VKR_RENDER_ERROR("bindPipeline received null VkPipeline");
   }
+
+  if (pipelineLayout == VK_NULL_HANDLE) {
+    VKR_RENDER_ERROR("bindPipeline received null VkPipelineLayout");
+  }
+
+  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+  if (descriptorSets.empty()) {
+    return;
+  }
+
+  if (frame_index_ >= descriptorSets.size()) {
+    VKR_RENDER_ERROR("Descriptor set frame index {} out of range, count {}",
+                     frame_index_, descriptorSets.size());
+  }
+
+  VkDescriptorSet descriptorSet = descriptorSets[frame_index_];
+
+  vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 }
 
-void Renderer::setViewportAndScissor(const FrameData &frameData,
-                                     VkExtent2D extent) {
+void Renderer::setViewportAndScissor(VkExtent2D extent) {
+  ensureFrameActive("setViewportAndScissor");
+
   VkViewport viewport{};
   viewport.x = 0.0f;
   viewport.y = 0.0f;
@@ -147,30 +176,32 @@ void Renderer::setViewportAndScissor(const FrameData &frameData,
   viewport.minDepth = 0.0f;
   viewport.maxDepth = 1.0f;
 
-  vkCmdSetViewport(frameData.commandBuffer, 0, 1, &viewport);
+  vkCmdSetViewport(command_buffer_, 0, 1, &viewport);
 
   VkRect2D scissor{};
   scissor.offset = {0, 0};
   scissor.extent = extent;
 
-  vkCmdSetScissor(frameData.commandBuffer, 0, 1, &scissor);
+  vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
 }
 
-void Renderer::setViewportAndScissor(const FrameData &frameData) {
-  setViewportAndScissor(frameData, {swapchain_.width(), swapchain_.height()});
+void Renderer::setViewportAndScissor() {
+  setViewportAndScissor({swapchain_.width(), swapchain_.height()});
 }
 
 void Renderer::setOffscreenViewportAndScissor(
-    const FrameData &frameData, const resource::OffscreenTarget &target) {
-  setViewportAndScissor(frameData, target.extent2D());
+    const resource::OffscreenTarget &target) {
+  setViewportAndScissor({target.width(), target.height()});
 }
 
-void Renderer::drawGeometry(const FrameData &frameData) {
+void Renderer::drawGeometry() {
+  ensureFrameActive("drawGeometry");
+
   auto vertexBuffers = resource_manager_.listVertexBuffers();
   auto indexBuffers = resource_manager_.listIndexBuffers();
 
   if (vertexBuffers.empty() || indexBuffers.empty()) {
-    vkCmdDraw(frameData.commandBuffer, 3, 1, 0, 0);
+    vkCmdDraw(command_buffer_, 3, 1, 0, 0);
     return;
   }
 
@@ -182,31 +213,32 @@ void Renderer::drawGeometry(const FrameData &frameData) {
     VkBuffer vertexBuffer = vertexBuffers[i]->buffer();
     VkDeviceSize offsets[] = {0};
 
-    vkCmdBindVertexBuffers(frameData.commandBuffer, 0, 1, &vertexBuffer,
-                           offsets);
+    vkCmdBindVertexBuffers(command_buffer_, 0, 1, &vertexBuffer, offsets);
 
-    vkCmdBindIndexBuffer(frameData.commandBuffer, indexBuffers[i]->buffer(), 0,
+    vkCmdBindIndexBuffer(command_buffer_, indexBuffers[i]->buffer(), 0,
                          VK_INDEX_TYPE_UINT16);
 
-    vkCmdDrawIndexed(frameData.commandBuffer,
+    vkCmdDrawIndexed(command_buffer_,
                      static_cast<uint32_t>(indexBuffers[i]->indices().size()),
                      1, 0, 0, 0);
   }
 }
 
-void Renderer::drawUI(const FrameData &frameData) {
-  ui_.render(frameData.commandBuffer);
+void Renderer::drawUI() {
+  ensureFrameActive("drawUI");
+  ui_.render(command_buffer_);
 }
 
-void Renderer::waitForFence(uint32_t frameIndex) {
-  vkWaitForFences(device_.device(), 1,
-                  &sync_objects_.inFlightFences()[frameIndex], VK_TRUE,
-                  UINT64_MAX);
+void Renderer::ensureFrameActive(const char *op) const {
+  if (!frame_active_) {
+    VKR_RENDER_ERROR("Renderer::{} called without an active frame", op);
+  }
 }
 
-void Renderer::resetFence(uint32_t frameIndex) {
-  vkResetFences(device_.device(), 1,
-                &sync_objects_.inFlightFences()[frameIndex]);
+void Renderer::ensureFrameInactive(const char *op) const {
+  if (frame_active_) {
+    VKR_RENDER_ERROR("Renderer::{} called while a frame is already active", op);
+  }
 }
 
 auto Renderer::acquireNextImage(uint32_t &imageIndex) -> bool {
@@ -226,12 +258,12 @@ auto Renderer::acquireNextImage(uint32_t &imageIndex) -> bool {
   return true;
 }
 
-void Renderer::submitCommandBuffer(const FrameData &frameData) {
+void Renderer::submitCommandBuffer() {
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
   VkSemaphore waitSemaphores[] = {
-      sync_objects_.imageAvailableSemaphores()[frameData.frameIndex]};
+      sync_objects_.imageAvailableSemaphore(frame_index_)};
 
   VkPipelineStageFlags waitStages[] = {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -240,17 +272,16 @@ void Renderer::submitCommandBuffer(const FrameData &frameData) {
   submitInfo.pWaitSemaphores = waitSemaphores;
   submitInfo.pWaitDstStageMask = waitStages;
   submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &frameData.commandBuffer;
+  submitInfo.pCommandBuffers = &command_buffer_;
 
   VkSemaphore signalSemaphores[] = {
-      sync_objects_.renderFinishedSemaphores()[frameData.imageIndex]};
+      sync_objects_.renderFinishedSemaphore(image_index_)};
 
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
   if (vkQueueSubmit(device_.graphicsQueue(), 1, &submitInfo,
-                    sync_objects_.inFlightFences()[frameData.frameIndex]) !=
-      VK_SUCCESS) {
+                    sync_objects_.inFlightFence(frame_index_)) != VK_SUCCESS) {
     VKR_RENDER_ERROR("failed to submit draw command buffer");
   }
 }

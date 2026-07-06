@@ -14,16 +14,28 @@ public:
   auto operator=(const SyncObjects &) -> SyncObjects & = delete;
 
   [[nodiscard]] auto imageAvailableSemaphores() const noexcept
-      -> std::vector<VkSemaphore> {
-    return vk_image_available_semaphores;
+      -> const std::vector<VkSemaphore> & {
+    return vk_image_available_semaphores_;
   }
+
   [[nodiscard]] auto renderFinishedSemaphores() const noexcept
-      -> std::vector<VkSemaphore> {
-    return vk_render_finished_semaphores;
+      -> const std::vector<VkSemaphore> & {
+    return vk_render_finished_semaphores_;
   }
-  [[nodiscard]] auto inFlightFences() const noexcept -> std::vector<VkFence> {
-    return vk_in_flight_fences;
+
+  [[nodiscard]] auto inFlightFences() const noexcept
+      -> const std::vector<VkFence> & {
+    return vk_in_flight_fences_;
   }
+
+  [[nodiscard]] auto imageAvailableSemaphore(uint32_t frameIndex) const
+      -> VkSemaphore;
+  [[nodiscard]] auto renderFinishedSemaphore(uint32_t imageIndex) const
+      -> VkSemaphore;
+  [[nodiscard]] auto inFlightFence(uint32_t frameIndex) const -> VkFence;
+
+  void waitForFrame(uint32_t frameIndex) const;
+  void resetFrame(uint32_t frameIndex) const;
 
 private:
   // dependencies
@@ -31,8 +43,9 @@ private:
   const Swapchain &swapchain_;
 
   // components
-  std::vector<VkSemaphore> vk_image_available_semaphores{};
-  std::vector<VkSemaphore> vk_render_finished_semaphores{};
-  std::vector<VkFence> vk_in_flight_fences{};
+  std::vector<VkSemaphore> vk_image_available_semaphores_{};
+  std::vector<VkSemaphore> vk_render_finished_semaphores_{};
+  std::vector<VkFence> vk_in_flight_fences_{};
 };
+
 } // namespace vkr::core

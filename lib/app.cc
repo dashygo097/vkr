@@ -99,8 +99,8 @@ void VulkanApplication::initVulkan() {
 
   // framebuffer set: offscreen
   resource::FramebufferDesc offscreenFbDesc{};
-  offscreenFbDesc.width = offscreenTarget->extent2D().width;
-  offscreenFbDesc.height = offscreenTarget->extent2D().height;
+  offscreenFbDesc.width = offscreenTarget->width();
+  offscreenFbDesc.height = offscreenTarget->height();
   offscreenFbDesc.layers = 1;
   offscreenFbDesc.attachments = {offscreenTarget->attachmentViews()};
 
@@ -195,36 +195,33 @@ void VulkanApplication::mainLoop() {
 }
 
 void VulkanApplication::drawFrame() {
-  render::FrameData frameData{};
-  if (!renderer->beginFrame(frameData)) {
+  if (!renderer->beginFrame()) {
     return;
   }
 
-  onDrawFrame(frameData.frameIndex);
+  onDrawFrame(renderer->frameIndex());
 
-  renderer->beginOffscreenPass(frameData,
-                               *resourceManager->getFramebufferSet("offscreen"),
+  renderer->beginOffscreenPass(*resourceManager->getFramebufferSet("offscreen"),
                                *offscreenRenderPass, *offscreenTarget);
 
-  renderer->setOffscreenViewportAndScissor(frameData, *offscreenTarget);
+  renderer->setOffscreenViewportAndScissor(*offscreenTarget);
 
   if (!pipelineLibrary->empty()) {
     auto &pipeline = pipelineLibrary->first();
-    renderer->bindPipeline(frameData, pipeline.pipeline(), pipeline.layout(),
+    renderer->bindPipeline(pipeline.pipeline(), pipeline.layout(),
                            descriptorSets->sets());
-    renderer->drawGeometry(frameData);
+    renderer->drawGeometry();
   }
 
-  renderer->endPass(frameData);
+  renderer->endPass();
 
-  renderer->beginSwapchainPass(frameData,
-                               *resourceManager->getFramebufferSet("swapchain"),
+  renderer->beginSwapchainPass(*resourceManager->getFramebufferSet("swapchain"),
                                *swapchainRenderPass);
 
-  renderer->drawUI(frameData);
-  renderer->endPass(frameData);
+  renderer->drawUI();
+  renderer->endPass();
 
-  renderer->endFrame(frameData);
+  renderer->endFrame();
 }
 
 } // namespace vkr

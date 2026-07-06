@@ -4,7 +4,6 @@
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
 #include "vkr/resource/attachments/depth.hh"
-#include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/gpu/image_view.hh"
 
 namespace vkr::resource {

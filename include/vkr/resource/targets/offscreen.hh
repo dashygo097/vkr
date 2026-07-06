@@ -4,7 +4,6 @@
 #include "vkr/core/device.hh"
 #include "vkr/resource/attachments/color.hh"
 #include "vkr/resource/attachments/depth.hh"
-#include "vkr/resource/attachments/frame_buffer.hh"
 
 namespace vkr::resource {
 
@@ -49,8 +48,12 @@ public:
     return depth_ != nullptr;
   }
 
-  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D {
-    return {desc_.color.width, desc_.color.height};
+  [[nodiscard]] auto width() const noexcept -> uint32_t {
+    return desc_.color.width;
+  }
+
+  [[nodiscard]] auto height() const noexcept -> uint32_t {
+    return desc_.color.height;
   }
 
   [[nodiscard]] auto attachmentViews() const -> std::vector<VkImageView>;
