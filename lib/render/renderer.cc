@@ -3,7 +3,7 @@
 
 namespace vkr::render {
 
-Renderer::Renderer(core::Device &device, core::Swapchain &swapchain,
+Renderer::Renderer(const core::Device &device, const core::Swapchain &swapchain,
                    const core::CommandPool &commandPool,
                    core::SyncObjects &syncObjects,
                    resource::ResourceManager &resourceManager, ui::UI &ui)
@@ -96,7 +96,8 @@ void Renderer::endPass() {
 
 void Renderer::beginSwapchainPass(
     const resource::FramebufferSet &framebufferSet,
-    const pipeline::RenderPass &renderPass) {
+    const pipeline::RenderPass &renderPass,
+    const resource::SwapchainTarget &swapchain) {
   ensureFrameActive("beginSwapchainPass");
 
   std::vector<VkClearValue> clearValues(2);
@@ -107,7 +108,7 @@ void Renderer::beginSwapchainPass(
   desc.framebufferIndex = image_index_;
   desc.renderArea = {
       .offset = {0, 0},
-      .extent = {swapchain_.width(), swapchain_.height()},
+      .extent = {swapchain.width(), swapchain.height()},
   };
   desc.clearValues = std::move(clearValues);
 

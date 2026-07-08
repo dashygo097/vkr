@@ -216,7 +216,7 @@ void VulkanApplication::drawFrame() {
   renderer->endPass();
 
   renderer->beginSwapchainPass(*resourceManager->getFramebufferSet("swapchain"),
-                               *swapchainRenderPass);
+                               *swapchainRenderPass, *swapchainTarget);
 
   renderer->drawUI();
   renderer->endPass();

@@ -3,12 +3,12 @@
 #include "vkr/core/command/command_buffer.hh"
 #include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/core/swapchain.hh"
 #include "vkr/core/sync/sync_objects.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
+#include "vkr/resource/targets/swapchain.hh"
 #include "vkr/ui/ui.hh"
 
 namespace vkr::render {
@@ -22,7 +22,8 @@ struct RenderPassBeginDesc {
 
 class Renderer {
 public:
-  explicit Renderer(core::Device &device, core::Swapchain &swapchain,
+  explicit Renderer(const core::Device &device,
+                    const core::Swapchain &swapchain,
                     const core::CommandPool &commandPool,
                     core::SyncObjects &syncObjects,
                     resource::ResourceManager &resourceManager, ui::UI &ui);
@@ -57,7 +58,8 @@ public:
   void endPass();
 
   void beginSwapchainPass(const resource::FramebufferSet &framebufferSet,
-                          const pipeline::RenderPass &renderPass);
+                          const pipeline::RenderPass &renderPass,
+                          const resource::SwapchainTarget &swapchainTarget);
 
   void beginOffscreenPass(const resource::FramebufferSet &framebufferSet,
                           const pipeline::RenderPass &renderPass,
@@ -76,8 +78,8 @@ public:
 
 private:
   // dependencies
-  core::Device &device_;
-  core::Swapchain &swapchain_;
+  const core::Device &device_;
+  const core::Swapchain &swapchain_;
   const core::CommandPool &command_pool_;
   core::SyncObjects &sync_objects_;
   resource::ResourceManager &resource_manager_;
