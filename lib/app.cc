@@ -47,10 +47,8 @@ void VulkanApplication::initVulkan() {
   swapchainTarget = std::make_unique<resource::SwapchainTarget>(
       *device, *commandPool, *swapchain);
 
-  resource::SwapchainTargetDesc swapchainTargetDesc{};
-  swapchainTargetDesc.depth =
-      resource::DepthAttachmentDesc{.format = VK_FORMAT_D32_SFLOAT};
-
+  resource::SwapchainTargetDesc swapchainTargetDesc{
+      .depth = resource::DepthAttachmentDesc{.format = VK_FORMAT_D32_SFLOAT}};
   swapchainTarget->update(swapchainTargetDesc);
 
   resourceManager = std::make_unique<resource::ResourceManager>(
@@ -62,28 +60,26 @@ void VulkanApplication::initVulkan() {
       swapchainTarget->format(), swapchainTarget->depth()->desc().format));
 
   // framebuffer set: swapchain
-  resource::FramebufferDesc swapchainFbDesc{};
-  swapchainFbDesc.width = swapchainTarget->width();
-  swapchainFbDesc.height = swapchainTarget->height();
-  swapchainFbDesc.layers = 1;
-  swapchainFbDesc.attachments = swapchainTarget->attachmentViews();
-
+  resource::FramebufferDesc swapchainFbDesc{
+      .width = swapchainTarget->width(),
+      .height = swapchainTarget->height(),
+      .layers = 1,
+      .attachments = swapchainTarget->attachmentViews()};
   resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
                                         swapchainFbDesc);
 
   // offscreen target
-  resource::OffscreenTargetDesc offscreenDesc{};
-  offscreenDesc.color.width = swapchain->width();
-  offscreenDesc.color.height = swapchain->height();
-  offscreenDesc.color.format = VK_FORMAT_R8G8B8A8_UNORM;
-  offscreenDesc.color.usage =
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-  offscreenDesc.color.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  offscreenDesc.color.createSampler = true;
-  offscreenDesc.depth =
-      resource::DepthAttachmentDesc{.width = swapchain->width(),
-                                    .height = swapchain->height(),
-                                    .format = VK_FORMAT_D32_SFLOAT};
+  resource::OffscreenTargetDesc offscreenDesc{
+      .color = {.width = swapchain->width(),
+                .height = swapchain->height(),
+                .format = VK_FORMAT_R8G8B8A8_UNORM,
+                .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                         VK_IMAGE_USAGE_SAMPLED_BIT,
+                .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .createSampler = true},
+      .depth = resource::DepthAttachmentDesc{.width = swapchain->width(),
+                                             .height = swapchain->height(),
+                                             .format = VK_FORMAT_D32_SFLOAT}};
 
   offscreenTarget =
       std::make_unique<resource::OffscreenTarget>(*device, *commandPool);
@@ -96,11 +92,11 @@ void VulkanApplication::initVulkan() {
       offscreenTarget->depth()->desc().format));
 
   // framebuffer set: offscreen
-  resource::FramebufferDesc offscreenFbDesc{};
-  offscreenFbDesc.width = offscreenTarget->width();
-  offscreenFbDesc.height = offscreenTarget->height();
-  offscreenFbDesc.layers = 1;
-  offscreenFbDesc.attachments = {offscreenTarget->attachmentViews()};
+  resource::FramebufferDesc offscreenFbDesc{
+      .width = offscreenTarget->width(),
+      .height = offscreenTarget->height(),
+      .layers = 1,
+      .attachments = {offscreenTarget->attachmentViews()}};
 
   resourceManager->createFramebufferSet("offscreen", *offscreenRenderPass,
                                         offscreenFbDesc);
@@ -110,13 +106,12 @@ void VulkanApplication::initVulkan() {
 
   // descriptor pool
   uint32_t maxSets = core::MAX_FRAMES_IN_FLIGHT + 2;
-
-  pipeline::DescriptorPoolSizes descPoolSizes{};
-  descPoolSizes.uniformBufferCount = maxSets * 10;
-  descPoolSizes.storageBufferCount = maxSets * 10;
-  descPoolSizes.combinedImageSamplerCount = maxSets * 10;
-  descPoolSizes.storageImageCount = maxSets * 10;
-  descPoolSizes.inputAttachmentCount = maxSets * 10;
+  pipeline::DescriptorPoolSizes descPoolSizes{
+      .uniformBufferCount = maxSets * 10,
+      .storageBufferCount = maxSets * 10,
+      .combinedImageSamplerCount = maxSets * 10,
+      .storageImageCount = maxSets * 10,
+      .inputAttachmentCount = maxSets * 10};
 
   descriptorPool = std::make_unique<pipeline::DescriptorPool>(*device, maxSets,
                                                               descPoolSizes);
@@ -199,13 +194,23 @@ void VulkanApplication::drawFrame() {
 
   onDrawFrame(renderer->frameIndex());
 
-  renderer->beginOffscreenPass(*resourceManager->getFramebufferSet("offscreen"),
-                               *offscreenRenderPass, *offscreenTarget);
+  render::RenderPassBeginDesc offscreenDesc{
+      .framebufferIndex = 0,
+      .renderArea = {.offset = {0, 0},
+                     .extent = {offscreenTarget->width(),
+                                offscreenTarget->height()}},
+      .clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
+                      VkClearValue{.depthStencil = {1.0f, 0}}}};
 
-  renderer->setOffscreenViewportAndScissor(*offscreenTarget);
+  renderer->beginPass(*resourceManager->getFramebufferSet("offscreen"),
+                      *offscreenRenderPass, offscreenDesc);
+
+  renderer->setViewportAndScissor(
+      {offscreenTarget->width(), offscreenTarget->height()});
 
   if (!pipelineLibrary->empty()) {
     auto &pipeline = pipelineLibrary->first();
+
     renderer->bindPipeline(pipeline.pipeline(), pipeline.layout(),
                            descriptorSets->sets());
     renderer->drawGeometry();
@@ -213,12 +218,23 @@ void VulkanApplication::drawFrame() {
 
   renderer->endPass();
 
-  renderer->beginSwapchainPass(*resourceManager->getFramebufferSet("swapchain"),
-                               *swapchainRenderPass, *swapchainTarget);
+  render::RenderPassBeginDesc swapchainDesc{
+      .framebufferIndex = renderer->imageIndex(),
+      .renderArea = {.offset = {0, 0},
+                     .extent = {swapchainTarget->width(),
+                                swapchainTarget->height()}},
+      .clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
+                      VkClearValue{.depthStencil = {1.0f, 0}}}};
+
+  renderer->beginPass(*resourceManager->getFramebufferSet("swapchain"),
+                      *swapchainRenderPass, swapchainDesc);
+
+  renderer->setViewportAndScissor(
+      {swapchainTarget->width(), swapchainTarget->height()});
 
   renderer->drawUI();
-  renderer->endPass();
 
+  renderer->endPass();
   renderer->endFrame();
 }
 

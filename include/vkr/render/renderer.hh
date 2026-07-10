@@ -57,14 +57,6 @@ public:
                  const RenderPassBeginDesc &desc);
   void endPass();
 
-  void beginSwapchainPass(const resource::FramebufferSet &framebufferSet,
-                          const pipeline::RenderPass &renderPass,
-                          const resource::SwapchainTarget &swapchainTarget);
-
-  void beginOffscreenPass(const resource::FramebufferSet &framebufferSet,
-                          const pipeline::RenderPass &renderPass,
-                          const resource::OffscreenTarget &target);
-
   void bindPipeline(VkPipeline pipeline, VkPipelineLayout pipelineLayout,
                     const std::vector<VkDescriptorSet> &descriptorSets);
 

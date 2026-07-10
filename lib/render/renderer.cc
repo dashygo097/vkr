@@ -94,48 +94,6 @@ void Renderer::endPass() {
   vkCmdEndRenderPass(command_buffer_);
 }
 
-void Renderer::beginSwapchainPass(
-    const resource::FramebufferSet &framebufferSet,
-    const pipeline::RenderPass &renderPass,
-    const resource::SwapchainTarget &swapchain) {
-  ensureFrameActive("beginSwapchainPass");
-
-  std::vector<VkClearValue> clearValues(2);
-  clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-  clearValues[1].depthStencil = {1.0f, 0};
-
-  RenderPassBeginDesc desc{};
-  desc.framebufferIndex = image_index_;
-  desc.renderArea = {
-      .offset = {0, 0},
-      .extent = {swapchain.width(), swapchain.height()},
-  };
-  desc.clearValues = std::move(clearValues);
-
-  beginPass(framebufferSet, renderPass, desc);
-}
-
-void Renderer::beginOffscreenPass(
-    const resource::FramebufferSet &framebufferSet,
-    const pipeline::RenderPass &renderPass,
-    const resource::OffscreenTarget &target) {
-  ensureFrameActive("beginOffscreenPass");
-
-  std::vector<VkClearValue> clearValues(2);
-  clearValues[0].color = {{0.05f, 0.05f, 0.05f, 1.0f}};
-  clearValues[1].depthStencil = {1.0f, 0};
-
-  RenderPassBeginDesc desc{};
-  desc.framebufferIndex = 0;
-  desc.renderArea = {
-      .offset = {0, 0},
-      .extent = {target.width(), target.height()},
-  };
-  desc.clearValues = std::move(clearValues);
-
-  beginPass(framebufferSet, renderPass, desc);
-}
-
 void Renderer::bindPipeline(
     VkPipeline pipeline, VkPipelineLayout pipelineLayout,
     const std::vector<VkDescriptorSet> &descriptorSets) {
