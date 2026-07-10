@@ -309,6 +309,16 @@ public:
     return desc_;
   }
 
+  [[nodiscard]] auto shaders() const noexcept
+      -> const std::vector<GraphicsShaderStageDesc> & {
+    return desc_.shaders;
+  }
+
+  [[nodiscard]] auto shaderModules() const noexcept
+      -> const std::vector<std::unique_ptr<ShaderModule>> & {
+    return shader_modules_;
+  }
+
   [[nodiscard]] auto layout() const noexcept -> VkPipelineLayout {
     return vk_pipeline_layout_;
   }
@@ -327,15 +337,12 @@ private:
 
   // components
   GraphicsPipelineDesc desc_{};
+  std::vector<std::unique_ptr<ShaderModule>> shader_modules_{};
   VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
   VkPipeline vk_graphics_pipeline_{VK_NULL_HANDLE};
 
   // helpers
   [[nodiscard]] auto createPipelineLayout() const -> VkPipelineLayout;
-
-  [[nodiscard]] auto
-  createShaderStages(std::vector<std::unique_ptr<ShaderModule>> &modules) const
-      -> std::vector<VkPipelineShaderStageCreateInfo>;
 };
 
 } // namespace vkr::pipeline

@@ -9,6 +9,8 @@ GraphicsPipeline::GraphicsPipeline(const core::Device &device)
 GraphicsPipeline::~GraphicsPipeline() { destroy(); }
 
 void GraphicsPipeline::create() {
+  destroy();
+
   if (device_ == nullptr) {
     VKR_PIPE_ERROR("Cannot create graphics pipeline without device");
     return;
@@ -19,12 +21,29 @@ void GraphicsPipeline::create() {
     return;
   }
 
-  std::vector<std::unique_ptr<ShaderModule>> shaderModules{};
-  auto shaderStages = createShaderStages(shaderModules);
+  std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
+  shaderStages.reserve(desc_.shaders.size());
+  shader_modules_.reserve(desc_.shaders.size());
 
-  if (shaderStages.size() != desc_.shaders.size()) {
-    VKR_PIPE_ERROR("Failed to create graphics pipeline shader stages");
-    return;
+  for (const auto &shader : desc_.shaders) {
+    auto module = std::make_unique<ShaderModule>(*device_);
+    module->update(shader.module);
+
+    if (!module->valid()) {
+      VKR_PIPE_ERROR("Failed to create shader module for pipeline '{}'",
+                     desc_.name);
+      shader_modules_.clear();
+      return;
+    }
+
+    VkPipelineShaderStageCreateInfo stage{};
+    stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stage.stage = shader.stage;
+    stage.module = module->module();
+    stage.pName = shader.entryPoint.c_str();
+
+    shaderStages.push_back(stage);
+    shader_modules_.push_back(std::move(module));
   }
 
   auto vertexInput = desc_.vertexInput.createInfo();
@@ -39,6 +58,7 @@ void GraphicsPipeline::create() {
   vk_pipeline_layout_ = createPipelineLayout();
   if (vk_pipeline_layout_ == VK_NULL_HANDLE) {
     VKR_PIPE_ERROR("Failed to create graphics pipeline layout");
+    shader_modules_.clear();
     return;
   }
 
@@ -63,18 +83,24 @@ void GraphicsPipeline::create() {
   if (vkCreateGraphicsPipelines(device_->device(), VK_NULL_HANDLE, 1,
                                 &pipelineInfo, nullptr,
                                 &vk_graphics_pipeline_) != VK_SUCCESS) {
-    VKR_PIPE_ERROR("Failed to create graphics pipeline");
-    vkDestroyPipelineLayout(device_->device(), vk_pipeline_layout_, nullptr);
-    vk_pipeline_layout_ = VK_NULL_HANDLE;
+    VKR_PIPE_ERROR("Failed to create graphics pipeline '{}'", desc_.name);
+
+    if (vk_pipeline_layout_ != VK_NULL_HANDLE) {
+      vkDestroyPipelineLayout(device_->device(), vk_pipeline_layout_, nullptr);
+      vk_pipeline_layout_ = VK_NULL_HANDLE;
+    }
+
+    shader_modules_.clear();
     vk_graphics_pipeline_ = VK_NULL_HANDLE;
     return;
   }
 
-  VKR_PIPE_INFO("Graphics pipeline created");
+  VKR_PIPE_INFO("Graphics pipeline '{}' created", desc_.name);
 }
 
 void GraphicsPipeline::destroy() {
   if (device_ == nullptr) {
+    shader_modules_.clear();
     vk_graphics_pipeline_ = VK_NULL_HANDLE;
     vk_pipeline_layout_ = VK_NULL_HANDLE;
     return;
@@ -89,10 +115,11 @@ void GraphicsPipeline::destroy() {
     vkDestroyPipelineLayout(device_->device(), vk_pipeline_layout_, nullptr);
     vk_pipeline_layout_ = VK_NULL_HANDLE;
   }
+
+  shader_modules_.clear();
 }
 
 void GraphicsPipeline::update(const GraphicsPipelineDesc &desc) {
-  destroy();
   desc_ = desc;
   create();
 }
@@ -118,35 +145,6 @@ auto GraphicsPipeline::createPipelineLayout() const -> VkPipelineLayout {
   }
 
   return layout;
-}
-
-auto GraphicsPipeline::createShaderStages(
-    std::vector<std::unique_ptr<ShaderModule>> &modules) const
-    -> std::vector<VkPipelineShaderStageCreateInfo> {
-  std::vector<VkPipelineShaderStageCreateInfo> stages{};
-  modules.clear();
-  modules.reserve(desc_.shaders.size());
-  stages.reserve(desc_.shaders.size());
-
-  for (const auto &shader : desc_.shaders) {
-    modules.push_back(std::make_unique<ShaderModule>(*device_));
-    modules.back()->update(shader.module);
-
-    if (!modules.back()->valid()) {
-      VKR_PIPE_ERROR("Failed to create shader module");
-      return {};
-    }
-
-    VkPipelineShaderStageCreateInfo stage{};
-    stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stage.stage = shader.stage;
-    stage.module = modules.back()->module();
-    stage.pName = shader.entryPoint.c_str();
-
-    stages.push_back(stage);
-  }
-
-  return stages;
 }
 
 } // namespace vkr::pipeline
