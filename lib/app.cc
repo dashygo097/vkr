@@ -19,8 +19,6 @@ void VulkanApplication::initVulkan() {
   // window
   window = std::make_unique<core::Window>(ctx.window);
   glfwSetWindowUserPointer(window->glfwWindow(), this);
-  glfwSetFramebufferSizeCallback(window->glfwWindow(),
-                                 framebufferResizeCallback);
 
   // instance
   instance = std::make_unique<core::Instance>(ctx.instance);

@@ -22,9 +22,6 @@ struct VulkanContext {
   scene::CameraDesc camera{};
   ui::ThemeDesc theme{};
 
-  uint32_t currentFrame{};
-  bool framebufferResized{};
-
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return asset.isValid() && window.isValid() && instance.isValid() &&
            device.isValid() && swapchain.isValid() && camera.isValid() &&
