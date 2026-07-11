@@ -26,5 +26,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 void main() {
   vec2 pixelCoord = fragCoord * ubo.iResolution.xy;
+  pixelCoord.y = ubo.iResolution.y - pixelCoord.y;
   mainImage(fragColor, pixelCoord);
 }
