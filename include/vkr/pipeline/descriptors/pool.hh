@@ -4,36 +4,50 @@
 
 namespace vkr::pipeline {
 
-struct DescriptorPoolSizes {
-  uint32_t uniformBufferCount{0};
-  uint32_t storageBufferCount{0};
-  uint32_t combinedImageSamplerCount{0};
-  uint32_t storageImageCount{0};
-  uint32_t inputAttachmentCount{0};
+struct DescriptorPoolDesc {
+  std::vector<VkDescriptorPoolSize> poolSizes{};
+  uint32_t maxSets{0};
+  uint32_t allocatedSets{0};
+  VkDescriptorPoolCreateFlags flags{
+      VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT};
 };
 
 class DescriptorPool {
 public:
-  explicit DescriptorPool(const core::Device &device, uint32_t maxSets,
-                          const DescriptorPoolSizes &sizes);
+  explicit DescriptorPool(const core::Device &device);
   ~DescriptorPool();
 
   DescriptorPool(const DescriptorPool &) = delete;
   auto operator=(const DescriptorPool &) -> DescriptorPool & = delete;
 
-  [[nodiscard]] auto pool() const noexcept -> VkDescriptorPool { return pool_; }
-  [[nodiscard]] auto canAllocate() const noexcept -> bool;
+  DescriptorPool(DescriptorPool &&) = delete;
+  auto operator=(DescriptorPool &&) -> DescriptorPool & = delete;
 
-  void reset();
+  void create();
+  void destroy();
+  void update(const DescriptorPoolDesc &desc);
+
+  [[nodiscard]] auto desc() const noexcept -> const DescriptorPoolDesc & {
+    return desc_;
+  }
+
+  [[nodiscard]] auto pool() const noexcept -> VkDescriptorPool { return pool_; }
+
+  [[nodiscard]] auto valid() const noexcept -> bool {
+    return pool_ != VK_NULL_HANDLE;
+  }
+
+  [[nodiscard]] auto canAllocate() const noexcept -> bool {
+    return pool_ != VK_NULL_HANDLE && desc_.allocatedSets < desc_.maxSets;
+  }
 
 private:
   // dependencies
   const core::Device &device_;
-  uint32_t max_sets_{0};
 
   // components
+  DescriptorPoolDesc desc_{};
   VkDescriptorPool pool_{VK_NULL_HANDLE};
-  uint32_t allocated_sets_{0};
 };
 
 } // namespace vkr::pipeline

@@ -109,20 +109,20 @@ void VulkanApplication::initVulkan() {
   createResources();
 
   // descriptor pool
-  uint32_t maxSets = core::MAX_FRAMES_IN_FLIGHT + 2;
-  pipeline::DescriptorPoolSizes descPoolSizes{
-      .uniformBufferCount = maxSets * 10,
-      .storageBufferCount = maxSets * 10,
-      .combinedImageSamplerCount = maxSets * 10,
-      .storageImageCount = maxSets * 10,
-      .inputAttachmentCount = maxSets * 10};
+  pipeline::DescriptorPoolDesc descPoolDesc{
+      .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
+                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
+      .maxSets = core::MAX_FRAMES_IN_FLIGHT + 2};
 
-  descriptorPool = std::make_unique<pipeline::DescriptorPool>(*device, maxSets,
-                                                              descPoolSizes);
+  descriptorPool = std::make_unique<pipeline::DescriptorPool>(*device);
+  descriptorPool->update(descPoolDesc);
 
   // descriptor layout
-  descriptorSetLayout = std::make_shared<pipeline::DescriptorSetLayout>(
-      *device, createDescriptorBindings());
+  descriptorSetLayout =
+      std::make_unique<pipeline::DescriptorSetLayout>(*device);
+  descriptorSetLayout->update(pipeline::DescriptorSetLayoutDesc{
+      .bindings = createDescriptorBindings(),
+  });
 
   // pipeline library
   pipelineLibrary = std::make_unique<render::PipelineLibrary>(*device);

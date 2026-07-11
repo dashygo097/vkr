@@ -20,7 +20,7 @@ DescriptorSets::~DescriptorSets() {
 }
 
 void DescriptorSets::allocateSets() {
-  std::vector<VkDescriptorSetLayout> layouts(frame_count_, layout_.layoutRef());
+  std::vector<VkDescriptorSetLayout> layouts(frame_count_, layout_.layout());
 
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -40,10 +40,11 @@ void DescriptorSets::allocateSets() {
 void DescriptorSets::bindResources() {
   for (const auto &binding : layout_.bindings()) {
     if (binding.name.empty()) {
-      VKR_PIPE_ERROR("Descriptor binding {} has empty name", binding.binding);
+      VKR_PIPE_ERROR("Descriptor binding {} has empty name",
+                     binding.layout.binding);
     }
 
-    switch (binding.type) {
+    switch (binding.layout.descriptorType) {
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
       auto uniformBuffer = resource_manager_.getUniformBuffer(binding.name);
 
@@ -65,8 +66,8 @@ void DescriptorSets::bindResources() {
         bufferInfo.range = size;
 
         DescriptorWriter writer(device_);
-        writer.writeBuffer(binding.binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                           &bufferInfo);
+        writer.writeBuffer(binding.layout.binding,
+                           VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo);
         writer.update(sets_[i]);
       }
       break;
@@ -90,7 +91,7 @@ void DescriptorSets::bindResources() {
         imageInfo.sampler = texture->sampler();
 
         DescriptorWriter writer(device_);
-        writer.writeImage(binding.binding,
+        writer.writeImage(binding.layout.binding,
                           VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                           &imageInfo);
         writer.update(sets_[i]);
@@ -114,7 +115,8 @@ void DescriptorSets::bindResources() {
       break;
 
     default:
-      VKR_PIPE_ERROR("Unknown descriptor type for binding {}", binding.binding);
+      VKR_PIPE_ERROR("Unknown descriptor type for binding {}",
+                     binding.layout.binding);
       break;
     }
   }

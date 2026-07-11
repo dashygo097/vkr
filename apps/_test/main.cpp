@@ -43,17 +43,19 @@ private:
 
   auto createDescriptorBindings()
       -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {{"default", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-             VK_SHADER_STAGE_VERTEX_BIT},
-            {"image1", 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-             VK_SHADER_STAGE_FRAGMENT_BIT}};
+    return {{.name = "default",
+             .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                        VK_SHADER_STAGE_VERTEX_BIT}},
+            {.name = "image1",
+             .layout = {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                        VK_SHADER_STAGE_FRAGMENT_BIT}}};
   }
 
   void createPipelines() override {
     vkr::pipeline::GraphicsPipelineDesc textured{};
     textured.name = "textured";
     textured.renderPass = offscreenRenderPass->renderPass();
-    textured.layout.setLayouts = {descriptorSetLayout->layoutRef()};
+    textured.layout.setLayouts = {descriptorSetLayout->layout()};
     textured.vertexInput = vkr::resource::VertexTextured3D::vertexInputDesc();
 
     textured.shaders = {

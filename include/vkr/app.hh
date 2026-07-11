@@ -67,7 +67,7 @@ public:
   std::unique_ptr<render::PipelineLibrary> pipelineLibrary;
 
   // descriptor
-  std::shared_ptr<pipeline::DescriptorSetLayout> descriptorSetLayout;
+  std::unique_ptr<pipeline::DescriptorSetLayout> descriptorSetLayout;
   std::unique_ptr<pipeline::DescriptorPool> descriptorPool;
   std::unique_ptr<pipeline::DescriptorSets> descriptorSets;
 

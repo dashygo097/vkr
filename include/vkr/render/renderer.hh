@@ -60,9 +60,6 @@ public:
                     const std::vector<VkDescriptorSet> &descriptorSets);
 
   void setViewportAndScissor(VkExtent2D extent);
-  void setViewportAndScissor();
-
-  void setOffscreenViewportAndScissor(const resource::OffscreenTarget &target);
 
   void drawGeometry();
   void drawUI();

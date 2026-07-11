@@ -63,14 +63,16 @@ UI::UI(const core::Window &window, const core::Instance &instance,
 
   std::vector<pipeline::DescriptorBinding> offscreenBindings = {
       {.name = "offscreen",
-       .binding = 0,
-       .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-       .count = 1,
-       .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}};
+       .layout = {
+           .binding = 0,
+           .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+           .descriptorCount = 1,
+           .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+       }}};
 
   offscreen_descriptor_layout_ =
-      std::make_unique<pipeline::DescriptorSetLayout>(device_,
-                                                      offscreenBindings);
+      std::make_unique<pipeline::DescriptorSetLayout>(device_);
+  offscreen_descriptor_layout_->update({.bindings = offscreenBindings});
 
   offscreen_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
       device_, resource_manager_, *offscreen_descriptor_layout_,

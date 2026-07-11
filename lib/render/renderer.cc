@@ -144,15 +144,6 @@ void Renderer::setViewportAndScissor(VkExtent2D extent) {
   vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
 }
 
-void Renderer::setViewportAndScissor() {
-  setViewportAndScissor({swapchain_.width(), swapchain_.height()});
-}
-
-void Renderer::setOffscreenViewportAndScissor(
-    const resource::OffscreenTarget &target) {
-  setViewportAndScissor({target.width(), target.height()});
-}
-
 void Renderer::drawGeometry() {
   ensureFrameActive("drawGeometry");
 

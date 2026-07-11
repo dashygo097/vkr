@@ -5,21 +5,36 @@
 
 namespace vkr::pipeline {
 
+struct DescriptorSetLayoutDesc {
+  std::vector<DescriptorBinding> bindings{};
+};
+
 class DescriptorSetLayout {
 public:
-  explicit DescriptorSetLayout(const core::Device &device,
-                               const std::vector<DescriptorBinding> &bindings);
+  explicit DescriptorSetLayout(const core::Device &device);
   ~DescriptorSetLayout();
 
   DescriptorSetLayout(const DescriptorSetLayout &) = delete;
   auto operator=(const DescriptorSetLayout &) -> DescriptorSetLayout & = delete;
 
-  [[nodiscard]] auto bindings() const noexcept
-      -> const std::vector<DescriptorBinding> & {
-    return bindings_;
+  void create();
+  void destroy();
+  void update(const DescriptorSetLayoutDesc &desc);
+
+  [[nodiscard]] auto desc() const noexcept -> const DescriptorSetLayoutDesc & {
+    return desc_;
   }
 
-  [[nodiscard]] auto layoutRef() noexcept -> VkDescriptorSetLayout & {
+  [[nodiscard]] auto bindings() const noexcept
+      -> const std::vector<DescriptorBinding> {
+    return desc_.bindings;
+  }
+
+  [[nodiscard]] auto layout() const noexcept -> const VkDescriptorSetLayout & {
+    return layout_;
+  }
+
+  [[nodiscard]] auto layout() noexcept -> VkDescriptorSetLayout & {
     return layout_;
   }
 
@@ -28,7 +43,7 @@ private:
   const core::Device &device_;
 
   // components
-  std::vector<DescriptorBinding> bindings_{};
+  DescriptorSetLayoutDesc desc_{};
   VkDescriptorSetLayout layout_{VK_NULL_HANDLE};
 };
 

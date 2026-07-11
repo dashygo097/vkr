@@ -3,71 +3,67 @@
 
 namespace vkr::pipeline {
 
-DescriptorPool::DescriptorPool(const core::Device &device, uint32_t maxSets,
-                               const DescriptorPoolSizes &sizes)
-    : device_(device), max_sets_(maxSets) {
-  VKR_PIPE_INFO("Creating descriptor pool...(maxSets={})", maxSets);
+DescriptorPool::DescriptorPool(const core::Device &device) : device_(device) {}
 
-  std::vector<VkDescriptorPoolSize> poolSizes;
+DescriptorPool::~DescriptorPool() { destroy(); }
 
-  if (sizes.uniformBufferCount > 0) {
-    poolSizes.push_back(
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizes.uniformBufferCount});
+void DescriptorPool::create() {
+  destroy();
+
+  if (desc_.maxSets == 0) {
+    VKR_PIPE_TRACE("Descriptor pool creation skipped because maxSets is 0");
+    return;
   }
 
-  if (sizes.storageBufferCount > 0) {
-    poolSizes.push_back(
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, sizes.storageBufferCount});
+  if (desc_.poolSizes.empty()) {
+    VKR_PIPE_ERROR(
+        "Cannot create descriptor pool with maxSets={} and no pool sizes",
+        desc_.maxSets);
   }
 
-  if (sizes.combinedImageSamplerCount > 0) {
-    poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                         sizes.combinedImageSamplerCount});
+  for (const auto &poolSize : desc_.poolSizes) {
+    if (poolSize.descriptorCount == 0) {
+      VKR_PIPE_ERROR("Descriptor pool size for type {} has zero count",
+                     static_cast<int>(poolSize.type));
+    }
   }
 
-  if (sizes.storageImageCount > 0) {
-    poolSizes.push_back(
-        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, sizes.storageImageCount});
-  }
-
-  if (sizes.inputAttachmentCount > 0) {
-    poolSizes.push_back(
-        {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, sizes.inputAttachmentCount});
-  }
+  VKR_PIPE_INFO("Creating descriptor pool(maxSets={}, poolSizes={})",
+                desc_.maxSets, desc_.poolSizes.size());
 
   VkDescriptorPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-  poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-  poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = maxSets;
+  poolInfo.flags = desc_.flags;
+  poolInfo.maxSets = desc_.maxSets;
+  poolInfo.poolSizeCount = static_cast<uint32_t>(desc_.poolSizes.size());
+  poolInfo.pPoolSizes = desc_.poolSizes.data();
 
-  VkResult result =
+  const VkResult result =
       vkCreateDescriptorPool(device_.device(), &poolInfo, nullptr, &pool_);
+
   if (result != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to create descriptor pool. VkResult: {}",
-                   std::to_string(result));
+                   static_cast<int>(result));
   }
+
+  desc_.allocatedSets = 0;
 
   VKR_PIPE_INFO("Descriptor pool created successfully.");
 }
 
-DescriptorPool::~DescriptorPool() {
+void DescriptorPool::destroy() {
   if (pool_ != VK_NULL_HANDLE) {
     vkDestroyDescriptorPool(device_.device(), pool_, nullptr);
     pool_ = VK_NULL_HANDLE;
   }
+
+  desc_.allocatedSets = 0;
 }
 
-auto DescriptorPool::canAllocate() const noexcept -> bool {
-  return allocated_sets_ < max_sets_;
-}
-
-void DescriptorPool::reset() {
-  if (pool_ != VK_NULL_HANDLE) {
-    vkResetDescriptorPool(device_.device(), pool_, 0);
-    allocated_sets_ = 0;
-  }
+void DescriptorPool::update(const DescriptorPoolDesc &desc) {
+  desc_ = desc;
+  desc_.allocatedSets = 0;
+  create();
 }
 
 } // namespace vkr::pipeline

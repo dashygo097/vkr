@@ -9,8 +9,11 @@ class TeapotApp : public vkr::VulkanApplication {
 private:
   auto createDescriptorBindings()
       -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {{"default", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-             VK_SHADER_STAGE_VERTEX_BIT}};
+    return {
+        {.name = "default",
+         .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                    VK_SHADER_STAGE_VERTEX_BIT}},
+    };
   }
 
   void createResources() override {
@@ -28,7 +31,7 @@ private:
     vkr::pipeline::GraphicsPipelineDesc normal{};
     normal.name = "normal3d";
     normal.renderPass = offscreenRenderPass->renderPass();
-    normal.layout.setLayouts = {descriptorSetLayout->layoutRef()};
+    normal.layout.setLayouts = {descriptorSetLayout->layout()};
     normal.vertexInput = vkr::resource::VertexNormal3D::vertexInputDesc();
 
     normal.shaders = {

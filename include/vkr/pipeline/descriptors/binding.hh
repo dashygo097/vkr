@@ -6,37 +6,56 @@
 namespace vkr::pipeline {
 
 struct DescriptorBinding {
-  std::string name;
-  uint32_t binding;
-  VkDescriptorType type;
-  uint32_t count{1};
-  VkShaderStageFlags stageFlags;
+  std::string name{};
+  VkDescriptorSetLayoutBinding layout{};
 
-  [[nodiscard]] auto toString() const noexcept -> std::string {
-    std::string typeStr;
-    switch (type) {
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-      typeStr = "uniform";
-      break;
-    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-      typeStr = "storage";
+  [[nodiscard]] auto toString() const -> std::string {
+    std::string typeStr{};
+
+    switch (layout.descriptorType) {
+    case VK_DESCRIPTOR_TYPE_SAMPLER:
+      typeStr = "sampler";
       break;
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
       typeStr = "combined image sampler";
+      break;
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+      typeStr = "sampled image";
+      break;
     case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
       typeStr = "storage image";
+      break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+      typeStr = "uniform texel buffer";
+      break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+      typeStr = "storage texel buffer";
+      break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+      typeStr = "uniform buffer";
+      break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+      typeStr = "storage buffer";
+      break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+      typeStr = "uniform buffer dynamic";
+      break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+      typeStr = "storage buffer dynamic";
       break;
     case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
       typeStr = "input attachment";
       break;
     default:
-      VKR_PIPE_ERROR("Unknown descriptor type: {}", std::to_string(type));
+      VKR_PIPE_ERROR("Unknown descriptor type: {}",
+                     static_cast<int>(layout.descriptorType));
     }
 
-    return "layout(binding=" + std::to_string(binding) + ", type=" + typeStr +
-           ", count=" + std::to_string(count) +
-           ", stageFlags=" + std::to_string(stageFlags) + ", resource=" + name +
-           ")";
+    return "layout(binding=" + std::to_string(layout.binding) +
+           ", type=" + typeStr +
+           ", count=" + std::to_string(layout.descriptorCount) +
+           ", stageFlags=" + std::to_string(layout.stageFlags) +
+           ", resource=" + name + ")";
   }
 };
 

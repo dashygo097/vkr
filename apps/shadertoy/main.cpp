@@ -24,15 +24,18 @@ private:
 
   auto createDescriptorBindings()
       -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {{"shadertoy", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-             VK_SHADER_STAGE_FRAGMENT_BIT}};
+    return {
+        {.name = "shadertoy",
+         .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                    VK_SHADER_STAGE_FRAGMENT_BIT}},
+    };
   }
 
   void createPipelines() override {
     vkr::pipeline::GraphicsPipelineDesc shadertoy{};
     shadertoy.name = "shadertoy";
     shadertoy.renderPass = offscreenRenderPass->renderPass();
-    shadertoy.layout.setLayouts = {descriptorSetLayout->layoutRef()};
+    shadertoy.layout.setLayouts = {descriptorSetLayout->layout()};
     shadertoy.vertexInput = vkr::resource::VertexInputDesc::none();
 
     shadertoy.shaders = {
