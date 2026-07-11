@@ -1,38 +1,76 @@
 #pragma once
 
 #include "TextEditor.h"
-#include <functional>
-#include <string>
+#include "vkr/pipeline/graphics_pipeline.hh"
+#include "vkr/render/pipeline_library.hh"
 
 namespace vkr::ui {
 
-enum class ShaderType { Vertex, Fragment };
-
 class ShaderEditor {
 public:
-  using CompileCallback =
-      std::function<void(const std::string &vert, const std::string &frag)>;
+  explicit ShaderEditor(render::PipelineLibrary &pipelineLibrary);
 
-  explicit ShaderEditor(CompileCallback onCompile = nullptr);
-
-  void setSource(ShaderType type, const std::string &src);
-  void setStatus(const std::string &msg, bool isError = false);
   void render();
 
 private:
+  // dependencies
+  render::PipelineLibrary &pipeline_library_;
+
+  // components
   TextEditor vert_editor_;
   TextEditor frag_editor_;
 
-  std::string status_message_;
+  // state
+  std::string loaded_pipeline_name_{};
+  std::string status_message_{};
   bool status_is_error_{false};
-
-  CompileCallback on_compile_;
   int active_tab_{0};
 
-  static auto makeEditor() -> TextEditor;
-  static auto makeGlslLanguageDefinition() -> TextEditor::LanguageDefinition;
-  static auto materialDarkPalette() -> TextEditor::Palette;
-  static auto parseErrors(const std::string &log) -> TextEditor::ErrorMarkers;
+  // pipeline control
+  [[nodiscard]] auto activePipeline() noexcept -> pipeline::GraphicsPipeline *;
+  [[nodiscard]] auto hasPipeline() const noexcept -> bool;
+
+  void reloadFromPipeline();
+  void reloadFromPipelineIfChanged();
+  void applyToPipeline();
+
+  // editor state
+  [[nodiscard]] auto currentEditor() noexcept -> TextEditor &;
+  [[nodiscard]] auto currentEditor() const noexcept -> const TextEditor &;
+  void setStatus(std::string msg, bool isError = false);
+
+  // shader desc helpers
+  [[nodiscard]] static auto findShader(pipeline::GraphicsPipelineDesc &desc,
+                                       VkShaderStageFlagBits stage)
+      -> pipeline::GraphicsShaderStageDesc *;
+
+  [[nodiscard]] static auto
+  findShader(const pipeline::GraphicsPipelineDesc &desc,
+             VkShaderStageFlagBits stage)
+      -> const pipeline::GraphicsShaderStageDesc *;
+
+  [[nodiscard]] static auto
+  shaderSource(const pipeline::GraphicsShaderStageDesc *shader) -> std::string;
+
+  [[nodiscard]] static auto
+  shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
+              const std::string &fallback) -> std::string;
+
+  [[nodiscard]] static auto
+  makeShaderModule(VkShaderStageFlagBits stage, std::string source,
+                   std::string label, std::string entryPoint)
+      -> pipeline::ShaderModuleDesc;
+
+  [[nodiscard]] static auto readTextFile(const std::string &path)
+      -> std::string;
+
+  // text editor helpers
+  [[nodiscard]] static auto makeEditor() -> TextEditor;
+  [[nodiscard]] static auto makeGlslLanguageDefinition()
+      -> TextEditor::LanguageDefinition;
+  [[nodiscard]] static auto materialDarkPalette() -> TextEditor::Palette;
+  [[nodiscard]] static auto parseErrors(const std::string &log)
+      -> TextEditor::ErrorMarkers;
 };
 
 } // namespace vkr::ui

@@ -8,6 +8,7 @@
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/render_pass.hh"
+#include "vkr/render/pipeline_library.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
 #include "vkr/ui/components/fps_panel.hh"
@@ -16,7 +17,6 @@
 #include "vkr/ui/components/shader_editor.hh"
 #include "vkr/ui/theme.hh"
 #include "vkr/util/timer.hh"
-#include <memory>
 
 namespace vkr::ui {
 
@@ -42,7 +42,8 @@ public:
      resource::ResourceManager &resourceManager,
      resource::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
-     const pipeline::DescriptorPool &descriptorPool, util::Timer &timer,
+     const pipeline::DescriptorPool &descriptorPool,
+     render::PipelineLibrary &pipelineLibrary, util::Timer &timer,
      ThemeDesc &desc);
   ~UI();
 
@@ -85,6 +86,7 @@ public:
   }
 
 private:
+  // dependencies
   const core::Window &window_;
   const core::Instance &instance_;
   const core::Surface &surface_;
@@ -94,8 +96,10 @@ private:
   resource::OffscreenTarget &offscreen_target_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
+  render::PipelineLibrary &pipeline_library_;
   util::Timer &timer_;
 
+  // components
   ThemeDesc &desc_;
   std::unique_ptr<ResourceTree> resource_tree_;
   std::unique_ptr<FPSPanel> fps_panel_;
@@ -104,10 +108,12 @@ private:
   std::unique_ptr<pipeline::DescriptorSetLayout> offscreen_descriptor_layout_;
   std::unique_ptr<pipeline::DescriptorSets> offscreen_descriptor_sets_;
 
+  // state
   LayoutMode layout_mode_{LayoutMode::FullScreen};
   ViewportInfo viewport_info_{};
   bool should_close_{false};
 
+  // helpers
   void renderFullScreen();
   void renderDockspace();
   void setupDockingLayout();

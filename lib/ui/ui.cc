@@ -5,6 +5,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include <imgui_internal.h>
+#include <vector>
 
 namespace vkr::ui {
 
@@ -14,13 +15,14 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        resource::ResourceManager &resourceManager,
        resource::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
-       const pipeline::DescriptorPool &descriptorPool, util::Timer &timer,
+       const pipeline::DescriptorPool &descriptorPool,
+       render::PipelineLibrary &pipelineLibrary, util::Timer &timer,
        ThemeDesc &desc)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), resource_manager_(resourceManager),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),
-      descriptor_pool_(descriptorPool), timer_(timer), desc_(desc) {
-
+      descriptor_pool_(descriptorPool), pipeline_library_(pipelineLibrary),
+      timer_(timer), desc_(desc) {
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
 
@@ -84,43 +86,19 @@ UI::UI(const core::Window &window, const core::Instance &instance,
                     &offscreenImageInfo);
   offscreen_descriptor_sets_->bindToFrame(0, writer);
 
-  // fps panel
   VKR_UI_INFO("Initializing FPS Panel...");
   fps_panel_ = std::make_unique<FPSPanel>(timer);
   fps_panel_->clear();
   VKR_UI_INFO("FPS Panel initialized successfully.");
 
-  // shader editor
   VKR_UI_INFO("Initializing Shader Editor...");
-  shader_editor_ = std::make_unique<ShaderEditor>(
-      [this](const std::string &, const std::string &) -> void {
-        shader_editor_->setStatus(
-            "Shader hot reload moved out of GraphicsPipeline. "
-            "Use render::PipelineLibrary / RenderGraph pipeline nodes later.",
-            true);
-      });
-
-  shader_editor_->setSource(
-      ShaderType::Vertex,
-      "// Shader hot reload is disabled for the new GraphicsPipeline.\n"
-      "// GraphicsPipeline is now descriptor-driven and does not own "
-      "sources.\n");
-
-  shader_editor_->setSource(
-      ShaderType::Fragment,
-      "// Shader hot reload is disabled for the new GraphicsPipeline.\n"
-      "// Add it back through render::PipelineLibrary later.\n");
-
-  shader_editor_->setStatus("Shader editor disabled for new pipeline model.",
-                            false);
+  shader_editor_ = std::make_unique<ShaderEditor>(pipeline_library_);
   VKR_UI_INFO("Shader Editor initialized successfully.");
 
-  // logging panel
   VKR_UI_INFO("Initializing Logging Panel...");
   logging_panel_ = std::make_unique<LoggingPanel>();
   VKR_UI_INFO("Logging Panel initialized successfully.");
 
-  // resource tree
   VKR_UI_INFO("Initializing Resource Tree...");
   resource_tree_ = std::make_unique<ResourceTree>(resource_manager_);
   VKR_UI_INFO("Resource Tree initialized successfully.");
@@ -129,6 +107,11 @@ UI::UI(const core::Window &window, const core::Instance &instance,
 }
 
 UI::~UI() {
+  shader_editor_.reset();
+  logging_panel_.reset();
+  fps_panel_.reset();
+  resource_tree_.reset();
+
   offscreen_descriptor_sets_.reset();
   offscreen_descriptor_layout_.reset();
 
@@ -220,6 +203,7 @@ void UI::renderDockspace() {
       if (ImGui::MenuItem("Exit")) {
         should_close_ = true;
       }
+
       ImGui::EndMenu();
     }
 
@@ -316,6 +300,7 @@ void UI::setupDockingLayout() {
 
   dockRight = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Right, 0.2f,
                                           nullptr, &dockSpaceId);
+
   dockShader = ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Up, 0.8f,
                                            nullptr, &dockBottomRight);
 
@@ -361,6 +346,7 @@ void UI::renderMainViewport() {
     ImVec2 windowPos = ImGui::GetWindowPos();
     ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
     ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
+
     viewport_info_.x = windowPos.x + contentMin.x;
     viewport_info_.y = windowPos.y + contentMin.y;
     viewport_info_.width = contentMax.x - contentMin.x;
@@ -407,7 +393,9 @@ void UI::renderShaderEditor() {
                                  ImGuiWindowFlags_NoCollapse;
 
   if (ImGui::Begin("Shader Editor", nullptr, windowFlags)) {
-    shader_editor_->render();
+    if (shader_editor_) {
+      shader_editor_->render();
+    }
   }
 
   ImGui::End();

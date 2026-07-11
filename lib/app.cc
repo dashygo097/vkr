@@ -137,10 +137,10 @@ void VulkanApplication::initVulkan() {
   timer = std::make_unique<util::Timer>();
 
   // ui
-  ui = std::make_unique<ui::UI>(*window, *instance, *surface, *device,
-                                *commandPool, *resourceManager,
-                                *offscreenTarget, *swapchainRenderPass,
-                                *descriptorPool, *timer, ctx.theme);
+  ui = std::make_unique<ui::UI>(
+      *window, *instance, *surface, *device, *commandPool, *resourceManager,
+      *offscreenTarget, *swapchainRenderPass, *descriptorPool, *pipelineLibrary,
+      *timer, ctx.theme);
 
   // renderer
   renderer = std::make_unique<render::Renderer>(
@@ -192,8 +192,6 @@ void VulkanApplication::drawFrame() {
     return;
   }
 
-  onDrawFrame(renderer->frameIndex());
-
   render::RenderPassBeginDesc offscreenDesc{
       .framebufferIndex = 0,
       .renderArea = {.offset = {0, 0},
@@ -228,13 +226,15 @@ void VulkanApplication::drawFrame() {
 
   renderer->beginPass(*resourceManager->getFramebufferSet("swapchain"),
                       *swapchainRenderPass, swapchainDesc);
-
   renderer->setViewportAndScissor(
       {swapchainTarget->width(), swapchainTarget->height()});
 
   renderer->drawUI();
 
   renderer->endPass();
+
+  onDrawFrame(renderer->frameIndex());
+
   renderer->endFrame();
 }
 

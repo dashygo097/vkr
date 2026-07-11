@@ -3,9 +3,11 @@
 #include <array>
 #include <cstdint>
 #include <cstdio>
+#include <fstream>
 #include <imgui.h>
 #include <initializer_list>
 #include <sstream>
+#include <utility>
 
 namespace vkr::ui {
 
@@ -560,17 +562,222 @@ auto ShaderEditor::makeEditor() -> TextEditor {
   return ed;
 }
 
-ShaderEditor::ShaderEditor(CompileCallback onCompile)
-    : vert_editor_(makeEditor()), frag_editor_(makeEditor()),
-      on_compile_(std::move(onCompile)) {}
-
-auto ShaderEditor::setSource(ShaderType type, const std::string &src) -> void {
-  ((type == ShaderType::Vertex) ? vert_editor_ : frag_editor_).SetText(src);
+ShaderEditor::ShaderEditor(render::PipelineLibrary &pipelineLibrary)
+    : pipeline_library_(pipelineLibrary), vert_editor_(makeEditor()),
+      frag_editor_(makeEditor()) {
+  reloadFromPipeline();
 }
 
-auto ShaderEditor::setStatus(const std::string &msg, bool isError) -> void {
-  status_message_ = msg;
+auto ShaderEditor::activePipeline() noexcept -> pipeline::GraphicsPipeline * {
+  if (pipeline_library_.empty()) {
+    return nullptr;
+  }
+
+  return &pipeline_library_.first();
+}
+
+auto ShaderEditor::hasPipeline() const noexcept -> bool {
+  return !pipeline_library_.empty();
+}
+
+auto ShaderEditor::currentEditor() noexcept -> TextEditor & {
+  return active_tab_ == 0 ? vert_editor_ : frag_editor_;
+}
+
+auto ShaderEditor::currentEditor() const noexcept -> const TextEditor & {
+  return active_tab_ == 0 ? vert_editor_ : frag_editor_;
+}
+
+void ShaderEditor::setStatus(std::string msg, bool isError) {
+  status_message_ = std::move(msg);
   status_is_error_ = isError;
+}
+
+auto ShaderEditor::findShader(pipeline::GraphicsPipelineDesc &desc,
+                              VkShaderStageFlagBits stage)
+    -> pipeline::GraphicsShaderStageDesc * {
+  for (auto &shader : desc.shaders) {
+    if (shader.stage == stage) {
+      return &shader;
+    }
+  }
+
+  return nullptr;
+}
+
+auto ShaderEditor::findShader(const pipeline::GraphicsPipelineDesc &desc,
+                              VkShaderStageFlagBits stage)
+    -> const pipeline::GraphicsShaderStageDesc * {
+  for (const auto &shader : desc.shaders) {
+    if (shader.stage == stage) {
+      return &shader;
+    }
+  }
+
+  return nullptr;
+}
+
+auto ShaderEditor::readTextFile(const std::string &path) -> std::string {
+  if (path.empty()) {
+    return {};
+  }
+
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    return {};
+  }
+
+  std::ostringstream ss;
+  ss << file.rdbuf();
+  return ss.str();
+}
+
+auto ShaderEditor::shaderSource(const pipeline::GraphicsShaderStageDesc *shader)
+    -> std::string {
+  if (shader == nullptr) {
+    return {};
+  }
+
+  const auto &module = shader->module;
+
+  if (module.sourceKind != pipeline::ShaderModuleSourceKind::Glsl) {
+    return {};
+  }
+
+  if (!module.compile.source.empty()) {
+    return module.compile.source;
+  }
+
+  return readTextFile(module.compile.label);
+}
+
+auto ShaderEditor::shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
+                               const std::string &fallback) -> std::string {
+  if (shader.module.sourceKind == pipeline::ShaderModuleSourceKind::Glsl &&
+      !shader.module.compile.label.empty()) {
+    return shader.module.compile.label;
+  }
+
+  return fallback;
+}
+
+auto ShaderEditor::makeShaderModule(VkShaderStageFlagBits stage,
+                                    std::string source, std::string label,
+                                    std::string entryPoint)
+    -> pipeline::ShaderModuleDesc {
+  pipeline::ShaderModuleDesc desc{};
+
+  switch (stage) {
+  case VK_SHADER_STAGE_VERTEX_BIT:
+    desc = pipeline::ShaderModuleDesc::vertexGlslSource(source, label);
+    break;
+  case VK_SHADER_STAGE_FRAGMENT_BIT:
+    desc = pipeline::ShaderModuleDesc::fragmentGlslSource(source, label);
+    break;
+  default:
+    return {};
+  }
+
+  desc.setEntryPoint(entryPoint);
+  return desc;
+}
+
+void ShaderEditor::reloadFromPipelineIfChanged() {
+  auto *pipeline = activePipeline();
+
+  if (pipeline == nullptr) {
+    if (!loaded_pipeline_name_.empty()) {
+      reloadFromPipeline();
+    }
+
+    return;
+  }
+
+  const auto &desc = pipeline->desc();
+
+  if (loaded_pipeline_name_ != desc.name) {
+    reloadFromPipeline();
+  }
+}
+
+void ShaderEditor::reloadFromPipeline() {
+  auto *pipeline = activePipeline();
+
+  if (pipeline == nullptr) {
+    loaded_pipeline_name_.clear();
+    vert_editor_.SetText("// No graphics pipeline available.\n");
+    frag_editor_.SetText("// No graphics pipeline available.\n");
+    setStatus("No graphics pipeline available.", true);
+    return;
+  }
+
+  const auto &desc = pipeline->desc();
+  loaded_pipeline_name_ = desc.name;
+
+  const auto *vert = findShader(desc, VK_SHADER_STAGE_VERTEX_BIT);
+  const auto *frag = findShader(desc, VK_SHADER_STAGE_FRAGMENT_BIT);
+
+  const std::string vertSource = shaderSource(vert);
+  const std::string fragSource = shaderSource(frag);
+
+  if (vert == nullptr) {
+    vert_editor_.SetText("// Selected pipeline has no vertex shader stage.\n");
+  } else if (vertSource.empty()) {
+    vert_editor_.SetText("// Vertex shader is not GLSL source-backed.\n");
+  } else {
+    vert_editor_.SetText(vertSource);
+  }
+
+  if (frag == nullptr) {
+    frag_editor_.SetText(
+        "// Selected pipeline has no fragment shader stage.\n");
+  } else if (fragSource.empty()) {
+    frag_editor_.SetText("// Fragment shader is not GLSL source-backed.\n");
+  } else {
+    frag_editor_.SetText(fragSource);
+  }
+
+  setStatus("Loaded pipeline: " + loaded_pipeline_name_, false);
+}
+
+void ShaderEditor::applyToPipeline() {
+  auto *pipeline = activePipeline();
+
+  if (pipeline == nullptr) {
+    setStatus("No graphics pipeline available.", true);
+    return;
+  }
+
+  auto nextDesc = pipeline->desc();
+
+  auto *vert = findShader(nextDesc, VK_SHADER_STAGE_VERTEX_BIT);
+  auto *frag = findShader(nextDesc, VK_SHADER_STAGE_FRAGMENT_BIT);
+
+  if (vert == nullptr) {
+    setStatus("Selected pipeline has no vertex shader stage.", true);
+    return;
+  }
+
+  if (frag == nullptr) {
+    setStatus("Selected pipeline has no fragment shader stage.", true);
+    return;
+  }
+
+  vert->module = makeShaderModule(
+      VK_SHADER_STAGE_VERTEX_BIT, vert_editor_.GetText(),
+      shaderLabel(*vert, nextDesc.name + ".vert"), vert->entryPoint);
+
+  frag->module = makeShaderModule(
+      VK_SHADER_STAGE_FRAGMENT_BIT, frag_editor_.GetText(),
+      shaderLabel(*frag, nextDesc.name + ".frag"), frag->entryPoint);
+
+  if (!pipeline->update(nextDesc)) {
+    setStatus("Failed to compile pipeline. Previous pipeline was kept.", true);
+    return;
+  }
+
+  loaded_pipeline_name_ = nextDesc.name;
+  setStatus("Compiled and applied: " + loaded_pipeline_name_, false);
 }
 
 auto ShaderEditor::parseErrors(const std::string &log)
@@ -595,6 +802,8 @@ auto ShaderEditor::parseErrors(const std::string &log)
 }
 
 auto ShaderEditor::render() -> void {
+  reloadFromPipelineIfChanged();
+
   const ImGuiStyle &style = ImGui::GetStyle();
   const ImVec4 bg = style.Colors[ImGuiCol_WindowBg];
   const ImVec4 childBg = style.Colors[ImGuiCol_ChildBg];
@@ -635,13 +844,21 @@ auto ShaderEditor::render() -> void {
   syncPalette(vert_editor_);
   syncPalette(frag_editor_);
 
+  ImGui::TextDisabled("Pipeline: %s", loaded_pipeline_name_.empty()
+                                          ? "<none>"
+                                          : loaded_pipeline_name_.c_str());
+
   const float spacingY = style.ItemSpacing.y;
   const float frameH = ImGui::GetFrameHeight();
   const float textLineH = ImGui::GetTextLineHeight();
 
   const float statusH = status_message_.empty() ? 0.0f : textLineH + spacingY;
+  const float headerH = textLineH + spacingY;
+  const float tabsH = frameH + spacingY;
   const float bottomBarH = spacingY + 1.0f + spacingY + statusH + frameH +
                            spacingY + textLineH + spacingY;
+  const float codeH =
+      ImGui::GetContentRegionAvail().y - headerH - tabsH - bottomBarH;
 
   if (ImGui::BeginTabBar("ShaderTabs")) {
     if (ImGui::BeginTabItem("  Vertex  ")) {
@@ -657,7 +874,7 @@ auto ShaderEditor::render() -> void {
     ImGui::EndTabBar();
   }
 
-  TextEditor &editor = (active_tab_ == 0) ? vert_editor_ : frag_editor_;
+  TextEditor &editor = currentEditor();
 
   if (status_is_error_ && !status_message_.empty()) {
     editor.SetErrorMarkers(parseErrors(status_message_));
@@ -665,17 +882,15 @@ auto ShaderEditor::render() -> void {
     editor.SetErrorMarkers({});
   }
 
-  const float codeH = ImGui::GetContentRegionAvail().y - bottomBarH;
-
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 4.0f));
 
-  if (ImGui::BeginChild("##code_area", ImVec2(-1.0f, codeH), false,
+  if (ImGui::BeginChild("##shader_code_area", ImVec2(-1.0f, codeH), false,
                         ImGuiWindowFlags_NoScrollbar)) {
     if (ImGui::GetIO().Fonts->Fonts.Size > 1) {
       ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
     }
 
-    editor.Render("##shader_src", ImVec2(-1.0f, -1.0f));
+    editor.Render("##shader_source", ImVec2(-1.0f, -1.0f));
 
     if (ImGui::GetIO().Fonts->Fonts.Size > 1) {
       ImGui::PopFont();
@@ -698,19 +913,24 @@ auto ShaderEditor::render() -> void {
     ImGui::Spacing();
   }
 
-  const bool canCompile = on_compile_ != nullptr;
+  const bool canEdit = hasPipeline();
 
-  if (!canCompile) {
+  if (!canEdit) {
     ImGui::BeginDisabled();
   }
 
   if (ImGui::Button("Compile & Apply", ImVec2(150.0f, 0.0f))) {
-    status_message_ = "Compiling...";
-    status_is_error_ = false;
-    on_compile_(vert_editor_.GetText(), frag_editor_.GetText());
+    setStatus("Compiling...", false);
+    applyToPipeline();
   }
 
-  if (!canCompile) {
+  ImGui::SameLine(0.0f, 8.0f);
+
+  if (ImGui::Button("Reload", ImVec2(70.0f, 0.0f))) {
+    reloadFromPipeline();
+  }
+
+  if (!canEdit) {
     ImGui::EndDisabled();
   }
 
@@ -727,7 +947,7 @@ auto ShaderEditor::render() -> void {
   }
 
   auto coords = editor.GetCursorPosition();
-  std::array<char, 40> info;
+  std::array<char, 40> info{};
 
   std::snprintf(info.data(), info.size(), "Ln %d   Col %d", coords.mLine + 1,
                 coords.mColumn + 1);
@@ -737,7 +957,6 @@ auto ShaderEditor::render() -> void {
   const float rightX = cursorX + ImGui::GetContentRegionAvail().x - infoW;
 
   ImGui::SetCursorPosX(rightX > cursorX ? rightX : cursorX);
-
   ImGui::TextDisabled("%s", info.data());
 }
 

@@ -3,12 +3,6 @@
 #include "vkr/core/device.hh"
 #include "vkr/pipeline/shader_module.hh"
 #include "vkr/resource/buffers/vbos.hh"
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-#include <vulkan/vulkan.h>
 
 namespace vkr::pipeline {
 
@@ -301,9 +295,8 @@ public:
   GraphicsPipeline(const GraphicsPipeline &) = delete;
   auto operator=(const GraphicsPipeline &) -> GraphicsPipeline & = delete;
 
-  void create();
   void destroy();
-  void update(const GraphicsPipelineDesc &desc);
+  auto update(const GraphicsPipelineDesc &desc) -> bool;
 
   [[nodiscard]] auto desc() const noexcept -> const GraphicsPipelineDesc & {
     return desc_;
@@ -332,6 +325,11 @@ public:
   }
 
 private:
+  struct RetiredPipeline {
+    VkPipeline pipeline{VK_NULL_HANDLE};
+    VkPipelineLayout layout{VK_NULL_HANDLE};
+  };
+
   // dependencies
   const core::Device *device_{nullptr};
 
@@ -340,9 +338,7 @@ private:
   std::vector<std::unique_ptr<ShaderModule>> shader_modules_{};
   VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
   VkPipeline vk_graphics_pipeline_{VK_NULL_HANDLE};
-
-  // helpers
-  [[nodiscard]] auto createPipelineLayout() const -> VkPipelineLayout;
+  std::vector<RetiredPipeline> retired_pipelines_{};
 };
 
 } // namespace vkr::pipeline
