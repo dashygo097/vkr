@@ -748,7 +748,14 @@ void ShaderEditor::applyToPipeline() {
     return;
   }
 
-  auto nextDesc = pipeline->desc();
+  const auto oldDesc = pipeline->desc();
+
+  const std::string oldVertSource =
+      shaderSource(findShader(oldDesc, VK_SHADER_STAGE_VERTEX_BIT));
+  const std::string oldFragSource =
+      shaderSource(findShader(oldDesc, VK_SHADER_STAGE_FRAGMENT_BIT));
+
+  auto nextDesc = oldDesc;
 
   auto *vert = findShader(nextDesc, VK_SHADER_STAGE_VERTEX_BIT);
   auto *frag = findShader(nextDesc, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -771,13 +778,40 @@ void ShaderEditor::applyToPipeline() {
       VK_SHADER_STAGE_FRAGMENT_BIT, frag_editor_.GetText(),
       shaderLabel(*frag, nextDesc.name + ".frag"), frag->entryPoint);
 
-  if (!pipeline->update(nextDesc)) {
-    setStatus("Failed to compile pipeline. Previous pipeline was kept.", true);
-    return;
+  try {
+    if (pipeline->update(nextDesc)) {
+      loaded_pipeline_name_ = nextDesc.name;
+      setStatus("Compiled and applied: " + loaded_pipeline_name_, false);
+      return;
+    }
+  } catch (const std::exception &e) {
+    setStatus("Failed to compile pipeline. Falling back to previous shader: " +
+                  std::string(e.what()),
+              true);
+  } catch (...) {
+    setStatus("Failed to compile pipeline. Falling back to previous shader.",
+              true);
   }
 
-  loaded_pipeline_name_ = nextDesc.name;
-  setStatus("Compiled and applied: " + loaded_pipeline_name_, false);
+  try {
+    pipeline->update(oldDesc);
+  } catch (...) {
+  }
+
+  if (!oldVertSource.empty()) {
+    vert_editor_.SetText(oldVertSource);
+  }
+
+  if (!oldFragSource.empty()) {
+    frag_editor_.SetText(oldFragSource);
+  }
+
+  loaded_pipeline_name_ = oldDesc.name;
+
+  if (status_message_.empty() || !status_is_error_) {
+    setStatus("Failed to compile pipeline. Previous shader was restored.",
+              true);
+  }
 }
 
 auto ShaderEditor::parseErrors(const std::string &log)

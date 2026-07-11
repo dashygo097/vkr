@@ -94,6 +94,11 @@ public:
   }
 };
 
+class VkrError : public std::runtime_error {
+public:
+  explicit VkrError(const std::string &message) : std::runtime_error(message) {}
+};
+
 class Logger {
 public:
   static void init();
@@ -143,7 +148,7 @@ private:
 #define VKR_UTIL_ERROR(...)                                                    \
   do {                                                                         \
     ::vkr::Logger::getUtilLogger()->error(__VA_ARGS__);                        \
-    std::abort();                                                              \
+    throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
 
 #define VKR_CORE_TRACE(...) ::vkr::Logger::getCoreLogger()->trace(__VA_ARGS__);
@@ -155,7 +160,7 @@ private:
 #define VKR_CORE_ERROR(...)                                                    \
   do {                                                                         \
     ::vkr::Logger::getCoreLogger()->error(__VA_ARGS__);                        \
-    std::abort();                                                              \
+    throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
 
 #define VKR_RES_TRACE(...)                                                     \
@@ -169,7 +174,7 @@ private:
 #define VKR_RES_ERROR(...)                                                     \
   do {                                                                         \
     ::vkr::Logger::getResourceLogger()->error(__VA_ARGS__);                    \
-    std::abort();                                                              \
+    throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
 
 #define VKR_PIPE_TRACE(...)                                                    \
@@ -185,7 +190,7 @@ private:
 #define VKR_PIPE_ERROR(...)                                                    \
   do {                                                                         \
     ::vkr::Logger::getPipelineLogger()->error(__VA_ARGS__);                    \
-    std::abort();                                                              \
+    throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
 
 #define VKR_RENDER_TRACE(...)                                                  \
@@ -201,7 +206,7 @@ private:
 #define VKR_RENDER_ERROR(...)                                                  \
   do {                                                                         \
     ::vkr::Logger::getRenderLogger()->error(__VA_ARGS__);                      \
-    std::abort();                                                              \
+    throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
 
 #define VKR_SCENE_TRACE(...)                                                   \
@@ -215,7 +220,7 @@ private:
 #define VKR_SCENE_ERROR(...)                                                   \
   do {                                                                         \
     ::vkr::Logger::getSceneLogger()->error(__VA_ARGS__);                       \
-    std::abort();                                                              \
+    throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
 
 #define VKR_UI_TRACE(...) ::vkr::Logger::getUiLogger()->trace(__VA_ARGS__);
@@ -226,5 +231,5 @@ private:
 #define VKR_UI_ERROR(...)                                                      \
   do {                                                                         \
     ::vkr::Logger::getUiLogger()->error(__VA_ARGS__);                          \
-    std::abort();                                                              \
+    throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
