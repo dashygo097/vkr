@@ -41,14 +41,14 @@ void GraphicsPipeline::destroy() {
 auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
   desc_ = desc;
 
-  std::vector<std::unique_ptr<ShaderModule>> nextShaderModules{};
+  std::vector<std::unique_ptr<resource::ShaderModule>> nextShaderModules{};
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
 
   nextShaderModules.reserve(desc_.shaders.size());
   shaderStages.reserve(desc_.shaders.size());
 
   for (const auto &shader : desc_.shaders) {
-    auto module = std::make_unique<ShaderModule>(device_);
+    auto module = std::make_unique<resource::ShaderModule>(device_);
     module->update(shader.module);
 
     if (!module->valid()) {

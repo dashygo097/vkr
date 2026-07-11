@@ -58,11 +58,11 @@ private:
 
     textured.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::pipeline::ShaderModuleDesc::vertexGlslFile(
+            vkr::resource::ShaderModuleDesc::vertexGlslFile(
                 assetSystem->resolve("shaders/texture3d/texture3d.vert")
                     .string())),
         vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::pipeline::ShaderModuleDesc::fragmentGlslFile(
+            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
                 assetSystem->resolve("shaders/texture3d/texture3d.frag")
                     .string())),
     };

@@ -39,11 +39,11 @@ private:
 
     canvas.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::pipeline::ShaderModuleDesc::vertexGlslFile(
+            vkr::resource::ShaderModuleDesc::vertexGlslFile(
                 assetSystem->resolve("shaders/default2d/default2d.vert")
                     .string())),
         vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::pipeline::ShaderModuleDesc::fragmentGlslFile(
+            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
                 assetSystem->resolve("shaders/default2d/default2d.frag")
                     .string())),
     };

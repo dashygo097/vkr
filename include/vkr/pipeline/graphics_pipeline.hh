@@ -1,18 +1,18 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/pipeline/shader_module.hh"
 #include "vkr/resource/buffers/vbos.hh"
+#include "vkr/resource/shader_module.hh"
 
 namespace vkr::pipeline {
 
 struct GraphicsShaderStageDesc {
   VkShaderStageFlagBits stage{VK_SHADER_STAGE_VERTEX_BIT};
-  ShaderModuleDesc module{};
+  resource::ShaderModuleDesc module{};
   std::string entryPoint{"main"};
 
   [[nodiscard]] static auto make(VkShaderStageFlagBits stage,
-                                 ShaderModuleDesc module,
+                                 resource::ShaderModuleDesc module,
                                  std::string entryPoint = "main")
       -> GraphicsShaderStageDesc {
     GraphicsShaderStageDesc desc{};
@@ -22,14 +22,14 @@ struct GraphicsShaderStageDesc {
     return desc;
   }
 
-  [[nodiscard]] static auto vertex(ShaderModuleDesc module,
+  [[nodiscard]] static auto vertex(resource::ShaderModuleDesc module,
                                    std::string entryPoint = "main")
       -> GraphicsShaderStageDesc {
     return make(VK_SHADER_STAGE_VERTEX_BIT, std::move(module),
                 std::move(entryPoint));
   }
 
-  [[nodiscard]] static auto fragment(ShaderModuleDesc module,
+  [[nodiscard]] static auto fragment(resource::ShaderModuleDesc module,
                                      std::string entryPoint = "main")
       -> GraphicsShaderStageDesc {
     return make(VK_SHADER_STAGE_FRAGMENT_BIT, std::move(module),
@@ -308,7 +308,7 @@ public:
   }
 
   [[nodiscard]] auto shaderModules() const noexcept
-      -> const std::vector<std::unique_ptr<ShaderModule>> & {
+      -> const std::vector<std::unique_ptr<resource::ShaderModule>> & {
     return shader_modules_;
   }
 
@@ -335,7 +335,7 @@ private:
 
   // components
   GraphicsPipelineDesc desc_{};
-  std::vector<std::unique_ptr<ShaderModule>> shader_modules_{};
+  std::vector<std::unique_ptr<resource::ShaderModule>> shader_modules_{};
   VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
   VkPipeline vk_graphics_pipeline_{VK_NULL_HANDLE};
   std::vector<RetiredPipeline> retired_pipelines_{};

@@ -37,11 +37,11 @@ private:
 
     shadertoy.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::pipeline::ShaderModuleDesc::vertexGlslFile(
+            vkr::resource::ShaderModuleDesc::vertexGlslFile(
                 assetSystem->resolve("shaders/shadertoy/shadertoy.vert")
                     .string())),
         vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::pipeline::ShaderModuleDesc::fragmentGlslFile(
+            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
                 assetSystem->resolve("shaders/shadertoy/shadertoy.frag")
                     .string())),
     };

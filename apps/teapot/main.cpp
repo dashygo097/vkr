@@ -33,11 +33,11 @@ private:
 
     normal.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::pipeline::ShaderModuleDesc::vertexGlslFile(
+            vkr::resource::ShaderModuleDesc::vertexGlslFile(
                 assetSystem->resolve("shaders/normal3d/normal3d.vert")
                     .string())),
         vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::pipeline::ShaderModuleDesc::fragmentGlslFile(
+            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
                 assetSystem->resolve("shaders/normal3d/normal3d.frag")
                     .string())),
     };

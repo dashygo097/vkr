@@ -640,7 +640,7 @@ auto ShaderEditor::shaderSource(const pipeline::GraphicsShaderStageDesc *shader)
 
   const auto &module = shader->module;
 
-  if (module.sourceKind != pipeline::ShaderModuleSourceKind::Glsl) {
+  if (module.sourceKind != resource::ShaderModuleSourceKind::Glsl) {
     return {};
   }
 
@@ -653,7 +653,7 @@ auto ShaderEditor::shaderSource(const pipeline::GraphicsShaderStageDesc *shader)
 
 auto ShaderEditor::shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
                                const std::string &fallback) -> std::string {
-  if (shader.module.sourceKind == pipeline::ShaderModuleSourceKind::Glsl &&
+  if (shader.module.sourceKind == resource::ShaderModuleSourceKind::Glsl &&
       !shader.module.compile.label.empty()) {
     return shader.module.compile.label;
   }
@@ -664,15 +664,15 @@ auto ShaderEditor::shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
 auto ShaderEditor::makeShaderModule(VkShaderStageFlagBits stage,
                                     std::string source, std::string label,
                                     std::string entryPoint)
-    -> pipeline::ShaderModuleDesc {
-  pipeline::ShaderModuleDesc desc{};
+    -> resource::ShaderModuleDesc {
+  resource::ShaderModuleDesc desc{};
 
   switch (stage) {
   case VK_SHADER_STAGE_VERTEX_BIT:
-    desc = pipeline::ShaderModuleDesc::vertexGlslSource(source, label);
+    desc = resource::ShaderModuleDesc::vertexGlslSource(source, label);
     break;
   case VK_SHADER_STAGE_FRAGMENT_BIT:
-    desc = pipeline::ShaderModuleDesc::fragmentGlslSource(source, label);
+    desc = resource::ShaderModuleDesc::fragmentGlslSource(source, label);
     break;
   default:
     return {};

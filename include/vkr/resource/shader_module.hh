@@ -3,7 +3,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/util/compiler.hh"
 
-namespace vkr::pipeline {
+namespace vkr::resource {
 
 enum class ShaderModuleSourceKind {
   SpirvCode,
@@ -141,4 +141,4 @@ private:
   [[nodiscard]] auto loadSpirv() const -> std::vector<uint32_t>;
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::resource

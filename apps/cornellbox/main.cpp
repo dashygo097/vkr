@@ -48,11 +48,11 @@ private:
 
     default3d.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::pipeline::ShaderModuleDesc::vertexGlslFile(
+            vkr::resource::ShaderModuleDesc::vertexGlslFile(
                 assetSystem->resolve("shaders/default3d/default3d.vert")
                     .string())),
         vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::pipeline::ShaderModuleDesc::fragmentGlslFile(
+            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
                 assetSystem->resolve("shaders/default3d/default3d.frag")
                     .string())),
     };

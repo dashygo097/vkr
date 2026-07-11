@@ -59,7 +59,7 @@ private:
   [[nodiscard]] static auto
   makeShaderModule(VkShaderStageFlagBits stage, std::string source,
                    std::string label, std::string entryPoint)
-      -> pipeline::ShaderModuleDesc;
+      -> resource::ShaderModuleDesc;
 
   [[nodiscard]] static auto readTextFile(const std::string &path)
       -> std::string;

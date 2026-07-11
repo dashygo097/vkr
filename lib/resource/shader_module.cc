@@ -1,10 +1,10 @@
-#include "vkr/pipeline/shader_module.hh"
+#include "vkr/resource/shader_module.hh"
 #include "vkr/logger.hh"
 #include "vkr/util/io.hh"
 #include <exception>
 #include <utility>
 
-namespace vkr::pipeline {
+namespace vkr::resource {
 
 ShaderModule::ShaderModule(const core::Device &device) : device_(device) {}
 
@@ -81,4 +81,4 @@ auto ShaderModule::loadSpirv() const -> std::vector<uint32_t> {
   return {};
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::resource
