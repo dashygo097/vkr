@@ -43,7 +43,7 @@ void VulkanApplication::initVulkan() {
   // sync objects
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
-  // resource manager
+  // swapchain target
   swapchainTarget = std::make_unique<resource::SwapchainTarget>(
       *device, *commandPool, *swapchain);
 
@@ -51,8 +51,9 @@ void VulkanApplication::initVulkan() {
       .depth = resource::DepthAttachmentDesc{.format = VK_FORMAT_D32_SFLOAT}};
   swapchainTarget->update(swapchainTargetDesc);
 
-  resourceManager = std::make_unique<resource::ResourceManager>(
-      *device, *swapchain, *commandPool);
+  // resource manager
+  resourceManager =
+      std::make_unique<resource::ResourceManager>(*device, *commandPool);
 
   // render pass: swapchain
   swapchainRenderPass = std::make_unique<pipeline::RenderPass>(*device);
@@ -65,8 +66,10 @@ void VulkanApplication::initVulkan() {
       .height = swapchainTarget->height(),
       .layers = 1,
       .attachments = swapchainTarget->attachmentViews()};
-  resourceManager->createFramebufferSet("swapchain", *swapchainRenderPass,
-                                        swapchainFbDesc);
+
+  swapchainFramebufferSet =
+      std::make_unique<resource::FramebufferSet>(*device, *swapchainRenderPass);
+  swapchainFramebufferSet->update(swapchainFbDesc);
 
   // offscreen target
   resource::OffscreenTargetDesc offscreenDesc{
@@ -98,8 +101,9 @@ void VulkanApplication::initVulkan() {
       .layers = 1,
       .attachments = {offscreenTarget->attachmentViews()}};
 
-  resourceManager->createFramebufferSet("offscreen", *offscreenRenderPass,
-                                        offscreenFbDesc);
+  offscreenFramebufferSet =
+      std::make_unique<resource::FramebufferSet>(*device, *offscreenRenderPass);
+  offscreenFramebufferSet->update(offscreenFbDesc);
 
   // user resources
   createResources();
@@ -200,8 +204,8 @@ void VulkanApplication::drawFrame() {
       .clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
                       VkClearValue{.depthStencil = {1.0f, 0}}}};
 
-  renderer->beginPass(*resourceManager->getFramebufferSet("offscreen"),
-                      *offscreenRenderPass, offscreenDesc);
+  renderer->beginPass(*offscreenFramebufferSet, *offscreenRenderPass,
+                      offscreenDesc);
 
   renderer->setViewportAndScissor(
       {offscreenTarget->width(), offscreenTarget->height()});
@@ -224,8 +228,9 @@ void VulkanApplication::drawFrame() {
       .clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
                       VkClearValue{.depthStencil = {1.0f, 0}}}};
 
-  renderer->beginPass(*resourceManager->getFramebufferSet("swapchain"),
-                      *swapchainRenderPass, swapchainDesc);
+  renderer->beginPass(*swapchainFramebufferSet, *swapchainRenderPass,
+                      swapchainDesc);
+
   renderer->setViewportAndScissor(
       {swapchainTarget->width(), swapchainTarget->height()});
 

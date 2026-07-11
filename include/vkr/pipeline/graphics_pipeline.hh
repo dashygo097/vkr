@@ -331,7 +331,7 @@ private:
   };
 
   // dependencies
-  const core::Device *device_{nullptr};
+  const core::Device &device_;
 
   // components
   GraphicsPipelineDesc desc_{};

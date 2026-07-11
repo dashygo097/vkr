@@ -1,168 +1,187 @@
 #pragma once
 
-#include "vkr/core/swapchain.hh"
-#include "vkr/resource/attachments/frame_buffer.hh"
+#include "vkr/core/command/command_pool.hh"
+#include "vkr/core/device.hh"
 #include "vkr/resource/buffers/index_buffer.hh"
 #include "vkr/resource/buffers/uniform_buffer.hh"
 #include "vkr/resource/buffers/vertex_buffer.hh"
-#include "vkr/resource/gpu/image.hh"
-#include "vkr/resource/gpu/image_view.hh"
-#include "vkr/resource/gpu/sampler.hh"
+#include "vkr/resource/gpu/texture.hh"
 #include "vkr/resource/mesh.hh"
-#include <memory>
-#include <vector>
 
 namespace vkr::resource {
 
 class ResourceManager {
 public:
-  ResourceManager(const core::Device &device, const core::Swapchain &swapchain,
+  ResourceManager(const core::Device &device,
                   const core::CommandPool &commandPool)
-      : device_(device), swapchain_(swapchain), command_pool_(commandPool) {}
+      : device_(device), command_pool_(commandPool) {}
   ~ResourceManager() = default;
 
   ResourceManager(const ResourceManager &) = delete;
   auto operator=(const ResourceManager &) -> ResourceManager & = delete;
 
-  // Vertex Buffer Management
+  // Vertex buffer management
   template <typename VBOType>
   void createVertexBuffer(const std::string &name,
                           const std::vector<VBOType> &vertices) {
-    auto vb = std::make_shared<VertexBuffer<VBOType>>(device_, command_pool_);
-    vb->update(vertices);
-    vertex_buffers_[name] = std::move(vb);
+    auto buffer =
+        std::make_shared<VertexBuffer<VBOType>>(device_, command_pool_);
+    buffer->update(vertices);
+    vertex_buffers_[name] = std::move(buffer);
   }
 
-  auto getVertexBuffer(const std::string &name)
+  [[nodiscard]] auto getVertexBuffer(const std::string &name) const
       -> std::shared_ptr<IVertexBuffer> {
     auto it = vertex_buffers_.find(name);
-    return it != vertex_buffers_.end() ? it->second : nullptr;
+    return it == vertex_buffers_.end() ? nullptr : it->second;
   }
 
   void destroyVertexBuffer(const std::string &name) {
     vertex_buffers_.erase(name);
   }
 
-  // Index Buffer Management
+  // Index buffer management
   void createIndexBuffer(const std::string &name,
                          const std::vector<uint16_t> &indices) {
-    auto ib = std::make_shared<IndexBuffer>(device_, command_pool_);
-    ib->update(indices);
-    index_buffers_[name] = std::move(ib);
+    auto buffer = std::make_shared<IndexBuffer>(device_, command_pool_);
+    buffer->update(indices);
+    index_buffers_[name] = std::move(buffer);
   }
 
-  auto getIndexBuffer(const std::string &name) -> std::shared_ptr<IndexBuffer> {
+  [[nodiscard]] auto getIndexBuffer(const std::string &name) const
+      -> std::shared_ptr<IndexBuffer> {
     auto it = index_buffers_.find(name);
-    return it != index_buffers_.end() ? it->second : nullptr;
+    return it == index_buffers_.end() ? nullptr : it->second;
   }
 
   void destroyIndexBuffer(const std::string &name) {
     index_buffers_.erase(name);
   }
 
-  // Uniform Buffer Management
+  // Uniform buffer management
   template <typename UBOType>
   void createUniformBuffer(const std::string &name, const UBOType &ubo) {
-    auto ub = std::make_shared<UniformBuffer<UBOType>>(device_);
-    ub->update(0, ubo);
-    uniform_buffers_[name] = std::move(ub);
+    auto buffer = std::make_shared<UniformBuffer<UBOType>>(device_);
+    buffer->update(0, ubo);
+    uniform_buffers_[name] = std::move(buffer);
   }
 
-  auto getUniformBuffer(const std::string &name)
+  [[nodiscard]] auto getUniformBuffer(const std::string &name) const
       -> std::shared_ptr<IUniformBuffer> {
     auto it = uniform_buffers_.find(name);
-    return it != uniform_buffers_.end() ? it->second : nullptr;
+    return it == uniform_buffers_.end() ? nullptr : it->second;
   }
 
   void destroyUniformBuffer(const std::string &name) {
     uniform_buffers_.erase(name);
   }
 
-  // Framebuffer Management
-  void createFramebufferSet(const std::string &name,
-                            const pipeline::RenderPass &renderPass,
-                            const FramebufferDesc &desc) {
-    auto fb = std::make_shared<FramebufferSet>(device_, renderPass);
-    fb->update(desc);
-    frame_buffers_[name] = std::move(fb);
-  }
-
-  auto getFramebufferSet(const std::string &name)
-      -> std::shared_ptr<FramebufferSet> {
-    auto it = frame_buffers_.find(name);
-    return it != frame_buffers_.end() ? it->second : nullptr;
-  }
-
-  void destroyFramebufferSet(const std::string &name) {
-    frame_buffers_.erase(name);
-  }
-
-  // Mesh Management
+  // Mesh management
   template <typename VBOType>
   void createMesh(const std::string &name, const Mesh<VBOType> &mesh) {
     createVertexBuffer<VBOType>(name, mesh.vertexBuffer()->vertices());
     createIndexBuffer(name, mesh.indexBuffer()->indices());
   }
 
-  // Texture Management
+  void destroyMesh(const std::string &name) {
+    destroyVertexBuffer(name);
+    destroyIndexBuffer(name);
+  }
+
+  // Texture management
+  void createTexture(const std::string &name, const TextureDesc &desc) {
+    auto texture = std::make_shared<Texture>(device_, command_pool_);
+    texture->update(desc);
+    textures_[name] = std::move(texture);
+  }
+
+  void createTexture(const std::string &name, TextureDesc &&desc) {
+    auto texture = std::make_shared<Texture>(device_, command_pool_);
+    texture->update(desc);
+    textures_[name] = std::move(texture);
+  }
+
   void createTexture(const std::string &name, const std::string &filePath) {
-    auto image = std::make_shared<Image>(device_, command_pool_);
-    auto imageview = std::make_shared<ImageView>(device_);
-    auto sampler = std::make_shared<Sampler>(device_);
-
-    image->update(ImageDesc::textureFile(filePath));
-    imageview->update(ImageViewDesc::fromImage(*image));
-    sampler->update(SamplerDesc::linearRepeat());
-
-    texture_images_[name] = std::move(image);
-    texture_imageviews_[name] = std::move(imageview);
-    texture_samplers_[name] = std::move(sampler);
+    createTexture(name, TextureDesc::textureFile(filePath));
   }
 
-  auto getTextureImage(const std::string &name) -> std::shared_ptr<Image> {
-    auto it = texture_images_.find(name);
-    return it != texture_images_.end() ? it->second : nullptr;
+  [[nodiscard]] auto getTexture(const std::string &name) const
+      -> std::shared_ptr<Texture> {
+    auto it = textures_.find(name);
+    return it == textures_.end() ? nullptr : it->second;
   }
 
-  auto getTextureImageView(const std::string &name)
-      -> std::shared_ptr<ImageView> {
-    auto it = texture_imageviews_.find(name);
-    return it != texture_imageviews_.end() ? it->second : nullptr;
-  }
+  void destroyTexture(const std::string &name) { textures_.erase(name); }
 
-  auto getTextureSampler(const std::string &name) -> std::shared_ptr<Sampler> {
-    auto it = texture_samplers_.find(name);
-    return it != texture_samplers_.end() ? it->second : nullptr;
-  }
-
-  void destroyTexture(const std::string &name) {
-    texture_samplers_.erase(name);
-    texture_imageviews_.erase(name);
-    texture_images_.erase(name);
-  }
-
-  // Utility functions
-  [[nodiscard]] auto vertexBufferCount() const -> size_t {
+  // Counts
+  [[nodiscard]] auto vertexBufferCount() const noexcept -> size_t {
     return vertex_buffers_.size();
   }
-  [[nodiscard]] auto indexBufferCount() const -> size_t {
+
+  [[nodiscard]] auto indexBufferCount() const noexcept -> size_t {
     return index_buffers_.size();
   }
-  [[nodiscard]] auto uniformBufferCount() const -> size_t {
+
+  [[nodiscard]] auto uniformBufferCount() const noexcept -> size_t {
     return uniform_buffers_.size();
   }
-  [[nodiscard]] auto framebufferCount() const -> size_t {
-    return frame_buffers_.size();
-  }
-  [[nodiscard]] auto textureImageCount() const -> size_t {
-    return texture_images_.size();
+
+  [[nodiscard]] auto textureCount() const noexcept -> size_t {
+    return textures_.size();
   }
 
-  // List all resources
+  [[nodiscard]] auto textureImageCount() const noexcept -> size_t {
+    return textures_.size();
+  }
+
+  // Names
+  [[nodiscard]] auto listVertexBufferNames() const -> std::vector<std::string> {
+    return listResourceNames(vertex_buffers_);
+  }
+
+  [[nodiscard]] auto listIndexBufferNames() const -> std::vector<std::string> {
+    return listResourceNames(index_buffers_);
+  }
+
+  [[nodiscard]] auto listUniformBufferNames() const
+      -> std::vector<std::string> {
+    return listResourceNames(uniform_buffers_);
+  }
+
+  [[nodiscard]] auto listTextureNames() const -> std::vector<std::string> {
+    return listResourceNames(textures_);
+  }
+
+  [[nodiscard]] auto listTextureImageNames() const -> std::vector<std::string> {
+    return listTextureNames();
+  }
+
+  // Lists
+  [[nodiscard]] auto listVertexBuffers() const
+      -> std::vector<std::shared_ptr<IVertexBuffer>> {
+    return listResources(vertex_buffers_);
+  }
+
+  [[nodiscard]] auto listIndexBuffers() const
+      -> std::vector<std::shared_ptr<IndexBuffer>> {
+    return listResources(index_buffers_);
+  }
+
+  [[nodiscard]] auto listUniformBuffers() const
+      -> std::vector<std::shared_ptr<IUniformBuffer>> {
+    return listResources(uniform_buffers_);
+  }
+
+  [[nodiscard]] auto listTextures() const
+      -> std::vector<std::shared_ptr<Texture>> {
+    return listResources(textures_);
+  }
+
+private:
   template <typename ResourceType>
-  [[nodiscard]] auto listResources(
+  [[nodiscard]] static auto listResources(
       const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
-          &resourceMap) const -> std::vector<std::shared_ptr<ResourceType>> {
+          &resourceMap) -> std::vector<std::shared_ptr<ResourceType>> {
     std::vector<std::shared_ptr<ResourceType>> resources;
     resources.reserve(resourceMap.size());
 
@@ -174,9 +193,9 @@ public:
   }
 
   template <typename ResourceType>
-  [[nodiscard]] auto listResourceNames(
+  [[nodiscard]] static auto listResourceNames(
       const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
-          &resourceMap) const -> std::vector<std::string> {
+          &resourceMap) -> std::vector<std::string> {
     std::vector<std::string> names;
     names.reserve(resourceMap.size());
 
@@ -187,61 +206,19 @@ public:
     return names;
   }
 
-  [[nodiscard]] auto listVertexBuffers() const
-      -> std::vector<std::shared_ptr<IVertexBuffer>> {
-    return listResources<IVertexBuffer>(vertex_buffers_);
-  }
-  [[nodiscard]] auto listVertexBufferNames() const -> std::vector<std::string> {
-    return listResourceNames<IVertexBuffer>(vertex_buffers_);
-  }
-  [[nodiscard]] auto listIndexBuffers() const
-      -> std::vector<std::shared_ptr<IndexBuffer>> {
-    return listResources<IndexBuffer>(index_buffers_);
-  }
-  [[nodiscard]] auto listIndexBufferNames() const -> std::vector<std::string> {
-    return listResourceNames<IndexBuffer>(index_buffers_);
-  }
-  [[nodiscard]] auto listUniformBuffers() const
-      -> std::vector<std::shared_ptr<IUniformBuffer>> {
-    return listResources<IUniformBuffer>(uniform_buffers_);
-  }
-  [[nodiscard]] auto listUniformBufferNames() const
-      -> std::vector<std::string> {
-    return listResourceNames<IUniformBuffer>(uniform_buffers_);
-  }
-  [[nodiscard]] auto listFramebufferSet() const
-      -> std::vector<std::shared_ptr<FramebufferSet>> {
-    return listResources<FramebufferSet>(frame_buffers_);
-  }
-  [[nodiscard]] auto listFramebufferNames() const -> std::vector<std::string> {
-    return listResourceNames<FramebufferSet>(frame_buffers_);
-  }
-  [[nodiscard]] auto listTextureImages() const
-      -> std::vector<std::shared_ptr<Image>> {
-    return listResources<Image>(texture_images_);
-  }
-  [[nodiscard]] auto listTextureImageNames() const -> std::vector<std::string> {
-    return listResourceNames<Image>(texture_images_);
-  }
-
 private:
   // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  const core::Swapchain &swapchain_;
 
   // components
   std::unordered_map<std::string, std::shared_ptr<IVertexBuffer>>
-      vertex_buffers_;
-  std::unordered_map<std::string, std::shared_ptr<IndexBuffer>> index_buffers_;
+      vertex_buffers_{};
+  std::unordered_map<std::string, std::shared_ptr<IndexBuffer>>
+      index_buffers_{};
   std::unordered_map<std::string, std::shared_ptr<IUniformBuffer>>
-      uniform_buffers_;
-  std::unordered_map<std::string, std::shared_ptr<FramebufferSet>>
-      frame_buffers_;
-  std::unordered_map<std::string, std::shared_ptr<Image>> texture_images_;
-  std::unordered_map<std::string, std::shared_ptr<ImageView>>
-      texture_imageviews_;
-  std::unordered_map<std::string, std::shared_ptr<Sampler>> texture_samplers_;
+      uniform_buffers_{};
+  std::unordered_map<std::string, std::shared_ptr<Texture>> textures_{};
 };
 
 } // namespace vkr::resource

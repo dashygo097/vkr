@@ -6,16 +6,11 @@
 
 namespace vkr::pipeline {
 
-ShaderModule::ShaderModule(const core::Device &device) : device_(&device) {}
+ShaderModule::ShaderModule(const core::Device &device) : device_(device) {}
 
 ShaderModule::~ShaderModule() { destroy(); }
 
 void ShaderModule::create() {
-  if (device_ == nullptr) {
-    VKR_PIPE_ERROR("Cannot create shader module without device");
-    return;
-  }
-
   if (!desc_.isValid()) {
     VKR_PIPE_ERROR("Invalid shader module descriptor");
     return;
@@ -33,7 +28,7 @@ void ShaderModule::create() {
   info.codeSize = code.size() * sizeof(uint32_t);
   info.pCode = code.data();
 
-  if (vkCreateShaderModule(device_->device(), &info, nullptr, &vk_module_) !=
+  if (vkCreateShaderModule(device_.device(), &info, nullptr, &vk_module_) !=
       VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to create shader module");
     vk_module_ = VK_NULL_HANDLE;
@@ -44,13 +39,8 @@ void ShaderModule::create() {
 }
 
 void ShaderModule::destroy() {
-  if (device_ == nullptr) {
-    vk_module_ = VK_NULL_HANDLE;
-    return;
-  }
-
   if (vk_module_ != VK_NULL_HANDLE) {
-    vkDestroyShaderModule(device_->device(), vk_module_, nullptr);
+    vkDestroyShaderModule(device_.device(), vk_module_, nullptr);
     vk_module_ = VK_NULL_HANDLE;
   }
 }

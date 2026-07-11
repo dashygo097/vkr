@@ -4,41 +4,33 @@
 namespace vkr::pipeline {
 
 GraphicsPipeline::GraphicsPipeline(const core::Device &device)
-    : device_(&device) {}
+    : device_(device) {}
 
 GraphicsPipeline::~GraphicsPipeline() { destroy(); }
 
 void GraphicsPipeline::destroy() {
-  if (device_ == nullptr) {
-    shader_modules_.clear();
-    retired_pipelines_.clear();
-    vk_graphics_pipeline_ = VK_NULL_HANDLE;
-    vk_pipeline_layout_ = VK_NULL_HANDLE;
-    return;
-  }
-
   if (vk_graphics_pipeline_ != VK_NULL_HANDLE ||
       vk_pipeline_layout_ != VK_NULL_HANDLE || !retired_pipelines_.empty()) {
-    vkDeviceWaitIdle(device_->device());
+    vkDeviceWaitIdle(device_.device());
   }
 
   if (vk_graphics_pipeline_ != VK_NULL_HANDLE) {
-    vkDestroyPipeline(device_->device(), vk_graphics_pipeline_, nullptr);
+    vkDestroyPipeline(device_.device(), vk_graphics_pipeline_, nullptr);
     vk_graphics_pipeline_ = VK_NULL_HANDLE;
   }
 
   if (vk_pipeline_layout_ != VK_NULL_HANDLE) {
-    vkDestroyPipelineLayout(device_->device(), vk_pipeline_layout_, nullptr);
+    vkDestroyPipelineLayout(device_.device(), vk_pipeline_layout_, nullptr);
     vk_pipeline_layout_ = VK_NULL_HANDLE;
   }
 
   for (const auto &retired : retired_pipelines_) {
     if (retired.pipeline != VK_NULL_HANDLE) {
-      vkDestroyPipeline(device_->device(), retired.pipeline, nullptr);
+      vkDestroyPipeline(device_.device(), retired.pipeline, nullptr);
     }
 
     if (retired.layout != VK_NULL_HANDLE) {
-      vkDestroyPipelineLayout(device_->device(), retired.layout, nullptr);
+      vkDestroyPipelineLayout(device_.device(), retired.layout, nullptr);
     }
   }
 
@@ -47,20 +39,7 @@ void GraphicsPipeline::destroy() {
 }
 
 auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
-  const GraphicsPipelineDesc oldDesc = desc_;
   desc_ = desc;
-
-  if (device_ == nullptr) {
-    desc_ = oldDesc;
-    VKR_PIPE_ERROR("Cannot create graphics pipeline without device");
-    return false;
-  }
-
-  if (!desc_.isValid()) {
-    desc_ = oldDesc;
-    VKR_PIPE_ERROR("Invalid graphics pipeline descriptor");
-    return false;
-  }
 
   std::vector<std::unique_ptr<ShaderModule>> nextShaderModules{};
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
@@ -69,14 +48,12 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
   shaderStages.reserve(desc_.shaders.size());
 
   for (const auto &shader : desc_.shaders) {
-    auto module = std::make_unique<ShaderModule>(*device_);
+    auto module = std::make_unique<ShaderModule>(device_);
     module->update(shader.module);
 
     if (!module->valid()) {
-      desc_ = oldDesc;
       VKR_PIPE_ERROR("Failed to create shader module for pipeline '{}'",
                      desc_.name);
-      return false;
     }
 
     VkPipelineShaderStageCreateInfo stage{};
@@ -112,12 +89,10 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
                                        : desc_.layout.pushConstants.data();
 
   VkPipelineLayout nextLayout = VK_NULL_HANDLE;
-  if (vkCreatePipelineLayout(device_->device(), &layoutInfo, nullptr,
+  if (vkCreatePipelineLayout(device_.device(), &layoutInfo, nullptr,
                              &nextLayout) != VK_SUCCESS) {
-    desc_ = oldDesc;
     VKR_PIPE_ERROR("Failed to create graphics pipeline layout for '{}'",
                    desc.name);
-    return false;
   }
 
   VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -139,13 +114,11 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
   pipelineInfo.basePipelineIndex = desc_.basePipelineIndex;
 
   VkPipeline nextPipeline = VK_NULL_HANDLE;
-  if (vkCreateGraphicsPipelines(device_->device(), VK_NULL_HANDLE, 1,
+  if (vkCreateGraphicsPipelines(device_.device(), VK_NULL_HANDLE, 1,
                                 &pipelineInfo, nullptr,
                                 &nextPipeline) != VK_SUCCESS) {
-    vkDestroyPipelineLayout(device_->device(), nextLayout, nullptr);
-    desc_ = oldDesc;
+    vkDestroyPipelineLayout(device_.device(), nextLayout, nullptr);
     VKR_PIPE_ERROR("Failed to create graphics pipeline '{}'", desc.name);
-    return false;
   }
 
   if (vk_graphics_pipeline_ != VK_NULL_HANDLE ||

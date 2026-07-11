@@ -2,11 +2,6 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/util/compiler.hh"
-#include <cstdint>
-#include <string>
-#include <utility>
-#include <vector>
-#include <vulkan/vulkan.h>
 
 namespace vkr::pipeline {
 
@@ -136,7 +131,7 @@ public:
 
 private:
   // dependencies
-  const core::Device *device_{nullptr};
+  const core::Device &device_;
 
   // components
   ShaderModuleDesc desc_{};

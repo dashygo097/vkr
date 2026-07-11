@@ -54,7 +54,9 @@ public:
 
   // resource management
   std::unique_ptr<resource::SwapchainTarget> swapchainTarget;
+  std::unique_ptr<resource::FramebufferSet> swapchainFramebufferSet;
   std::unique_ptr<resource::OffscreenTarget> offscreenTarget;
+  std::unique_ptr<resource::FramebufferSet> offscreenFramebufferSet;
   std::unique_ptr<resource::ResourceManager> resourceManager;
 
   // render pass

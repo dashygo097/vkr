@@ -25,9 +25,6 @@ void ResourceTree::render() {
                    resource_manager_.listUniformBufferNames(),
                    resource_manager_.uniformBufferCount());
 
-    renderCategory("Framebuffers", resource_manager_.listFramebufferNames(),
-                   resource_manager_.framebufferCount());
-
     renderCategory("Textures", resource_manager_.listTextureImageNames(),
                    resource_manager_.textureImageCount());
   }

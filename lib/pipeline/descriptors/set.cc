@@ -73,30 +73,21 @@ void DescriptorSets::bindResources() {
     }
 
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-      auto imageView = resource_manager_.getTextureImageView(binding.name);
-      auto imageSampler = resource_manager_.getTextureSampler(binding.name);
+      auto texture = resource_manager_.getTexture(binding.name);
 
-      if (!imageView) {
-        VKR_PIPE_ERROR("Texture image view resource not found: {}",
-                       binding.name);
+      if (!texture) {
+        VKR_PIPE_ERROR("Texture resource not found: {}", binding.name);
       }
 
-      if (!imageSampler) {
-        VKR_PIPE_ERROR("Texture sampler resource not found: {}", binding.name);
+      if (!texture->hasSampler()) {
+        VKR_PIPE_ERROR("Texture sampler not found: {}", binding.name);
       }
 
-      std::vector<VkImageView> imageViews(frame_count_, imageView->imageView());
-      const auto &sampler = imageSampler->sampler();
-
-      if (imageViews.size() != frame_count_) {
-        VKR_PIPE_ERROR("Image view count must match frame count({} vs {})",
-                       imageViews.size(), frame_count_);
-      }
       for (uint32_t i = 0; i < frame_count_; ++i) {
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = imageViews[i];
-        imageInfo.sampler = sampler;
+        imageInfo.imageView = texture->imageView();
+        imageInfo.sampler = texture->sampler();
 
         DescriptorWriter writer(device_);
         writer.writeImage(binding.binding,
