@@ -1,6 +1,6 @@
 # VKR
 
-###### A simple toy renderer impled in vulkan
+###### A compile-time toy graph-based renderer impled in vulkan
 
 ## Screenshot
 
