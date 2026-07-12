@@ -4,11 +4,11 @@
 
 namespace vkr::render {
 
-RasterPass::RasterPass(const core::Device &device,
+RasterPass::RasterPass(Renderer &renderer, const core::Device &device,
                        const core::CommandPool &commandPool,
                        resource::ResourceManager &resourceManager,
                        RasterPassDesc desc)
-    : device_(device), command_pool_(commandPool),
+    : renderer_(renderer), device_(device), command_pool_(commandPool),
       resource_manager_(resourceManager) {
   update(desc);
 }
@@ -45,7 +45,7 @@ void RasterPass::update(const RasterPassDesc &desc) {
   setDesc(desc_.graph);
 }
 
-void RasterPass::record(Renderer &renderer) {
+void RasterPass::record() {
   if (!target_ || !render_pass_ || !framebuffers_) {
     VKR_RENDER_ERROR("RasterPass '{}' recorded before create", name());
   }
@@ -56,18 +56,18 @@ void RasterPass::record(Renderer &renderer) {
                      .extent = {target_->width(), target_->height()}},
       .clearValues = desc_.clearValues};
 
-  renderer.beginPass(*framebuffers_, *render_pass_, beginDesc);
-  renderer.setViewportAndScissor({target_->width(), target_->height()});
+  renderer_.beginPass(*framebuffers_, *render_pass_, beginDesc);
+  renderer_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
     const std::vector<VkDescriptorSet> emptySets{};
     const auto &sets = descriptor_sets_ ? descriptor_sets_->sets() : emptySets;
 
-    renderer.bindPipeline(pipeline_->pipeline(), pipeline_->layout(), sets);
-    renderer.drawGeometry();
+    renderer_.bindPipeline(pipeline_->pipeline(), pipeline_->layout(), sets);
+    renderer_.drawGeometry();
   }
 
-  renderer.endPass();
+  renderer_.endPass();
 }
 
 auto RasterPass::target() -> resource::OffscreenTarget & {

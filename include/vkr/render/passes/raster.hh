@@ -27,22 +27,18 @@ using RasterPipelineFactory = std::function<pipeline::GraphicsPipelineDesc(
     const RasterPipelineBuildInfo &)>;
 
 struct RasterPassDesc {
-  RenderGraphPassDesc graph{.name = "raster", .writes = {"scene.color"}};
+  RenderGraphPassDesc graph{};
   resource::OffscreenTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
-  pipeline::DescriptorPoolDesc descriptorPool{
-      .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
-                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-      .maxSets = core::MAX_FRAMES_IN_FLIGHT};
-  std::vector<VkClearValue> clearValues{
-      VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
-      VkClearValue{.depthStencil = {1.0f, 0}}};
+  pipeline::DescriptorPoolDesc descriptorPool{};
+  std::vector<VkClearValue> clearValues{};
   RasterPipelineFactory pipeline{};
 };
 
 class RasterPass final : public RenderGraphPass {
 public:
-  RasterPass(const core::Device &device, const core::CommandPool &commandPool,
+  RasterPass(Renderer &renderer, const core::Device &device,
+             const core::CommandPool &commandPool,
              resource::ResourceManager &resourceManager, RasterPassDesc desc);
   ~RasterPass() override;
 
@@ -53,7 +49,7 @@ public:
   void destroy() override;
   void update(const RenderGraphPassDesc &desc) override;
   void update(const RasterPassDesc &desc);
-  void record(Renderer &renderer) override;
+  void record() override;
 
   [[nodiscard]] auto target() -> resource::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
@@ -68,6 +64,7 @@ public:
   }
 
 private:
+  Renderer &renderer_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
   resource::ResourceManager &resource_manager_;

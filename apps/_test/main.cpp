@@ -7,6 +7,8 @@
 
 class TestApp : public vkr::VulkanApplication {
 private:
+  vkr::render::UiPass *ui_pass_{nullptr};
+
   const std::vector<vkr::resource::VertexTextured3D> vertices1 = {
       vkr::resource::VertexTextured3D({-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}),
       vkr::resource::VertexTextured3D({0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}),
@@ -41,8 +43,21 @@ private:
         "image1", assetSystem->resolve("textures/avatar.jpg").string());
   }
 
-  void buildRenderGraph(vkr::render::RenderGraph &graph) override {
-    auto desc = makeDefaultRasterPassDesc();
+  void buildRenderGraph() override {
+    vkr::render::RasterPassDesc desc{};
+    desc.graph = {.name = "raster", .writes = {"scene.color"}};
+    desc.target = {
+        .color = {.width = swapchain->width(),
+                  .height = swapchain->height(),
+                  .format = VK_FORMAT_R8G8B8A8_UNORM,
+                  .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                           VK_IMAGE_USAGE_SAMPLED_BIT,
+                  .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  .createSampler = true},
+        .depth =
+            vkr::resource::DepthAttachmentDesc{.width = swapchain->width(),
+                                               .height = swapchain->height(),
+                                               .format = VK_FORMAT_D32_SFLOAT}};
     desc.descriptorBindings = {
         {.name = "default",
          .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
@@ -50,6 +65,12 @@ private:
         {.name = "image1",
          .layout = {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                     VK_SHADER_STAGE_FRAGMENT_BIT}}};
+    desc.descriptorPool = {
+        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
+                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
+        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+    desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
+                        VkClearValue{.depthStencil = {1.0f, 0}}};
 
     desc.pipeline = [this](const vkr::render::RasterPipelineBuildInfo &info) {
       vkr::pipeline::GraphicsPipelineDesc textured{};
@@ -77,12 +98,29 @@ private:
       return textured;
     };
 
-    rasterPass = &graph.addPass<vkr::render::RasterPass>(
-        *device, *commandPool, *resourceManager, std::move(desc));
-    uiPass = &graph.addPass<vkr::render::UiPass>(
-        *window, *instance, *surface, *device, *commandPool, *swapchain,
-        *resourceManager, *rasterPass, *timer, ctx.theme);
-    graph.addPass<vkr::render::PresentPass>();
+    auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
+        *renderer, *device, *commandPool, *resourceManager, std::move(desc));
+
+    vkr::render::UiPassDesc uiDesc{};
+    uiDesc.graph = {
+        .name = "ui", .reads = {"scene.color"}, .writes = {"swapchain"}};
+    uiDesc.target = {.depth = vkr::resource::DepthAttachmentDesc{
+                         .format = VK_FORMAT_D32_SFLOAT}};
+    uiDesc.descriptorPool = {
+        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
+                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
+        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT + 2};
+    uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
+                          VkClearValue{.depthStencil = {1.0f, 0}}};
+
+    ui_pass_ = &renderGraph->addPass<vkr::render::UiPass>(
+        *renderer, *window, *instance, *surface, *device, *commandPool,
+        *swapchain, *resourceManager, rasterPass, *timer, ctx.theme,
+        std::move(uiDesc));
+
+    renderGraph->addPass<vkr::render::PresentPass>(
+        vkr::render::RenderGraphPassDesc{.name = "present",
+                                         .reads = {"swapchain"}});
   }
 
   void onDrawFrame(uint32_t currentImage) override {
@@ -94,14 +132,37 @@ private:
     resourceManager->getUniformBuffer("default")->updateRaw(currentImage, &ubo,
                                                             sizeof(ubo));
 
-    if (uiPass->viewportInfo().height > 0 &&
-        uiPass->layoutMode() == vkr::ui::LayoutMode::Standard) {
+    updateUiState();
+
+    if (ui_pass_->viewportInfo().height > 0 &&
+        ui_pass_->layoutMode() == vkr::ui::LayoutMode::Standard) {
       ctx.camera.aspectRatio =
-          uiPass->viewportInfo().width /
-          static_cast<float>(uiPass->viewportInfo().height);
+          ui_pass_->viewportInfo().width /
+          static_cast<float>(ui_pass_->viewportInfo().height);
     } else {
       ctx.camera.aspectRatio = ctx.window.ratio();
     }
+  }
+
+  [[nodiscard]] auto shouldClose() const noexcept -> bool override {
+    return ui_pass_ && ui_pass_->shouldClose();
+  }
+
+  void updateUiState() {
+    static bool wasTabPressed = false;
+    const bool isTabPressed =
+        glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
+
+    if (isTabPressed && !wasTabPressed) {
+      ui_pass_->switchLayoutMode();
+    }
+
+    wasTabPressed = isTabPressed;
+
+    const bool lockCamera =
+        ui_pass_->layoutMode() == vkr::ui::LayoutMode::Standard &&
+        !ui_pass_->viewportInfo().isHovered;
+    camera->lock(lockCamera);
   }
 
   void onConfigure() override {

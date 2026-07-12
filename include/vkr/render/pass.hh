@@ -54,7 +54,7 @@ public:
   virtual void create() = 0;
   virtual void destroy() = 0;
   virtual void update(const RenderGraphPassDesc &desc) = 0;
-  virtual void record(Renderer &renderer) = 0;
+  virtual void record() = 0;
 
 protected:
   void setDesc(RenderGraphPassDesc desc) { desc_ = std::move(desc); }

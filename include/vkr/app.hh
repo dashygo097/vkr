@@ -56,8 +56,6 @@ public:
   // renderer
   std::unique_ptr<render::Renderer> renderer;
   std::unique_ptr<render::RenderGraph> renderGraph;
-  render::RasterPass *rasterPass{nullptr};
-  render::UiPass *uiPass{nullptr};
 
   // components
   std::unique_ptr<scene::Camera> camera;
@@ -67,10 +65,10 @@ protected:
   virtual void onConfigure() {}
   virtual void onDrawFrame(uint32_t currentImage) {}
   virtual void createResources() {}
-  virtual void buildRenderGraph(render::RenderGraph &graph);
-
-  [[nodiscard]] auto makeDefaultRasterPassDesc() const
-      -> render::RasterPassDesc;
+  virtual void buildRenderGraph() = 0;
+  [[nodiscard]] virtual auto shouldClose() const noexcept -> bool {
+    return false;
+  }
 
   [[nodiscard]] virtual auto snapshotPath() const -> std::filesystem::path {
     return "snapshot.toml";

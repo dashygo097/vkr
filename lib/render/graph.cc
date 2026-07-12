@@ -122,7 +122,7 @@ auto RenderGraph::destroy() -> void {
   created_ = false;
 }
 
-auto RenderGraph::record(Renderer &renderer) -> void {
+auto RenderGraph::record() -> void {
   if (dirty_) {
     compile();
   }
@@ -132,7 +132,7 @@ auto RenderGraph::record(Renderer &renderer) -> void {
   }
 
   for (auto *pass : ordered_passes_) {
-    pass->record(renderer);
+    pass->record();
   }
 }
 

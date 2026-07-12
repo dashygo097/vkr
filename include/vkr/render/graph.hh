@@ -37,7 +37,7 @@ public:
   void compile();
   void create();
   void destroy();
-  void record(Renderer &renderer);
+  void record();
 
   template <typename PassT>
   [[nodiscard]] auto getPass(std::string_view name) -> PassT * {

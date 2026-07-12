@@ -8,6 +8,8 @@
 
 class ShaderToyApp : public vkr::VulkanApplication {
 private:
+  vkr::render::UiPass *ui_pass_{nullptr};
+
   std::chrono::high_resolution_clock::time_point startTime;
   std::chrono::high_resolution_clock::time_point lastFrameTime;
   float totalTime{0.0f};
@@ -22,13 +24,32 @@ private:
             "shadertoy", {});
   }
 
-  void buildRenderGraph(vkr::render::RenderGraph &graph) override {
-    auto desc = makeDefaultRasterPassDesc();
+  void buildRenderGraph() override {
+    vkr::render::RasterPassDesc desc{};
+    desc.graph = {.name = "raster", .writes = {"scene.color"}};
+    desc.target = {
+        .color = {.width = swapchain->width(),
+                  .height = swapchain->height(),
+                  .format = VK_FORMAT_R8G8B8A8_UNORM,
+                  .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                           VK_IMAGE_USAGE_SAMPLED_BIT,
+                  .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  .createSampler = true},
+        .depth =
+            vkr::resource::DepthAttachmentDesc{.width = swapchain->width(),
+                                               .height = swapchain->height(),
+                                               .format = VK_FORMAT_D32_SFLOAT}};
     desc.descriptorBindings = {
         {.name = "shadertoy",
          .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                     VK_SHADER_STAGE_FRAGMENT_BIT}},
     };
+    desc.descriptorPool = {
+        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
+                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
+        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+    desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
+                        VkClearValue{.depthStencil = {1.0f, 0}}};
 
     desc.pipeline = [this](const vkr::render::RasterPipelineBuildInfo &info) {
       vkr::pipeline::GraphicsPipelineDesc shadertoy{};
@@ -56,15 +77,34 @@ private:
       return shadertoy;
     };
 
-    rasterPass = &graph.addPass<vkr::render::RasterPass>(
-        *device, *commandPool, *resourceManager, std::move(desc));
-    uiPass = &graph.addPass<vkr::render::UiPass>(
-        *window, *instance, *surface, *device, *commandPool, *swapchain,
-        *resourceManager, *rasterPass, *timer, ctx.theme);
-    graph.addPass<vkr::render::PresentPass>();
+    auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
+        *renderer, *device, *commandPool, *resourceManager, std::move(desc));
+
+    vkr::render::UiPassDesc uiDesc{};
+    uiDesc.graph = {
+        .name = "ui", .reads = {"scene.color"}, .writes = {"swapchain"}};
+    uiDesc.target = {.depth = vkr::resource::DepthAttachmentDesc{
+                         .format = VK_FORMAT_D32_SFLOAT}};
+    uiDesc.descriptorPool = {
+        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
+                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
+        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT + 2};
+    uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
+                          VkClearValue{.depthStencil = {1.0f, 0}}};
+
+    ui_pass_ = &renderGraph->addPass<vkr::render::UiPass>(
+        *renderer, *window, *instance, *surface, *device, *commandPool,
+        *swapchain, *resourceManager, rasterPass, *timer, ctx.theme,
+        std::move(uiDesc));
+
+    renderGraph->addPass<vkr::render::PresentPass>(
+        vkr::render::RenderGraphPassDesc{.name = "present",
+                                         .reads = {"swapchain"}});
   }
 
   void onDrawFrame(uint32_t currentImage) override {
+    updateUiState();
+
     auto shadertoyUBO = resourceManager->getUniformBuffer("shadertoy");
     if (!shadertoyUBO) {
       return;
@@ -115,6 +155,22 @@ private:
                                              now->tm_min * 60 + now->tm_sec));
 
     shadertoyUBO->updateRaw(currentImage, &ubo, sizeof(ubo));
+  }
+
+  [[nodiscard]] auto shouldClose() const noexcept -> bool override {
+    return ui_pass_ && ui_pass_->shouldClose();
+  }
+
+  void updateUiState() {
+    static bool wasTabPressed = false;
+    const bool isTabPressed =
+        glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
+
+    if (isTabPressed && !wasTabPressed) {
+      ui_pass_->switchLayoutMode();
+    }
+
+    wasTabPressed = isTabPressed;
   }
 
   void onConfigure() override {

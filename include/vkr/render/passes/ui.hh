@@ -21,26 +21,20 @@
 namespace vkr::render {
 
 struct UiPassDesc {
-  RenderGraphPassDesc graph{
-      .name = "ui", .reads = {"scene.color"}, .writes = {"swapchain"}};
-  resource::SwapchainTargetDesc target{
-      .depth = resource::DepthAttachmentDesc{.format = VK_FORMAT_D32_SFLOAT}};
-  pipeline::DescriptorPoolDesc descriptorPool{
-      .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
-                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-      .maxSets = core::MAX_FRAMES_IN_FLIGHT + 2};
-  std::vector<VkClearValue> clearValues{
-      VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
-      VkClearValue{.depthStencil = {1.0f, 0}}};
+  RenderGraphPassDesc graph{};
+  resource::SwapchainTargetDesc target{};
+  pipeline::DescriptorPoolDesc descriptorPool{};
+  std::vector<VkClearValue> clearValues{};
 };
 
 class UiPass final : public RenderGraphPass {
 public:
-  UiPass(const core::Window &window, const core::Instance &instance,
-         const core::Surface &surface, const core::Device &device,
-         const core::CommandPool &commandPool, const core::Swapchain &swapchain,
+  UiPass(Renderer &renderer, const core::Window &window,
+         const core::Instance &instance, const core::Surface &surface,
+         const core::Device &device, const core::CommandPool &commandPool,
+         const core::Swapchain &swapchain,
          resource::ResourceManager &resourceManager, RasterPass &source,
-         util::Timer &timer, ui::ThemeDesc &theme, UiPassDesc desc = {});
+         util::Timer &timer, ui::ThemeDesc &theme, UiPassDesc desc);
   ~UiPass() override;
 
   UiPass(const UiPass &) = delete;
@@ -50,7 +44,7 @@ public:
   void destroy() override;
   void update(const RenderGraphPassDesc &desc) override;
   void update(const UiPassDesc &desc);
-  void record(Renderer &renderer) override;
+  void record() override;
 
   [[nodiscard]] auto ui() noexcept -> ui::UI * { return ui_.get(); }
   [[nodiscard]] auto ui() const noexcept -> const ui::UI * { return ui_.get(); }
@@ -74,6 +68,7 @@ public:
   }
 
 private:
+  Renderer &renderer_;
   const core::Window &window_;
   const core::Instance &instance_;
   const core::Surface &surface_;
@@ -95,15 +90,12 @@ private:
 
 class PresentPass final : public RenderGraphPass {
 public:
-  explicit PresentPass(RenderGraphPassDesc desc = {.name = "present",
-                                                   .reads = {"swapchain"}}) {
-    setDesc(std::move(desc));
-  }
+  explicit PresentPass(RenderGraphPassDesc desc) { setDesc(std::move(desc)); }
 
   void create() override {}
   void destroy() override {}
   void update(const RenderGraphPassDesc &desc) override { setDesc(desc); }
-  void record(Renderer &renderer) override;
+  void record() override;
 };
 
 } // namespace vkr::render
