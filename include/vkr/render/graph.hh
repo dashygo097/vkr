@@ -20,13 +20,15 @@ public:
   RenderGraph(const RenderGraph &) = delete;
   auto operator=(const RenderGraph &) -> RenderGraph & = delete;
 
-  template <typename PassT, typename... Args> void addPass(Args &&...args) {
+  template <typename PassT, typename... Args>
+  auto addPass(Args &&...args) -> PassT & {
     static_assert(std::is_base_of_v<RenderGraphPass, PassT>,
                   "PassT must derive from RenderGraphPass");
 
     auto pass = std::make_unique<PassT>(std::forward<Args>(args)...);
     auto &ref = *pass;
     addPass(std::move(pass));
+    return ref;
   }
 
   void addPass(std::unique_ptr<RenderGraphPass> pass);
@@ -35,8 +37,19 @@ public:
   void compile();
   void create();
   void destroy();
-  void record(VkCommandBuffer commandBuffer, uint32_t frameIndex,
-              uint32_t imageIndex);
+  void record(Renderer &renderer);
+
+  template <typename PassT>
+  [[nodiscard]] auto getPass(std::string_view name) -> PassT * {
+    const auto index = passIndex(name);
+    return dynamic_cast<PassT *>(passes_[index].get());
+  }
+
+  template <typename PassT>
+  [[nodiscard]] auto getPass(std::string_view name) const -> const PassT * {
+    const auto index = passIndex(name);
+    return dynamic_cast<const PassT *>(passes_[index].get());
+  }
 
 private:
   // components

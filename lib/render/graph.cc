@@ -122,8 +122,7 @@ auto RenderGraph::destroy() -> void {
   created_ = false;
 }
 
-auto RenderGraph::record(VkCommandBuffer commandBuffer, uint32_t frameIndex,
-                         uint32_t imageIndex) -> void {
+auto RenderGraph::record(Renderer &renderer) -> void {
   if (dirty_) {
     compile();
   }
@@ -133,7 +132,7 @@ auto RenderGraph::record(VkCommandBuffer commandBuffer, uint32_t frameIndex,
   }
 
   for (auto *pass : ordered_passes_) {
-    pass->record(commandBuffer, frameIndex, imageIndex);
+    pass->record(renderer);
   }
 }
 

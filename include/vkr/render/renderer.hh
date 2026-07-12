@@ -24,7 +24,7 @@ public:
                     const core::Swapchain &swapchain,
                     const core::CommandPool &commandPool,
                     core::SyncObjects &syncObjects,
-                    resource::ResourceManager &resourceManager, ui::UI &ui);
+                    resource::ResourceManager &resourceManager);
   ~Renderer() = default;
 
   Renderer(const Renderer &) = delete;
@@ -61,7 +61,7 @@ public:
   void setViewportAndScissor(VkExtent2D extent);
 
   void drawGeometry();
-  void drawUI();
+  void drawUI(ui::UI &ui);
 
 private:
   // dependencies
@@ -70,7 +70,6 @@ private:
   const core::CommandPool &command_pool_;
   core::SyncObjects &sync_objects_;
   resource::ResourceManager &resource_manager_;
-  ui::UI &ui_;
 
   // components
   std::unique_ptr<core::CommandBuffers> command_buffers_{};

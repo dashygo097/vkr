@@ -2,13 +2,12 @@
 
 #include "vkr/context.hh"
 #include "vkr/logger.hh"
-#include "vkr/pipeline/descriptors/set.hh"
-#include "vkr/render/pipeline_library.hh"
+#include "vkr/render/graph.hh"
+#include "vkr/render/passes/raster.hh"
+#include "vkr/render/passes/ui.hh"
 #include "vkr/render/renderer.hh"
 #include "vkr/resource/manager.hh"
-#include "vkr/resource/targets/swapchain.hh"
 #include "vkr/scene/camera.hh"
-#include "vkr/ui/ui.hh"
 #include "vkr/util/asset.hh"
 #include "vkr/util/timer.hh"
 #include "vkr/util/toml.hh"
@@ -49,33 +48,16 @@ public:
   std::unique_ptr<core::Device> device;
   std::unique_ptr<core::Swapchain> swapchain;
   std::unique_ptr<core::CommandPool> commandPool;
-  std::unique_ptr<core::CommandBuffers> commandBuffers;
   std::unique_ptr<core::SyncObjects> syncObjects;
 
   // resource management
-  std::unique_ptr<resource::SwapchainTarget> swapchainTarget;
-  std::unique_ptr<resource::FramebufferSet> swapchainFramebufferSet;
-  std::unique_ptr<resource::OffscreenTarget> offscreenTarget;
-  std::unique_ptr<resource::FramebufferSet> offscreenFramebufferSet;
   std::unique_ptr<resource::ResourceManager> resourceManager;
-
-  // render pass
-  std::unique_ptr<pipeline::RenderPass> swapchainRenderPass;
-  std::unique_ptr<pipeline::RenderPass> offscreenRenderPass;
-
-  // pipeline management
-  std::unique_ptr<render::PipelineLibrary> pipelineLibrary;
-
-  // descriptor
-  std::unique_ptr<pipeline::DescriptorSetLayout> descriptorSetLayout;
-  std::unique_ptr<pipeline::DescriptorPool> descriptorPool;
-  std::unique_ptr<pipeline::DescriptorSets> descriptorSets;
-
-  // ui
-  std::unique_ptr<ui::UI> ui;
 
   // renderer
   std::unique_ptr<render::Renderer> renderer;
+  std::unique_ptr<render::RenderGraph> renderGraph;
+  render::RasterPass *rasterPass{nullptr};
+  render::UiPass *uiPass{nullptr};
 
   // components
   std::unique_ptr<scene::Camera> camera;
@@ -85,14 +67,7 @@ protected:
   virtual void onConfigure() {}
   virtual void onDrawFrame(uint32_t currentImage) {}
   virtual void createResources() {}
-  virtual void createPipelines() {}
-  virtual auto createDescriptorBindings()
-      -> std::vector<pipeline::DescriptorBinding> {
-    return {};
-  }
-
-  virtual auto createDescriptorSetWrites()
-      -> std::vector<pipeline::DescriptorSetWriteDesc>;
+  virtual auto createRasterPassDesc() -> render::RasterPassDesc;
 
   [[nodiscard]] virtual auto snapshotPath() const -> std::filesystem::path {
     return "snapshot.toml";

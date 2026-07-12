@@ -7,6 +7,8 @@
 
 namespace vkr::render {
 
+class Renderer;
+
 struct RenderGraphPassDesc {
   std::string name{};
   std::vector<std::string> reads{};
@@ -52,8 +54,10 @@ public:
   virtual void create() = 0;
   virtual void destroy() = 0;
   virtual void update(const RenderGraphPassDesc &desc) = 0;
-  virtual void record(VkCommandBuffer commandBuffer, uint32_t frameIndex,
-                      uint32_t imageIndex) = 0;
+  virtual void record(Renderer &renderer) = 0;
+
+protected:
+  void setDesc(RenderGraphPassDesc desc) { desc_ = std::move(desc); }
 
 private:
   // components

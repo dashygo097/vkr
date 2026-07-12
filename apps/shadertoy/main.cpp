@@ -22,39 +22,41 @@ private:
             "shadertoy", {});
   }
 
-  auto createDescriptorBindings()
-      -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {
+  auto createRasterPassDesc() -> vkr::render::RasterPassDesc override {
+    auto desc = VulkanApplication::createRasterPassDesc();
+    desc.descriptorBindings = {
         {.name = "shadertoy",
          .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                     VK_SHADER_STAGE_FRAGMENT_BIT}},
     };
-  }
 
-  void createPipelines() override {
-    vkr::pipeline::GraphicsPipelineDesc shadertoy{};
-    shadertoy.name = "shadertoy";
-    shadertoy.renderPass = offscreenRenderPass->renderPass();
-    shadertoy.layout.setLayouts = {descriptorSetLayout->layout()};
-    shadertoy.vertexInput = vkr::resource::VertexInputDesc::none();
+    desc.pipeline = [this](const vkr::render::RasterPipelineBuildInfo &info) {
+      vkr::pipeline::GraphicsPipelineDesc shadertoy{};
+      shadertoy.name = "shadertoy";
+      shadertoy.renderPass = info.renderPass;
+      shadertoy.layout.setLayouts = {info.descriptorSetLayout};
+      shadertoy.vertexInput = vkr::resource::VertexInputDesc::none();
 
-    shadertoy.shaders = {
-        vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolve("shaders/shadertoy/shadertoy.vert")
-                    .string())),
-        vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolve("shaders/shadertoy/shadertoy.frag")
-                    .string())),
+      shadertoy.shaders = {
+          vkr::pipeline::GraphicsShaderStageDesc::vertex(
+              vkr::resource::ShaderModuleDesc::vertexGlslFile(
+                  assetSystem->resolve("shaders/shadertoy/shadertoy.vert")
+                      .string())),
+          vkr::pipeline::GraphicsShaderStageDesc::fragment(
+              vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+                  assetSystem->resolve("shaders/shadertoy/shadertoy.frag")
+                      .string())),
+      };
+
+      shadertoy.depthStencil =
+          vkr::pipeline::GraphicsDepthStencilDesc::disabled();
+      shadertoy.rasterization =
+          vkr::pipeline::GraphicsRasterizationDesc::noCull();
+
+      return shadertoy;
     };
 
-    shadertoy.depthStencil =
-        vkr::pipeline::GraphicsDepthStencilDesc::disabled();
-    shadertoy.rasterization =
-        vkr::pipeline::GraphicsRasterizationDesc::noCull();
-
-    pipelineLibrary->create(shadertoy);
+    return desc;
   }
 
   void onDrawFrame(uint32_t currentImage) override {

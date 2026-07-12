@@ -6,9 +6,9 @@ namespace vkr::render {
 Renderer::Renderer(const core::Device &device, const core::Swapchain &swapchain,
                    const core::CommandPool &commandPool,
                    core::SyncObjects &syncObjects,
-                   resource::ResourceManager &resourceManager, ui::UI &ui)
+                   resource::ResourceManager &resourceManager)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
-      sync_objects_(syncObjects), resource_manager_(resourceManager), ui_(ui) {
+      sync_objects_(syncObjects), resource_manager_(resourceManager) {
   command_buffers_ =
       std::make_unique<core::CommandBuffers>(device_, command_pool_);
 }
@@ -174,9 +174,9 @@ void Renderer::drawGeometry() {
   }
 }
 
-void Renderer::drawUI() {
+void Renderer::drawUI(ui::UI &ui) {
   ensureFrameActive("drawUI");
-  ui_.render(command_buffer_);
+  ui.render(command_buffer_);
 }
 
 void Renderer::ensureFrameActive(const char *op) const {

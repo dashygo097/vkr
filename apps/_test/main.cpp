@@ -41,40 +41,43 @@ private:
         "image1", assetSystem->resolve("textures/avatar.jpg").string());
   }
 
-  auto createDescriptorBindings()
-      -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {{.name = "default",
-             .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                        VK_SHADER_STAGE_VERTEX_BIT}},
-            {.name = "image1",
-             .layout = {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                        VK_SHADER_STAGE_FRAGMENT_BIT}}};
-  }
+  auto createRasterPassDesc() -> vkr::render::RasterPassDesc override {
+    auto desc = VulkanApplication::createRasterPassDesc();
+    desc.descriptorBindings = {
+        {.name = "default",
+         .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                    VK_SHADER_STAGE_VERTEX_BIT}},
+        {.name = "image1",
+         .layout = {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                    VK_SHADER_STAGE_FRAGMENT_BIT}}};
 
-  void createPipelines() override {
-    vkr::pipeline::GraphicsPipelineDesc textured{};
-    textured.name = "textured";
-    textured.renderPass = offscreenRenderPass->renderPass();
-    textured.layout.setLayouts = {descriptorSetLayout->layout()};
-    textured.vertexInput = vkr::resource::VertexTextured3D::vertexInputDesc();
+    desc.pipeline = [this](const vkr::render::RasterPipelineBuildInfo &info) {
+      vkr::pipeline::GraphicsPipelineDesc textured{};
+      textured.name = "textured";
+      textured.renderPass = info.renderPass;
+      textured.layout.setLayouts = {info.descriptorSetLayout};
+      textured.vertexInput = vkr::resource::VertexTextured3D::vertexInputDesc();
 
-    textured.shaders = {
-        vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolve("shaders/texture3d/texture3d.vert")
-                    .string())),
-        vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolve("shaders/texture3d/texture3d.frag")
-                    .string())),
+      textured.shaders = {
+          vkr::pipeline::GraphicsShaderStageDesc::vertex(
+              vkr::resource::ShaderModuleDesc::vertexGlslFile(
+                  assetSystem->resolve("shaders/texture3d/texture3d.vert")
+                      .string())),
+          vkr::pipeline::GraphicsShaderStageDesc::fragment(
+              vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+                  assetSystem->resolve("shaders/texture3d/texture3d.frag")
+                      .string())),
+      };
+
+      textured.depthStencil.depthTestEnable = VK_TRUE;
+      textured.depthStencil.depthWriteEnable = VK_TRUE;
+      textured.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+      textured.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+
+      return textured;
     };
 
-    textured.depthStencil.depthTestEnable = VK_TRUE;
-    textured.depthStencil.depthWriteEnable = VK_TRUE;
-    textured.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-    textured.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-
-    pipelineLibrary->create(textured);
+    return desc;
   }
 
   void onDrawFrame(uint32_t currentImage) override {
@@ -86,10 +89,11 @@ private:
     resourceManager->getUniformBuffer("default")->updateRaw(currentImage, &ubo,
                                                             sizeof(ubo));
 
-    if (ui->viewportInfo().height > 0 &&
-        ui->layoutMode() == vkr::ui::LayoutMode::Standard) {
-      ctx.camera.aspectRatio = ui->viewportInfo().width /
-                               static_cast<float>(ui->viewportInfo().height);
+    if (uiPass->viewportInfo().height > 0 &&
+        uiPass->layoutMode() == vkr::ui::LayoutMode::Standard) {
+      ctx.camera.aspectRatio =
+          uiPass->viewportInfo().width /
+          static_cast<float>(uiPass->viewportInfo().height);
     } else {
       ctx.camera.aspectRatio = ctx.window.ratio();
     }

@@ -7,15 +7,6 @@
 
 class TeapotApp : public vkr::VulkanApplication {
 private:
-  auto createDescriptorBindings()
-      -> std::vector<vkr::pipeline::DescriptorBinding> override {
-    return {
-        {.name = "default",
-         .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                    VK_SHADER_STAGE_VERTEX_BIT}},
-    };
-  }
-
   void createResources() override {
     vkr::resource::Mesh<vkr::resource::VertexNormal3D> teapot(*device,
                                                               *commandPool);
@@ -27,30 +18,41 @@ private:
         "default", {});
   }
 
-  void createPipelines() override {
-    vkr::pipeline::GraphicsPipelineDesc normal{};
-    normal.name = "normal3d";
-    normal.renderPass = offscreenRenderPass->renderPass();
-    normal.layout.setLayouts = {descriptorSetLayout->layout()};
-    normal.vertexInput = vkr::resource::VertexNormal3D::vertexInputDesc();
-
-    normal.shaders = {
-        vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolve("shaders/normal3d/normal3d.vert")
-                    .string())),
-        vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolve("shaders/normal3d/normal3d.frag")
-                    .string())),
+  auto createRasterPassDesc() -> vkr::render::RasterPassDesc override {
+    auto desc = VulkanApplication::createRasterPassDesc();
+    desc.descriptorBindings = {
+        {.name = "default",
+         .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                    VK_SHADER_STAGE_VERTEX_BIT}},
     };
 
-    normal.depthStencil.depthTestEnable = VK_TRUE;
-    normal.depthStencil.depthWriteEnable = VK_TRUE;
-    normal.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-    normal.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+    desc.pipeline = [this](const vkr::render::RasterPipelineBuildInfo &info) {
+      vkr::pipeline::GraphicsPipelineDesc normal{};
+      normal.name = "normal3d";
+      normal.renderPass = info.renderPass;
+      normal.layout.setLayouts = {info.descriptorSetLayout};
+      normal.vertexInput = vkr::resource::VertexNormal3D::vertexInputDesc();
 
-    pipelineLibrary->create(normal);
+      normal.shaders = {
+          vkr::pipeline::GraphicsShaderStageDesc::vertex(
+              vkr::resource::ShaderModuleDesc::vertexGlslFile(
+                  assetSystem->resolve("shaders/normal3d/normal3d.vert")
+                      .string())),
+          vkr::pipeline::GraphicsShaderStageDesc::fragment(
+              vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+                  assetSystem->resolve("shaders/normal3d/normal3d.frag")
+                      .string())),
+      };
+
+      normal.depthStencil.depthTestEnable = VK_TRUE;
+      normal.depthStencil.depthWriteEnable = VK_TRUE;
+      normal.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+      normal.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+
+      return normal;
+    };
+
+    return desc;
   }
 
   void onDrawFrame(uint32_t currentImage) override {
@@ -62,10 +64,11 @@ private:
     resourceManager->getUniformBuffer("default")->updateRaw(currentImage, &ubo,
                                                             sizeof(ubo));
 
-    if (ui->viewportInfo().height > 0 &&
-        ui->layoutMode() == vkr::ui::LayoutMode::Standard) {
-      ctx.camera.aspectRatio = ui->viewportInfo().width /
-                               static_cast<float>(ui->viewportInfo().height);
+    if (uiPass->viewportInfo().height > 0 &&
+        uiPass->layoutMode() == vkr::ui::LayoutMode::Standard) {
+      ctx.camera.aspectRatio =
+          uiPass->viewportInfo().width /
+          static_cast<float>(uiPass->viewportInfo().height);
     } else {
       ctx.camera.aspectRatio = ctx.window.ratio();
     }
