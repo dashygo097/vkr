@@ -94,9 +94,4 @@ void VulkanApplication::drawFrame() {
   renderer->endFrame();
 }
 
-void VulkanApplication::buildRenderGraph() {
-  VKR_CORE_ERROR("VulkanApplication::buildRenderGraph() must add at least one "
-                 "render graph pass");
-}
-
 } // namespace vkr
