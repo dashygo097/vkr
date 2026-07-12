@@ -74,19 +74,23 @@ UI::UI(const core::Window &window, const core::Instance &instance,
       std::make_unique<pipeline::DescriptorSetLayout>(device_);
   offscreen_descriptor_layout_->update({.bindings = offscreenBindings});
 
-  offscreen_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
-      device_, resource_manager_, descriptor_pool_,
-      *offscreen_descriptor_layout_, 1);
-
   VkDescriptorImageInfo offscreenImageInfo{};
   offscreenImageInfo.sampler = offscreen_target_.color().sampler();
   offscreenImageInfo.imageView = offscreen_target_.color().imageView();
   offscreenImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-  pipeline::DescriptorWriter writer(device_);
-  writer.writeImage(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    &offscreenImageInfo);
-  offscreen_descriptor_sets_->bindToFrame(0, writer);
+  auto offscreenWrite = pipeline::DescriptorSetWriteDesc::forSet(0);
+  offscreenWrite.images.push_back(pipeline::DescriptorImageWriteDesc::one(
+      0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, offscreenImageInfo));
+
+  offscreen_descriptor_sets_ =
+      std::make_unique<pipeline::DescriptorSets>(device_);
+  offscreen_descriptor_sets_->update(pipeline::DescriptorSetsDesc{
+      .pool = descriptor_pool_.pool(),
+      .layout = offscreen_descriptor_layout_->layout(),
+      .setCount = 1,
+      .writes = {offscreenWrite},
+  });
 
   VKR_UI_INFO("Initializing FPS Panel...");
   fps_panel_ = std::make_unique<FPSPanel>(timer);

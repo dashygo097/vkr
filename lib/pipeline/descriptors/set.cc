@@ -3,140 +3,134 @@
 
 namespace vkr::pipeline {
 
-DescriptorSets::DescriptorSets(const core::Device &device,
-                               const resource::ResourceManager &ResourceManager,
-                               const DescriptorPool &pool,
-                               DescriptorSetLayout &layout, uint32_t frameCount)
-    : device_(device), resource_manager_(ResourceManager), pool_(pool),
-      layout_(layout), frame_count_(frameCount) {
+DescriptorSets::DescriptorSets(const core::Device &device) : device_(device) {}
+
+DescriptorSets::~DescriptorSets() { destroy(); }
+
+void DescriptorSets::create() {
+  destroy();
+
+  if (desc_.setCount == 0) {
+    VKR_PIPE_TRACE("Descriptor set allocation skipped because setCount is 0");
+    return;
+  }
+
+  if (!desc_.canAllocate()) {
+    VKR_PIPE_ERROR("Cannot allocate descriptor sets with a null pool/layout or "
+                   "setCount={}",
+                   desc_.setCount);
+  }
+
   allocateSets();
+  updateDescriptors();
 }
 
-DescriptorSets::~DescriptorSets() {
-  if (!sets_.empty()) {
-    vkFreeDescriptorSets(device_.device(), pool_.pool(),
+void DescriptorSets::destroy() {
+  if (!sets_.empty() && allocated_pool_ != VK_NULL_HANDLE) {
+    vkFreeDescriptorSets(device_.device(), allocated_pool_,
                          static_cast<uint32_t>(sets_.size()), sets_.data());
   }
+
+  sets_.clear();
+  allocated_pool_ = VK_NULL_HANDLE;
+}
+
+void DescriptorSets::update(const DescriptorSetsDesc &desc) {
+  desc_ = desc;
+  create();
 }
 
 void DescriptorSets::allocateSets() {
-  std::vector<VkDescriptorSetLayout> layouts(frame_count_, layout_.layout());
+  std::vector<VkDescriptorSetLayout> layouts(desc_.setCount, desc_.layout);
 
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  allocInfo.descriptorPool = pool_.pool();
-  allocInfo.descriptorSetCount = frame_count_;
+  allocInfo.descriptorPool = desc_.pool;
+  allocInfo.descriptorSetCount = desc_.setCount;
   allocInfo.pSetLayouts = layouts.data();
 
-  sets_.resize(frame_count_);
+  sets_.resize(desc_.setCount);
   VkResult result =
       vkAllocateDescriptorSets(device_.device(), &allocInfo, sets_.data());
   if (result != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to allocate descriptor sets. VkResult: {}",
                    std::to_string(result));
   }
+
+  allocated_pool_ = desc_.pool;
+
+  VKR_PIPE_INFO("Allocated {} descriptor sets", sets_.size());
 }
 
-void DescriptorSets::bindResources() {
-  for (const auto &binding : layout_.bindings()) {
-    if (binding.name.empty()) {
-      VKR_PIPE_ERROR("Descriptor binding {} has empty name",
-                     binding.layout.binding);
+void DescriptorSets::updateDescriptors() {
+  if (desc_.writes.empty()) {
+    return;
+  }
+
+  std::vector<VkWriteDescriptorSet> writes{};
+
+  for (const auto &setWrite : desc_.writes) {
+    if (setWrite.setIndex >= sets_.size()) {
+      VKR_PIPE_ERROR("Descriptor set write index {} out of range, count {}",
+                     setWrite.setIndex, sets_.size());
     }
 
-    switch (binding.layout.descriptorType) {
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
-      auto uniformBuffer = resource_manager_.getUniformBuffer(binding.name);
-
-      if (!uniformBuffer) {
-        VKR_PIPE_ERROR("Uniform buffer resource not found: {}", binding.name);
+    for (const auto &bufferWrite : setWrite.buffers) {
+      if (bufferWrite.buffers.empty()) {
+        VKR_PIPE_ERROR("Descriptor buffer write for set {}, binding {} has no "
+                       "buffer infos",
+                       setWrite.setIndex, bufferWrite.binding);
       }
 
-      const auto &buffers = uniformBuffer->buffers();
-      const auto size = uniformBuffer->bufferSize();
+      VkWriteDescriptorSet write{};
+      write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      write.dstSet = sets_[setWrite.setIndex];
+      write.dstBinding = bufferWrite.binding;
+      write.dstArrayElement = bufferWrite.arrayElement;
+      write.descriptorType = bufferWrite.type;
+      write.descriptorCount = bufferWrite.descriptorCount();
+      write.pBufferInfo = bufferWrite.buffers.data();
 
-      if (buffers.size() != frame_count_) {
-        VKR_PIPE_ERROR("Buffer count must match frame count({} vs {})",
-                       buffers.size(), frame_count_);
-      }
-      for (uint32_t i = 0; i < frame_count_; i++) {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = buffers[i];
-        bufferInfo.offset = 0;
-        bufferInfo.range = size;
-
-        DescriptorWriter writer(device_);
-        writer.writeBuffer(binding.layout.binding,
-                           VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo);
-        writer.update(sets_[i]);
-      }
-      break;
+      writes.push_back(write);
     }
 
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-      auto texture = resource_manager_.getTexture(binding.name);
-
-      if (!texture) {
-        VKR_PIPE_ERROR("Texture resource not found: {}", binding.name);
+    for (const auto &imageWrite : setWrite.images) {
+      if (imageWrite.images.empty()) {
+        VKR_PIPE_ERROR(
+            "Descriptor image write for set {}, binding {} has no image infos",
+            setWrite.setIndex, imageWrite.binding);
       }
 
-      if (!texture->hasSampler()) {
-        VKR_PIPE_ERROR("Texture sampler not found: {}", binding.name);
-      }
+      VkWriteDescriptorSet write{};
+      write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      write.dstSet = sets_[setWrite.setIndex];
+      write.dstBinding = imageWrite.binding;
+      write.dstArrayElement = imageWrite.arrayElement;
+      write.descriptorType = imageWrite.type;
+      write.descriptorCount = imageWrite.descriptorCount();
+      write.pImageInfo = imageWrite.images.data();
 
-      for (uint32_t i = 0; i < frame_count_; ++i) {
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = texture->imageView();
-        imageInfo.sampler = texture->sampler();
-
-        DescriptorWriter writer(device_);
-        writer.writeImage(binding.layout.binding,
-                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                          &imageInfo);
-        writer.update(sets_[i]);
-      }
-      break;
-    }
-
-    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-      VKR_PIPE_ERROR("Auto bind for storage buffer is not implemented: {}",
-                     binding.name);
-      break;
-
-    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-      VKR_PIPE_ERROR("Auto bind for storage image is not implemented: {}",
-                     binding.name);
-      break;
-
-    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-      VKR_PIPE_ERROR("Auto bind for input attachment is not implemented: {}",
-                     binding.name);
-      break;
-
-    default:
-      VKR_PIPE_ERROR("Unknown descriptor type for binding {}",
-                     binding.layout.binding);
-      break;
+      writes.push_back(write);
     }
   }
+
+  if (writes.empty()) {
+    return;
+  }
+
+  vkUpdateDescriptorSets(device_.device(), static_cast<uint32_t>(writes.size()),
+                         writes.data(), 0, nullptr);
+
+  VKR_PIPE_INFO("Updated descriptor sets with {} writes", writes.size());
 }
 
-void DescriptorSets::bindToFrame(uint32_t frameIndex,
-                                 DescriptorWriter &writer) {
-  if (frameIndex >= frame_count_) {
-    VKR_PIPE_ERROR("Frame index out of bounds: {}", frameIndex);
+auto DescriptorSets::set(uint32_t index) const -> VkDescriptorSet {
+  if (index >= sets_.size()) {
+    VKR_PIPE_ERROR("Descriptor set index {} out of range, count {}", index,
+                   sets_.size());
   }
-  writer.update(sets_[frameIndex]);
-}
 
-void DescriptorSets::bind(VkCommandBuffer cmd, VkPipelineLayout layout,
-                          uint32_t frameIndex, VkPipelineBindPoint bindPoint) {
-  if (frameIndex >= frame_count_) {
-    VKR_PIPE_ERROR("Frame index out of bounds: {}", frameIndex);
-  }
-  vkCmdBindDescriptorSets(cmd, bindPoint, layout, 0, 1, &sets_[frameIndex], 0,
-                          nullptr);
+  return sets_[index];
 }
 
 } // namespace vkr::pipeline

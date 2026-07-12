@@ -91,6 +91,9 @@ protected:
     return {};
   }
 
+  virtual auto createDescriptorSetWrites()
+      -> std::vector<pipeline::DescriptorSetWriteDesc>;
+
   [[nodiscard]] virtual auto snapshotPath() const -> std::filesystem::path {
     return "snapshot.toml";
   }

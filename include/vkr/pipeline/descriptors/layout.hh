@@ -26,7 +26,7 @@ public:
   }
 
   [[nodiscard]] auto bindings() const noexcept
-      -> const std::vector<DescriptorBinding> {
+      -> const std::vector<DescriptorBinding> & {
     return desc_.bindings;
   }
 

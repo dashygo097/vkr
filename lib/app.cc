@@ -133,9 +133,13 @@ void VulkanApplication::initVulkan() {
   }
 
   // descriptor sets
-  descriptorSets = std::make_unique<pipeline::DescriptorSets>(
-      *device, *resourceManager, *descriptorPool, *descriptorSetLayout);
-  descriptorSets->bindResources();
+  descriptorSets = std::make_unique<pipeline::DescriptorSets>(*device);
+  descriptorSets->update(pipeline::DescriptorSetsDesc{
+      .pool = descriptorPool->pool(),
+      .layout = descriptorSetLayout->layout(),
+      .setCount = core::MAX_FRAMES_IN_FLIGHT,
+      .writes = createDescriptorSetWrites(),
+  });
 
   // timer
   timer = std::make_unique<util::Timer>();
@@ -241,6 +245,87 @@ void VulkanApplication::drawFrame() {
   onDrawFrame(renderer->frameIndex());
 
   renderer->endFrame();
+}
+
+auto VulkanApplication::createDescriptorSetWrites()
+    -> std::vector<pipeline::DescriptorSetWriteDesc> {
+  const auto frameCount = core::MAX_FRAMES_IN_FLIGHT;
+  std::vector<pipeline::DescriptorSetWriteDesc> writes{};
+  writes.reserve(frameCount);
+
+  for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
+    writes.push_back(pipeline::DescriptorSetWriteDesc::forSet(frameIndex));
+  }
+
+  for (const auto &binding : descriptorSetLayout->bindings()) {
+    if (binding.name.empty()) {
+      VKR_PIPE_ERROR("Descriptor binding {} has empty resource name",
+                     binding.layout.binding);
+    }
+
+    switch (binding.layout.descriptorType) {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+      auto uniformBuffer = resourceManager->getUniformBuffer(binding.name);
+
+      if (!uniformBuffer) {
+        VKR_PIPE_ERROR("Uniform buffer resource not found: {}", binding.name);
+      }
+
+      const auto &buffers = uniformBuffer->buffers();
+      if (buffers.size() != frameCount) {
+        VKR_PIPE_ERROR("Uniform buffer '{}' frame count mismatch: {} vs {}",
+                       binding.name, buffers.size(), frameCount);
+      }
+
+      for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = buffers[frameIndex];
+        bufferInfo.offset = 0;
+        bufferInfo.range = uniformBuffer->bufferSize();
+
+        writes[frameIndex].buffers.push_back(
+            pipeline::DescriptorBufferWriteDesc::one(
+                binding.layout.binding, binding.layout.descriptorType,
+                bufferInfo));
+      }
+      break;
+    }
+
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+      auto texture = resourceManager->getTexture(binding.name);
+
+      if (!texture) {
+        VKR_PIPE_ERROR("Texture resource not found: {}", binding.name);
+      }
+
+      if (!texture->hasSampler()) {
+        VKR_PIPE_ERROR("Texture sampler not found: {}", binding.name);
+      }
+
+      VkDescriptorImageInfo imageInfo{};
+      imageInfo.imageLayout = texture->layout();
+      imageInfo.imageView = texture->imageView();
+      imageInfo.sampler = texture->sampler();
+
+      for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
+        writes[frameIndex].images.push_back(
+            pipeline::DescriptorImageWriteDesc::one(
+                binding.layout.binding, binding.layout.descriptorType,
+                imageInfo));
+      }
+      break;
+    }
+
+    default:
+      VKR_PIPE_ERROR("No default descriptor write builder for resource '{}' "
+                     "at binding {} with descriptor type {}",
+                     binding.name, binding.layout.binding,
+                     static_cast<int>(binding.layout.descriptorType));
+      break;
+    }
+  }
+
+  return writes;
 }
 
 } // namespace vkr
