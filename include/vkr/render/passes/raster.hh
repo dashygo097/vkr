@@ -74,11 +74,13 @@ public:
   }
 
 private:
+  // dependencies
   Renderer &renderer_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
   resource::ResourceManager &resource_manager_;
 
+  // components
   RasterPassDesc desc_{};
   std::unique_ptr<resource::OffscreenTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
@@ -88,6 +90,7 @@ private:
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
 
+  // helpers
   void createTarget();
   void createRenderPass();
   void createFramebuffers();

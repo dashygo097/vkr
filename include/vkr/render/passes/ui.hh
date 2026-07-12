@@ -68,6 +68,7 @@ public:
   }
 
 private:
+  // dependencies
   Renderer &renderer_;
   const core::Window &window_;
   const core::Instance &instance_;
@@ -81,6 +82,7 @@ private:
   util::Timer &timer_;
   ui::ThemeDesc &theme_;
 
+  // components
   UiPassDesc desc_{};
   std::unique_ptr<resource::SwapchainTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
