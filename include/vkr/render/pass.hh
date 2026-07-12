@@ -1,13 +1,12 @@
 #pragma once
 
+#include "vkr/pipeline/graphics_pipeline.hh"
 #include <string>
 #include <utility>
 #include <vector>
 #include <vulkan/vulkan.h>
 
 namespace vkr::render {
-
-class Renderer;
 
 struct RenderGraphPassDesc {
   std::string name{};
@@ -55,6 +54,16 @@ public:
   virtual void destroy() = 0;
   virtual void update(const RenderGraphPassDesc &desc) = 0;
   virtual void record() = 0;
+
+  [[nodiscard]] virtual auto editablePipeline() noexcept
+      -> pipeline::GraphicsPipeline * {
+    return nullptr;
+  }
+
+  [[nodiscard]] virtual auto editablePipeline() const noexcept
+      -> const pipeline::GraphicsPipeline * {
+    return nullptr;
+  }
 
 protected:
   void setDesc(RenderGraphPassDesc desc) { desc_ = std::move(desc); }

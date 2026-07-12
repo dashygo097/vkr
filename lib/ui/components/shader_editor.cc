@@ -562,18 +562,76 @@ auto ShaderEditor::makeEditor() -> TextEditor {
   return ed;
 }
 
-ShaderEditor::ShaderEditor(pipeline::GraphicsPipeline *pipeline)
-    : pipeline_(pipeline), vert_editor_(makeEditor()),
-      frag_editor_(makeEditor()) {
+ShaderEditor::ShaderEditor(render::RenderGraph &graph)
+    : graph_(graph), vert_editor_(makeEditor()), frag_editor_(makeEditor()) {
   reloadFromPipeline();
 }
 
+auto ShaderEditor::collectTargets() -> std::vector<PipelineTarget> {
+  std::vector<PipelineTarget> targets{};
+
+  for (auto *pass : graph_.passes()) {
+    if (pass == nullptr) {
+      continue;
+    }
+
+    auto *pipeline = pass->editablePipeline();
+    if (pipeline == nullptr) {
+      continue;
+    }
+
+    const auto &pipelineDesc = pipeline->desc();
+    targets.push_back(PipelineTarget{
+        .passName = pass->name(),
+        .pipelineName = pipelineDesc.name.empty()
+                            ? std::string{"<unnamed pipeline>"}
+                            : pipelineDesc.name,
+        .pipeline = pipeline,
+    });
+  }
+
+  return targets;
+}
+
+auto ShaderEditor::activeTarget() -> PipelineTarget {
+  auto targets = collectTargets();
+
+  if (targets.empty()) {
+    selected_pass_name_.clear();
+    return {};
+  }
+
+  for (const auto &target : targets) {
+    if (target.passName == selected_pass_name_) {
+      return target;
+    }
+  }
+
+  selected_pass_name_ = targets.front().passName;
+  return targets.front();
+}
+
 auto ShaderEditor::activePipeline() noexcept -> pipeline::GraphicsPipeline * {
-  return pipeline_;
+  return activeTarget().pipeline;
 }
 
 auto ShaderEditor::hasPipeline() const noexcept -> bool {
-  return pipeline_ != nullptr;
+  for (auto *pass : graph_.passes()) {
+    if (pass != nullptr && pass->editablePipeline() != nullptr) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+auto ShaderEditor::activeTargetKey() noexcept -> std::string {
+  const auto target = activeTarget();
+  if (target.pipeline == nullptr) {
+    return {};
+  }
+
+  return target.label();
 }
 
 auto ShaderEditor::currentEditor() noexcept -> TextEditor & {
@@ -682,16 +740,16 @@ void ShaderEditor::reloadFromPipelineIfChanged() {
   auto *pipeline = activePipeline();
 
   if (pipeline == nullptr) {
-    if (!loaded_pipeline_name_.empty()) {
+    if (!loaded_target_key_.empty()) {
       reloadFromPipeline();
     }
 
     return;
   }
 
-  const auto &desc = pipeline->desc();
+  const auto targetKey = activeTargetKey();
 
-  if (loaded_pipeline_name_ != desc.name) {
+  if (loaded_target_key_ != targetKey) {
     reloadFromPipeline();
   }
 }
@@ -700,7 +758,8 @@ void ShaderEditor::reloadFromPipeline() {
   auto *pipeline = activePipeline();
 
   if (pipeline == nullptr) {
-    loaded_pipeline_name_.clear();
+    selected_pass_name_.clear();
+    loaded_target_key_.clear();
     vert_editor_.SetText("// No graphics pipeline available.\n");
     frag_editor_.SetText("// No graphics pipeline available.\n");
     setStatus("No graphics pipeline available.", true);
@@ -708,7 +767,7 @@ void ShaderEditor::reloadFromPipeline() {
   }
 
   const auto &desc = pipeline->desc();
-  loaded_pipeline_name_ = desc.name;
+  loaded_target_key_ = activeTargetKey();
 
   const auto *vert = findShader(desc, VK_SHADER_STAGE_VERTEX_BIT);
   const auto *frag = findShader(desc, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -733,7 +792,7 @@ void ShaderEditor::reloadFromPipeline() {
     frag_editor_.SetText(fragSource);
   }
 
-  setStatus("Loaded pipeline: " + loaded_pipeline_name_, false);
+  setStatus("Loaded target: " + loaded_target_key_, false);
 }
 
 void ShaderEditor::applyToPipeline() {
@@ -776,8 +835,8 @@ void ShaderEditor::applyToPipeline() {
 
   try {
     if (pipeline->update(nextDesc)) {
-      loaded_pipeline_name_ = nextDesc.name;
-      setStatus("Compiled and applied: " + loaded_pipeline_name_, false);
+      loaded_target_key_ = activeTargetKey();
+      setStatus("Compiled and applied: " + loaded_target_key_, false);
       return;
     }
   } catch (const std::exception &e) {
@@ -802,11 +861,44 @@ void ShaderEditor::applyToPipeline() {
     frag_editor_.SetText(oldFragSource);
   }
 
-  loaded_pipeline_name_ = oldDesc.name;
+  loaded_target_key_ = activeTargetKey();
 
   if (status_message_.empty() || !status_is_error_) {
     setStatus("Failed to compile pipeline. Previous shader was restored.",
               true);
+  }
+}
+
+void ShaderEditor::renderTargetSelector(
+    const std::vector<PipelineTarget> &targets) {
+  const bool hasTargets = !targets.empty();
+  const std::string selectedLabel =
+      hasTargets ? activeTarget().label() : std::string{"No editable passes"};
+
+  if (!hasTargets) {
+    ImGui::BeginDisabled();
+  }
+
+  ImGui::SetNextItemWidth(-1.0f);
+  if (ImGui::BeginCombo("##shader_target", selectedLabel.c_str())) {
+    for (const auto &target : targets) {
+      const bool selected = target.passName == selected_pass_name_;
+
+      if (ImGui::Selectable(target.label().c_str(), selected)) {
+        selected_pass_name_ = target.passName;
+        reloadFromPipeline();
+      }
+
+      if (selected) {
+        ImGui::SetItemDefaultFocus();
+      }
+    }
+
+    ImGui::EndCombo();
+  }
+
+  if (!hasTargets) {
+    ImGui::EndDisabled();
   }
 }
 
@@ -833,6 +925,7 @@ auto ShaderEditor::parseErrors(const std::string &log)
 
 auto ShaderEditor::render() -> void {
   reloadFromPipelineIfChanged();
+  const auto targets = collectTargets();
 
   const ImGuiStyle &style = ImGui::GetStyle();
   const ImVec4 bg = style.Colors[ImGuiCol_WindowBg];
@@ -874,16 +967,15 @@ auto ShaderEditor::render() -> void {
   syncPalette(vert_editor_);
   syncPalette(frag_editor_);
 
-  ImGui::TextDisabled("Pipeline: %s", loaded_pipeline_name_.empty()
-                                          ? "<none>"
-                                          : loaded_pipeline_name_.c_str());
+  ImGui::TextUnformatted("Shader Target");
+  renderTargetSelector(targets);
 
   const float spacingY = style.ItemSpacing.y;
   const float frameH = ImGui::GetFrameHeight();
   const float textLineH = ImGui::GetTextLineHeight();
 
   const float statusH = status_message_.empty() ? 0.0f : textLineH + spacingY;
-  const float headerH = textLineH + spacingY;
+  const float headerH = textLineH + frameH + spacingY * 2.0f;
   const float tabsH = frameH + spacingY;
   const float bottomBarH = spacingY + 1.0f + spacingY + statusH + frameH +
                            spacingY + textLineH + spacingY;

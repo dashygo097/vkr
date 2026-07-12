@@ -25,7 +25,7 @@ struct ThemeDesc {
     ar("accent", accent);
     ar("alpha", alpha);
     ar("dark", dark);
-    ar("rouding", rounding);
+    ar("rounding", rounding);
   }
 };
 

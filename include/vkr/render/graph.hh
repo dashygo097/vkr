@@ -39,6 +39,9 @@ public:
   void destroy();
   void record();
 
+  [[nodiscard]] auto passes() -> std::vector<RenderGraphPass *>;
+  [[nodiscard]] auto passes() const -> std::vector<const RenderGraphPass *>;
+
   template <typename PassT>
   [[nodiscard]] auto getPass(std::string_view name) -> PassT * {
     const auto index = passIndex(name);

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "vkr/core/command/command_buffer.hh"
 #include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
@@ -9,6 +8,7 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/render/pass.hh"
+#include "vkr/render/renderer.hh"
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
@@ -60,6 +60,16 @@ public:
 
   [[nodiscard]] auto pipeline() const noexcept
       -> const pipeline::GraphicsPipeline * {
+    return pipeline_.get();
+  }
+
+  [[nodiscard]] auto editablePipeline() noexcept
+      -> pipeline::GraphicsPipeline * override {
+    return pipeline_.get();
+  }
+
+  [[nodiscard]] auto editablePipeline() const noexcept
+      -> const pipeline::GraphicsPipeline * override {
     return pipeline_.get();
   }
 

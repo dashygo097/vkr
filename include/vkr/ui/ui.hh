@@ -9,6 +9,7 @@
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
+#include "vkr/render/graph.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
 #include "vkr/ui/components/fps_panel.hh"
@@ -43,8 +44,7 @@ public:
      resource::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
-     pipeline::GraphicsPipeline *editablePipeline, util::Timer &timer,
-     ThemeDesc &desc);
+     render::RenderGraph &renderGraph, util::Timer &timer, ThemeDesc &desc);
   ~UI();
 
   UI(const UI &) = delete;
@@ -96,7 +96,7 @@ private:
   resource::OffscreenTarget &offscreen_target_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
-  pipeline::GraphicsPipeline *editable_pipeline_{nullptr};
+  render::RenderGraph &render_graph_;
   util::Timer &timer_;
 
   // components
@@ -117,11 +117,14 @@ private:
   void renderFullScreen();
   void renderDockspace();
   void setupDockingLayout();
+  void renderMainMenu();
   void renderMainViewport();
+  void renderGraphPanel();
   void renderResourcePanel();
   void renderLoggingPanel();
   void renderPerformancePanel();
   void renderShaderEditor();
+  void renderThemeControls();
 };
 
 } // namespace vkr::ui

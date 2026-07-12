@@ -16,12 +16,11 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        resource::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
-       pipeline::GraphicsPipeline *editablePipeline, util::Timer &timer,
-       ThemeDesc &desc)
+       render::RenderGraph &renderGraph, util::Timer &timer, ThemeDesc &desc)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), resource_manager_(resourceManager),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),
-      descriptor_pool_(descriptorPool), editable_pipeline_(editablePipeline),
+      descriptor_pool_(descriptorPool), render_graph_(renderGraph),
       timer_(timer), desc_(desc) {
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
@@ -98,7 +97,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   VKR_UI_INFO("FPS Panel initialized successfully.");
 
   VKR_UI_INFO("Initializing Shader Editor...");
-  shader_editor_ = std::make_unique<ShaderEditor>(editable_pipeline_);
+  shader_editor_ = std::make_unique<ShaderEditor>(render_graph_);
   VKR_UI_INFO("Shader Editor initialized successfully.");
 
   VKR_UI_INFO("Initializing Logging Panel...");
@@ -133,11 +132,13 @@ void UI::render(VkCommandBuffer commandBuffer) {
 
   switch (layout_mode_) {
   case LayoutMode::FullScreen:
+    renderMainMenu();
     renderFullScreen();
     break;
   case LayoutMode::Standard:
     renderDockspace();
     renderMainViewport();
+    renderGraphPanel();
     renderResourcePanel();
     renderPerformancePanel();
     renderShaderEditor();
@@ -179,8 +180,9 @@ void UI::renderDockspace() {
   static bool dockspaceOpen = true;
   static ImGuiDockNodeFlags dockSpaceFlags = ImGuiDockNodeFlags_None;
 
-  ImGuiWindowFlags windowFlags =
-      ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+  renderMainMenu();
+
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking;
 
   const ImGuiViewport *viewport = ImGui::GetMainViewport();
   ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -204,80 +206,6 @@ void UI::renderDockspace() {
   ImGui::PopStyleVar();
   ImGui::PopStyleVar(2);
 
-  if (ImGui::BeginMenuBar()) {
-    if (ImGui::BeginMenu("File")) {
-      if (ImGui::MenuItem("Exit")) {
-        should_close_ = true;
-      }
-
-      ImGui::EndMenu();
-    }
-
-    if (ImGui::BeginMenu("View")) {
-      if (ImGui::MenuItem("Full Screen", nullptr,
-                          layout_mode_ == LayoutMode::FullScreen)) {
-        layout_mode_ = LayoutMode::FullScreen;
-      }
-
-      if (ImGui::MenuItem("Standard Layout", nullptr,
-                          layout_mode_ == LayoutMode::Standard)) {
-        layout_mode_ = LayoutMode::Standard;
-      }
-
-      ImGui::Separator();
-
-      if (ImGui::BeginMenu("Theme")) {
-        ImGui::PushItemWidth(110.0f);
-
-        if (ImGui::MenuItem("Blue", nullptr,
-                            desc_.accent == ThemeAccent::Blue)) {
-          desc_.accent = ThemeAccent::Blue;
-          Theme::apply(desc_);
-        }
-
-        if (ImGui::MenuItem("Red", nullptr, desc_.accent == ThemeAccent::Red)) {
-          desc_.accent = ThemeAccent::Red;
-          Theme::apply(desc_);
-        }
-
-        if (ImGui::MenuItem("Green", nullptr,
-                            desc_.accent == ThemeAccent::Green)) {
-          desc_.accent = ThemeAccent::Green;
-          Theme::apply(desc_);
-        }
-
-        if (ImGui::MenuItem("Purple", nullptr,
-                            desc_.accent == ThemeAccent::Purple)) {
-          desc_.accent = ThemeAccent::Purple;
-          Theme::apply(desc_);
-        }
-
-        if (ImGui::MenuItem("Amber", nullptr,
-                            desc_.accent == ThemeAccent::Amber)) {
-          desc_.accent = ThemeAccent::Amber;
-          Theme::apply(desc_);
-        }
-
-        ImGui::Separator();
-
-        if (ImGui::SliderFloat("Rounding", &desc_.rounding, 0.0f, 12.0f,
-                               "%.1f")) {
-          Theme::apply(desc_);
-        }
-
-        if (ImGui::SliderFloat("Alpha", &desc_.alpha, 0.10f, 1.00f, "%.2f")) {
-          Theme::apply(desc_);
-        }
-
-        ImGui::EndMenu();
-      }
-
-      ImGui::EndMenu();
-    }
-
-    ImGui::EndMenuBar();
-  }
-
   ImGuiIO &io = ImGui::GetIO();
   if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
     ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
@@ -299,7 +227,7 @@ void UI::setupDockingLayout() {
   ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
   ImGui::DockBuilderSetNodeSize(dockSpaceId, ImGui::GetMainViewport()->Size);
 
-  ImGuiID dockLeft, dockRight, dockBottomRight, dockShader, dockLogs;
+  ImGuiID dockLeft, dockRight, dockBottomRight, dockShader, dockLogs, dockGraph;
 
   dockLeft = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Left, 0.2f,
                                          nullptr, &dockSpaceId);
@@ -312,14 +240,55 @@ void UI::setupDockingLayout() {
 
   dockLogs = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Down, 0.2f,
                                          nullptr, &dockSpaceId);
+  dockGraph = ImGui::DockBuilderSplitNode(dockLeft, ImGuiDir_Down, 0.45f,
+                                          nullptr, &dockLeft);
 
   ImGui::DockBuilderDockWindow("Resources", dockLeft);
+  ImGui::DockBuilderDockWindow("Render Graph", dockGraph);
   ImGui::DockBuilderDockWindow("Shader Editor", dockShader);
   ImGui::DockBuilderDockWindow("Performance", dockBottomRight);
   ImGui::DockBuilderDockWindow("Logging", dockLogs);
   ImGui::DockBuilderDockWindow("Viewport", dockSpaceId);
 
   ImGui::DockBuilderFinish(dockSpaceId);
+}
+
+void UI::renderMainMenu() {
+  if (!ImGui::BeginMainMenuBar()) {
+    return;
+  }
+
+  if (ImGui::BeginMenu("File")) {
+    if (ImGui::MenuItem("Exit")) {
+      should_close_ = true;
+    }
+
+    ImGui::EndMenu();
+  }
+
+  if (ImGui::BeginMenu("View")) {
+    if (ImGui::MenuItem("Fullscreen Viewport", nullptr,
+                        layout_mode_ == LayoutMode::FullScreen)) {
+      layout_mode_ = LayoutMode::FullScreen;
+    }
+
+    if (ImGui::MenuItem("Workspace", nullptr,
+                        layout_mode_ == LayoutMode::Standard)) {
+      layout_mode_ = LayoutMode::Standard;
+    }
+
+    ImGui::EndMenu();
+  }
+
+  if (ImGui::BeginMenu("Theme")) {
+    renderThemeControls();
+    ImGui::EndMenu();
+  }
+
+  ImGui::Separator();
+  ImGui::TextDisabled("%.1f FPS", timer_.fps());
+
+  ImGui::EndMainMenuBar();
 }
 
 void UI::renderMainViewport() {
@@ -365,6 +334,67 @@ void UI::renderMainViewport() {
   ImGui::PopStyleVar();
 }
 
+void UI::renderGraphPanel() {
+  ImGuiWindowFlags windowFlags =
+      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+
+  if (ImGui::Begin("Render Graph", nullptr, windowFlags)) {
+    const auto passes = render_graph_.passes();
+
+    ImGui::Text("Passes: %zu", passes.size());
+    ImGui::Separator();
+
+    for (const auto *pass : passes) {
+      if (pass == nullptr) {
+        continue;
+      }
+
+      ImGuiTreeNodeFlags flags =
+          ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
+
+      const bool open = ImGui::TreeNodeEx(pass->name().c_str(), flags, "%s",
+                                          pass->name().c_str());
+
+      if (open) {
+        const auto *pipeline = pass->editablePipeline();
+        if (pipeline != nullptr) {
+          ImGui::Text("Pipeline: %s", pipeline->desc().name.empty()
+                                          ? "<unnamed>"
+                                          : pipeline->desc().name.c_str());
+        } else {
+          ImGui::TextDisabled("Pipeline: none");
+        }
+
+        if (ImGui::TreeNodeEx("Reads", ImGuiTreeNodeFlags_SpanAvailWidth)) {
+          if (pass->reads().empty()) {
+            ImGui::TextDisabled("None");
+          } else {
+            for (const auto &resource : pass->reads()) {
+              ImGui::BulletText("%s", resource.c_str());
+            }
+          }
+          ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNodeEx("Writes", ImGuiTreeNodeFlags_SpanAvailWidth)) {
+          if (pass->writes().empty()) {
+            ImGui::TextDisabled("None");
+          } else {
+            for (const auto &resource : pass->writes()) {
+              ImGui::BulletText("%s", resource.c_str());
+            }
+          }
+          ImGui::TreePop();
+        }
+
+        ImGui::TreePop();
+      }
+    }
+  }
+
+  ImGui::End();
+}
+
 void UI::renderResourcePanel() {
   ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
                                  ImGuiWindowFlags_NoResize |
@@ -405,6 +435,48 @@ void UI::renderShaderEditor() {
   }
 
   ImGui::End();
+}
+
+void UI::renderThemeControls() {
+  bool changed = false;
+
+  auto accentItem = [&](const char *label, ThemeAccent accent) {
+    if (ImGui::MenuItem(label, nullptr, desc_.accent == accent)) {
+      desc_.accent = accent;
+      changed = true;
+    }
+  };
+
+  accentItem("Blue", ThemeAccent::Blue);
+  accentItem("Red", ThemeAccent::Red);
+  accentItem("Green", ThemeAccent::Green);
+  accentItem("Purple", ThemeAccent::Purple);
+  accentItem("Amber", ThemeAccent::Amber);
+
+  ImGui::Separator();
+
+  if (ImGui::MenuItem("Dark", nullptr, desc_.dark)) {
+    desc_.dark = true;
+    changed = true;
+  }
+
+  if (ImGui::MenuItem("Light", nullptr, !desc_.dark)) {
+    desc_.dark = false;
+    changed = true;
+  }
+
+  ImGui::Separator();
+  ImGui::PushItemWidth(140.0f);
+
+  changed |=
+      ImGui::SliderFloat("Rounding", &desc_.rounding, 0.0f, 10.0f, "%.1f");
+  changed |= ImGui::SliderFloat("Alpha", &desc_.alpha, 0.35f, 1.0f, "%.2f");
+
+  ImGui::PopItemWidth();
+
+  if (changed) {
+    Theme::apply(desc_);
+  }
 }
 
 void UI::renderLoggingPanel() {

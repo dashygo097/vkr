@@ -14,7 +14,6 @@ private:
   int frameCount{0};
 
   glm::vec4 mouseState{0.0f};
-  bool mousePressed{false};
 
   void createResources() override {
     resourceManager
@@ -102,21 +101,15 @@ private:
                     .count();
     lastFrameTime = currentTime;
 
-    double mouseX, mouseY;
-    glfwGetCursorPos(window->glfwWindow(), &mouseX, &mouseY);
+    const auto cursor = inputTracer->cursorPosition();
 
-    int leftButton =
-        glfwGetMouseButton(window->glfwWindow(), GLFW_MOUSE_BUTTON_LEFT);
-    if (leftButton == GLFW_PRESS && !mousePressed) {
-      mouseState.z = static_cast<float>(mouseX);
-      mouseState.w = static_cast<float>(ctx.window.height - mouseY);
-      mousePressed = true;
-    } else if (leftButton == GLFW_RELEASE) {
-      mousePressed = false;
+    if (inputTracer->wasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT)) {
+      mouseState.z = static_cast<float>(cursor.x);
+      mouseState.w = static_cast<float>(ctx.window.height - cursor.y);
     }
 
-    mouseState.x = static_cast<float>(mouseX);
-    mouseState.y = static_cast<float>(ctx.window.height - mouseY);
+    mouseState.x = static_cast<float>(cursor.x);
+    mouseState.y = static_cast<float>(ctx.window.height - cursor.y);
 
     std::time_t t = std::time(nullptr);
     std::tm *now = std::localtime(&t);

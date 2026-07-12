@@ -18,7 +18,10 @@ void VulkanApplication::initVulkan() {
 
   // window
   window = std::make_unique<core::Window>(ctx.window);
-  glfwSetWindowUserPointer(window->glfwWindow(), this);
+
+  // input
+  inputTracer = std::make_unique<util::InputTracer>(window->glfwWindow());
+  inputTracer->installCallbacks();
 
   // instance
   instance = std::make_unique<core::Instance>(ctx.instance);
@@ -50,7 +53,8 @@ void VulkanApplication::initVulkan() {
   timer = std::make_unique<util::Timer>();
 
   // camera
-  camera = std::make_unique<scene::Camera>(*window, *timer, ctx.camera);
+  camera = std::make_unique<scene::Camera>(*window, *timer, *inputTracer,
+                                           ctx.camera);
 
   // renderer
   renderer = std::make_unique<render::Renderer>(
@@ -67,8 +71,10 @@ void VulkanApplication::mainLoop() {
   timer->start();
   while (!window->shouldClose() && !shouldClose()) {
     timer->beginFrame();
+    inputTracer->beginFrame();
 
     window->pollEvents();
+    inputTracer->update();
 
     updateUiState();
 
@@ -101,15 +107,9 @@ void VulkanApplication::updateUiState() {
     return;
   }
 
-  static bool wasTabPressed = false;
-  const bool isTabPressed =
-      glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
-
-  if (isTabPressed && !wasTabPressed) {
+  if (inputTracer->wasKeyPressed(GLFW_KEY_TAB)) {
     uiPass_->switchLayoutMode();
   }
-
-  wasTabPressed = isTabPressed;
 
   const bool lockCamera = uiPass_->layoutMode() == ui::LayoutMode::Standard &&
                           !uiPass_->viewportInfo().isHovered;
@@ -130,7 +130,7 @@ auto VulkanApplication::addUiPass(render::RasterPass &source)
 
   uiPass_ = &renderGraph->addPass<render::UiPass>(
       *renderer, *window, *instance, *surface, *device, *commandPool,
-      *swapchain, *resourceManager, source, *timer, ctx.theme);
+      *swapchain, *resourceManager, source, *renderGraph, *timer, ctx.theme);
   uiPass_->update(desc);
 
   return *uiPass_;

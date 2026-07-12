@@ -2,36 +2,54 @@
 
 #include "TextEditor.h"
 #include "vkr/pipeline/graphics_pipeline.hh"
+#include "vkr/render/graph.hh"
+#include <string>
+#include <vector>
 
 namespace vkr::ui {
 
 class ShaderEditor {
 public:
-  explicit ShaderEditor(pipeline::GraphicsPipeline *pipeline);
+  explicit ShaderEditor(render::RenderGraph &graph);
 
   void render();
 
 private:
+  struct PipelineTarget {
+    std::string passName{};
+    std::string pipelineName{};
+    pipeline::GraphicsPipeline *pipeline{nullptr};
+
+    [[nodiscard]] auto label() const -> std::string {
+      return passName + " / " + pipelineName;
+    }
+  };
+
   // dependencies
-  pipeline::GraphicsPipeline *pipeline_{nullptr};
+  render::RenderGraph &graph_;
 
   // components
   TextEditor vert_editor_;
   TextEditor frag_editor_;
 
   // state
-  std::string loaded_pipeline_name_{};
+  std::string selected_pass_name_{};
+  std::string loaded_target_key_{};
   std::string status_message_{};
   bool status_is_error_{false};
   int active_tab_{0};
 
   // pipeline control
+  [[nodiscard]] auto collectTargets() -> std::vector<PipelineTarget>;
+  [[nodiscard]] auto activeTarget() -> PipelineTarget;
   [[nodiscard]] auto activePipeline() noexcept -> pipeline::GraphicsPipeline *;
   [[nodiscard]] auto hasPipeline() const noexcept -> bool;
+  [[nodiscard]] auto activeTargetKey() noexcept -> std::string;
 
   void reloadFromPipeline();
   void reloadFromPipelineIfChanged();
   void applyToPipeline();
+  void renderTargetSelector(const std::vector<PipelineTarget> &targets);
 
   // editor state
   [[nodiscard]] auto currentEditor() noexcept -> TextEditor &;

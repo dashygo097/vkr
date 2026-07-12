@@ -139,6 +139,28 @@ auto RenderGraph::record() -> void {
   }
 }
 
+auto RenderGraph::passes() -> std::vector<RenderGraphPass *> {
+  std::vector<RenderGraphPass *> result{};
+  result.reserve(passes_.size());
+
+  for (const auto &pass : passes_) {
+    result.push_back(pass.get());
+  }
+
+  return result;
+}
+
+auto RenderGraph::passes() const -> std::vector<const RenderGraphPass *> {
+  std::vector<const RenderGraphPass *> result{};
+  result.reserve(passes_.size());
+
+  for (const auto &pass : passes_) {
+    result.push_back(pass.get());
+  }
+
+  return result;
+}
+
 auto RenderGraph::rebuildNameTable() -> void {
   pass_indices_.clear();
   pass_indices_.reserve(passes_.size());

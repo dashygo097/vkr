@@ -1,6 +1,5 @@
 #pragma once
 
-#include "vkr/core/command/command_buffer.hh"
 #include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
@@ -9,6 +8,7 @@
 #include "vkr/core/window.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/render_pass.hh"
+#include "vkr/render/graph.hh"
 #include "vkr/render/pass.hh"
 #include "vkr/render/passes/raster.hh"
 #include "vkr/resource/attachments/frame_buffer.hh"
@@ -34,7 +34,7 @@ public:
          const core::Device &device, const core::CommandPool &commandPool,
          const core::Swapchain &swapchain,
          resource::ResourceManager &resourceManager, RasterPass &source,
-         util::Timer &timer, ui::ThemeDesc &theme);
+         RenderGraph &renderGraph, util::Timer &timer, ui::ThemeDesc &theme);
   ~UiPass() override;
 
   UiPass(const UiPass &) = delete;
@@ -77,6 +77,7 @@ private:
   const core::Swapchain &swapchain_;
   resource::ResourceManager &resource_manager_;
   RasterPass &source_;
+  RenderGraph &render_graph_;
   util::Timer &timer_;
   ui::ThemeDesc &theme_;
 

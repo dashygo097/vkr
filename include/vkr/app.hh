@@ -9,6 +9,7 @@
 #include "vkr/resource/manager.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/util/asset.hh"
+#include "vkr/util/input_tracer.hh"
 #include "vkr/util/timer.hh"
 #include "vkr/util/toml.hh"
 #include <filesystem>
@@ -52,6 +53,9 @@ public:
 
   // resource management
   std::unique_ptr<resource::ResourceManager> resourceManager;
+
+  // input
+  std::unique_ptr<util::InputTracer> inputTracer;
 
   // renderer
   std::unique_ptr<render::Renderer> renderer;

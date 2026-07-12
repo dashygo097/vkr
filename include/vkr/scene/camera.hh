@@ -1,8 +1,8 @@
 #pragma once
 
 #include "vkr/core/window.hh"
+#include "vkr/util/input_tracer.hh"
 #include "vkr/util/timer.hh"
-#include <GLFW/glfw3.h>
 #include <glm/common.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -59,7 +59,7 @@ struct CameraDesc {
 class Camera {
 public:
   explicit Camera(const core::Window &window, const util::Timer &timer,
-                  CameraDesc &desc);
+                  const util::InputTracer &input, CameraDesc &desc);
   ~Camera() = default;
 
   Camera(const Camera &) = delete;
@@ -129,8 +129,8 @@ public:
 
 private:
   // dependencies
-  const core::Window &window_;
   const util::Timer &timer_;
+  const util::InputTracer &input_;
 
   // components
   CameraDesc &desc_;
@@ -149,20 +149,7 @@ private:
     desc_.up = glm::normalize(glm::cross(desc_.right, desc_.front));
   };
 
-  static void scrollCallback(GLFWwindow *window, double xoffset,
-                             double yoffset) {
-    auto *cam = static_cast<Camera *>(glfwGetWindowUserPointer(window));
-    if (!cam || cam->desc_.locked) {
-      return;
-    }
-
-    constexpr float kMinFov = 1.0f;
-    constexpr float kMaxFov = 120.0f;
-    constexpr float kZoomSpeed = 2.0f;
-
-    cam->desc_.fov -= static_cast<float>(yoffset) * kZoomSpeed;
-    cam->desc_.fov = glm::clamp(cam->desc_.fov, kMinFov, kMaxFov);
-  }
+  void updateZoom(float scrollOffset);
 };
 
 } // namespace vkr::scene
