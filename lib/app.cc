@@ -125,7 +125,7 @@ auto VulkanApplication::addUiPass(render::RasterPass &source)
   desc.descriptorPool = {
       .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
                     {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-      .maxSets = core::MAX_FRAMES_IN_FLIGHT + 2};
+      .maxSets = core::MAX_FRAMES_IN_FLIGHT};
   desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
   uiPass_ = &renderGraph->addPass<render::UiPass>(
