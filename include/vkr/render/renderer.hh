@@ -7,7 +7,6 @@
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
-#include "vkr/resource/targets/offscreen.hh"
 #include "vkr/ui/ui.hh"
 
 namespace vkr::render {

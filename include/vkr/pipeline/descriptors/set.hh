@@ -12,8 +12,8 @@ namespace vkr::pipeline {
 class DescriptorSets {
 public:
   DescriptorSets(const core::Device &device,
-                 resource::ResourceManager &resourceManager,
-                 DescriptorSetLayout &layout, const DescriptorPool &pool,
+                 const resource::ResourceManager &resourceManager,
+                 const DescriptorPool &pool, DescriptorSetLayout &layout,
                  uint32_t frameCount = core::MAX_FRAMES_IN_FLIGHT);
   ~DescriptorSets();
 
@@ -35,9 +35,9 @@ public:
 private:
   // dependencies
   const core::Device &device_;
-  resource::ResourceManager &resource_manager_;
-  DescriptorSetLayout &layout_;
+  const resource::ResourceManager &resource_manager_;
   const DescriptorPool &pool_;
+  DescriptorSetLayout &layout_;
   uint32_t frame_count_{0};
 
   // components

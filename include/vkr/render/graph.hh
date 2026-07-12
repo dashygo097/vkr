@@ -1,0 +1,70 @@
+#pragma once
+
+#include "vkr/render/pass.hh"
+#include <memory>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+#include <vulkan/vulkan.h>
+
+namespace vkr::render {
+
+class RenderGraph {
+public:
+  RenderGraph() = default;
+  ~RenderGraph() { destroy(); }
+
+  RenderGraph(const RenderGraph &) = delete;
+  auto operator=(const RenderGraph &) -> RenderGraph & = delete;
+
+  template <typename PassT, typename... Args> void addPass(Args &&...args) {
+    static_assert(std::is_base_of_v<RenderGraphPass, PassT>,
+                  "PassT must derive from RenderGraphPass");
+
+    auto pass = std::make_unique<PassT>(std::forward<Args>(args)...);
+    auto &ref = *pass;
+    addPass(std::move(pass));
+  }
+
+  void addPass(std::unique_ptr<RenderGraphPass> pass);
+  void addDependency(std::string producer, std::string consumer);
+
+  void compile();
+  void create();
+  void destroy();
+  void record(VkCommandBuffer commandBuffer, uint32_t frameIndex,
+              uint32_t imageIndex);
+
+private:
+  // components
+  std::vector<std::unique_ptr<RenderGraphPass>> passes_{};
+  std::unordered_map<std::string, size_t> pass_indices_{};
+
+  std::unordered_map<std::string, std::vector<std::string>>
+      manual_dependencies_{};
+
+  std::vector<std::vector<size_t>> compiled_dependencies_{};
+  std::vector<RenderGraphPass *> ordered_passes_{};
+
+  // states
+  bool dirty_{true};
+  bool created_{false};
+
+  // helpers
+  auto rebuildNameTable() -> void;
+  auto validatePassNameAvailable(std::string_view name) const -> void;
+  auto validateDependencies() const -> void;
+
+  auto addCompiledDependency(size_t producer, size_t consumer) -> void;
+  auto buildResourceDependencies() -> void;
+
+  [[nodiscard]] auto passIndex(std::string_view name) const -> size_t;
+
+  [[nodiscard]] static auto contains(const std::vector<std::string> &values,
+                                     const std::string &target) -> bool;
+};
+
+} // namespace vkr::render

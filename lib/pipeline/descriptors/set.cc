@@ -4,11 +4,11 @@
 namespace vkr::pipeline {
 
 DescriptorSets::DescriptorSets(const core::Device &device,
-                               resource::ResourceManager &ResourceManager,
-                               DescriptorSetLayout &layout,
-                               const DescriptorPool &pool, uint32_t frameCount)
-    : device_(device), resource_manager_(ResourceManager), layout_(layout),
-      pool_(pool), frame_count_(frameCount) {
+                               const resource::ResourceManager &ResourceManager,
+                               const DescriptorPool &pool,
+                               DescriptorSetLayout &layout, uint32_t frameCount)
+    : device_(device), resource_manager_(ResourceManager), pool_(pool),
+      layout_(layout), frame_count_(frameCount) {
   allocateSets();
 }
 

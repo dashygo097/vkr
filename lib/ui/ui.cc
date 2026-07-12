@@ -75,8 +75,8 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   offscreen_descriptor_layout_->update({.bindings = offscreenBindings});
 
   offscreen_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
-      device_, resource_manager_, *offscreen_descriptor_layout_,
-      descriptor_pool_, 1);
+      device_, resource_manager_, descriptor_pool_,
+      *offscreen_descriptor_layout_, 1);
 
   VkDescriptorImageInfo offscreenImageInfo{};
   offscreenImageInfo.sampler = offscreen_target_.color().sampler();
