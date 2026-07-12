@@ -7,8 +7,6 @@
 
 class TestApp : public vkr::VulkanApplication {
 private:
-  vkr::render::UiPass *ui_pass_{nullptr};
-
   const std::vector<vkr::resource::VertexTextured3D> vertices1 = {
       vkr::resource::VertexTextured3D({-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}),
       vkr::resource::VertexTextured3D({0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}),
@@ -101,71 +99,35 @@ private:
     auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
         *renderer, *device, *commandPool, *resourceManager, std::move(desc));
 
-    vkr::render::UiPassDesc uiDesc{};
-    uiDesc.graph = {
-        .name = "ui", .reads = {"scene.color"}, .writes = {"swapchain"}};
-    uiDesc.target = {.depth = vkr::resource::DepthAttachmentDesc{
-                         .format = VK_FORMAT_D32_SFLOAT}};
-    uiDesc.descriptorPool = {
-        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
-                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT + 2};
-    uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
-                          VkClearValue{.depthStencil = {1.0f, 0}}};
-
-    ui_pass_ = &renderGraph->addPass<vkr::render::UiPass>(
-        *renderer, *window, *instance, *surface, *device, *commandPool,
-        *swapchain, *resourceManager, rasterPass, *timer, ctx.theme,
-        std::move(uiDesc));
+    addUiPass(rasterPass);
 
     renderGraph->addPass<vkr::render::PresentPass>(
         vkr::render::RenderGraphPassDesc{.name = "present",
                                          .reads = {"swapchain"}});
   }
 
-  void onDrawFrame(uint32_t currentImage) override {
+  void onDraw() override {
+    const uint32_t frameIndex = renderer->frameIndex();
+
     vkr::resource::UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();
 
-    resourceManager->getUniformBuffer("default")->updateRaw(currentImage, &ubo,
+    resourceManager->getUniformBuffer("default")->updateRaw(frameIndex, &ubo,
                                                             sizeof(ubo));
 
-    updateUiState();
-
-    if (ui_pass_->viewportInfo().height > 0 &&
-        ui_pass_->layoutMode() == vkr::ui::LayoutMode::Standard) {
+    if (uiPass()->viewportInfo().height > 0 &&
+        uiPass()->layoutMode() == vkr::ui::LayoutMode::Standard) {
       ctx.camera.aspectRatio =
-          ui_pass_->viewportInfo().width /
-          static_cast<float>(ui_pass_->viewportInfo().height);
+          uiPass()->viewportInfo().width /
+          static_cast<float>(uiPass()->viewportInfo().height);
     } else {
       ctx.camera.aspectRatio = ctx.window.ratio();
     }
   }
 
-  [[nodiscard]] auto shouldClose() const noexcept -> bool override {
-    return ui_pass_ && ui_pass_->shouldClose();
-  }
-
-  void updateUiState() {
-    static bool wasTabPressed = false;
-    const bool isTabPressed =
-        glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
-
-    if (isTabPressed && !wasTabPressed) {
-      ui_pass_->switchLayoutMode();
-    }
-
-    wasTabPressed = isTabPressed;
-
-    const bool lockCamera =
-        ui_pass_->layoutMode() == vkr::ui::LayoutMode::Standard &&
-        !ui_pass_->viewportInfo().isHovered;
-    camera->lock(lockCamera);
-  }
-
-  void onConfigure() override {
+  void configure() override {
     ctx.window = {
         .title = "Test",
         .width = 1200,

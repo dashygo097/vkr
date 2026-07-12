@@ -56,18 +56,26 @@ public:
   // renderer
   std::unique_ptr<render::Renderer> renderer;
   std::unique_ptr<render::RenderGraph> renderGraph;
+  render::UiPass *uiPass_{nullptr};
 
   // components
   std::unique_ptr<scene::Camera> camera;
   std::unique_ptr<util::Timer> timer;
 
 protected:
-  virtual void onConfigure() {}
-  virtual void onDrawFrame(uint32_t currentImage) {}
+  virtual void configure() {}
+  virtual void onDraw() {}
   virtual void createResources() {}
   virtual void buildRenderGraph() = 0;
   [[nodiscard]] virtual auto shouldClose() const noexcept -> bool {
-    return false;
+    return uiPass_ && uiPass_->shouldClose();
+  }
+
+  auto addUiPass(render::RasterPass &source) -> render::UiPass &;
+
+  [[nodiscard]] auto uiPass() noexcept -> render::UiPass * { return uiPass_; }
+  [[nodiscard]] auto uiPass() const noexcept -> const render::UiPass * {
+    return uiPass_;
   }
 
   [[nodiscard]] virtual auto snapshotPath() const -> std::filesystem::path {
@@ -79,6 +87,7 @@ private:
 
   void mainLoop();
   void drawFrame();
+  void updateUiState();
 
   void loadSnapshot() {
     const auto path = snapshotPath();

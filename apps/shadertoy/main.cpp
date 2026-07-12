@@ -8,8 +8,6 @@
 
 class ShaderToyApp : public vkr::VulkanApplication {
 private:
-  vkr::render::UiPass *ui_pass_{nullptr};
-
   std::chrono::high_resolution_clock::time_point startTime;
   std::chrono::high_resolution_clock::time_point lastFrameTime;
   float totalTime{0.0f};
@@ -80,31 +78,14 @@ private:
     auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
         *renderer, *device, *commandPool, *resourceManager, std::move(desc));
 
-    vkr::render::UiPassDesc uiDesc{};
-    uiDesc.graph = {
-        .name = "ui", .reads = {"scene.color"}, .writes = {"swapchain"}};
-    uiDesc.target = {.depth = vkr::resource::DepthAttachmentDesc{
-                         .format = VK_FORMAT_D32_SFLOAT}};
-    uiDesc.descriptorPool = {
-        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
-                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT + 2};
-    uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
-                          VkClearValue{.depthStencil = {1.0f, 0}}};
-
-    ui_pass_ = &renderGraph->addPass<vkr::render::UiPass>(
-        *renderer, *window, *instance, *surface, *device, *commandPool,
-        *swapchain, *resourceManager, rasterPass, *timer, ctx.theme,
-        std::move(uiDesc));
+    addUiPass(rasterPass);
 
     renderGraph->addPass<vkr::render::PresentPass>(
         vkr::render::RenderGraphPassDesc{.name = "present",
                                          .reads = {"swapchain"}});
   }
 
-  void onDrawFrame(uint32_t currentImage) override {
-    updateUiState();
-
+  void onDraw() override {
     auto shadertoyUBO = resourceManager->getUniformBuffer("shadertoy");
     if (!shadertoyUBO) {
       return;
@@ -154,26 +135,10 @@ private:
                           static_cast<float>(now->tm_hour * 3600 +
                                              now->tm_min * 60 + now->tm_sec));
 
-    shadertoyUBO->updateRaw(currentImage, &ubo, sizeof(ubo));
+    shadertoyUBO->updateRaw(renderer->frameIndex(), &ubo, sizeof(ubo));
   }
 
-  [[nodiscard]] auto shouldClose() const noexcept -> bool override {
-    return ui_pass_ && ui_pass_->shouldClose();
-  }
-
-  void updateUiState() {
-    static bool wasTabPressed = false;
-    const bool isTabPressed =
-        glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
-
-    if (isTabPressed && !wasTabPressed) {
-      ui_pass_->switchLayoutMode();
-    }
-
-    wasTabPressed = isTabPressed;
-  }
-
-  void onConfigure() override {
+  void configure() override {
     ctx.window = {
         .title = "ShaderToy Viewer",
         .width = 1200,

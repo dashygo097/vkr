@@ -6,7 +6,7 @@ namespace vkr {
 
 void VulkanApplication::initVulkan() {
   Logger::init();
-  onConfigure();
+  configure();
   loadSnapshot();
 
   if (!ctx.isValid()) {
@@ -70,6 +70,8 @@ void VulkanApplication::mainLoop() {
 
     window->pollEvents();
 
+    updateUiState();
+
     if (!camera->isLocked()) {
       camera->track();
     }
@@ -88,10 +90,48 @@ void VulkanApplication::drawFrame() {
     return;
   }
 
-  onDrawFrame(renderer->frameIndex());
+  onDraw();
   renderGraph->record();
 
   renderer->endFrame();
+}
+
+void VulkanApplication::updateUiState() {
+  if (!uiPass_) {
+    return;
+  }
+
+  static bool wasTabPressed = false;
+  const bool isTabPressed =
+      glfwGetKey(window->glfwWindow(), GLFW_KEY_TAB) == GLFW_PRESS;
+
+  if (isTabPressed && !wasTabPressed) {
+    uiPass_->switchLayoutMode();
+  }
+
+  wasTabPressed = isTabPressed;
+
+  const bool lockCamera = uiPass_->layoutMode() == ui::LayoutMode::Standard &&
+                          !uiPass_->viewportInfo().isHovered;
+  camera->lock(lockCamera);
+}
+
+auto VulkanApplication::addUiPass(render::RasterPass &source)
+    -> render::UiPass & {
+  render::UiPassDesc desc{};
+  desc.graph = {
+      .name = "ui", .reads = {"scene.color"}, .writes = {"swapchain"}};
+  desc.target = {};
+  desc.descriptorPool = {
+      .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
+                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
+      .maxSets = core::MAX_FRAMES_IN_FLIGHT + 2};
+  desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
+
+  uiPass_ = &renderGraph->addPass<render::UiPass>(
+      *renderer, *window, *instance, *surface, *device, *commandPool,
+      *swapchain, *resourceManager, source, *timer, ctx.theme, std::move(desc));
+  return *uiPass_;
 }
 
 } // namespace vkr
