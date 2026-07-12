@@ -34,7 +34,7 @@ public:
          const core::Device &device, const core::CommandPool &commandPool,
          const core::Swapchain &swapchain,
          resource::ResourceManager &resourceManager, RasterPass &source,
-         util::Timer &timer, ui::ThemeDesc &theme, UiPassDesc desc);
+         util::Timer &timer, ui::ThemeDesc &theme);
   ~UiPass() override;
 
   UiPass(const UiPass &) = delete;
@@ -86,16 +86,6 @@ private:
   std::unique_ptr<resource::FramebufferSet> framebuffers_{};
   std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
   std::unique_ptr<ui::UI> ui_{};
-};
-
-class PresentPass final : public RenderGraphPass {
-public:
-  explicit PresentPass(RenderGraphPassDesc desc) { setDesc(std::move(desc)); }
-
-  void create() override {}
-  void destroy() override {}
-  void update(const RenderGraphPassDesc &desc) override { setDesc(desc); }
-  void record() override;
 };
 
 } // namespace vkr::render

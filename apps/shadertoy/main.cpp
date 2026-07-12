@@ -76,13 +76,14 @@ private:
     };
 
     auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
-        *renderer, *device, *commandPool, *resourceManager, std::move(desc));
+        *renderer, *device, *commandPool, *resourceManager);
+    rasterPass.update(desc);
 
     addUiPass(rasterPass);
 
-    renderGraph->addPass<vkr::render::PresentPass>(
-        vkr::render::RenderGraphPassDesc{.name = "present",
-                                         .reads = {"swapchain"}});
+    auto &presentPass = renderGraph->addPass<vkr::render::PresentPass>();
+    presentPass.update(vkr::render::RenderGraphPassDesc{
+        .name = "present", .reads = {"swapchain"}});
   }
 
   void onDraw() override {

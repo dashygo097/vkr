@@ -9,13 +9,11 @@ UiPass::UiPass(Renderer &renderer, const core::Window &window,
                const core::Device &device, const core::CommandPool &commandPool,
                const core::Swapchain &swapchain,
                resource::ResourceManager &resourceManager, RasterPass &source,
-               util::Timer &timer, ui::ThemeDesc &theme, UiPassDesc desc)
+               util::Timer &timer, ui::ThemeDesc &theme)
     : renderer_(renderer), window_(window), instance_(instance),
       surface_(surface), device_(device), command_pool_(commandPool),
       swapchain_(swapchain), resource_manager_(resourceManager),
-      source_(source), timer_(timer), theme_(theme) {
-  update(desc);
-}
+      source_(source), timer_(timer), theme_(theme) {}
 
 UiPass::~UiPass() { destroy(); }
 
@@ -83,11 +81,6 @@ void UiPass::record() {
   renderer_.setViewportAndScissor({target_->width(), target_->height()});
   renderer_.drawUI(*ui_);
   renderer_.endPass();
-}
-
-void PresentPass::record() {
-  // Presentation is submitted by Renderer::endFrame. This explicit graph node
-  // marks the final dependency edge for passes that write the swapchain.
 }
 
 } // namespace vkr::render

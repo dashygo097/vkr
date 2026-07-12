@@ -130,7 +130,9 @@ auto VulkanApplication::addUiPass(render::RasterPass &source)
 
   uiPass_ = &renderGraph->addPass<render::UiPass>(
       *renderer, *window, *instance, *surface, *device, *commandPool,
-      *swapchain, *resourceManager, source, *timer, ctx.theme, std::move(desc));
+      *swapchain, *resourceManager, source, *timer, ctx.theme);
+  uiPass_->update(desc);
+
   return *uiPass_;
 }
 

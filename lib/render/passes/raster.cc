@@ -6,12 +6,9 @@ namespace vkr::render {
 
 RasterPass::RasterPass(Renderer &renderer, const core::Device &device,
                        const core::CommandPool &commandPool,
-                       resource::ResourceManager &resourceManager,
-                       RasterPassDesc desc)
+                       resource::ResourceManager &resourceManager)
     : renderer_(renderer), device_(device), command_pool_(commandPool),
-      resource_manager_(resourceManager) {
-  update(desc);
-}
+      resource_manager_(resourceManager) {}
 
 RasterPass::~RasterPass() { destroy(); }
 

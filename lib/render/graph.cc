@@ -10,7 +10,10 @@ void RenderGraph::addPass(std::unique_ptr<RenderGraphPass> pass) {
     VKR_RENDER_ERROR("Cannot add null render graph pass");
   }
 
-  validatePassNameAvailable(pass->desc().name);
+  if (!pass->name().empty()) {
+    validatePassNameAvailable(pass->name());
+  }
+
   passes_.push_back(std::move(pass));
   dirty_ = true;
 }

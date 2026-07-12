@@ -39,7 +39,7 @@ class RasterPass final : public RenderGraphPass {
 public:
   RasterPass(Renderer &renderer, const core::Device &device,
              const core::CommandPool &commandPool,
-             resource::ResourceManager &resourceManager, RasterPassDesc desc);
+             resource::ResourceManager &resourceManager);
   ~RasterPass() override;
 
   RasterPass(const RasterPass &) = delete;
