@@ -15,10 +15,9 @@ class IVertexBuffer {
 public:
   virtual ~IVertexBuffer() = default;
 
-  [[nodiscard]] virtual auto buffer() const noexcept -> VkBuffer = 0;
-
-  [[nodiscard]] virtual auto bufferMemory() const noexcept
-      -> VkDeviceMemory = 0;
+  [[nodiscard]] virtual auto buffer() const noexcept -> const VkBuffer & = 0;
+  [[nodiscard]] virtual auto memory() const noexcept
+      -> const VkDeviceMemory & = 0;
 
   [[nodiscard]] virtual auto vertexCount() const noexcept -> size_t = 0;
 
@@ -69,11 +68,12 @@ public:
     update(vertices);
   }
 
-  [[nodiscard]] auto buffer() const noexcept -> VkBuffer override {
+  [[nodiscard]] auto buffer() const noexcept -> const VkBuffer & override {
     return vk_vertex_buffer_;
   }
 
-  [[nodiscard]] auto bufferMemory() const noexcept -> VkDeviceMemory override {
+  [[nodiscard]] auto memory() const noexcept
+      -> const VkDeviceMemory & override {
     return vk_memory_;
   }
 

@@ -28,11 +28,11 @@ private:
 
   void createResources() override {
     resourceManager->createVertexBuffer<vkr::resource::VertexTextured3D>(
-        "vb1", vertices1);
-    resourceManager->createIndexBuffer("ib1", indices1);
+        "surface1", vertices1);
+    resourceManager->createIndexBuffer("surface1", indices1);
     resourceManager->createVertexBuffer<vkr::resource::VertexTextured3D>(
-        "vb2", vertices2);
-    resourceManager->createIndexBuffer("ib2", indices2);
+        "surface2", vertices2);
+    resourceManager->createIndexBuffer("surface2", indices2);
 
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
