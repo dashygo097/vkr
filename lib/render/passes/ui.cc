@@ -46,8 +46,8 @@ void UiPass::create() {
 
   ui_ = std::make_unique<ui::UI>(
       window_, instance_, surface_, device_, command_pool_, resource_manager_,
-      source_.target(), *render_pass_, *descriptor_pool_,
-      source_.pipelineLibrary(), timer_, theme_);
+      source_.target(), *render_pass_, *descriptor_pool_, source_.pipeline(),
+      timer_, theme_);
 }
 
 void UiPass::destroy() {

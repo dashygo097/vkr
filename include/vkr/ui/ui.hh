@@ -7,8 +7,8 @@
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
+#include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
-#include "vkr/render/pipeline_library.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
 #include "vkr/ui/components/fps_panel.hh"
@@ -43,7 +43,7 @@ public:
      resource::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
-     render::PipelineLibrary &pipelineLibrary, util::Timer &timer,
+     pipeline::GraphicsPipeline *editablePipeline, util::Timer &timer,
      ThemeDesc &desc);
   ~UI();
 
@@ -96,7 +96,7 @@ private:
   resource::OffscreenTarget &offscreen_target_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
-  render::PipelineLibrary &pipeline_library_;
+  pipeline::GraphicsPipeline *editable_pipeline_{nullptr};
   util::Timer &timer_;
 
   // components

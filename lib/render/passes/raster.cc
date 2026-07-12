@@ -9,7 +9,7 @@ RasterPass::RasterPass(const core::Device &device,
                        resource::ResourceManager &resourceManager,
                        RasterPassDesc desc)
     : device_(device), command_pool_(commandPool),
-      resource_manager_(resourceManager), pipeline_library_(device_) {
+      resource_manager_(resourceManager) {
   update(desc);
 }
 
@@ -26,7 +26,7 @@ void RasterPass::create() {
 }
 
 void RasterPass::destroy() {
-  pipeline_library_.clear();
+  pipeline_.reset();
   descriptor_sets_.reset();
   descriptor_layout_.reset();
   descriptor_pool_.reset();
@@ -59,12 +59,11 @@ void RasterPass::record(Renderer &renderer) {
   renderer.beginPass(*framebuffers_, *render_pass_, beginDesc);
   renderer.setViewportAndScissor({target_->width(), target_->height()});
 
-  if (!pipeline_library_.empty()) {
-    auto &pipeline = pipeline_library_.first();
+  if (pipeline_ && pipeline_->valid()) {
     const std::vector<VkDescriptorSet> emptySets{};
     const auto &sets = descriptor_sets_ ? descriptor_sets_->sets() : emptySets;
 
-    renderer.bindPipeline(pipeline.pipeline(), pipeline.layout(), sets);
+    renderer.bindPipeline(pipeline_->pipeline(), pipeline_->layout(), sets);
     renderer.drawGeometry();
   }
 
@@ -153,7 +152,13 @@ void RasterPass::createPipeline() {
     pipelineDesc.layout.setLayouts = {buildInfo.descriptorSetLayout};
   }
 
-  pipeline_library_.create(pipelineDesc);
+  pipeline_ = std::make_unique<pipeline::GraphicsPipeline>(device_);
+  pipeline_->update(pipelineDesc);
+
+  if (!pipeline_->valid()) {
+    VKR_RENDER_ERROR("RasterPass '{}' failed to create graphics pipeline '{}'",
+                     name(), pipelineDesc.name);
+  }
 }
 
 auto RasterPass::createDescriptorWrites() const

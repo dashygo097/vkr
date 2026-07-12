@@ -562,22 +562,18 @@ auto ShaderEditor::makeEditor() -> TextEditor {
   return ed;
 }
 
-ShaderEditor::ShaderEditor(render::PipelineLibrary &pipelineLibrary)
-    : pipeline_library_(pipelineLibrary), vert_editor_(makeEditor()),
+ShaderEditor::ShaderEditor(pipeline::GraphicsPipeline *pipeline)
+    : pipeline_(pipeline), vert_editor_(makeEditor()),
       frag_editor_(makeEditor()) {
   reloadFromPipeline();
 }
 
 auto ShaderEditor::activePipeline() noexcept -> pipeline::GraphicsPipeline * {
-  if (pipeline_library_.empty()) {
-    return nullptr;
-  }
-
-  return &pipeline_library_.first();
+  return pipeline_;
 }
 
 auto ShaderEditor::hasPipeline() const noexcept -> bool {
-  return !pipeline_library_.empty();
+  return pipeline_ != nullptr;
 }
 
 auto ShaderEditor::currentEditor() noexcept -> TextEditor & {

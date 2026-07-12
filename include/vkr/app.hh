@@ -67,7 +67,10 @@ protected:
   virtual void onConfigure() {}
   virtual void onDrawFrame(uint32_t currentImage) {}
   virtual void createResources() {}
-  virtual auto createRasterPassDesc() -> render::RasterPassDesc;
+  virtual void buildRenderGraph(render::RenderGraph &graph);
+
+  [[nodiscard]] auto makeDefaultRasterPassDesc() const
+      -> render::RasterPassDesc;
 
   [[nodiscard]] virtual auto snapshotPath() const -> std::filesystem::path {
     return "snapshot.toml";

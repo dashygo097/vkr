@@ -2,19 +2,18 @@
 
 #include "TextEditor.h"
 #include "vkr/pipeline/graphics_pipeline.hh"
-#include "vkr/render/pipeline_library.hh"
 
 namespace vkr::ui {
 
 class ShaderEditor {
 public:
-  explicit ShaderEditor(render::PipelineLibrary &pipelineLibrary);
+  explicit ShaderEditor(pipeline::GraphicsPipeline *pipeline);
 
   void render();
 
 private:
   // dependencies
-  render::PipelineLibrary &pipeline_library_;
+  pipeline::GraphicsPipeline *pipeline_{nullptr};
 
   // components
   TextEditor vert_editor_;

@@ -54,12 +54,7 @@ void VulkanApplication::initVulkan() {
 
   // render graph
   renderGraph = std::make_unique<render::RenderGraph>();
-  rasterPass = &renderGraph->addPass<render::RasterPass>(
-      *device, *commandPool, *resourceManager, createRasterPassDesc());
-  uiPass = &renderGraph->addPass<render::UiPass>(
-      *window, *instance, *surface, *device, *commandPool, *swapchain,
-      *resourceManager, *rasterPass, *timer, ctx.theme);
-  renderGraph->addPass<render::PresentPass>();
+  buildRenderGraph(*renderGraph);
   renderGraph->compile();
   renderGraph->create();
 
@@ -72,7 +67,7 @@ void VulkanApplication::mainLoop() {
   timer->start();
   bool isLastTabKeyPressed = false;
 
-  while (!window->shouldClose() && !uiPass->shouldClose()) {
+  while (!window->shouldClose() && (!uiPass || !uiPass->shouldClose())) {
     timer->beginFrame();
 
     window->pollEvents();
@@ -85,11 +80,13 @@ void VulkanApplication::mainLoop() {
     }
 
     if (isNowTabKeyPressed && !isLastTabKeyPressed) {
-      uiPass->switchLayoutMode();
+      if (uiPass) {
+        uiPass->switchLayoutMode();
+      }
     }
 
     bool shouldLockCamera = false;
-    if (uiPass->layoutMode() == ui::LayoutMode::Standard) {
+    if (uiPass && uiPass->layoutMode() == ui::LayoutMode::Standard) {
       shouldLockCamera = !uiPass->viewportInfo().isHovered;
     }
 
@@ -116,7 +113,17 @@ void VulkanApplication::drawFrame() {
   renderer->endFrame();
 }
 
-auto VulkanApplication::createRasterPassDesc() -> render::RasterPassDesc {
+void VulkanApplication::buildRenderGraph(render::RenderGraph &graph) {
+  rasterPass = &graph.addPass<render::RasterPass>(
+      *device, *commandPool, *resourceManager, makeDefaultRasterPassDesc());
+  uiPass = &graph.addPass<render::UiPass>(
+      *window, *instance, *surface, *device, *commandPool, *swapchain,
+      *resourceManager, *rasterPass, *timer, ctx.theme);
+  graph.addPass<render::PresentPass>();
+}
+
+auto VulkanApplication::makeDefaultRasterPassDesc() const
+    -> render::RasterPassDesc {
   render::RasterPassDesc desc{};
   desc.target = resource::OffscreenTargetDesc{
       .color = {.width = swapchain->width(),

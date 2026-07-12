@@ -22,8 +22,8 @@ private:
             "shadertoy", {});
   }
 
-  auto createRasterPassDesc() -> vkr::render::RasterPassDesc override {
-    auto desc = VulkanApplication::createRasterPassDesc();
+  void buildRenderGraph(vkr::render::RenderGraph &graph) override {
+    auto desc = makeDefaultRasterPassDesc();
     desc.descriptorBindings = {
         {.name = "shadertoy",
          .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
@@ -56,7 +56,12 @@ private:
       return shadertoy;
     };
 
-    return desc;
+    rasterPass = &graph.addPass<vkr::render::RasterPass>(
+        *device, *commandPool, *resourceManager, std::move(desc));
+    uiPass = &graph.addPass<vkr::render::UiPass>(
+        *window, *instance, *surface, *device, *commandPool, *swapchain,
+        *resourceManager, *rasterPass, *timer, ctx.theme);
+    graph.addPass<vkr::render::PresentPass>();
   }
 
   void onDrawFrame(uint32_t currentImage) override {

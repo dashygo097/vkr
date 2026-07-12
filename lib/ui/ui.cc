@@ -16,12 +16,12 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        resource::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
-       render::PipelineLibrary &pipelineLibrary, util::Timer &timer,
+       pipeline::GraphicsPipeline *editablePipeline, util::Timer &timer,
        ThemeDesc &desc)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), resource_manager_(resourceManager),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),
-      descriptor_pool_(descriptorPool), pipeline_library_(pipelineLibrary),
+      descriptor_pool_(descriptorPool), editable_pipeline_(editablePipeline),
       timer_(timer), desc_(desc) {
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
@@ -98,7 +98,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   VKR_UI_INFO("FPS Panel initialized successfully.");
 
   VKR_UI_INFO("Initializing Shader Editor...");
-  shader_editor_ = std::make_unique<ShaderEditor>(pipeline_library_);
+  shader_editor_ = std::make_unique<ShaderEditor>(editable_pipeline_);
   VKR_UI_INFO("Shader Editor initialized successfully.");
 
   VKR_UI_INFO("Initializing Logging Panel...");

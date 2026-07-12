@@ -9,7 +9,6 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/render/pass.hh"
-#include "vkr/render/pipeline_library.hh"
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
@@ -59,12 +58,13 @@ public:
   [[nodiscard]] auto target() -> resource::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
 
-  [[nodiscard]] auto pipelineLibrary() -> PipelineLibrary & {
-    return pipeline_library_;
+  [[nodiscard]] auto pipeline() noexcept -> pipeline::GraphicsPipeline * {
+    return pipeline_.get();
   }
 
-  [[nodiscard]] auto pipelineLibrary() const -> const PipelineLibrary & {
-    return pipeline_library_;
+  [[nodiscard]] auto pipeline() const noexcept
+      -> const pipeline::GraphicsPipeline * {
+    return pipeline_.get();
   }
 
 private:
@@ -79,7 +79,7 @@ private:
   std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
   std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
-  PipelineLibrary pipeline_library_;
+  std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
 
   void createTarget();
   void createRenderPass();
