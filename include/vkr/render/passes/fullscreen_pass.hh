@@ -12,8 +12,30 @@
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/targets/offscreen.hh"
 #include <memory>
+#include <utility>
 
 namespace vkr::render {
+
+class RasterPass;
+class FullscreenPass;
+
+struct FullscreenPassSource {
+  enum class Type {
+    Raster,
+    Fullscreen,
+  };
+
+  Type type{Type::Raster};
+  RasterPass *raster{nullptr};
+  FullscreenPass *fullscreen{nullptr};
+
+  FullscreenPassSource() = default;
+  FullscreenPassSource(RasterPass &source);
+  FullscreenPassSource(FullscreenPass &source);
+
+  [[nodiscard]] auto target() -> resource::OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
+};
 
 struct FullscreenPassInputDesc {
   uint32_t binding{0};
@@ -28,11 +50,11 @@ struct FullscreenPassDesc {
   pipeline::GraphicsPipelineDesc pipeline{};
 };
 
-class FullscreenPass : public RenderGraphPass, public OffscreenRenderPass {
+class FullscreenPass : public RenderGraphPass {
 public:
   FullscreenPass(Renderer &renderer, const core::Device &device,
                  const core::CommandPool &commandPool,
-                 std::vector<OffscreenRenderPass *> sources = {});
+                 std::vector<FullscreenPassSource> sources = {});
   ~FullscreenPass() override;
 
   FullscreenPass(const FullscreenPass &) = delete;
@@ -43,13 +65,12 @@ public:
   void update(const FullscreenPassDesc &desc);
   void record() override;
 
-  auto addSource(OffscreenRenderPass &source) -> FullscreenPass &;
-  auto setSources(std::vector<OffscreenRenderPass *> sources)
+  auto addSource(FullscreenPassSource source) -> FullscreenPass &;
+  auto setSources(std::vector<FullscreenPassSource> sources)
       -> FullscreenPass &;
 
-  [[nodiscard]] auto target() -> resource::OffscreenTarget & override;
-  [[nodiscard]] auto target() const
-      -> const resource::OffscreenTarget & override;
+  [[nodiscard]] auto target() -> resource::OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
 
   [[nodiscard]] auto pipeline() noexcept -> pipeline::GraphicsPipeline * {
     return pipeline_.get();
@@ -76,7 +97,7 @@ private:
   const core::CommandPool &command_pool_;
 
   FullscreenPassDesc desc_{};
-  std::vector<OffscreenRenderPass *> sources_{};
+  std::vector<FullscreenPassSource> sources_{};
   std::unique_ptr<resource::OffscreenTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
   std::unique_ptr<resource::FramebufferSet> framebuffers_{};
@@ -97,22 +118,8 @@ private:
       const std::vector<FullscreenPassInputDesc> &inputs) const
       -> pipeline::DescriptorPoolDesc;
   [[nodiscard]] auto createDescriptorWrites(
-      const std::vector<FullscreenPassInputDesc> &inputs) const
+      const std::vector<FullscreenPassInputDesc> &inputs)
       -> std::vector<pipeline::DescriptorSetWriteDesc>;
-};
-
-class PostProcessPass final : public FullscreenPass {
-public:
-  PostProcessPass(Renderer &renderer, const core::Device &device,
-                  const core::CommandPool &commandPool,
-                  OffscreenRenderPass &source);
-};
-
-class CompositePass final : public FullscreenPass {
-public:
-  CompositePass(Renderer &renderer, const core::Device &device,
-                const core::CommandPool &commandPool,
-                std::vector<OffscreenRenderPass *> sources);
 };
 
 } // namespace vkr::render

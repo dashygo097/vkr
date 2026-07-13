@@ -68,10 +68,49 @@ private:
 
     auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
         *renderer, *device, *commandPool, *resourceManager);
-    rasterPass.setName("raster").write("scene.color");
+    rasterPass.setName("raster").write("scene.raw");
     rasterPass.update(desc);
 
-    addUiPass(rasterPass);
+    vkr::render::FullscreenPassDesc postDesc{};
+    postDesc.target = {
+        .color = {.width = swapchain->width(),
+                  .height = swapchain->height(),
+                  .format = VK_FORMAT_R8G8B8A8_UNORM,
+                  .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                           VK_IMAGE_USAGE_SAMPLED_BIT,
+                  .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  .createSampler = true}};
+    postDesc.clearValues = {
+        VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
+
+    vkr::pipeline::GraphicsPipelineDesc postPipeline{};
+    postPipeline.name = "postprocess";
+    postPipeline.vertexInput = vkr::resource::VertexInputDesc::none();
+    postPipeline.shaders = {
+        vkr::pipeline::GraphicsShaderStageDesc::vertex(
+            vkr::resource::ShaderModuleDesc::vertexGlslFile(
+                assetSystem->resolve("shaders/postprocess/postprocess.vert")
+                    .string())),
+        vkr::pipeline::GraphicsShaderStageDesc::fragment(
+            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+                assetSystem->resolve("shaders/postprocess/postprocess.frag")
+                    .string())),
+    };
+    postPipeline.depthStencil =
+        vkr::pipeline::GraphicsDepthStencilDesc::disabled();
+    postPipeline.rasterization =
+        vkr::pipeline::GraphicsRasterizationDesc::noCull();
+    postDesc.pipeline = postPipeline;
+
+    auto &postProcessPass = renderGraph->addPass<vkr::render::PostProcessPass>(
+        *renderer, *device, *commandPool,
+        vkr::render::FullscreenPassSource{rasterPass});
+    postProcessPass.setName("postprocess")
+        .read("scene.raw")
+        .write("scene.color");
+    postProcessPass.update(postDesc);
+
+    addUiPass(vkr::render::FullscreenPassSource{postProcessPass});
 
     auto &presentPass = renderGraph->addPass<vkr::render::PresentPass>();
     presentPass.setName("present").read("swapchain");

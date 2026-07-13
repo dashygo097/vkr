@@ -10,7 +10,8 @@
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/render/graph.hh"
 #include "vkr/render/pass.hh"
-#include "vkr/render/passes/raster.hh"
+#include "vkr/render/passes/fullscreen_pass.hh"
+#include "vkr/render/renderer.hh"
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/swapchain.hh"
@@ -32,8 +33,9 @@ public:
          const core::Instance &instance, const core::Surface &surface,
          const core::Device &device, const core::CommandPool &commandPool,
          const core::Swapchain &swapchain,
-         resource::ResourceManager &resourceManager, RasterPass &source,
-         RenderGraph &renderGraph, util::Timer &timer, ui::ThemeDesc &theme);
+         resource::ResourceManager &resourceManager,
+         FullscreenPassSource source, RenderGraph &renderGraph,
+         util::Timer &timer, ui::ThemeDesc &theme);
   ~UiPass() override;
 
   UiPass(const UiPass &) = delete;
@@ -75,7 +77,7 @@ private:
   const core::CommandPool &command_pool_;
   const core::Swapchain &swapchain_;
   resource::ResourceManager &resource_manager_;
-  RasterPass &source_;
+  FullscreenPassSource source_;
   RenderGraph &render_graph_;
   util::Timer &timer_;
   ui::ThemeDesc &theme_;

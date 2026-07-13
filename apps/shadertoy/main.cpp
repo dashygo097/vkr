@@ -74,7 +74,7 @@ private:
     rasterPass.setName("raster").write("scene.color");
     rasterPass.update(desc);
 
-    addUiPass(rasterPass);
+    addUiPass(vkr::render::FullscreenPassSource{rasterPass});
 
     auto &presentPass = renderGraph->addPass<vkr::render::PresentPass>();
     presentPass.setName("present").read("swapchain");

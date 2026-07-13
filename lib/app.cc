@@ -116,7 +116,7 @@ void VulkanApplication::updateUiState() {
   camera->lock(lockCamera);
 }
 
-auto VulkanApplication::addUiPass(render::RasterPass &source)
+auto VulkanApplication::addUiPass(render::FullscreenPassSource source)
     -> render::UiPass & {
   render::UiPassDesc desc{};
   desc.target = {};

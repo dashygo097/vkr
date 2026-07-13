@@ -3,7 +3,9 @@
 #include "vkr/context.hh"
 #include "vkr/logger.hh"
 #include "vkr/render/graph.hh"
-#include "vkr/render/passes/fullscreen.hh"
+#include "vkr/render/passes/composite.hh"
+#include "vkr/render/passes/fullscreen_pass.hh"
+#include "vkr/render/passes/post_process.hh"
 #include "vkr/render/passes/raster.hh"
 #include "vkr/render/passes/ui.hh"
 #include "vkr/render/renderer.hh"
@@ -76,7 +78,7 @@ protected:
     return uiPass_ && uiPass_->shouldClose();
   }
 
-  auto addUiPass(render::RasterPass &source) -> render::UiPass &;
+  auto addUiPass(render::FullscreenPassSource source) -> render::UiPass &;
 
   [[nodiscard]] auto uiPass() noexcept -> render::UiPass * { return uiPass_; }
   [[nodiscard]] auto uiPass() const noexcept -> const render::UiPass * {

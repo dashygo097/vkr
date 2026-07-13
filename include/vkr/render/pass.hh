@@ -6,10 +6,6 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-namespace vkr::resource {
-class OffscreenTarget;
-}
-
 namespace vkr::render {
 
 class RenderGraphPass {
@@ -77,15 +73,6 @@ private:
   std::string name_{};
   std::vector<std::string> reads_{};
   std::vector<std::string> writes_{};
-};
-
-class OffscreenRenderPass {
-public:
-  virtual ~OffscreenRenderPass() = default;
-
-  [[nodiscard]] virtual auto target() -> vkr::resource::OffscreenTarget & = 0;
-  [[nodiscard]] virtual auto target() const
-      -> const vkr::resource::OffscreenTarget & = 0;
 };
 
 } // namespace vkr::render

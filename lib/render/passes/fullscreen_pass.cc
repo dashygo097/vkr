@@ -1,12 +1,54 @@
-#include "vkr/render/passes/fullscreen.hh"
+#include "vkr/render/passes/fullscreen_pass.hh"
 #include "vkr/core/core_utils.hh"
 #include "vkr/logger.hh"
+#include "vkr/render/passes/raster.hh"
 
 namespace vkr::render {
 
+FullscreenPassSource::FullscreenPassSource(RasterPass &source)
+    : type(Type::Raster), raster(&source) {}
+
+FullscreenPassSource::FullscreenPassSource(FullscreenPass &source)
+    : type(Type::Fullscreen), fullscreen(&source) {}
+
+auto FullscreenPassSource::target() -> resource::OffscreenTarget & {
+  switch (type) {
+  case Type::Raster:
+    if (!raster) {
+      VKR_RENDER_ERROR("FullscreenPassSource has null raster source");
+    }
+    return raster->target();
+  case Type::Fullscreen:
+    if (!fullscreen) {
+      VKR_RENDER_ERROR("FullscreenPassSource has null fullscreen source");
+    }
+    return fullscreen->target();
+  }
+
+  VKR_RENDER_ERROR("FullscreenPassSource has unknown source type");
+}
+
+auto FullscreenPassSource::target() const
+    -> const resource::OffscreenTarget & {
+  switch (type) {
+  case Type::Raster:
+    if (!raster) {
+      VKR_RENDER_ERROR("FullscreenPassSource has null raster source");
+    }
+    return raster->target();
+  case Type::Fullscreen:
+    if (!fullscreen) {
+      VKR_RENDER_ERROR("FullscreenPassSource has null fullscreen source");
+    }
+    return fullscreen->target();
+  }
+
+  VKR_RENDER_ERROR("FullscreenPassSource has unknown source type");
+}
+
 FullscreenPass::FullscreenPass(Renderer &renderer, const core::Device &device,
                                const core::CommandPool &commandPool,
-                               std::vector<OffscreenRenderPass *> sources)
+                               std::vector<FullscreenPassSource> sources)
     : renderer_(renderer), device_(device), command_pool_(commandPool),
       sources_(std::move(sources)) {}
 
@@ -59,13 +101,13 @@ void FullscreenPass::record() {
   renderer_.endPass();
 }
 
-auto FullscreenPass::addSource(OffscreenRenderPass &source)
+auto FullscreenPass::addSource(FullscreenPassSource source)
     -> FullscreenPass & {
-  sources_.push_back(&source);
+  sources_.push_back(source);
   return *this;
 }
 
-auto FullscreenPass::setSources(std::vector<OffscreenRenderPass *> sources)
+auto FullscreenPass::setSources(std::vector<FullscreenPassSource> sources)
     -> FullscreenPass & {
   sources_ = std::move(sources);
   return *this;
@@ -212,7 +254,7 @@ auto FullscreenPass::descriptorPoolDesc(
 }
 
 auto FullscreenPass::createDescriptorWrites(
-    const std::vector<FullscreenPassInputDesc> &inputs) const
+    const std::vector<FullscreenPassInputDesc> &inputs)
     -> std::vector<pipeline::DescriptorSetWriteDesc> {
   std::vector<pipeline::DescriptorSetWriteDesc> writes{};
   writes.reserve(core::MAX_FRAMES_IN_FLIGHT);
@@ -223,13 +265,7 @@ auto FullscreenPass::createDescriptorWrites(
   }
 
   for (size_t index = 0; index < sources_.size(); ++index) {
-    const auto *source = sources_[index];
-    if (!source) {
-      VKR_RENDER_ERROR("FullscreenPass '{}' has null source at index {}",
-                       name(), index);
-    }
-
-    const auto &color = source->target().color();
+    const auto &color = sources_[index].target().color();
     if (!color.hasSampler()) {
       VKR_RENDER_ERROR("FullscreenPass '{}' source {} has no sampler", name(),
                        index);
@@ -251,16 +287,5 @@ auto FullscreenPass::createDescriptorWrites(
 
   return writes;
 }
-
-PostProcessPass::PostProcessPass(Renderer &renderer,
-                                 const core::Device &device,
-                                 const core::CommandPool &commandPool,
-                                 OffscreenRenderPass &source)
-    : FullscreenPass(renderer, device, commandPool, {&source}) {}
-
-CompositePass::CompositePass(Renderer &renderer, const core::Device &device,
-                             const core::CommandPool &commandPool,
-                             std::vector<OffscreenRenderPass *> sources)
-    : FullscreenPass(renderer, device, commandPool, std::move(sources)) {}
 
 } // namespace vkr::render

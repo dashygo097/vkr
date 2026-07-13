@@ -24,7 +24,7 @@ struct RasterPassDesc {
   pipeline::GraphicsPipelineDesc pipeline{};
 };
 
-class RasterPass final : public RenderGraphPass, public OffscreenRenderPass {
+class RasterPass final : public RenderGraphPass {
 public:
   RasterPass(Renderer &renderer, const core::Device &device,
              const core::CommandPool &commandPool,
@@ -39,9 +39,8 @@ public:
   void update(const RasterPassDesc &desc);
   void record() override;
 
-  [[nodiscard]] auto target() -> resource::OffscreenTarget & override;
-  [[nodiscard]] auto target() const
-      -> const resource::OffscreenTarget & override;
+  [[nodiscard]] auto target() -> resource::OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
 
   [[nodiscard]] auto pipeline() noexcept -> pipeline::GraphicsPipeline * {
     return pipeline_.get();
