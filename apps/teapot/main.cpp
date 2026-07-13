@@ -45,17 +45,17 @@ private:
                         VkClearValue{.depthStencil = {1.0f, 0}}};
 
     vkr::pipeline::GraphicsPipelineDesc normal{};
-    normal.name = "normal3d";
+    normal.name = "teapot-local";
     normal.vertexInput = vkr::resource::VertexNormal3D::vertexInputDesc();
 
     normal.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
             vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolve("shaders/normal3d/normal3d.vert")
+                assetSystem->resolve("shaders/teapot/teapot.vert")
                     .string())),
         vkr::pipeline::GraphicsShaderStageDesc::fragment(
             vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolve("shaders/normal3d/normal3d.frag")
+                assetSystem->resolve("shaders/teapot/teapot.frag")
                     .string())),
     };
 
