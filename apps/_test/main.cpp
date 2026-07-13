@@ -43,7 +43,8 @@ private:
 
   void buildRenderGraph() override {
     vkr::render::RasterPassDesc desc{};
-    desc.graph = {.name = "raster", .writes = {"scene.color"}};
+    desc.name = "raster";
+    desc.writes = {"scene.color"};
     desc.target = {
         .color = {.width = swapchain->width(),
                   .height = swapchain->height(),
@@ -70,31 +71,27 @@ private:
     desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
                         VkClearValue{.depthStencil = {1.0f, 0}}};
 
-    desc.pipeline = [this](const vkr::render::RasterPipelineBuildInfo &info) {
-      vkr::pipeline::GraphicsPipelineDesc textured{};
-      textured.name = "textured";
-      textured.renderPass = info.renderPass;
-      textured.layout.setLayouts = {info.descriptorSetLayout};
-      textured.vertexInput = vkr::resource::VertexTextured3D::vertexInputDesc();
+    vkr::pipeline::GraphicsPipelineDesc textured{};
+    textured.name = "textured";
+    textured.vertexInput = vkr::resource::VertexTextured3D::vertexInputDesc();
 
-      textured.shaders = {
-          vkr::pipeline::GraphicsShaderStageDesc::vertex(
-              vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                  assetSystem->resolve("shaders/texture3d/texture3d.vert")
-                      .string())),
-          vkr::pipeline::GraphicsShaderStageDesc::fragment(
-              vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                  assetSystem->resolve("shaders/texture3d/texture3d.frag")
-                      .string())),
-      };
-
-      textured.depthStencil.depthTestEnable = VK_TRUE;
-      textured.depthStencil.depthWriteEnable = VK_TRUE;
-      textured.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-      textured.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-
-      return textured;
+    textured.shaders = {
+        vkr::pipeline::GraphicsShaderStageDesc::vertex(
+            vkr::resource::ShaderModuleDesc::vertexGlslFile(
+                assetSystem->resolve("shaders/texture3d/texture3d.vert")
+                    .string())),
+        vkr::pipeline::GraphicsShaderStageDesc::fragment(
+            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+                assetSystem->resolve("shaders/texture3d/texture3d.frag")
+                    .string())),
     };
+
+    textured.depthStencil.depthTestEnable = VK_TRUE;
+    textured.depthStencil.depthWriteEnable = VK_TRUE;
+    textured.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    textured.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+
+    desc.pipeline = textured;
 
     auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
         *renderer, *device, *commandPool, *resourceManager);

@@ -20,7 +20,8 @@ private:
 
   void buildRenderGraph() override {
     vkr::render::RasterPassDesc desc{};
-    desc.graph = {.name = "raster", .writes = {"scene.color"}};
+    desc.name = "raster";
+    desc.writes = {"scene.color"};
     desc.target = {
         .color = {.width = swapchain->width(),
                   .height = swapchain->height(),
@@ -45,31 +46,27 @@ private:
     desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
                         VkClearValue{.depthStencil = {1.0f, 0}}};
 
-    desc.pipeline = [this](const vkr::render::RasterPipelineBuildInfo &info) {
-      vkr::pipeline::GraphicsPipelineDesc normal{};
-      normal.name = "normal3d";
-      normal.renderPass = info.renderPass;
-      normal.layout.setLayouts = {info.descriptorSetLayout};
-      normal.vertexInput = vkr::resource::VertexNormal3D::vertexInputDesc();
+    vkr::pipeline::GraphicsPipelineDesc normal{};
+    normal.name = "normal3d";
+    normal.vertexInput = vkr::resource::VertexNormal3D::vertexInputDesc();
 
-      normal.shaders = {
-          vkr::pipeline::GraphicsShaderStageDesc::vertex(
-              vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                  assetSystem->resolve("shaders/normal3d/normal3d.vert")
-                      .string())),
-          vkr::pipeline::GraphicsShaderStageDesc::fragment(
-              vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                  assetSystem->resolve("shaders/normal3d/normal3d.frag")
-                      .string())),
-      };
-
-      normal.depthStencil.depthTestEnable = VK_TRUE;
-      normal.depthStencil.depthWriteEnable = VK_TRUE;
-      normal.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-      normal.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-
-      return normal;
+    normal.shaders = {
+        vkr::pipeline::GraphicsShaderStageDesc::vertex(
+            vkr::resource::ShaderModuleDesc::vertexGlslFile(
+                assetSystem->resolve("shaders/normal3d/normal3d.vert")
+                    .string())),
+        vkr::pipeline::GraphicsShaderStageDesc::fragment(
+            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+                assetSystem->resolve("shaders/normal3d/normal3d.frag")
+                    .string())),
     };
+
+    normal.depthStencil.depthTestEnable = VK_TRUE;
+    normal.depthStencil.depthWriteEnable = VK_TRUE;
+    normal.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    normal.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+
+    desc.pipeline = normal;
 
     auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
         *renderer, *device, *commandPool, *resourceManager);

@@ -22,31 +22,30 @@ public:
   RenderGraphPass(const RenderGraphPass &) = delete;
   auto operator=(const RenderGraphPass &) -> RenderGraphPass & = delete;
 
-  [[nodiscard]] auto desc() const noexcept -> const RenderGraphPassDesc & {
-    return desc_;
-  }
+  [[nodiscard]] virtual auto desc() const noexcept
+      -> const RenderGraphPassDesc & = 0;
 
   [[nodiscard]] auto name() const noexcept -> const std::string & {
-    return desc_.name;
+    return desc().name;
   }
 
   [[nodiscard]] auto reads() const noexcept
       -> const std::vector<std::string> & {
-    return desc_.reads;
+    return desc().reads;
   }
 
   [[nodiscard]] auto writes() const noexcept
       -> const std::vector<std::string> & {
-    return desc_.writes;
+    return desc().writes;
   }
 
   auto read(std::string resource) -> RenderGraphPass & {
-    desc_.reads.push_back(std::move(resource));
+    mutableDesc().reads.push_back(std::move(resource));
     return *this;
   }
 
   auto write(std::string resource) -> RenderGraphPass & {
-    desc_.writes.push_back(std::move(resource));
+    mutableDesc().writes.push_back(std::move(resource));
     return *this;
   }
 
@@ -66,11 +65,8 @@ public:
   }
 
 protected:
-  void setDesc(RenderGraphPassDesc desc) { desc_ = std::move(desc); }
-
-private:
-  // components
-  RenderGraphPassDesc desc_;
+  void setDesc(RenderGraphPassDesc desc) { mutableDesc() = std::move(desc); }
+  [[nodiscard]] virtual auto mutableDesc() noexcept -> RenderGraphPassDesc & = 0;
 };
 
 } // namespace vkr::render

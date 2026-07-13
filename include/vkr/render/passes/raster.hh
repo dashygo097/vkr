@@ -12,27 +12,16 @@
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
-#include <functional>
 #include <memory>
 
 namespace vkr::render {
 
-struct RasterPipelineBuildInfo {
-  VkRenderPass renderPass{VK_NULL_HANDLE};
-  VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
-  VkExtent2D extent{};
-};
-
-using RasterPipelineFactory = std::function<pipeline::GraphicsPipelineDesc(
-    const RasterPipelineBuildInfo &)>;
-
-struct RasterPassDesc {
-  RenderGraphPassDesc graph{};
+struct RasterPassDesc : RenderGraphPassDesc {
   resource::OffscreenTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
-  RasterPipelineFactory pipeline{};
+  pipeline::GraphicsPipelineDesc pipeline{};
 };
 
 class RasterPass final : public RenderGraphPass {
@@ -50,6 +39,11 @@ public:
   void update(const RenderGraphPassDesc &desc) override;
   void update(const RasterPassDesc &desc);
   void record() override;
+
+  [[nodiscard]] auto desc() const noexcept
+      -> const RenderGraphPassDesc & override {
+    return desc_;
+  }
 
   [[nodiscard]] auto target() -> resource::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
@@ -99,6 +93,9 @@ private:
 
   [[nodiscard]] auto createDescriptorWrites() const
       -> std::vector<pipeline::DescriptorSetWriteDesc>;
+  [[nodiscard]] auto mutableDesc() noexcept -> RenderGraphPassDesc & override {
+    return desc_;
+  }
 };
 
 } // namespace vkr::render

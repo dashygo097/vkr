@@ -33,13 +33,11 @@ void RasterPass::destroy() {
 }
 
 void RasterPass::update(const RenderGraphPassDesc &desc) {
-  desc_.graph = desc;
-  setDesc(desc_.graph);
+  setDesc(desc);
 }
 
 void RasterPass::update(const RasterPassDesc &desc) {
   desc_ = desc;
-  setDesc(desc_.graph);
 }
 
 void RasterPass::record() {
@@ -130,23 +128,20 @@ void RasterPass::createDescriptors() {
 }
 
 void RasterPass::createPipeline() {
-  if (!desc_.pipeline) {
-    VKR_RENDER_WARN("RasterPass '{}' has no graphics pipeline factory", name());
-    return;
+  auto pipelineDesc = desc_.pipeline;
+  pipelineDesc.renderPass = render_pass_->renderPass();
+
+  const VkDescriptorSetLayout descriptorSetLayout =
+      descriptor_layout_ ? descriptor_layout_->layout() : VK_NULL_HANDLE;
+  if (descriptorSetLayout != VK_NULL_HANDLE &&
+      pipelineDesc.layout.setLayouts.empty()) {
+    pipelineDesc.layout.setLayouts = {descriptorSetLayout};
   }
 
-  RasterPipelineBuildInfo buildInfo{
-      .renderPass = render_pass_->renderPass(),
-      .descriptorSetLayout =
-          descriptor_layout_ ? descriptor_layout_->layout() : VK_NULL_HANDLE,
-      .extent = {target_->width(), target_->height()}};
-
-  auto pipelineDesc = desc_.pipeline(buildInfo);
-  pipelineDesc.renderPass = buildInfo.renderPass;
-
-  if (buildInfo.descriptorSetLayout != VK_NULL_HANDLE &&
-      pipelineDesc.layout.setLayouts.empty()) {
-    pipelineDesc.layout.setLayouts = {buildInfo.descriptorSetLayout};
+  if (!pipelineDesc.isValid()) {
+    VKR_RENDER_WARN("RasterPass '{}' has no valid graphics pipeline desc",
+                    name());
+    return;
   }
 
   pipeline_ = std::make_unique<pipeline::GraphicsPipeline>(device_);

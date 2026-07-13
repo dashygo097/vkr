@@ -23,7 +23,8 @@ private:
 
   void buildRenderGraph() override {
     vkr::render::RasterPassDesc desc{};
-    desc.graph = {.name = "raster", .writes = {"scene.color"}};
+    desc.name = "raster";
+    desc.writes = {"scene.color"};
     desc.target = {
         .color = {.width = swapchain->width(),
                   .height = swapchain->height(),
@@ -48,31 +49,27 @@ private:
     desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
                         VkClearValue{.depthStencil = {1.0f, 0}}};
 
-    desc.pipeline = [this](const vkr::render::RasterPipelineBuildInfo &info) {
-      vkr::pipeline::GraphicsPipelineDesc shadertoy{};
-      shadertoy.name = "shadertoy";
-      shadertoy.renderPass = info.renderPass;
-      shadertoy.layout.setLayouts = {info.descriptorSetLayout};
-      shadertoy.vertexInput = vkr::resource::VertexInputDesc::none();
+    vkr::pipeline::GraphicsPipelineDesc shadertoy{};
+    shadertoy.name = "shadertoy";
+    shadertoy.vertexInput = vkr::resource::VertexInputDesc::none();
 
-      shadertoy.shaders = {
-          vkr::pipeline::GraphicsShaderStageDesc::vertex(
-              vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                  assetSystem->resolve("shaders/shadertoy/shadertoy.vert")
-                      .string())),
-          vkr::pipeline::GraphicsShaderStageDesc::fragment(
-              vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                  assetSystem->resolve("shaders/shadertoy/shadertoy.frag")
-                      .string())),
-      };
-
-      shadertoy.depthStencil =
-          vkr::pipeline::GraphicsDepthStencilDesc::disabled();
-      shadertoy.rasterization =
-          vkr::pipeline::GraphicsRasterizationDesc::noCull();
-
-      return shadertoy;
+    shadertoy.shaders = {
+        vkr::pipeline::GraphicsShaderStageDesc::vertex(
+            vkr::resource::ShaderModuleDesc::vertexGlslFile(
+                assetSystem->resolve("shaders/shadertoy/shadertoy.vert")
+                    .string())),
+        vkr::pipeline::GraphicsShaderStageDesc::fragment(
+            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+                assetSystem->resolve("shaders/shadertoy/shadertoy.frag")
+                    .string())),
     };
+
+    shadertoy.depthStencil =
+        vkr::pipeline::GraphicsDepthStencilDesc::disabled();
+    shadertoy.rasterization =
+        vkr::pipeline::GraphicsRasterizationDesc::noCull();
+
+    desc.pipeline = shadertoy;
 
     auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
         *renderer, *device, *commandPool, *resourceManager);
