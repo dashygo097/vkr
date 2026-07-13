@@ -3,7 +3,7 @@
 
 namespace vkr::ui {
 
-ResourceTree::ResourceTree(const resource::ResourceManager &resourceManager)
+ResourceTree::ResourceTree(resource::ResourceManager &resourceManager)
     : resource_manager_(resourceManager) {}
 
 void ResourceTree::render() {
@@ -15,6 +15,9 @@ void ResourceTree::render() {
 
   if (ImGui::BeginChild("ResourceTreeScrollRegion", ImVec2(0.0f, -90.0f), true,
                         ImGuiWindowFlags_HorizontalScrollbar)) {
+    renderCategory("Meshes", resource_manager_.listMeshNames(),
+                   resource_manager_.meshCount());
+
     renderCategory("Vertex Buffers", resource_manager_.listVertexBufferNames(),
                    resource_manager_.vertexBufferCount());
 
@@ -70,6 +73,12 @@ void ResourceTree::renderCategory(const char *type,
         if (ImGui::Selectable(name.c_str(), selected)) {
           selected_type_ = type;
           selected_name_ = name;
+
+          if (selected_type_ == "Meshes") {
+            resource_manager_.selectMesh(selected_name_);
+          } else {
+            resource_manager_.clearSelectedMesh();
+          }
         }
 
         if (ImGui::BeginPopupContextItem("ResourceContextMenu")) {

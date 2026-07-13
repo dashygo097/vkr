@@ -77,6 +77,9 @@ private:
   std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
+  std::unique_ptr<pipeline::GraphicsPipeline> mesh_grid_pipeline_{};
+  std::unique_ptr<resource::IndexBuffer> mesh_grid_index_buffer_{};
+  std::string mesh_grid_name_{};
 
   // helpers
   void createTarget();
@@ -87,6 +90,8 @@ private:
 
   [[nodiscard]] auto createDescriptorWrites() const
       -> std::vector<pipeline::DescriptorSetWriteDesc>;
+  void syncSelectedMeshGrid();
+  void recordSelectedMeshGrid(const std::vector<VkDescriptorSet> &sets);
 };
 
 } // namespace vkr::render

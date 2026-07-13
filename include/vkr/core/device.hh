@@ -50,7 +50,7 @@ public:
     return desc_;
   }
 
-  void waitIdle();
+  void waitIdle() const;
 
   [[nodiscard]] auto device() const noexcept -> VkDevice {
     return vk_logical_device_;

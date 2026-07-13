@@ -1,6 +1,8 @@
 #include "vkr/render/passes/raster.hh"
 #include "vkr/logger.hh"
 #include "vkr/render/renderer.hh"
+#include <algorithm>
+#include <unordered_set>
 
 namespace vkr::render {
 
@@ -23,6 +25,9 @@ void RasterPass::create() {
 }
 
 void RasterPass::destroy() {
+  mesh_grid_pipeline_.reset();
+  mesh_grid_index_buffer_.reset();
+  mesh_grid_name_.clear();
   pipeline_.reset();
   descriptor_sets_.reset();
   descriptor_layout_.reset();
@@ -32,14 +37,14 @@ void RasterPass::destroy() {
   target_.reset();
 }
 
-void RasterPass::update(const RasterPassDesc &desc) {
-  desc_ = desc;
-}
+void RasterPass::update(const RasterPassDesc &desc) { desc_ = desc; }
 
 void RasterPass::record() {
   if (!target_ || !render_pass_ || !framebuffers_) {
     VKR_RENDER_ERROR("RasterPass '{}' recorded before create", name());
   }
+
+  syncSelectedMeshGrid();
 
   RenderPassBeginDesc beginDesc{
       .framebufferIndex = 0,
@@ -56,6 +61,7 @@ void RasterPass::record() {
 
     renderer_.bindPipeline(pipeline_->pipeline(), pipeline_->layout(), sets);
     renderer_.drawGeometry();
+    recordSelectedMeshGrid(sets);
   }
 
   renderer_.endPass();
@@ -147,6 +153,23 @@ void RasterPass::createPipeline() {
     VKR_RENDER_ERROR("RasterPass '{}' failed to create graphics pipeline '{}'",
                      name(), pipelineDesc.name);
   }
+
+  auto gridPipelineDesc = pipelineDesc;
+  gridPipelineDesc.name = pipelineDesc.name + "-mesh-grid";
+  gridPipelineDesc.inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+  gridPipelineDesc.rasterization =
+      pipeline::GraphicsRasterizationDesc::noCull();
+  gridPipelineDesc.depthStencil =
+      pipeline::GraphicsDepthStencilDesc::readOnly();
+
+  mesh_grid_pipeline_ = std::make_unique<pipeline::GraphicsPipeline>(device_);
+  mesh_grid_pipeline_->update(gridPipelineDesc);
+
+  if (!mesh_grid_pipeline_->valid()) {
+    VKR_RENDER_ERROR(
+        "RasterPass '{}' failed to create mesh grid graphics pipeline '{}'",
+        name(), gridPipelineDesc.name);
+  }
 }
 
 auto RasterPass::createDescriptorWrites() const
@@ -230,6 +253,81 @@ auto RasterPass::createDescriptorWrites() const
   }
 
   return writes;
+}
+
+void RasterPass::syncSelectedMeshGrid() {
+  const std::string &selectedMesh = resource_manager_.selectedMeshName();
+
+  if (selectedMesh == mesh_grid_name_) {
+    return;
+  }
+
+  device_.waitIdle();
+  mesh_grid_name_ = selectedMesh;
+  mesh_grid_index_buffer_.reset();
+
+  if (selectedMesh.empty()) {
+    return;
+  }
+
+  auto indexBuffer = resource_manager_.getIndexBuffer(selectedMesh);
+  if (!indexBuffer) {
+    mesh_grid_name_.clear();
+    return;
+  }
+
+  const auto indices = indexBuffer->indices();
+  std::vector<uint16_t> lineIndices;
+  lineIndices.reserve(indices.size() * 2);
+
+  std::unordered_set<uint32_t> edges;
+  edges.reserve(indices.size());
+
+  auto addEdge = [&](uint16_t a, uint16_t b) {
+    const uint16_t lo = std::min(a, b);
+    const uint16_t hi = std::max(a, b);
+    const uint32_t key =
+        (static_cast<uint32_t>(lo) << 16) | static_cast<uint32_t>(hi);
+
+    if (!edges.insert(key).second) {
+      return;
+    }
+
+    lineIndices.push_back(a);
+    lineIndices.push_back(b);
+  };
+
+  for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+    addEdge(indices[i], indices[i + 1]);
+    addEdge(indices[i + 1], indices[i + 2]);
+    addEdge(indices[i + 2], indices[i]);
+  }
+
+  if (lineIndices.empty()) {
+    mesh_grid_name_.clear();
+    return;
+  }
+
+  mesh_grid_index_buffer_ =
+      std::make_unique<resource::IndexBuffer>(device_, command_pool_);
+  mesh_grid_index_buffer_->update(lineIndices);
+}
+
+void RasterPass::recordSelectedMeshGrid(
+    const std::vector<VkDescriptorSet> &sets) {
+  if (!mesh_grid_pipeline_ || !mesh_grid_pipeline_->valid() ||
+      !mesh_grid_index_buffer_ || mesh_grid_name_.empty()) {
+    return;
+  }
+
+  auto vertexBuffer = resource_manager_.getVertexBuffer(mesh_grid_name_);
+  if (!vertexBuffer) {
+    return;
+  }
+
+  renderer_.bindPipeline(mesh_grid_pipeline_->pipeline(),
+                         mesh_grid_pipeline_->layout(), sets);
+  renderer_.drawIndexed(*vertexBuffer, *mesh_grid_index_buffer_);
 }
 
 } // namespace vkr::render

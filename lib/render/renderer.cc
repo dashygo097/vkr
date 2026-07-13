@@ -144,6 +144,25 @@ void Renderer::setViewportAndScissor(VkExtent2D extent) {
   vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
 }
 
+void Renderer::drawIndexed(const resource::IVertexBuffer &vertexBuffer,
+                           const resource::IndexBuffer &indexBuffer) {
+  ensureFrameActive("drawIndexed");
+
+  if (vertexBuffer.vertexCount() == 0 || indexBuffer.indices().empty()) {
+    return;
+  }
+
+  VkDeviceSize offsets[] = {0};
+  VkBuffer vertexBuffers[] = {vertexBuffer.buffer()};
+
+  vkCmdBindVertexBuffers(command_buffer_, 0, 1, vertexBuffers, offsets);
+  vkCmdBindIndexBuffer(command_buffer_, indexBuffer.buffer(), 0,
+                       VK_INDEX_TYPE_UINT16);
+  vkCmdDrawIndexed(command_buffer_,
+                   static_cast<uint32_t>(indexBuffer.indices().size()), 1, 0, 0,
+                   0);
+}
+
 void Renderer::drawGeometry() {
   ensureFrameActive("drawGeometry");
 
@@ -155,22 +174,14 @@ void Renderer::drawGeometry() {
     return;
   }
 
-  for (size_t i = 0; i < vertexBuffers.size() && i < indexBuffers.size(); i++) {
-    auto vb = resource_manager_.getVertexBuffer(vertexBuffers[i]);
-    auto ib = resource_manager_.getIndexBuffer(vertexBuffers[i]);
+  for (const auto &name : vertexBuffers) {
+    auto vb = resource_manager_.getVertexBuffer(name);
+    auto ib = resource_manager_.getIndexBuffer(name);
     if (!vb || !ib) {
       continue;
     }
 
-    VkDeviceSize offsets[] = {0};
-
-    vkCmdBindVertexBuffers(command_buffer_, 0, 1, &vb->buffer(), offsets);
-
-    vkCmdBindIndexBuffer(command_buffer_, ib->buffer(), 0,
-                         VK_INDEX_TYPE_UINT16);
-
-    vkCmdDrawIndexed(command_buffer_,
-                     static_cast<uint32_t>(ib->indices().size()), 1, 0, 0, 0);
+    drawIndexed(*vb, *ib);
   }
 }
 

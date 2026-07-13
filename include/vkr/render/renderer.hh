@@ -70,6 +70,8 @@ public:
 
   void setViewportAndScissor(VkExtent2D extent);
 
+  void drawIndexed(const resource::IVertexBuffer &vertexBuffer,
+                   const resource::IndexBuffer &indexBuffer);
   void drawGeometry();
   void drawFullscreenTriangle();
   void drawUI(ui::UI &ui);

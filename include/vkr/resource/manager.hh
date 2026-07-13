@@ -84,9 +84,31 @@ public:
   }
 
   void destroyMesh(const std::string &name) {
+    if (selected_mesh_name_ == name) {
+      selected_mesh_name_.clear();
+    }
+
     destroyVertexBuffer(name);
     destroyIndexBuffer(name);
   }
+
+  [[nodiscard]] auto hasMesh(const std::string &name) const -> bool {
+    return getVertexBuffer(name) != nullptr && getIndexBuffer(name) != nullptr;
+  }
+
+  [[nodiscard]] auto meshCount() const -> size_t {
+    return listMeshNames().size();
+  }
+
+  [[nodiscard]] auto selectedMeshName() const noexcept -> const std::string & {
+    return selected_mesh_name_;
+  }
+
+  void selectMesh(std::string name) {
+    selected_mesh_name_ = hasMesh(name) ? std::move(name) : std::string{};
+  }
+
+  void clearSelectedMesh() { selected_mesh_name_.clear(); }
 
   // Texture management
   void createTexture(const std::string &name, const TextureDesc &desc) {
@@ -156,6 +178,18 @@ public:
     return listTextureNames();
   }
 
+  [[nodiscard]] auto listMeshNames() const -> std::vector<std::string> {
+    std::vector<std::string> names;
+
+    for (const auto &[name, _] : vertex_buffers_) {
+      if (index_buffers_.find(name) != index_buffers_.end()) {
+        names.push_back(name);
+      }
+    }
+
+    return names;
+  }
+
   // Lists
   [[nodiscard]] auto listVertexBuffers() const
       -> std::vector<std::shared_ptr<IVertexBuffer>> {
@@ -219,6 +253,7 @@ private:
   std::unordered_map<std::string, std::shared_ptr<IUniformBuffer>>
       uniform_buffers_{};
   std::unordered_map<std::string, std::shared_ptr<Texture>> textures_{};
+  std::string selected_mesh_name_{};
 };
 
 } // namespace vkr::resource

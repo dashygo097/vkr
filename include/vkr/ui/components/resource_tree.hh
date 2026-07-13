@@ -9,13 +9,13 @@ namespace vkr::ui {
 
 class ResourceTree {
 public:
-  explicit ResourceTree(const resource::ResourceManager &resourceManager);
+  explicit ResourceTree(resource::ResourceManager &resourceManager);
   ~ResourceTree() = default;
 
   void render();
 
 private:
-  const resource::ResourceManager &resource_manager_;
+  resource::ResourceManager &resource_manager_;
 
   std::string selected_type_;
   std::string selected_name_;

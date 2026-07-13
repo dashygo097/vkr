@@ -26,7 +26,7 @@ Device::~Device() {
   vk_logical_device_ = VK_NULL_HANDLE;
 }
 
-void Device::waitIdle() {
+void Device::waitIdle() const {
   if (vk_logical_device_ != VK_NULL_HANDLE) {
     vkDeviceWaitIdle(vk_logical_device_);
   }
