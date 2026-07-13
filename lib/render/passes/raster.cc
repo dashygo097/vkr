@@ -32,10 +32,6 @@ void RasterPass::destroy() {
   target_.reset();
 }
 
-void RasterPass::update(const RenderGraphPassDesc &desc) {
-  setDesc(desc);
-}
-
 void RasterPass::update(const RasterPassDesc &desc) {
   desc_ = desc;
 }

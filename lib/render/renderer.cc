@@ -174,6 +174,11 @@ void Renderer::drawGeometry() {
   }
 }
 
+void Renderer::drawFullscreenTriangle() {
+  ensureFrameActive("drawFullscreenTriangle");
+  vkCmdDraw(command_buffer_, 3, 1, 0, 0);
+}
+
 void Renderer::drawUI(ui::UI &ui) {
   ensureFrameActive("drawUI");
   ui.render(command_buffer_);

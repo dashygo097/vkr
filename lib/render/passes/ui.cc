@@ -58,10 +58,6 @@ void UiPass::destroy() {
   target_.reset();
 }
 
-void UiPass::update(const RenderGraphPassDesc &desc) {
-  setDesc(desc);
-}
-
 void UiPass::update(const UiPassDesc &desc) {
   desc_ = desc;
 }

@@ -119,9 +119,6 @@ void VulkanApplication::updateUiState() {
 auto VulkanApplication::addUiPass(render::RasterPass &source)
     -> render::UiPass & {
   render::UiPassDesc desc{};
-  desc.name = "ui";
-  desc.reads = {"scene.color"};
-  desc.writes = {"swapchain"};
   desc.target = {};
   desc.descriptorPool = {
       .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
@@ -132,6 +129,7 @@ auto VulkanApplication::addUiPass(render::RasterPass &source)
   uiPass_ = &renderGraph->addPass<render::UiPass>(
       *renderer, *window, *instance, *surface, *device, *commandPool,
       *swapchain, *resourceManager, source, *renderGraph, *timer, ctx.theme);
+  uiPass_->setName("ui").read("scene.color").write("swapchain");
   uiPass_->update(desc);
 
   return *uiPass_;

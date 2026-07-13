@@ -3,6 +3,7 @@
 #include "vkr/context.hh"
 #include "vkr/logger.hh"
 #include "vkr/render/graph.hh"
+#include "vkr/render/passes/fullscreen.hh"
 #include "vkr/render/passes/raster.hh"
 #include "vkr/render/passes/ui.hh"
 #include "vkr/render/renderer.hh"

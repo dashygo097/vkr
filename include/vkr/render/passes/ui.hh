@@ -20,7 +20,7 @@
 
 namespace vkr::render {
 
-struct UiPassDesc : RenderGraphPassDesc {
+struct UiPassDesc {
   resource::SwapchainTargetDesc target{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
@@ -41,14 +41,8 @@ public:
 
   void create() override;
   void destroy() override;
-  void update(const RenderGraphPassDesc &desc) override;
   void update(const UiPassDesc &desc);
   void record() override;
-
-  [[nodiscard]] auto desc() const noexcept
-      -> const RenderGraphPassDesc & override {
-    return desc_;
-  }
 
   [[nodiscard]] auto ui() noexcept -> ui::UI * { return ui_.get(); }
   [[nodiscard]] auto ui() const noexcept -> const ui::UI * { return ui_.get(); }
@@ -93,10 +87,6 @@ private:
   std::unique_ptr<resource::FramebufferSet> framebuffers_{};
   std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
   std::unique_ptr<ui::UI> ui_{};
-
-  [[nodiscard]] auto mutableDesc() noexcept -> RenderGraphPassDesc & override {
-    return desc_;
-  }
 };
 
 } // namespace vkr::render

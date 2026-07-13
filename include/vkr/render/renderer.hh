@@ -61,6 +61,7 @@ public:
   void setViewportAndScissor(VkExtent2D extent);
 
   void drawGeometry();
+  void drawFullscreenTriangle();
   void drawUI(ui::UI &ui);
 
 private:

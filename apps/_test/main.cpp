@@ -43,8 +43,6 @@ private:
 
   void buildRenderGraph() override {
     vkr::render::RasterPassDesc desc{};
-    desc.name = "raster";
-    desc.writes = {"scene.color"};
     desc.target = {
         .color = {.width = swapchain->width(),
                   .height = swapchain->height(),
@@ -95,13 +93,13 @@ private:
 
     auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
         *renderer, *device, *commandPool, *resourceManager);
+    rasterPass.setName("raster").write("scene.color");
     rasterPass.update(desc);
 
     addUiPass(rasterPass);
 
     auto &presentPass = renderGraph->addPass<vkr::render::PresentPass>();
-    presentPass.update(vkr::render::RenderGraphPassDesc{
-        .name = "present", .reads = {"swapchain"}});
+    presentPass.setName("present").read("swapchain");
   }
 
   void onDraw() override {

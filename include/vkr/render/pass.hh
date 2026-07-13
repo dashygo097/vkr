@@ -6,13 +6,11 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-namespace vkr::render {
+namespace vkr::resource {
+class OffscreenTarget;
+}
 
-struct RenderGraphPassDesc {
-  std::string name{};
-  std::vector<std::string> reads{};
-  std::vector<std::string> writes{};
-};
+namespace vkr::render {
 
 class RenderGraphPass {
 public:
@@ -22,36 +20,47 @@ public:
   RenderGraphPass(const RenderGraphPass &) = delete;
   auto operator=(const RenderGraphPass &) -> RenderGraphPass & = delete;
 
-  [[nodiscard]] virtual auto desc() const noexcept
-      -> const RenderGraphPassDesc & = 0;
-
   [[nodiscard]] auto name() const noexcept -> const std::string & {
-    return desc().name;
+    return name_;
   }
 
   [[nodiscard]] auto reads() const noexcept
       -> const std::vector<std::string> & {
-    return desc().reads;
+    return reads_;
   }
 
   [[nodiscard]] auto writes() const noexcept
       -> const std::vector<std::string> & {
-    return desc().writes;
+    return writes_;
+  }
+
+  auto setName(std::string name) -> RenderGraphPass & {
+    name_ = std::move(name);
+    return *this;
+  }
+
+  auto setReads(std::vector<std::string> reads) -> RenderGraphPass & {
+    reads_ = std::move(reads);
+    return *this;
+  }
+
+  auto setWrites(std::vector<std::string> writes) -> RenderGraphPass & {
+    writes_ = std::move(writes);
+    return *this;
   }
 
   auto read(std::string resource) -> RenderGraphPass & {
-    mutableDesc().reads.push_back(std::move(resource));
+    reads_.push_back(std::move(resource));
     return *this;
   }
 
   auto write(std::string resource) -> RenderGraphPass & {
-    mutableDesc().writes.push_back(std::move(resource));
+    writes_.push_back(std::move(resource));
     return *this;
   }
 
   virtual void create() = 0;
   virtual void destroy() = 0;
-  virtual void update(const RenderGraphPassDesc &desc) = 0;
   virtual void record() = 0;
 
   [[nodiscard]] virtual auto editablePipeline() noexcept
@@ -64,9 +73,19 @@ public:
     return nullptr;
   }
 
-protected:
-  void setDesc(RenderGraphPassDesc desc) { mutableDesc() = std::move(desc); }
-  [[nodiscard]] virtual auto mutableDesc() noexcept -> RenderGraphPassDesc & = 0;
+private:
+  std::string name_{};
+  std::vector<std::string> reads_{};
+  std::vector<std::string> writes_{};
+};
+
+class OffscreenRenderPass {
+public:
+  virtual ~OffscreenRenderPass() = default;
+
+  [[nodiscard]] virtual auto target() -> vkr::resource::OffscreenTarget & = 0;
+  [[nodiscard]] virtual auto target() const
+      -> const vkr::resource::OffscreenTarget & = 0;
 };
 
 } // namespace vkr::render
