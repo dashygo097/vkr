@@ -123,7 +123,14 @@ public:
 
   void toggleLock() noexcept { lock(!desc_.locked); }
 
-  void lock(bool locked) noexcept { desc_.locked = locked; }
+  void lock(bool locked) noexcept {
+    if (desc_.locked == locked) {
+      return;
+    }
+
+    desc_.locked = locked;
+    desc_.firstMouse = true;
+  }
 
   [[nodiscard]] auto isLocked() const noexcept -> bool { return desc_.locked; }
 
