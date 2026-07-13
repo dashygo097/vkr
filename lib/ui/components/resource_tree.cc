@@ -13,7 +13,7 @@ void ResourceTree::render() {
   ImGui::Checkbox("Show empty groups", &show_empty_groups_);
   ImGui::Spacing();
 
-  if (ImGui::BeginChild("ResourceTreeScrollRegion", ImVec2(0.0f, -90.0f), false,
+  if (ImGui::BeginChild("ResourceTreeScrollRegion", ImVec2(0.0f, -90.0f), true,
                         ImGuiWindowFlags_HorizontalScrollbar)) {
     renderCategory("Vertex Buffers", resource_manager_.listVertexBufferNames(),
                    resource_manager_.vertexBufferCount());

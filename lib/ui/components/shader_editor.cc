@@ -31,6 +31,10 @@ static auto styleColorToAbgr(const ImVec4 &color, float alpha) -> uint32_t {
   return styleColorToAbgr(c);
 }
 
+static auto relativeLuminance(const ImVec4 &color) -> float {
+  return color.x * 0.2126f + color.y * 0.7152f + color.z * 0.0722f;
+}
+
 static void addKeywords(TextEditor::LanguageDefinition &lang,
                         std::initializer_list<const char *> words) {
   for (const char *word : words) {
@@ -935,6 +939,12 @@ auto ShaderEditor::render() -> void {
   const ImVec4 accent = style.Colors[ImGuiCol_CheckMark];
   const ImVec4 selection = style.Colors[ImGuiCol_TextSelectedBg];
   const ImVec4 frameBg = style.Colors[ImGuiCol_FrameBg];
+  const ImVec4 editorBg = childBg.w > 0.0f ? childBg : bg;
+  const bool lightBackground = relativeLuminance(editorBg) > 0.55f;
+  const ImVec4 editorAccent =
+      lightBackground
+          ? ImVec4(accent.x * 0.62f, accent.y * 0.62f, accent.z * 0.62f, 1.0f)
+          : accent;
 
   auto syncPalette = [&](TextEditor &ed) -> void {
     auto palette = ed.GetPalette();
@@ -942,7 +952,7 @@ auto ShaderEditor::render() -> void {
     palette[static_cast<int>(TextEditor::PaletteIndex::Default)] =
         styleColorToAbgr(text);
     palette[static_cast<int>(TextEditor::PaletteIndex::Background)] =
-        styleColorToAbgr(childBg.w > 0.0f ? childBg : bg);
+        styleColorToAbgr(editorBg);
     palette[static_cast<int>(TextEditor::PaletteIndex::Cursor)] =
         styleColorToAbgr(text);
     palette[static_cast<int>(TextEditor::PaletteIndex::Selection)] =
@@ -955,11 +965,43 @@ auto ShaderEditor::render() -> void {
         TextEditor::PaletteIndex::CurrentLineFillInactive)] =
         styleColorToAbgr(frameBg, 0.18f);
     palette[static_cast<int>(TextEditor::PaletteIndex::CurrentLineEdge)] =
-        styleColorToAbgr(accent, 0.35f);
+        styleColorToAbgr(editorAccent, 0.35f);
+    palette[static_cast<int>(TextEditor::PaletteIndex::Keyword)] =
+        lightBackground ? abgr(0x64, 0x28, 0x9E, 0xFF)
+                        : abgr(0xC7, 0x92, 0xEA, 0xFF);
+    palette[static_cast<int>(TextEditor::PaletteIndex::Number)] =
+        lightBackground ? abgr(0x8A, 0x3F, 0x00, 0xFF)
+                        : abgr(0xF7, 0x8C, 0x6C, 0xFF);
+    palette[static_cast<int>(TextEditor::PaletteIndex::String)] =
+        lightBackground ? abgr(0x2E, 0x6B, 0x2E, 0xFF)
+                        : abgr(0xC3, 0xE8, 0x8D, 0xFF);
+    palette[static_cast<int>(TextEditor::PaletteIndex::CharLiteral)] =
+        lightBackground ? abgr(0x2E, 0x6B, 0x2E, 0xFF)
+                        : abgr(0xC3, 0xE8, 0x8D, 0xFF);
+    palette[static_cast<int>(TextEditor::PaletteIndex::Punctuation)] =
+        lightBackground ? abgr(0x49, 0x54, 0x63, 0xFF)
+                        : abgr(0xA0, 0xA8, 0xB8, 0xFF);
+    palette[static_cast<int>(TextEditor::PaletteIndex::Preprocessor)] =
+        lightBackground ? abgr(0xB4, 0x23, 0x4F, 0xFF)
+                        : abgr(0xFF, 0x51, 0x70, 0xFF);
+    palette[static_cast<int>(TextEditor::PaletteIndex::Identifier)] =
+        styleColorToAbgr(text);
     palette[static_cast<int>(TextEditor::PaletteIndex::KnownIdentifier)] =
-        styleColorToAbgr(accent);
+        styleColorToAbgr(editorAccent);
+    palette[static_cast<int>(TextEditor::PaletteIndex::PreprocIdentifier)] =
+        lightBackground ? abgr(0x8A, 0x52, 0x00, 0xFF)
+                        : abgr(0xFF, 0xCB, 0x6B, 0xFF);
+    palette[static_cast<int>(TextEditor::PaletteIndex::Comment)] =
+        lightBackground ? abgr(0x5A, 0x64, 0x72, 0xFF)
+                        : abgr(0x55, 0x6E, 0x7A, 0xFF);
+    palette[static_cast<int>(TextEditor::PaletteIndex::MultiLineComment)] =
+        lightBackground ? abgr(0x5A, 0x64, 0x72, 0xFF)
+                        : abgr(0x55, 0x6E, 0x7A, 0xFF);
+    palette[static_cast<int>(TextEditor::PaletteIndex::ErrorMarker)] =
+        lightBackground ? abgr(0xD9, 0x2D, 0x20, 0x22)
+                        : abgr(0xFF, 0x53, 0x70, 0x22);
     palette[static_cast<int>(TextEditor::PaletteIndex::Breakpoint)] =
-        styleColorToAbgr(accent);
+        styleColorToAbgr(editorAccent);
 
     ed.SetPalette(palette);
   };
@@ -1006,7 +1048,7 @@ auto ShaderEditor::render() -> void {
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 4.0f));
 
-  if (ImGui::BeginChild("##shader_code_area", ImVec2(-1.0f, codeH), false,
+  if (ImGui::BeginChild("##shader_code_area", ImVec2(-1.0f, codeH), true,
                         ImGuiWindowFlags_NoScrollbar)) {
     if (ImGui::GetIO().Fonts->Fonts.Size > 1) {
       ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);

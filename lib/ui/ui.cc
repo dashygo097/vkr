@@ -341,8 +341,9 @@ void UI::renderGraphPanel() {
   if (ImGui::Begin("Render Graph", nullptr, windowFlags)) {
     const auto passes = render_graph_.passes();
 
-    ImGui::Text("Passes: %zu", passes.size());
-    ImGui::Separator();
+    ImGui::SeparatorText("Passes");
+    ImGui::TextDisabled("%zu total", passes.size());
+    ImGui::Spacing();
 
     for (const auto *pass : passes) {
       if (pass == nullptr) {
@@ -440,6 +441,8 @@ void UI::renderShaderEditor() {
 void UI::renderThemeControls() {
   bool changed = false;
 
+  ImGui::SeparatorText("Accent");
+
   auto accentItem = [&](const char *label, ThemeAccent accent) {
     if (ImGui::MenuItem(label, nullptr, desc_.accent == accent)) {
       desc_.accent = accent;
@@ -453,7 +456,7 @@ void UI::renderThemeControls() {
   accentItem("Purple", ThemeAccent::Purple);
   accentItem("Amber", ThemeAccent::Amber);
 
-  ImGui::Separator();
+  ImGui::SeparatorText("Mode");
 
   if (ImGui::MenuItem("Dark", nullptr, desc_.dark)) {
     desc_.dark = true;
@@ -465,7 +468,7 @@ void UI::renderThemeControls() {
     changed = true;
   }
 
-  ImGui::Separator();
+  ImGui::SeparatorText("Shape");
   ImGui::PushItemWidth(140.0f);
 
   changed |=

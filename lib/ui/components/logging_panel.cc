@@ -23,7 +23,7 @@ void LoggingPanel::render() {
 
   ImGui::Separator();
 
-  ImGui::BeginChild("LogScrollRegion", ImVec2(0, 0), false,
+  ImGui::BeginChild("LogScrollRegion", ImVec2(0, 0), true,
                     ImGuiWindowFlags_HorizontalScrollbar);
 
   auto messages = vkr::Logger::getUiSink()->getMessages();
