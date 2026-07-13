@@ -166,22 +166,26 @@ void Renderer::drawIndexed(const resource::IVertexBuffer &vertexBuffer,
 void Renderer::drawGeometry() {
   ensureFrameActive("drawGeometry");
 
-  auto vertexBuffers = resource_manager_.listVertexBufferNames();
-  auto indexBuffers = resource_manager_.listIndexBufferNames();
+  auto meshNames = resource_manager_.listMeshNames();
 
-  if (vertexBuffers.empty() || indexBuffers.empty()) {
+  if (meshNames.empty()) {
     vkCmdDraw(command_buffer_, 3, 1, 0, 0);
     return;
   }
 
-  for (const auto &name : vertexBuffers) {
-    auto vb = resource_manager_.getVertexBuffer(name);
-    auto ib = resource_manager_.getIndexBuffer(name);
-    if (!vb || !ib) {
+  for (const auto &name : meshNames) {
+    auto mesh = resource_manager_.getMesh(name);
+    if (!mesh || !mesh->isValid()) {
       continue;
     }
 
-    drawIndexed(*vb, *ib);
+    auto vertexBuffer = mesh->vertexBufferBase();
+    auto indexBuffer = mesh->indexBuffer();
+    if (!vertexBuffer || !indexBuffer) {
+      continue;
+    }
+
+    drawIndexed(*vertexBuffer, *indexBuffer);
   }
 }
 

@@ -8,12 +8,26 @@
 
 namespace vkr::resource {
 
-template <typename VBOType> class Mesh {
+class IMesh {
+public:
+  virtual ~IMesh() = default;
+
+  [[nodiscard]] virtual auto vertexBufferBase() const
+      -> std::shared_ptr<IVertexBuffer> = 0;
+  [[nodiscard]] virtual auto indexBuffer() const
+      -> std::shared_ptr<IndexBuffer> = 0;
+
+  [[nodiscard]] auto isValid() const -> bool {
+    return vertexBufferBase() != nullptr && indexBuffer() != nullptr;
+  }
+};
+
+template <typename VBOType> class Mesh final : public IMesh {
 public:
   explicit Mesh(const core::Device &device,
                 const core::CommandPool &commandPool)
       : device_(device), command_pool_(commandPool) {}
-  ~Mesh() = default;
+  ~Mesh() override = default;
 
   Mesh(const Mesh &) = delete;
   auto operator=(const Mesh &) -> Mesh & = delete;
@@ -22,9 +36,10 @@ public:
   void load(const std::vector<VBOType> &vertices,
             const std::vector<uint16_t> &indices) {
     if (!vertex_buffer_ || !index_buffer_) {
-      vertex_buffer_ = std::make_unique<VertexBuffer<VBOType>>(
-          device_, command_pool_, vertices);
-      index_buffer_ = std::make_unique<IndexBuffer>(device_, command_pool_);
+      vertex_buffer_ =
+          std::make_shared<VertexBuffer<VBOType>>(device_, command_pool_);
+      index_buffer_ = std::make_shared<IndexBuffer>(device_, command_pool_);
+      vertex_buffer_->update(vertices);
       index_buffer_->update(indices);
     } else {
       update(vertices, indices);
@@ -51,7 +66,14 @@ public:
       -> std::shared_ptr<VertexBuffer<VBOType>> {
     return vertex_buffer_;
   }
-  [[nodiscard]] auto indexBuffer() const -> std::shared_ptr<IndexBuffer> {
+
+  [[nodiscard]] auto vertexBufferBase() const
+      -> std::shared_ptr<IVertexBuffer> override {
+    return vertex_buffer_;
+  }
+
+  [[nodiscard]] auto indexBuffer() const
+      -> std::shared_ptr<IndexBuffer> override {
     return index_buffer_;
   }
 

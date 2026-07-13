@@ -18,12 +18,6 @@ void ResourceTree::render() {
     renderCategory("Meshes", resource_manager_.listMeshNames(),
                    resource_manager_.meshCount());
 
-    renderCategory("Vertex Buffers", resource_manager_.listVertexBufferNames(),
-                   resource_manager_.vertexBufferCount());
-
-    renderCategory("Index Buffers", resource_manager_.listIndexBufferNames(),
-                   resource_manager_.indexBufferCount());
-
     renderCategory("Uniform Buffers",
                    resource_manager_.listUniformBufferNames(),
                    resource_manager_.uniformBufferCount());

@@ -270,7 +270,13 @@ void RasterPass::syncSelectedMeshGrid() {
     return;
   }
 
-  auto indexBuffer = resource_manager_.getIndexBuffer(selectedMesh);
+  auto mesh = resource_manager_.getMesh(selectedMesh);
+  if (!mesh || !mesh->isValid()) {
+    mesh_grid_name_.clear();
+    return;
+  }
+
+  auto indexBuffer = mesh->indexBuffer();
   if (!indexBuffer) {
     mesh_grid_name_.clear();
     return;
@@ -320,7 +326,12 @@ void RasterPass::recordSelectedMeshGrid(
     return;
   }
 
-  auto vertexBuffer = resource_manager_.getVertexBuffer(mesh_grid_name_);
+  auto mesh = resource_manager_.getMesh(mesh_grid_name_);
+  if (!mesh || !mesh->isValid()) {
+    return;
+  }
+
+  auto vertexBuffer = mesh->vertexBufferBase();
   if (!vertexBuffer) {
     return;
   }

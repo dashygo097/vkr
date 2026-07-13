@@ -2,9 +2,7 @@
 
 #include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/resource/buffers/index_buffer.hh"
 #include "vkr/resource/buffers/uniform_buffer.hh"
-#include "vkr/resource/buffers/vertex_buffer.hh"
 #include "vkr/resource/gpu/texture.hh"
 #include "vkr/resource/mesh.hh"
 
@@ -19,44 +17,6 @@ public:
 
   ResourceManager(const ResourceManager &) = delete;
   auto operator=(const ResourceManager &) -> ResourceManager & = delete;
-
-  // Vertex buffer management
-  template <typename VBOType>
-  void createVertexBuffer(const std::string &name,
-                          const std::vector<VBOType> &vertices) {
-    auto buffer =
-        std::make_shared<VertexBuffer<VBOType>>(device_, command_pool_);
-    buffer->update(vertices);
-    vertex_buffers_[name] = std::move(buffer);
-  }
-
-  [[nodiscard]] auto getVertexBuffer(const std::string &name) const
-      -> std::shared_ptr<IVertexBuffer> {
-    auto it = vertex_buffers_.find(name);
-    return it == vertex_buffers_.end() ? nullptr : it->second;
-  }
-
-  void destroyVertexBuffer(const std::string &name) {
-    vertex_buffers_.erase(name);
-  }
-
-  // Index buffer management
-  void createIndexBuffer(const std::string &name,
-                         const std::vector<uint16_t> &indices) {
-    auto buffer = std::make_shared<IndexBuffer>(device_, command_pool_);
-    buffer->update(indices);
-    index_buffers_[name] = std::move(buffer);
-  }
-
-  [[nodiscard]] auto getIndexBuffer(const std::string &name) const
-      -> std::shared_ptr<IndexBuffer> {
-    auto it = index_buffers_.find(name);
-    return it == index_buffers_.end() ? nullptr : it->second;
-  }
-
-  void destroyIndexBuffer(const std::string &name) {
-    index_buffers_.erase(name);
-  }
 
   // Uniform buffer management
   template <typename UBOType>
@@ -79,8 +39,10 @@ public:
   // Mesh management
   template <typename VBOType>
   void createMesh(const std::string &name, const Mesh<VBOType> &mesh) {
-    createVertexBuffer<VBOType>(name, mesh.vertexBuffer()->vertices());
-    createIndexBuffer(name, mesh.indexBuffer()->indices());
+    auto stored = std::make_shared<Mesh<VBOType>>(device_, command_pool_);
+    stored->load(mesh.vertexBuffer()->vertices(),
+                 mesh.indexBuffer()->indices());
+    meshes_[name] = std::move(stored);
   }
 
   void destroyMesh(const std::string &name) {
@@ -88,16 +50,22 @@ public:
       selected_mesh_name_.clear();
     }
 
-    destroyVertexBuffer(name);
-    destroyIndexBuffer(name);
+    meshes_.erase(name);
   }
 
   [[nodiscard]] auto hasMesh(const std::string &name) const -> bool {
-    return getVertexBuffer(name) != nullptr && getIndexBuffer(name) != nullptr;
+    auto it = meshes_.find(name);
+    return it != meshes_.end() && it->second && it->second->isValid();
   }
 
-  [[nodiscard]] auto meshCount() const -> size_t {
-    return listMeshNames().size();
+  [[nodiscard]] auto getMesh(const std::string &name) const
+      -> std::shared_ptr<IMesh> {
+    auto it = meshes_.find(name);
+    return it == meshes_.end() ? nullptr : it->second;
+  }
+
+  [[nodiscard]] auto meshCount() const noexcept -> size_t {
+    return meshes_.size();
   }
 
   [[nodiscard]] auto selectedMeshName() const noexcept -> const std::string & {
@@ -136,14 +104,6 @@ public:
   void destroyTexture(const std::string &name) { textures_.erase(name); }
 
   // Counts
-  [[nodiscard]] auto vertexBufferCount() const noexcept -> size_t {
-    return vertex_buffers_.size();
-  }
-
-  [[nodiscard]] auto indexBufferCount() const noexcept -> size_t {
-    return index_buffers_.size();
-  }
-
   [[nodiscard]] auto uniformBufferCount() const noexcept -> size_t {
     return uniform_buffers_.size();
   }
@@ -157,14 +117,6 @@ public:
   }
 
   // Names
-  [[nodiscard]] auto listVertexBufferNames() const -> std::vector<std::string> {
-    return listResourceNames(vertex_buffers_);
-  }
-
-  [[nodiscard]] auto listIndexBufferNames() const -> std::vector<std::string> {
-    return listResourceNames(index_buffers_);
-  }
-
   [[nodiscard]] auto listUniformBufferNames() const
       -> std::vector<std::string> {
     return listResourceNames(uniform_buffers_);
@@ -179,28 +131,10 @@ public:
   }
 
   [[nodiscard]] auto listMeshNames() const -> std::vector<std::string> {
-    std::vector<std::string> names;
-
-    for (const auto &[name, _] : vertex_buffers_) {
-      if (index_buffers_.find(name) != index_buffers_.end()) {
-        names.push_back(name);
-      }
-    }
-
-    return names;
+    return listResourceNames(meshes_);
   }
 
   // Lists
-  [[nodiscard]] auto listVertexBuffers() const
-      -> std::vector<std::shared_ptr<IVertexBuffer>> {
-    return listResources(vertex_buffers_);
-  }
-
-  [[nodiscard]] auto listIndexBuffers() const
-      -> std::vector<std::shared_ptr<IndexBuffer>> {
-    return listResources(index_buffers_);
-  }
-
   [[nodiscard]] auto listUniformBuffers() const
       -> std::vector<std::shared_ptr<IUniformBuffer>> {
     return listResources(uniform_buffers_);
@@ -209,6 +143,10 @@ public:
   [[nodiscard]] auto listTextures() const
       -> std::vector<std::shared_ptr<Texture>> {
     return listResources(textures_);
+  }
+
+  [[nodiscard]] auto listMeshes() const -> std::vector<std::shared_ptr<IMesh>> {
+    return listResources(meshes_);
   }
 
 private:
@@ -228,8 +166,8 @@ private:
 
   template <typename ResourceType>
   [[nodiscard]] static auto listResourceNames(
-      const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
-          &resourceMap) -> std::vector<std::string> {
+      const std::unordered_map<std::string, ResourceType> &resourceMap)
+      -> std::vector<std::string> {
     std::vector<std::string> names;
     names.reserve(resourceMap.size());
 
@@ -246,13 +184,10 @@ private:
   const core::CommandPool &command_pool_;
 
   // components
-  std::unordered_map<std::string, std::shared_ptr<IVertexBuffer>>
-      vertex_buffers_{};
-  std::unordered_map<std::string, std::shared_ptr<IndexBuffer>>
-      index_buffers_{};
   std::unordered_map<std::string, std::shared_ptr<IUniformBuffer>>
       uniform_buffers_{};
   std::unordered_map<std::string, std::shared_ptr<Texture>> textures_{};
+  std::unordered_map<std::string, std::shared_ptr<IMesh>> meshes_{};
   std::string selected_mesh_name_{};
 };
 
