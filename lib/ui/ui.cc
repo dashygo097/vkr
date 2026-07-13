@@ -326,7 +326,8 @@ void UI::renderMainViewport() {
     viewport_info_.y = windowPos.y + contentMin.y;
     viewport_info_.width = contentMax.x - contentMin.x;
     viewport_info_.height = contentMax.y - contentMin.y;
-    viewport_info_.isFocused = ImGui::IsWindowFocused();
+    viewport_info_.isFocused =
+        ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
     viewport_info_.isHovered = ImGui::IsWindowHovered();
   }
 

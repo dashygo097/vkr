@@ -15,6 +15,43 @@ private:
 
   glm::vec4 mouseState{0.0f};
 
+  [[nodiscard]] auto viewportMousePosition() const -> glm::vec2 {
+    const auto cursor = inputTracer->cursorPosition();
+
+    if (!uiPass() ||
+        uiPass()->layoutMode() == vkr::ui::LayoutMode::FullScreen) {
+      return {static_cast<float>(cursor.x),
+              static_cast<float>(ctx.window.height - cursor.y)};
+    }
+
+    const auto viewport = uiPass()->viewportInfo();
+    if (!viewport.isFocused || viewport.width <= 0.0f ||
+        viewport.height <= 0.0f) {
+      return {mouseState.x, mouseState.y};
+    }
+
+    const float localX = static_cast<float>(cursor.x) - viewport.x;
+    const float localY = static_cast<float>(cursor.y) - viewport.y;
+    const float scaledX =
+        localX * static_cast<float>(ctx.window.width) / viewport.width;
+    const float scaledY = (viewport.height - localY) *
+                          static_cast<float>(ctx.window.height) /
+                          viewport.height;
+
+    return {scaledX, scaledY};
+  }
+
+  [[nodiscard]] auto isViewportMouseActive() const -> bool {
+    if (!uiPass() ||
+        uiPass()->layoutMode() == vkr::ui::LayoutMode::FullScreen) {
+      return true;
+    }
+
+    const auto viewport = uiPass()->viewportInfo();
+    return viewport.isFocused && viewport.width > 0.0f &&
+           viewport.height > 0.0f;
+  }
+
   void createResources() override {
     resourceManager
         ->createUniformBuffer<vkr::resource::UniformBufferShaderToyObject>(
@@ -96,15 +133,19 @@ private:
                     .count();
     lastFrameTime = currentTime;
 
-    const auto cursor = inputTracer->cursorPosition();
+    const bool viewportMouseActive = isViewportMouseActive();
+    const glm::vec2 mousePosition = viewportMousePosition();
 
-    if (inputTracer->wasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT)) {
-      mouseState.z = static_cast<float>(cursor.x);
-      mouseState.w = static_cast<float>(ctx.window.height - cursor.y);
+    if (viewportMouseActive &&
+        inputTracer->wasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT)) {
+      mouseState.z = mousePosition.x;
+      mouseState.w = mousePosition.y;
     }
 
-    mouseState.x = static_cast<float>(cursor.x);
-    mouseState.y = static_cast<float>(ctx.window.height - cursor.y);
+    if (viewportMouseActive) {
+      mouseState.x = mousePosition.x;
+      mouseState.y = mousePosition.y;
+    }
 
     std::time_t t = std::time(nullptr);
     std::tm *now = std::localtime(&t);

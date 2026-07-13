@@ -125,7 +125,7 @@ void VulkanApplication::updateUiState() {
   uiLayoutMode_ = uiPass_->layoutMode();
 
   const bool lockCamera = uiPass_->layoutMode() == ui::LayoutMode::Standard &&
-                          !uiPass_->viewportInfo().isHovered;
+                          !uiPass_->viewportInfo().isFocused;
   camera->lock(lockCamera);
 }
 
