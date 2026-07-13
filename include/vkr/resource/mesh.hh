@@ -7,13 +7,14 @@
 #include "vkr/resource/buffers/vertex_buffer.hh"
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <tiny_obj_loader.h>
 #include <type_traits>
 #include <unordered_map>
 
 namespace vkr::resource {
 
-namespace detail {
+namespace {
 
 template <typename...> struct AlwaysFalse : std::false_type {};
 
@@ -164,16 +165,14 @@ private:
   std::unordered_map<VertexType, uint16_t> unique_vertices_{};
 };
 
-} // namespace detail
+} // namespace
 
 class IMesh {
 public:
   virtual ~IMesh() = default;
 
-  [[nodiscard]] virtual auto vertexBufferBase() const
-      -> std::shared_ptr<IVertexBuffer> = 0;
-  [[nodiscard]] virtual auto indexBuffer() const
-      -> std::shared_ptr<IndexBuffer> = 0;
+  [[nodiscard]] virtual auto vertexBufferBase() const -> IVertexBuffer * = 0;
+  [[nodiscard]] virtual auto indexBuffer() const -> IndexBuffer * = 0;
 
   [[nodiscard]] auto isValid() const -> bool {
     return vertexBufferBase() != nullptr && indexBuffer() != nullptr;
@@ -195,8 +194,8 @@ public:
             const std::vector<uint16_t> &indices) {
     if (!vertex_buffer_ || !index_buffer_) {
       vertex_buffer_ =
-          std::make_shared<VertexBuffer<VBOType>>(device_, command_pool_);
-      index_buffer_ = std::make_shared<IndexBuffer>(device_, command_pool_);
+          std::make_unique<VertexBuffer<VBOType>>(device_, command_pool_);
+      index_buffer_ = std::make_unique<IndexBuffer>(device_, command_pool_);
       vertex_buffer_->update(vertices);
       index_buffer_->update(indices);
     } else {
@@ -234,7 +233,7 @@ public:
 
     std::vector<VBOType> vertices;
     std::vector<uint16_t> indices;
-    detail::VertexDeduplicator<VBOType> uniqueVertices;
+    VertexDeduplicator<VBOType> uniqueVertices;
 
     for (const auto &shape : shapes) {
       for (const auto &index : shape.mesh.indices) {
@@ -279,10 +278,10 @@ public:
         }
 
         VBOType vertex{};
-        detail::assignPosition(vertex, pos);
-        detail::assignColor(vertex, color);
-        detail::assignNormal(vertex, normal);
-        detail::assignTexCoord(vertex, texCoord);
+        assignPosition(vertex, pos);
+        assignColor(vertex, color);
+        assignNormal(vertex, normal);
+        assignTexCoord(vertex, texCoord);
 
         indices.push_back(uniqueVertices.indexFor(vertex, vertices));
       }
@@ -309,19 +308,16 @@ public:
     index_buffer_->update(indices);
   }
 
-  [[nodiscard]] auto vertexBuffer() const
-      -> std::shared_ptr<VertexBuffer<VBOType>> {
-    return vertex_buffer_;
+  [[nodiscard]] auto vertexBuffer() const -> VertexBuffer<VBOType> * {
+    return vertex_buffer_.get();
   }
 
-  [[nodiscard]] auto vertexBufferBase() const
-      -> std::shared_ptr<IVertexBuffer> override {
-    return vertex_buffer_;
+  [[nodiscard]] auto vertexBufferBase() const -> IVertexBuffer * override {
+    return vertex_buffer_.get();
   }
 
-  [[nodiscard]] auto indexBuffer() const
-      -> std::shared_ptr<IndexBuffer> override {
-    return index_buffer_;
+  [[nodiscard]] auto indexBuffer() const -> IndexBuffer * override {
+    return index_buffer_.get();
   }
 
 private:
@@ -330,8 +326,8 @@ private:
   const core::CommandPool &command_pool_;
 
   // components
-  std::shared_ptr<VertexBuffer<VBOType>> vertex_buffer_{nullptr};
-  std::shared_ptr<IndexBuffer> index_buffer_{nullptr};
+  std::unique_ptr<VertexBuffer<VBOType>> vertex_buffer_{nullptr};
+  std::unique_ptr<IndexBuffer> index_buffer_{nullptr};
 
   void checkDataLoaded() {
     if (!vertex_buffer_ || !index_buffer_) {

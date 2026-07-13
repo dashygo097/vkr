@@ -13,7 +13,9 @@ void ResourceTree::render() {
   ImGui::Checkbox("Show empty groups", &show_empty_groups_);
   ImGui::Spacing();
 
-  if (ImGui::BeginChild("ResourceTreeScrollRegion", ImVec2(0.0f, -90.0f), true,
+  const float detailsHeight = ImGui::GetTextLineHeightWithSpacing() * 11.0f;
+  if (ImGui::BeginChild("ResourceTreeScrollRegion",
+                        ImVec2(0.0f, -detailsHeight), true,
                         ImGuiWindowFlags_HorizontalScrollbar)) {
     renderCategory("Meshes", resource_manager_.listMeshNames(),
                    resource_manager_.meshCount());
@@ -115,8 +117,56 @@ void ResourceTree::renderSelectedResource() {
   ImGui::Text("Type: %s", selected_type_.c_str());
   ImGui::Text("Name: %s", selected_name_.c_str());
 
-  if (ImGui::Button("Copy name")) {
-    ImGui::SetClipboardText(selected_name_.c_str());
+  if (selected_type_ == "Meshes") {
+    auto mesh = resource_manager_.getMesh(selected_name_);
+    if (!mesh || !mesh->isValid()) {
+      ImGui::TextDisabled("State: unavailable");
+      return;
+    }
+
+    const auto *vertexBuffer = mesh->vertexBufferBase();
+    const auto *indexBuffer = mesh->indexBuffer();
+    const auto vertexInput = vertexBuffer->vertexInputDesc();
+
+    ImGui::Text("State: valid");
+    ImGui::Text("Vertices: %zu", vertexBuffer->vertexCount());
+    ImGui::Text("Indices: %zu", indexBuffer->indices().size());
+    ImGui::Text("Vertex bindings: %zu", vertexInput.bindings.size());
+    ImGui::Text("Vertex attributes: %zu", vertexInput.attributes.size());
+    return;
+  }
+
+  if (selected_type_ == "Uniform Buffers") {
+    auto uniformBuffer = resource_manager_.getUniformBuffer(selected_name_);
+    if (!uniformBuffer) {
+      ImGui::TextDisabled("State: unavailable");
+      return;
+    }
+
+    ImGui::Text("State: valid");
+    ImGui::Text("Buffer size: %llu bytes",
+                static_cast<unsigned long long>(uniformBuffer->bufferSize()));
+    ImGui::Text("Frames: %zu", uniformBuffer->buffers().size());
+    ImGui::Text("Mapped frames: %zu", uniformBuffer->mapped().size());
+    return;
+  }
+
+  if (selected_type_ == "Textures") {
+    auto texture = resource_manager_.getTexture(selected_name_);
+    if (!texture) {
+      ImGui::TextDisabled("State: unavailable");
+      return;
+    }
+
+    const auto &desc = texture->desc();
+
+    ImGui::Text("State: %s", texture->valid() ? "valid" : "invalid");
+    ImGui::Text("Size: %ux%u", texture->width(), texture->height());
+    ImGui::Text("Format: %d", static_cast<int>(desc.image.format));
+    ImGui::Text("Layout: %d", static_cast<int>(texture->layout()));
+    ImGui::Text("Image: %s", texture->hasImage() ? "yes" : "no");
+    ImGui::Text("View: %s", texture->hasImageView() ? "yes" : "no");
+    ImGui::Text("Sampler: %s", texture->hasSampler() ? "yes" : "no");
   }
 }
 

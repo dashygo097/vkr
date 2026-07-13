@@ -2,6 +2,7 @@
 
 #include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
+#include "vkr/logger.hh"
 #include "vkr/resource/buffers/uniform_buffer.hh"
 #include "vkr/resource/gpu/texture.hh"
 #include "vkr/resource/mesh.hh"
@@ -39,6 +40,10 @@ public:
   // Mesh management
   template <typename VBOType>
   void createMesh(const std::string &name, const Mesh<VBOType> &mesh) {
+    if (!mesh.vertexBuffer() || !mesh.indexBuffer()) {
+      VKR_RES_ERROR("Cannot create mesh resource '{}' from invalid mesh", name);
+    }
+
     auto stored = std::make_shared<Mesh<VBOType>>(device_, command_pool_);
     stored->load(mesh.vertexBuffer()->vertices(),
                  mesh.indexBuffer()->indices());
