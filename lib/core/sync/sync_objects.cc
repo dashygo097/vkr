@@ -6,6 +6,17 @@ namespace vkr::core {
 
 SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
     : device_(device), swapchain_(swapchain) {
+  create();
+}
+
+SyncObjects::~SyncObjects() { destroy(); }
+
+void SyncObjects::recreate() {
+  destroy();
+  create();
+}
+
+void SyncObjects::create() {
   uint32_t imageCount = 0;
 
   if (vkGetSwapchainImagesKHR(device_.device(), swapchain_.swapchain(),
@@ -48,7 +59,7 @@ SyncObjects::SyncObjects(const Device &device, const Swapchain &swapchain)
   }
 }
 
-SyncObjects::~SyncObjects() {
+void SyncObjects::destroy() {
   for (VkSemaphore semaphore : vk_render_finished_semaphores_) {
     if (semaphore != VK_NULL_HANDLE) {
       vkDestroySemaphore(device_.device(), semaphore, nullptr);

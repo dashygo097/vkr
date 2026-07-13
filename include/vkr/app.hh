@@ -64,6 +64,7 @@ public:
   std::unique_ptr<render::Renderer> renderer;
   std::unique_ptr<render::RenderGraph> renderGraph;
   render::UiPass *uiPass_{nullptr};
+  ui::LayoutMode uiLayoutMode_{ui::LayoutMode::FullScreen};
 
   // components
   std::unique_ptr<scene::Camera> camera;
@@ -95,6 +96,7 @@ private:
   void mainLoop();
   void drawFrame();
   void updateUiState();
+  void recreateSwapchain();
 
   void loadSnapshot() {
     const auto path = snapshotPath();

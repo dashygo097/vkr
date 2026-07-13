@@ -6,7 +6,19 @@ namespace vkr::core {
 Swapchain::Swapchain(const Window &window, const Surface &surface,
                      const Device &device, SwapchainDesc &desc)
     : window_(window), surface_(surface), device_(device), desc_(desc) {
-  VKR_CORE_INFO("Creating initial swapchain...");
+  create();
+}
+
+Swapchain::~Swapchain() { destroy(); }
+
+void Swapchain::recreate() {
+  VKR_CORE_INFO("Recreating swapchain...");
+  destroy();
+  create();
+}
+
+void Swapchain::create() {
+  VKR_CORE_INFO("Creating swapchain...");
 
   querySwapchainSupport(device_.physicalDevice(), surface_.surface(), desc_);
 
@@ -71,10 +83,10 @@ Swapchain::Swapchain(const Window &window, const Surface &surface,
       static_cast<int>(desc_.surfaceFormat.format),
       static_cast<int>(desc_.presentMode));
 
-  VKR_CORE_INFO("Initial swapchain created successfully.");
+  VKR_CORE_INFO("Swapchain created successfully.");
 }
 
-Swapchain::~Swapchain() {
+void Swapchain::destroy() {
   if (vk_swapchain_ != VK_NULL_HANDLE) {
     vkDestroySwapchainKHR(device_.device(), vk_swapchain_, nullptr);
     vk_swapchain_ = VK_NULL_HANDLE;

@@ -36,6 +36,7 @@ public:
 
   void waitForFrame(uint32_t frameIndex) const;
   void resetFrame(uint32_t frameIndex) const;
+  void recreate();
 
 private:
   // dependencies
@@ -46,6 +47,9 @@ private:
   std::vector<VkSemaphore> vk_image_available_semaphores_{};
   std::vector<VkSemaphore> vk_render_finished_semaphores_{};
   std::vector<VkFence> vk_in_flight_fences_{};
+
+  void create();
+  void destroy();
 };
 
 } // namespace vkr::core

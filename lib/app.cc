@@ -76,6 +76,10 @@ void VulkanApplication::mainLoop() {
     window->pollEvents();
     inputTracer->update();
 
+    if (window->consumeFramebufferResized()) {
+      recreateSwapchain();
+    }
+
     updateUiState();
 
     if (!camera->isLocked()) {
@@ -93,6 +97,9 @@ void VulkanApplication::mainLoop() {
 
 void VulkanApplication::drawFrame() {
   if (!renderer->beginFrame()) {
+    if (renderer->consumeSwapchainOutOfDate()) {
+      recreateSwapchain();
+    }
     return;
   }
 
@@ -100,6 +107,10 @@ void VulkanApplication::drawFrame() {
   renderGraph->record();
 
   renderer->endFrame();
+
+  if (renderer->consumeSwapchainOutOfDate()) {
+    recreateSwapchain();
+  }
 }
 
 void VulkanApplication::updateUiState() {
@@ -111,15 +122,46 @@ void VulkanApplication::updateUiState() {
     uiPass_->switchLayoutMode();
   }
 
+  uiLayoutMode_ = uiPass_->layoutMode();
+
   const bool lockCamera = uiPass_->layoutMode() == ui::LayoutMode::Standard &&
                           !uiPass_->viewportInfo().isHovered;
   camera->lock(lockCamera);
+}
+
+void VulkanApplication::recreateSwapchain() {
+  if (uiPass_) {
+    uiLayoutMode_ = uiPass_->layoutMode();
+  }
+
+  device->waitIdle();
+  window->waitForFramebufferSize();
+  const bool ignoredResizeFlag = window->consumeFramebufferResized();
+  (void)ignoredResizeFlag;
+
+  if (window->shouldClose()) {
+    return;
+  }
+
+  ctx.camera.aspectRatio = ctx.window.ratio();
+
+  renderGraph->destroy();
+  uiPass_ = nullptr;
+
+  swapchain->recreate();
+  syncObjects->recreate();
+
+  renderGraph = std::make_unique<render::RenderGraph>();
+  buildRenderGraph();
+  renderGraph->compile();
+  renderGraph->create();
 }
 
 auto VulkanApplication::addUiPass(render::FullscreenPassSource source)
     -> render::UiPass & {
   render::UiPassDesc desc{};
   desc.target = {};
+  desc.layoutMode = uiLayoutMode_;
   desc.descriptorPool = {
       .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
                     {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},

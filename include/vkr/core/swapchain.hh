@@ -77,6 +77,8 @@ public:
     return desc_.presentMode;
   }
 
+  void recreate();
+
 private:
   // dependencies
   const Window &window_;
@@ -86,6 +88,9 @@ private:
   // components
   SwapchainDesc &desc_;
   VkSwapchainKHR vk_swapchain_{VK_NULL_HANDLE};
+
+  void create();
+  void destroy();
 };
 
 } // namespace vkr::core

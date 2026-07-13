@@ -33,6 +33,16 @@ public:
   auto beginFrame() -> bool;
   void endFrame();
 
+  [[nodiscard]] auto swapchainOutOfDate() const noexcept -> bool {
+    return swapchain_out_of_date_;
+  }
+
+  [[nodiscard]] auto consumeSwapchainOutOfDate() noexcept -> bool {
+    const bool outOfDate = swapchain_out_of_date_;
+    swapchain_out_of_date_ = false;
+    return outOfDate;
+  }
+
   [[nodiscard]] auto commandBuffer() const -> VkCommandBuffer {
     ensureFrameActive("commandBuffer");
     return command_buffer_;
@@ -81,6 +91,7 @@ private:
   uint32_t frame_index_{0};
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
   bool frame_active_{false};
+  bool swapchain_out_of_date_{false};
 
   // helpers
   void ensureFrameActive(const char *op) const;

@@ -25,6 +25,7 @@ struct UiPassDesc {
   resource::SwapchainTargetDesc target{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
+  ui::LayoutMode layoutMode{ui::LayoutMode::FullScreen};
 };
 
 class UiPass final : public RenderGraphPass {

@@ -203,6 +203,7 @@ auto Renderer::acquireNextImage(uint32_t &imageIndex) -> bool {
       &imageIndex);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    swapchain_out_of_date_ = true;
     return false;
   }
 
@@ -259,6 +260,7 @@ void Renderer::present(uint32_t imageIndex) {
   VkResult result = vkQueuePresentKHR(device_.presentQueue(), &presentInfo);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+    swapchain_out_of_date_ = true;
     return;
   }
 

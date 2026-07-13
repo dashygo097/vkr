@@ -49,6 +49,7 @@ void UiPass::create() {
       window_, instance_, surface_, device_, command_pool_, resource_manager_,
       source_.target(), *render_pass_, *descriptor_pool_, render_graph_, timer_,
       theme_);
+  ui_->layoutMode(desc_.layoutMode);
 }
 
 void UiPass::destroy() {
