@@ -17,20 +17,24 @@
 namespace vkr::render {
 
 class RasterPass;
+class SkyboxPass;
 class FullscreenPass;
 
 struct FullscreenPassSource {
   enum class Type {
     Raster,
+    Skybox,
     Fullscreen,
   };
 
   Type type{Type::Raster};
   RasterPass *raster{nullptr};
+  SkyboxPass *skybox{nullptr};
   FullscreenPass *fullscreen{nullptr};
 
   FullscreenPassSource() = default;
   FullscreenPassSource(RasterPass &source);
+  FullscreenPassSource(SkyboxPass &source);
   FullscreenPassSource(FullscreenPass &source);
 
   [[nodiscard]] auto target() -> resource::OffscreenTarget &;

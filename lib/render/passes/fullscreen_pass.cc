@@ -2,11 +2,15 @@
 #include "vkr/core/core_utils.hh"
 #include "vkr/logger.hh"
 #include "vkr/render/passes/raster.hh"
+#include "vkr/render/passes/skybox.hh"
 
 namespace vkr::render {
 
 FullscreenPassSource::FullscreenPassSource(RasterPass &source)
     : type(Type::Raster), raster(&source) {}
+
+FullscreenPassSource::FullscreenPassSource(SkyboxPass &source)
+    : type(Type::Skybox), skybox(&source) {}
 
 FullscreenPassSource::FullscreenPassSource(FullscreenPass &source)
     : type(Type::Fullscreen), fullscreen(&source) {}
@@ -18,6 +22,11 @@ auto FullscreenPassSource::target() -> resource::OffscreenTarget & {
       VKR_RENDER_ERROR("FullscreenPassSource has null raster source");
     }
     return raster->target();
+  case Type::Skybox:
+    if (!skybox) {
+      VKR_RENDER_ERROR("FullscreenPassSource has null skybox source");
+    }
+    return skybox->target();
   case Type::Fullscreen:
     if (!fullscreen) {
       VKR_RENDER_ERROR("FullscreenPassSource has null fullscreen source");
@@ -36,6 +45,11 @@ auto FullscreenPassSource::target() const
       VKR_RENDER_ERROR("FullscreenPassSource has null raster source");
     }
     return raster->target();
+  case Type::Skybox:
+    if (!skybox) {
+      VKR_RENDER_ERROR("FullscreenPassSource has null skybox source");
+    }
+    return skybox->target();
   case Type::Fullscreen:
     if (!fullscreen) {
       VKR_RENDER_ERROR("FullscreenPassSource has null fullscreen source");
