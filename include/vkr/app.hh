@@ -7,6 +7,7 @@
 #include "vkr/render/passes/fullscreen_pass.hh"
 #include "vkr/render/passes/post_process.hh"
 #include "vkr/render/passes/raster.hh"
+#include "vkr/render/passes/skybox.hh"
 #include "vkr/render/passes/ui.hh"
 #include "vkr/render/renderer.hh"
 #include "vkr/resource/manager.hh"

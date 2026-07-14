@@ -8,11 +8,14 @@
 class TeapotApp : public vkr::VulkanApplication {
 private:
   void createResources() override {
-    vkr::resource::Mesh<vkr::resource::VertexNormal3D> teapot(*device,
-                                                              *commandPool);
+    vkr::resource::Mesh<vkr::resource::VertexNormalTexture3D> teapot(
+        *device, *commandPool);
     teapot.load(assetSystem->resolve("objects/teapot/teapot.obj"));
 
     resourceManager->createMesh("teapot", teapot);
+    resourceManager->createTexture(
+        "teapot_texture",
+        assetSystem->resolve("objects/teapot/default.png").string());
 
     resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
         "default", {});
@@ -36,6 +39,9 @@ private:
         {.name = "default",
          .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                     VK_SHADER_STAGE_VERTEX_BIT}},
+        {.name = "teapot_texture",
+         .layout = {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                    VK_SHADER_STAGE_FRAGMENT_BIT}},
     };
     desc.descriptorPool = {
         .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
@@ -46,7 +52,7 @@ private:
 
     vkr::pipeline::GraphicsPipelineDesc normal{};
     normal.name = "teapot-local";
-    normal.vertexInput = vkr::resource::VertexNormal3D::vertexInputDesc();
+    normal.vertexInput = vkr::resource::VertexNormalTexture3D::vertexInputDesc();
 
     normal.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
@@ -62,7 +68,7 @@ private:
     normal.depthStencil.depthTestEnable = VK_TRUE;
     normal.depthStencil.depthWriteEnable = VK_TRUE;
     normal.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-    normal.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+    normal.rasterization = vkr::pipeline::GraphicsRasterizationDesc::noCull();
 
     desc.pipeline = normal;
 
@@ -120,7 +126,8 @@ private:
     const uint32_t frameIndex = renderer->frameIndex();
 
     vkr::resource::UniformBuffer3DObject ubo{};
-    ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.4f, -7.0f));
+    ubo.model = glm::scale(ubo.model, glm::vec3(0.04f));
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();
 
