@@ -29,12 +29,26 @@ struct ImageViewDesc {
     ImageViewDesc desc{};
     desc.image = image.image();
     desc.format = image.desc().format;
-    desc.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    desc.viewType = image.desc().defaultViewType;
     desc.aspectMask = image.desc().aspectMask;
     desc.baseMipLevel = 0;
     desc.levelCount = image.desc().mipLevels;
     desc.baseArrayLayer = 0;
     desc.layerCount = image.desc().arrayLayers;
+    return desc;
+  }
+
+  [[nodiscard]] static auto cubemap(VkImage image, VkFormat format)
+      -> ImageViewDesc {
+    ImageViewDesc desc{};
+    desc.image = image;
+    desc.format = format;
+    desc.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+    desc.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    desc.baseMipLevel = 0;
+    desc.levelCount = 1;
+    desc.baseArrayLayer = 0;
+    desc.layerCount = 6;
     return desc;
   }
 

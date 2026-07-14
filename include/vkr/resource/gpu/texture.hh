@@ -28,6 +28,19 @@ struct TextureDesc {
   }
 
   [[nodiscard]] static auto
+  cubemapFiles(const std::array<std::string, 6> &faces,
+               VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
+               SamplerDesc sampler = SamplerDesc::linearClampToEdge())
+      -> TextureDesc {
+    TextureDesc desc{};
+    desc.image = ImageDesc::cubemapFiles(faces, format);
+    desc.sampler = sampler;
+    desc.useDefaultView = true;
+    desc.createSampler = true;
+    return desc;
+  }
+
+  [[nodiscard]] static auto
   sampled2D(uint32_t width, uint32_t height, VkFormat format,
             SamplerDesc sampler = SamplerDesc::linearClampToEdge())
       -> TextureDesc {
@@ -92,6 +105,10 @@ struct TextureDesc {
     }
 
     if (!image.hasFile() && (image.width == 0 || image.height == 0)) {
+      if (image.hasCubemapFiles()) {
+        return true;
+      }
+
       return false;
     }
 

@@ -382,6 +382,70 @@ struct VertexNormalTexture3D {
   }
 };
 
+struct VertexSkybox3D {
+  glm::vec3 pos{};
+
+  VertexSkybox3D() = default;
+  explicit VertexSkybox3D(glm::vec3 pos) : pos(pos) {}
+
+  [[nodiscard]] auto operator==(const VertexSkybox3D &other) const -> bool {
+    return pos == other.pos;
+  }
+
+  [[nodiscard]] static auto getBindingDescription(uint32_t binding = 0)
+      -> VkVertexInputBindingDescription {
+    VkVertexInputBindingDescription desc{};
+    desc.binding = binding;
+    desc.stride = sizeof(VertexSkybox3D);
+    desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    return desc;
+  }
+
+  [[nodiscard]] static auto getAttributeDescriptions(uint32_t binding = 0)
+      -> std::vector<VkVertexInputAttributeDescription> {
+    VkVertexInputAttributeDescription posDesc{};
+    posDesc.binding = binding;
+    posDesc.location = 0;
+    posDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+    posDesc.offset = offsetof(VertexSkybox3D, pos);
+
+    return {posDesc};
+  }
+
+  [[nodiscard]] static auto vertexInputDesc(uint32_t binding = 0)
+      -> VertexInputDesc {
+    VertexInputDesc desc{};
+    desc.bindings.push_back(getBindingDescription(binding));
+    desc.attributes = getAttributeDescriptions(binding);
+    return desc;
+  }
+};
+
+[[nodiscard]] inline auto skyboxCubeVertices()
+    -> std::vector<VertexSkybox3D> {
+  return {
+      VertexSkybox3D{{-1.0f, -1.0f, -1.0f}},
+      VertexSkybox3D{{1.0f, -1.0f, -1.0f}},
+      VertexSkybox3D{{1.0f, 1.0f, -1.0f}},
+      VertexSkybox3D{{-1.0f, 1.0f, -1.0f}},
+      VertexSkybox3D{{-1.0f, -1.0f, 1.0f}},
+      VertexSkybox3D{{1.0f, -1.0f, 1.0f}},
+      VertexSkybox3D{{1.0f, 1.0f, 1.0f}},
+      VertexSkybox3D{{-1.0f, 1.0f, 1.0f}},
+  };
+}
+
+[[nodiscard]] inline auto skyboxCubeIndices() -> std::vector<uint16_t> {
+  return {
+      0, 1, 2, 2, 3, 0,
+      1, 5, 6, 6, 2, 1,
+      5, 4, 7, 7, 6, 5,
+      4, 0, 3, 3, 7, 4,
+      3, 2, 6, 6, 7, 3,
+      4, 5, 1, 1, 0, 4,
+  };
+}
+
 } // namespace vkr::resource
 
 namespace std {
@@ -442,6 +506,13 @@ template <> struct hash<vkr::resource::VertexNormalTexture3D> {
              (hash<glm::vec3>{}(vertex.normal) << 1)) >>
             1) ^
            (hash<glm::vec2>{}(vertex.texCoord) << 1);
+  }
+};
+
+template <> struct hash<vkr::resource::VertexSkybox3D> {
+  auto operator()(const vkr::resource::VertexSkybox3D &vertex) const noexcept
+      -> size_t {
+    return hash<glm::vec3>{}(vertex.pos);
   }
 };
 

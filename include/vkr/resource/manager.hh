@@ -6,6 +6,7 @@
 #include "vkr/resource/buffers/uniform_buffer.hh"
 #include "vkr/resource/gpu/texture.hh"
 #include "vkr/resource/mesh.hh"
+#include <array>
 
 namespace vkr::resource {
 
@@ -98,6 +99,12 @@ public:
 
   void createTexture(const std::string &name, const std::string &filePath) {
     createTexture(name, TextureDesc::textureFile(filePath));
+  }
+
+  void createCubemap(const std::string &name,
+                     const std::array<std::string, 6> &facePaths,
+                     VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
+    createTexture(name, TextureDesc::cubemapFiles(facePaths, format));
   }
 
   [[nodiscard]] auto getTexture(const std::string &name) const

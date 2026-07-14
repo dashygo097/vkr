@@ -2,6 +2,7 @@
 
 #include "vkr/core/command/command_pool.hh"
 #include "vkr/core/device.hh"
+#include <array>
 #include <string>
 #include <vulkan/vulkan.h>
 
@@ -14,7 +15,9 @@ struct ImageDesc {
   uint32_t height{0};
   uint32_t mipLevels{1};
   uint32_t arrayLayers{1};
+  std::array<std::string, 6> cubeFacePaths{};
 
+  VkImageCreateFlags flags{0};
   VkFormat format{VK_FORMAT_UNDEFINED};
   VkImageTiling tiling{VK_IMAGE_TILING_OPTIMAL};
   VkImageUsageFlags usage{0};
@@ -23,11 +26,27 @@ struct ImageDesc {
   VkImageLayout initialLayout{VK_IMAGE_LAYOUT_UNDEFINED};
   VkImageLayout finalLayout{VK_IMAGE_LAYOUT_UNDEFINED};
   VkSampleCountFlagBits samples{VK_SAMPLE_COUNT_1_BIT};
+  VkImageViewType defaultViewType{VK_IMAGE_VIEW_TYPE_2D};
 
   bool forceRgba{true};
+  bool isCubemap{false};
 
   [[nodiscard]] auto hasFile() const noexcept -> bool {
     return !filePath.empty();
+  }
+
+  [[nodiscard]] auto hasCubemapFiles() const noexcept -> bool {
+    if (!isCubemap) {
+      return false;
+    }
+
+    for (const auto &path : cubeFacePaths) {
+      if (path.empty()) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   [[nodiscard]] static auto
@@ -44,6 +63,27 @@ struct ImageDesc {
     desc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     desc.samples = VK_SAMPLE_COUNT_1_BIT;
     desc.forceRgba = true;
+    return desc;
+  }
+
+  [[nodiscard]] static auto
+  cubemapFiles(const std::array<std::string, 6> &faces,
+               VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) -> ImageDesc {
+    ImageDesc desc{};
+    desc.cubeFacePaths = faces;
+    desc.arrayLayers = 6;
+    desc.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    desc.format = format;
+    desc.tiling = VK_IMAGE_TILING_OPTIMAL;
+    desc.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    desc.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    desc.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    desc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    desc.samples = VK_SAMPLE_COUNT_1_BIT;
+    desc.defaultViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+    desc.forceRgba = true;
+    desc.isCubemap = true;
     return desc;
   }
 
@@ -139,6 +179,7 @@ private:
                          VkMemoryPropertyFlags properties, uint32_t mipLevels,
                          uint32_t arrayLayers, VkSampleCountFlagBits samples);
   void createFromFile();
+  void createCubemapFromFiles();
   void createEmpty();
 
   void transitionImageLayout(VkImage image, VkFormat format,
@@ -146,6 +187,8 @@ private:
                              VkImageLayout oldLayout, VkImageLayout newLayout);
   void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
                          uint32_t height);
+  void copyBufferToImageLayers(VkBuffer buffer, VkImage image, uint32_t width,
+                               uint32_t height, uint32_t layers);
 
   [[nodiscard]] auto beginSingleTimeCommands() -> VkCommandBuffer;
   void endSingleTimeCommands(VkCommandBuffer commandBuffer);

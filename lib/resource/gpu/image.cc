@@ -2,8 +2,10 @@
 #include "vkr/resource/gpu/image.hh"
 #include "vkr/logger.hh"
 #include "vkr/resource/gpu/buffer_utils.hh"
+#include <array>
 #include <cstring>
 #include <stb_image.h>
+#include <vector>
 
 namespace vkr::resource {
 
@@ -21,6 +23,11 @@ void Image::update(const ImageDesc &desc) {
 void Image::create() {
   if (desc_.format == VK_FORMAT_UNDEFINED) {
     VKR_RES_ERROR("ImageDesc has undefined format");
+  }
+
+  if (desc_.isCubemap) {
+    createCubemapFromFiles();
+    return;
   }
 
   if (desc_.hasFile()) {
@@ -150,6 +157,141 @@ void Image::createFromFile() {
   vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
 }
 
+void Image::createCubemapFromFiles() {
+  if (!desc_.hasCubemapFiles()) {
+    VKR_RES_ERROR("Cubemap ImageDesc must provide exactly 6 face paths");
+  }
+
+  if (desc_.mipLevels != 1) {
+    VKR_RES_ERROR("Cubemap file loading currently supports only 1 mip level");
+  }
+
+  constexpr uint32_t FaceCount = 6;
+  std::array<stbi_uc *, FaceCount> facePixels{};
+
+  int loadedWidth{0};
+  int loadedHeight{0};
+  int loadedChannels{0};
+  const int desiredChannels = desc_.forceRgba ? STBI_rgb_alpha : 0;
+
+  for (uint32_t face = 0; face < FaceCount; ++face) {
+    int faceWidth{0};
+    int faceHeight{0};
+    int faceChannels{0};
+
+    facePixels[face] =
+        stbi_load(desc_.cubeFacePaths[face].c_str(), &faceWidth, &faceHeight,
+                  &faceChannels, desiredChannels);
+
+    if (facePixels[face] == nullptr) {
+      for (auto *pixels : facePixels) {
+        stbi_image_free(pixels);
+      }
+      VKR_RES_ERROR("Failed to load cubemap face {} from file: {}", face,
+                    desc_.cubeFacePaths[face]);
+    }
+
+    if (faceWidth <= 0 || faceHeight <= 0 || faceChannels <= 0) {
+      for (auto *pixels : facePixels) {
+        stbi_image_free(pixels);
+      }
+      VKR_RES_ERROR("Loaded cubemap face '{}' has invalid size/channels",
+                    desc_.cubeFacePaths[face]);
+    }
+
+    if (faceWidth != faceHeight) {
+      for (auto *pixels : facePixels) {
+        stbi_image_free(pixels);
+      }
+      VKR_RES_ERROR("Cubemap face '{}' must be square, got {}x{}",
+                    desc_.cubeFacePaths[face], faceWidth, faceHeight);
+    }
+
+    const int effectiveChannels =
+        desc_.forceRgba ? STBI_rgb_alpha : faceChannels;
+
+    if (face == 0) {
+      loadedWidth = faceWidth;
+      loadedHeight = faceHeight;
+      loadedChannels = effectiveChannels;
+      continue;
+    }
+
+    if (faceWidth != loadedWidth || faceHeight != loadedHeight ||
+        effectiveChannels != loadedChannels) {
+      for (auto *pixels : facePixels) {
+        stbi_image_free(pixels);
+      }
+      VKR_RES_ERROR("Cubemap face '{}' size/channels mismatch",
+                    desc_.cubeFacePaths[face]);
+    }
+  }
+
+  width_ = static_cast<uint32_t>(loadedWidth);
+  height_ = static_cast<uint32_t>(loadedHeight);
+  channels_ = static_cast<uint32_t>(loadedChannels);
+
+  const VkDeviceSize faceSize = static_cast<VkDeviceSize>(width_) *
+                                static_cast<VkDeviceSize>(height_) *
+                                static_cast<VkDeviceSize>(channels_);
+  const VkDeviceSize imageSize = faceSize * FaceCount;
+
+  VkBuffer stagingBuffer{VK_NULL_HANDLE};
+  VkDeviceMemory stagingBufferMemory{VK_NULL_HANDLE};
+
+  createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+               stagingBuffer, stagingBufferMemory, device_.device(),
+               device_.physicalDevice());
+
+  void *data{nullptr};
+  if (vkMapMemory(device_.device(), stagingBufferMemory, 0, imageSize, 0,
+                  &data) != VK_SUCCESS) {
+    for (auto *pixels : facePixels) {
+      stbi_image_free(pixels);
+    }
+    vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);
+    vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
+    VKR_RES_ERROR("Failed to map cubemap staging buffer memory");
+  }
+
+  auto *dst = static_cast<std::byte *>(data);
+  for (uint32_t face = 0; face < FaceCount; ++face) {
+    std::memcpy(dst + faceSize * face, facePixels[face],
+                static_cast<size_t>(faceSize));
+  }
+  vkUnmapMemory(device_.device(), stagingBufferMemory);
+
+  for (auto *pixels : facePixels) {
+    stbi_image_free(pixels);
+  }
+
+  const VkImageUsageFlags usage = desc_.usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  createImageObject(width_, height_, desc_.format, desc_.tiling, usage,
+                    desc_.memoryProperties, desc_.mipLevels, FaceCount,
+                    desc_.samples);
+
+  transitionImageLayout(vk_image_, desc_.format, desc_.aspectMask,
+                        VK_IMAGE_LAYOUT_UNDEFINED,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  copyBufferToImageLayers(stagingBuffer, vk_image_, width_, height_,
+                          FaceCount);
+
+  if (desc_.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED &&
+      desc_.finalLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+    transitionImageLayout(vk_image_, desc_.format, desc_.aspectMask,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                          desc_.finalLayout);
+    layout_ = desc_.finalLayout;
+  } else {
+    layout_ = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  }
+
+  vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);
+  vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
+}
+
 void Image::createImageObject(uint32_t width, uint32_t height, VkFormat format,
                               VkImageTiling tiling, VkImageUsageFlags usage,
                               VkMemoryPropertyFlags properties,
@@ -157,6 +299,7 @@ void Image::createImageObject(uint32_t width, uint32_t height, VkFormat format,
                               VkSampleCountFlagBits samples) {
   VkImageCreateInfo imageInfo{};
   imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  imageInfo.flags = desc_.flags;
   imageInfo.imageType = VK_IMAGE_TYPE_2D;
   imageInfo.extent.width = width;
   imageInfo.extent.height = height;
@@ -342,21 +485,38 @@ void Image::transitionImageLayout(VkImage image, VkFormat format,
 
 void Image::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
                               uint32_t height) {
+  copyBufferToImageLayers(buffer, image, width, height, 1);
+}
+
+void Image::copyBufferToImageLayers(VkBuffer buffer, VkImage image,
+                                    uint32_t width, uint32_t height,
+                                    uint32_t layers) {
   VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
-  VkBufferImageCopy region{};
-  region.bufferOffset = 0;
-  region.bufferRowLength = 0;
-  region.bufferImageHeight = 0;
-  region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  region.imageSubresource.mipLevel = 0;
-  region.imageSubresource.baseArrayLayer = 0;
-  region.imageSubresource.layerCount = 1;
-  region.imageOffset = {0, 0, 0};
-  region.imageExtent = {width, height, 1};
+  const VkDeviceSize layerSize = static_cast<VkDeviceSize>(width) *
+                                 static_cast<VkDeviceSize>(height) *
+                                 static_cast<VkDeviceSize>(channels_);
+  std::vector<VkBufferImageCopy> regions{};
+  regions.reserve(layers);
+
+  for (uint32_t layer = 0; layer < layers; ++layer) {
+    VkBufferImageCopy region{};
+    region.bufferOffset = layerSize * layer;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = desc_.aspectMask;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = layer;
+    region.imageSubresource.layerCount = 1;
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {width, height, 1};
+    regions.push_back(region);
+  }
 
   vkCmdCopyBufferToImage(commandBuffer, buffer, image,
-                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                         static_cast<uint32_t>(regions.size()),
+                         regions.data());
 
   endSingleTimeCommands(commandBuffer);
 }
