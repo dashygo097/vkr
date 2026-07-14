@@ -2,6 +2,7 @@
 
 #include "vkr/core/instance.hh"
 #include "vkr/core/surface.hh"
+#include <algorithm>
 
 #ifdef __APPLE__
 #include <vulkan/vulkan_beta.h>

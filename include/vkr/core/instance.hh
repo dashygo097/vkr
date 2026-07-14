@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vkr/core/debug_messenger.hh"
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>

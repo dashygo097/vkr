@@ -4,6 +4,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/resource/attachments/color.hh"
 #include "vkr/resource/attachments/depth.hh"
+#include <optional>
 
 namespace vkr::resource {
 

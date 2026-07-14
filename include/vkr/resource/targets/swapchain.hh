@@ -5,6 +5,7 @@
 #include "vkr/core/swapchain.hh"
 #include "vkr/resource/attachments/depth.hh"
 #include "vkr/resource/gpu/image_view.hh"
+#include <optional>
 
 namespace vkr::resource {
 
