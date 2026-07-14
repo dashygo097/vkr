@@ -15,7 +15,9 @@
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/swapchain.hh"
+#include "vkr/scene/camera.hh"
 #include "vkr/ui/ui.hh"
+#include "vkr/util/asset.hh"
 #include "vkr/util/timer.hh"
 #include <memory>
 
@@ -35,6 +37,7 @@ public:
          const core::Device &device, const core::CommandPool &commandPool,
          const core::Swapchain &swapchain,
          resource::ResourceManager &resourceManager,
+         const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
          FullscreenPassSource source, RenderGraph &renderGraph,
          util::Timer &timer, ui::ThemeDesc &theme);
   ~UiPass() override;
@@ -78,6 +81,8 @@ private:
   const core::CommandPool &command_pool_;
   const core::Swapchain &swapchain_;
   resource::ResourceManager &resource_manager_;
+  const util::AssetSystem &asset_system_;
+  scene::CameraDesc &camera_;
   FullscreenPassSource source_;
   RenderGraph &render_graph_;
   util::Timer &timer_;

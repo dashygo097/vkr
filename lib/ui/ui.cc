@@ -5,6 +5,10 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include <imgui_internal.h>
+#include <algorithm>
+#include <filesystem>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <vector>
 
 namespace vkr::ui {
@@ -13,15 +17,30 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool,
        resource::ResourceManager &resourceManager,
+       const util::AssetSystem &assetSystem,
+       scene::CameraDesc &camera,
        resource::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
        render::RenderGraph &renderGraph, util::Timer &timer, ThemeDesc &desc)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), resource_manager_(resourceManager),
+      asset_system_(assetSystem), camera_(camera),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),
       descriptor_pool_(descriptorPool), render_graph_(renderGraph),
       timer_(timer), desc_(desc) {
+  dock_panels_ = {
+      DockPanelState{DockPanelId::Viewport, "Viewport", true, true},
+      DockPanelState{DockPanelId::Resources, "Resources", true, true},
+      DockPanelState{DockPanelId::RenderGraph, "Render Graph", true, true},
+      DockPanelState{DockPanelId::Assets, "Assets", true, true},
+      DockPanelState{DockPanelId::Camera, "Camera", true, true},
+      DockPanelState{DockPanelId::MeshEditor, "Mesh Editor", true, true},
+      DockPanelState{DockPanelId::ShaderEditor, "Shader Editor", true, true},
+      DockPanelState{DockPanelId::Performance, "Performance", true, true},
+      DockPanelState{DockPanelId::Logging, "Logging", true, true},
+  };
+
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
 
@@ -137,12 +156,7 @@ void UI::render(VkCommandBuffer commandBuffer) {
     break;
   case LayoutMode::Standard:
     renderDockspace();
-    renderMainViewport();
-    renderGraphPanel();
-    renderResourcePanel();
-    renderPerformancePanel();
-    renderShaderEditor();
-    renderLoggingPanel();
+    renderWorkspacePanels();
     break;
   }
 
@@ -211,9 +225,8 @@ void UI::renderDockspace() {
     ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
     ImGui::DockSpace(dockSpaceId, ImVec2(0.0f, 0.0f), dockSpaceFlags);
 
-    static bool firstTime = true;
-    if (firstTime) {
-      firstTime = false;
+    if (dock_layout_dirty_) {
+      dock_layout_dirty_ = false;
       setupDockingLayout();
     }
   }
@@ -227,7 +240,12 @@ void UI::setupDockingLayout() {
   ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
   ImGui::DockBuilderSetNodeSize(dockSpaceId, ImGui::GetMainViewport()->Size);
 
-  ImGuiID dockLeft, dockRight, dockBottomRight, dockShader, dockLogs, dockGraph;
+  ImGuiID dockLeft;
+  ImGuiID dockLeftBottom;
+  ImGuiID dockRight;
+  ImGuiID dockRightBottom;
+  ImGuiID dockRightTop;
+  ImGuiID dockBottom;
 
   dockLeft = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Left, 0.2f,
                                          nullptr, &dockSpaceId);
@@ -235,22 +253,33 @@ void UI::setupDockingLayout() {
   dockRight = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Right, 0.2f,
                                           nullptr, &dockSpaceId);
 
-  dockShader = ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Up, 0.8f,
-                                           nullptr, &dockBottomRight);
+  dockRightTop = ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Up, 0.7f,
+                                             nullptr, &dockRightBottom);
 
-  dockLogs = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Down, 0.2f,
-                                         nullptr, &dockSpaceId);
-  dockGraph = ImGui::DockBuilderSplitNode(dockLeft, ImGuiDir_Down, 0.45f,
-                                          nullptr, &dockLeft);
+  dockBottom = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Down, 0.22f,
+                                           nullptr, &dockSpaceId);
+  dockLeftBottom = ImGui::DockBuilderSplitNode(dockLeft, ImGuiDir_Down, 0.48f,
+                                               nullptr, &dockLeft);
 
   ImGui::DockBuilderDockWindow("Resources", dockLeft);
-  ImGui::DockBuilderDockWindow("Render Graph", dockGraph);
-  ImGui::DockBuilderDockWindow("Shader Editor", dockShader);
-  ImGui::DockBuilderDockWindow("Performance", dockBottomRight);
-  ImGui::DockBuilderDockWindow("Logging", dockLogs);
+  ImGui::DockBuilderDockWindow("Assets", dockLeft);
+  ImGui::DockBuilderDockWindow("Render Graph", dockLeftBottom);
+  ImGui::DockBuilderDockWindow("Camera", dockLeftBottom);
+  ImGui::DockBuilderDockWindow("Mesh Editor", dockLeftBottom);
+  ImGui::DockBuilderDockWindow("Shader Editor", dockRightTop);
+  ImGui::DockBuilderDockWindow("Performance", dockRightBottom);
+  ImGui::DockBuilderDockWindow("Logging", dockBottom);
   ImGui::DockBuilderDockWindow("Viewport", dockSpaceId);
 
   ImGui::DockBuilderFinish(dockSpaceId);
+}
+
+void UI::resetDockingLayout() noexcept {
+  for (auto &dockPanel : dock_panels_) {
+    dockPanel.open = dockPanel.defaultOpen;
+  }
+
+  dock_layout_dirty_ = true;
 }
 
 void UI::renderMainMenu() {
@@ -277,6 +306,19 @@ void UI::renderMainMenu() {
       layout_mode_ = LayoutMode::Standard;
     }
 
+    if (ImGui::MenuItem("Reset Dock Layout")) {
+      resetDockingLayout();
+      layout_mode_ = LayoutMode::Standard;
+    }
+
+    ImGui::SeparatorText("Panels");
+
+    for (auto &dockPanel : dock_panels_) {
+      if (ImGui::MenuItem(dockPanel.name, nullptr, dockPanel.open)) {
+        dockPanel.open = !dockPanel.open;
+      }
+    }
+
     ImGui::EndMenu();
   }
 
@@ -291,14 +333,51 @@ void UI::renderMainMenu() {
   ImGui::EndMainMenuBar();
 }
 
+void UI::renderWorkspacePanels() {
+  if (panelOpen(DockPanelId::Viewport)) {
+    renderMainViewport();
+  }
+
+  if (panelOpen(DockPanelId::Resources)) {
+    renderResourcePanel();
+  }
+
+  if (panelOpen(DockPanelId::RenderGraph)) {
+    renderGraphPanel();
+  }
+
+  if (panelOpen(DockPanelId::Assets)) {
+    renderAssetsPanel();
+  }
+
+  if (panelOpen(DockPanelId::Camera)) {
+    renderCameraPanel();
+  }
+
+  if (panelOpen(DockPanelId::MeshEditor)) {
+    renderMeshEditorPanel();
+  }
+
+  if (panelOpen(DockPanelId::ShaderEditor)) {
+    renderShaderEditor();
+  }
+
+  if (panelOpen(DockPanelId::Performance)) {
+    renderPerformancePanel();
+  }
+
+  if (panelOpen(DockPanelId::Logging)) {
+    renderLoggingPanel();
+  }
+}
+
 void UI::renderMainViewport() {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
-  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
-                                 ImGuiWindowFlags_NoResize |
-                                 ImGuiWindowFlags_NoCollapse;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoCollapse;
+  auto &viewportPanel = panel(DockPanelId::Viewport);
 
-  if (ImGui::Begin("Viewport", nullptr, windowFlags)) {
+  if (ImGui::Begin(viewportPanel.name, &viewportPanel.open, windowFlags)) {
     ImVec2 panelSize = ImGui::GetContentRegionAvail();
 
     if (panelSize.x < 1.0f) {
@@ -336,10 +415,10 @@ void UI::renderMainViewport() {
 }
 
 void UI::renderGraphPanel() {
-  ImGuiWindowFlags windowFlags =
-      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_None;
+  auto &graphPanel = panel(DockPanelId::RenderGraph);
 
-  if (ImGui::Begin("Render Graph", nullptr, windowFlags)) {
+  if (ImGui::Begin(graphPanel.name, &graphPanel.open, windowFlags)) {
     const auto passes = render_graph_.passes();
 
     ImGui::SeparatorText("Passes");
@@ -398,11 +477,10 @@ void UI::renderGraphPanel() {
 }
 
 void UI::renderResourcePanel() {
-  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
-                                 ImGuiWindowFlags_NoResize |
-                                 ImGuiWindowFlags_NoCollapse;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_None;
+  auto &resourcesPanel = panel(DockPanelId::Resources);
 
-  if (ImGui::Begin("Resources", nullptr, windowFlags)) {
+  if (ImGui::Begin(resourcesPanel.name, &resourcesPanel.open, windowFlags)) {
     if (resource_tree_) {
       resource_tree_->render();
     }
@@ -411,12 +489,298 @@ void UI::renderResourcePanel() {
   ImGui::End();
 }
 
-void UI::renderPerformancePanel() {
-  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
-                                 ImGuiWindowFlags_NoResize |
-                                 ImGuiWindowFlags_NoCollapse;
+void UI::renderAssetsPanel() {
+  auto &assetsPanel = panel(DockPanelId::Assets);
 
-  if (ImGui::Begin("Performance", nullptr, windowFlags)) {
+  if (ImGui::Begin(assetsPanel.name, &assetsPanel.open)) {
+    const auto normalizeRoot = [](const std::string &root) {
+      auto path = std::filesystem::path(root);
+      if (path.is_relative()) {
+        path = std::filesystem::absolute(path);
+      }
+
+      std::error_code ec;
+      auto canonical = std::filesystem::weakly_canonical(path, ec);
+      return ec ? path.lexically_normal() : canonical.lexically_normal();
+    };
+
+    const auto engineRoot = normalizeRoot(asset_system_.desc().engineRoot);
+    const auto appRoot = normalizeRoot(asset_system_.desc().appRoot);
+    const auto userRoot = normalizeRoot(asset_system_.desc().userRoot);
+
+    const auto isInsideRoot = [](const std::filesystem::path &path,
+                                 const std::filesystem::path &root) {
+      std::error_code ec;
+      auto relative = std::filesystem::relative(path, root, ec);
+      if (ec || relative.empty()) {
+        return false;
+      }
+
+      for (const auto &part : relative) {
+        if (part == "..") {
+          return false;
+        }
+      }
+
+      return true;
+    };
+
+    auto renderRoot = [&](const char *label, const std::filesystem::path &root,
+                          bool hidden, bool defaultOpen) {
+      ImGuiTreeNodeFlags flags =
+          ImGuiTreeNodeFlags_SpanAvailWidth;
+
+      if (defaultOpen) {
+        flags |= ImGuiTreeNodeFlags_DefaultOpen;
+      }
+
+      if (!ImGui::TreeNodeEx(label, flags, "%s", label)) {
+        return;
+      }
+
+      ImGui::TextDisabled("%s", root.string().c_str());
+
+      if (hidden) {
+        ImGui::TextDisabled("Hidden because this root is engine defaults.");
+        ImGui::TreePop();
+        return;
+      }
+
+      if (!std::filesystem::exists(root)) {
+        ImGui::TextDisabled("Not found");
+        ImGui::TreePop();
+        return;
+      }
+
+      std::vector<std::filesystem::path> entries{};
+      std::error_code ec;
+      std::filesystem::recursive_directory_iterator iterator(
+          root, std::filesystem::directory_options::skip_permission_denied, ec);
+      std::filesystem::recursive_directory_iterator end{};
+
+      size_t skippedEngineDefaults = 0;
+      size_t skippedDirectories = 0;
+      size_t visibleLimit = 300;
+      bool truncated = false;
+
+      for (; iterator != end && !ec; iterator.increment(ec)) {
+        if (ec) {
+          break;
+        }
+
+        const auto path = iterator->path();
+        const auto filename = path.filename().string();
+
+        if (iterator->is_directory(ec)) {
+          if (filename == ".git" || filename == "build" ||
+              filename == "3rdparty" || filename == ".cache") {
+            iterator.disable_recursion_pending();
+            skippedDirectories++;
+          }
+          continue;
+        }
+
+        if (isInsideRoot(path, engineRoot)) {
+          skippedEngineDefaults++;
+          continue;
+        }
+
+        if (!iterator->is_regular_file(ec)) {
+          continue;
+        }
+
+        if (entries.size() >= visibleLimit) {
+          truncated = true;
+          continue;
+        }
+
+        entries.push_back(path);
+      }
+
+      std::sort(entries.begin(), entries.end());
+
+      if (entries.empty()) {
+        ImGui::TextDisabled("No files");
+      } else {
+        for (const auto &path : entries) {
+          std::error_code relEc;
+          auto rel = std::filesystem::relative(path, root, relEc);
+          ImGui::BulletText("%s",
+                            (relEc ? path.filename() : rel).string().c_str());
+        }
+      }
+
+      if (truncated) {
+        ImGui::TextDisabled("Showing first %zu files", visibleLimit);
+      }
+
+      if (skippedEngineDefaults > 0 || skippedDirectories > 0) {
+        ImGui::TextDisabled("Hidden: %zu engine files, %zu large folders",
+                            skippedEngineDefaults, skippedDirectories);
+      }
+
+      ImGui::TreePop();
+    };
+
+    ImGui::SeparatorText("Target Roots");
+    ImGui::Checkbox("App", &show_app_assets_);
+    ImGui::SameLine();
+    ImGui::Checkbox("User", &show_user_assets_);
+
+    ImGui::SeparatorText("Project Assets");
+    if (show_app_assets_) {
+      renderRoot("App", appRoot, appRoot == engineRoot, true);
+    }
+
+    if (show_user_assets_) {
+      renderRoot("User", userRoot, userRoot == engineRoot, false);
+    }
+
+    if (!show_app_assets_ && !show_user_assets_) {
+      ImGui::TextDisabled("No asset root selected");
+    }
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Engine Defaults");
+    ImGui::TextDisabled("Engine default assets are hidden from this browser.");
+  }
+
+  ImGui::End();
+}
+
+void UI::renderCameraPanel() {
+  auto &cameraPanel = panel(DockPanelId::Camera);
+
+  if (ImGui::Begin(cameraPanel.name, &cameraPanel.open)) {
+    bool vectorsChanged = false;
+
+    ImGui::SeparatorText("Transform");
+    ImGui::DragFloat3("Position", glm::value_ptr(camera_.pos), 0.05f);
+
+    vectorsChanged |=
+        ImGui::SliderFloat("Yaw", &camera_.yaw, -180.0f, 180.0f, "%.1f deg");
+    vectorsChanged |=
+        ImGui::SliderFloat("Pitch", &camera_.pitch, -89.0f, 89.0f, "%.1f deg");
+
+    if (vectorsChanged) {
+      refreshCameraVectors();
+    }
+
+    ImGui::Text("Front: %.2f, %.2f, %.2f", camera_.front.x, camera_.front.y,
+                camera_.front.z);
+    ImGui::Text("Up: %.2f, %.2f, %.2f", camera_.up.x, camera_.up.y,
+                camera_.up.z);
+
+    ImGui::SeparatorText("Lens");
+    ImGui::SliderFloat("FOV", &camera_.fov, 1.0f, 120.0f, "%.1f deg");
+    ImGui::DragFloat("Near Plane", &camera_.nearPlane, 0.01f, 0.001f,
+                     camera_.farPlane - 0.001f, "%.3f");
+    ImGui::DragFloat("Far Plane", &camera_.farPlane, 1.0f,
+                     camera_.nearPlane + 0.001f, 10000.0f, "%.1f");
+
+    if (camera_.farPlane <= camera_.nearPlane) {
+      camera_.farPlane = camera_.nearPlane + 0.001f;
+    }
+
+    ImGui::SeparatorText("Input");
+    ImGui::Checkbox("Locked", &camera_.locked);
+    ImGui::DragFloat("Move Speed", &camera_.movementSpeed, 0.05f, 0.0f,
+                     100.0f, "%.2f");
+    ImGui::DragFloat("Mouse Sensitivity", &camera_.mouseSensitivity, 0.01f,
+                     0.0f, 10.0f, "%.2f");
+
+    if (ImGui::Button("Reset Camera")) {
+      camera_.pos = glm::vec3{0.0f, 0.0f, 0.0f};
+      camera_.yaw = -90.0f;
+      camera_.pitch = 0.0f;
+      camera_.fov = 45.0f;
+      camera_.nearPlane = 0.1f;
+      camera_.farPlane = 1000.0f;
+      camera_.firstMouse = true;
+      refreshCameraVectors();
+    }
+
+    ImGui::SeparatorText("Viewport");
+    ImGui::Text("Position: %.1f, %.1f", viewport_info_.x, viewport_info_.y);
+    ImGui::Text("Size: %.1f x %.1f", viewport_info_.width,
+                viewport_info_.height);
+    ImGui::Text("Focused: %s", viewport_info_.isFocused ? "yes" : "no");
+    ImGui::Text("Hovered: %s", viewport_info_.isHovered ? "yes" : "no");
+  }
+
+  ImGui::End();
+}
+
+void UI::renderMeshEditorPanel() {
+  auto &meshPanel = panel(DockPanelId::MeshEditor);
+
+  if (ImGui::Begin(meshPanel.name, &meshPanel.open)) {
+    const auto meshNames = resource_manager_.listMeshNames();
+    const auto selectedMesh = resource_manager_.selectedMeshName();
+
+    ImGui::SeparatorText("Target");
+
+    const char *preview =
+        selectedMesh.empty() ? "<none>" : selectedMesh.c_str();
+    if (ImGui::BeginCombo("Mesh", preview)) {
+      const bool noneSelected = selectedMesh.empty();
+      if (ImGui::Selectable("<none>", noneSelected)) {
+        resource_manager_.clearSelectedMesh();
+      }
+
+      for (const auto &name : meshNames) {
+        const bool selected = selectedMesh == name;
+        if (ImGui::Selectable(name.c_str(), selected)) {
+          resource_manager_.selectMesh(name);
+        }
+
+        if (selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+
+      ImGui::EndCombo();
+    }
+
+    if (!selectedMesh.empty()) {
+      ImGui::SameLine();
+      if (ImGui::Button("Clear")) {
+        resource_manager_.clearSelectedMesh();
+      }
+    }
+
+    ImGui::SeparatorText("Details");
+    const auto currentMesh = resource_manager_.selectedMeshName();
+    if (currentMesh.empty()) {
+      ImGui::TextDisabled("No mesh selected");
+    } else {
+      ImGui::Text("Name: %s", currentMesh.c_str());
+
+      auto mesh = resource_manager_.getMesh(currentMesh);
+      if (mesh && mesh->isValid()) {
+        const auto *vertexBuffer = mesh->vertexBufferBase();
+        const auto *indexBuffer = mesh->indexBuffer();
+        const auto vertexInput = vertexBuffer->vertexInputDesc();
+
+        ImGui::Text("Vertices: %zu", vertexBuffer->vertexCount());
+        ImGui::Text("Indices: %zu", indexBuffer->indices().size());
+        ImGui::Text("Bindings: %zu", vertexInput.bindings.size());
+        ImGui::Text("Attributes: %zu", vertexInput.attributes.size());
+      } else {
+        ImGui::TextDisabled("State: unavailable");
+      }
+    }
+  }
+
+  ImGui::End();
+}
+
+void UI::renderPerformancePanel() {
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_None;
+  auto &performancePanel = panel(DockPanelId::Performance);
+
+  if (ImGui::Begin(performancePanel.name, &performancePanel.open,
+                   windowFlags)) {
     if (fps_panel_) {
       fps_panel_->render();
     }
@@ -426,11 +790,10 @@ void UI::renderPerformancePanel() {
 }
 
 void UI::renderShaderEditor() {
-  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
-                                 ImGuiWindowFlags_NoResize |
-                                 ImGuiWindowFlags_NoCollapse;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_None;
+  auto &shaderPanel = panel(DockPanelId::ShaderEditor);
 
-  if (ImGui::Begin("Shader Editor", nullptr, windowFlags)) {
+  if (ImGui::Begin(shaderPanel.name, &shaderPanel.open, windowFlags)) {
     if (shader_editor_) {
       shader_editor_->render();
     }
@@ -484,17 +847,44 @@ void UI::renderThemeControls() {
 }
 
 void UI::renderLoggingPanel() {
-  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove |
-                                 ImGuiWindowFlags_NoResize |
-                                 ImGuiWindowFlags_NoCollapse;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_None;
+  auto &loggingPanel = panel(DockPanelId::Logging);
 
-  if (ImGui::Begin("Logging", nullptr, windowFlags)) {
+  if (ImGui::Begin(loggingPanel.name, &loggingPanel.open, windowFlags)) {
     if (logging_panel_) {
       logging_panel_->render();
     }
   }
 
   ImGui::End();
+}
+
+void UI::refreshCameraVectors() {
+  camera_.pitch = glm::clamp(camera_.pitch, -89.0f, 89.0f);
+
+  glm::vec3 front{};
+  front.x =
+      std::cos(glm::radians(camera_.yaw)) * std::cos(glm::radians(camera_.pitch));
+  front.y = std::sin(glm::radians(camera_.pitch));
+  front.z =
+      std::sin(glm::radians(camera_.yaw)) * std::cos(glm::radians(camera_.pitch));
+
+  camera_.front = glm::normalize(front);
+  camera_.right = glm::normalize(glm::cross(camera_.front, camera_.worldUp));
+  camera_.up = glm::normalize(glm::cross(camera_.right, camera_.front));
+  camera_.firstMouse = true;
+}
+
+auto UI::panel(DockPanelId id) noexcept -> DockPanelState & {
+  return dock_panels_[static_cast<size_t>(id)];
+}
+
+auto UI::panel(DockPanelId id) const noexcept -> const DockPanelState & {
+  return dock_panels_[static_cast<size_t>(id)];
+}
+
+auto UI::panelOpen(DockPanelId id) const noexcept -> bool {
+  return panel(id).open;
 }
 
 } // namespace vkr::ui

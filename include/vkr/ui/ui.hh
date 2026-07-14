@@ -12,18 +12,41 @@
 #include "vkr/render/graph.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
+#include "vkr/scene/camera.hh"
 #include "vkr/ui/components/fps_panel.hh"
 #include "vkr/ui/components/logging_panel.hh"
 #include "vkr/ui/components/resource_tree.hh"
 #include "vkr/ui/components/shader_editor.hh"
 #include "vkr/ui/theme.hh"
+#include "vkr/util/asset.hh"
 #include "vkr/util/timer.hh"
+#include <array>
 
 namespace vkr::ui {
 
 enum LayoutMode {
   FullScreen,
   Standard,
+};
+
+enum class DockPanelId : size_t {
+  Viewport,
+  Resources,
+  RenderGraph,
+  Assets,
+  Camera,
+  MeshEditor,
+  ShaderEditor,
+  Performance,
+  Logging,
+  Count,
+};
+
+struct DockPanelState {
+  DockPanelId id{DockPanelId::Viewport};
+  const char *name{""};
+  bool open{true};
+  bool defaultOpen{true};
 };
 
 struct ViewportInfo {
@@ -41,6 +64,8 @@ public:
      const core::Surface &surface, const core::Device &device,
      const core::CommandPool &commandPool,
      resource::ResourceManager &resourceManager,
+     const util::AssetSystem &assetSystem,
+     scene::CameraDesc &camera,
      resource::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
@@ -93,6 +118,8 @@ private:
   const core::Device &device_;
   const core::CommandPool &command_pool_;
   resource::ResourceManager &resource_manager_;
+  const util::AssetSystem &asset_system_;
+  scene::CameraDesc &camera_;
   resource::OffscreenTarget &offscreen_target_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
@@ -112,19 +139,35 @@ private:
   LayoutMode layout_mode_{LayoutMode::FullScreen};
   ViewportInfo viewport_info_{};
   bool should_close_{false};
+  bool dock_layout_dirty_{true};
+  bool show_app_assets_{true};
+  bool show_user_assets_{false};
+  std::array<DockPanelState, static_cast<size_t>(DockPanelId::Count)>
+      dock_panels_{};
 
   // helpers
   void renderFullScreen();
   void renderDockspace();
   void setupDockingLayout();
+  void resetDockingLayout() noexcept;
   void renderMainMenu();
+  void renderWorkspacePanels();
   void renderMainViewport();
   void renderGraphPanel();
   void renderResourcePanel();
+  void renderAssetsPanel();
+  void renderCameraPanel();
+  void renderMeshEditorPanel();
   void renderLoggingPanel();
   void renderPerformancePanel();
   void renderShaderEditor();
   void renderThemeControls();
+  void refreshCameraVectors();
+
+  [[nodiscard]] auto panel(DockPanelId id) noexcept -> DockPanelState &;
+  [[nodiscard]] auto panel(DockPanelId id) const noexcept
+      -> const DockPanelState &;
+  [[nodiscard]] auto panelOpen(DockPanelId id) const noexcept -> bool;
 };
 
 } // namespace vkr::ui

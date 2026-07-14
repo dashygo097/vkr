@@ -170,7 +170,8 @@ auto VulkanApplication::addUiPass(render::FullscreenPassSource source)
 
   uiPass_ = &renderGraph->addPass<render::UiPass>(
       *renderer, *window, *instance, *surface, *device, *commandPool,
-      *swapchain, *resourceManager, source, *renderGraph, *timer, ctx.theme);
+      *swapchain, *resourceManager, *assetSystem, ctx.camera, source,
+      *renderGraph, *timer, ctx.theme);
   uiPass_->setName("ui").read("scene.color").write("swapchain");
   uiPass_->update(desc);
 
