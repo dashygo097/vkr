@@ -55,7 +55,7 @@ auto createDebugCubemapFaces() -> std::array<std::string, 6> {
       std::filesystem::temp_directory_path() / "vkr_skybox_debug_faces";
 
   const std::array<std::filesystem::path, 6> paths = {
-      dir / "right.ppm",  dir / "left.ppm", dir / "top.ppm",
+      dir / "right.ppm",  dir / "left.ppm",  dir / "top.ppm",
       dir / "bottom.ppm", dir / "front.ppm", dir / "back.ppm",
   };
 
