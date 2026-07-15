@@ -38,6 +38,7 @@ public:
   void create();
   void destroy();
   void record();
+  void present();
 
   [[nodiscard]] auto passes() -> std::vector<RenderGraphPass *>;
   [[nodiscard]] auto passes() const -> std::vector<const RenderGraphPass *>;
@@ -73,6 +74,7 @@ private:
   auto rebuildNameTable() -> void;
   auto validatePassNameAvailable(std::string_view name) const -> void;
   auto validateDependencies() const -> void;
+  auto validatePresentationContract() const -> void;
 
   auto addCompiledDependency(size_t producer, size_t consumer) -> void;
   auto buildResourceDependencies() -> void;

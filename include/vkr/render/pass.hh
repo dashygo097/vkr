@@ -59,6 +59,12 @@ public:
   virtual void destroy() = 0;
   virtual void record() = 0;
 
+  virtual void present() {}
+
+  [[nodiscard]] virtual auto presentsToSwapchain() const noexcept -> bool {
+    return false;
+  }
+
   [[nodiscard]] virtual auto editablePipeline() noexcept
       -> pipeline::GraphicsPipeline * {
     return nullptr;

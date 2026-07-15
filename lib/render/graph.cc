@@ -39,6 +39,7 @@ void RenderGraph::addDependency(std::string producer, std::string consumer) {
 void RenderGraph::compile() {
   rebuildNameTable();
   validateDependencies();
+  validatePresentationContract();
 
   const size_t passCount = passes_.size();
 
@@ -139,6 +140,20 @@ auto RenderGraph::record() -> void {
   }
 }
 
+auto RenderGraph::present() -> void {
+  if (dirty_) {
+    compile();
+  }
+
+  if (!created_) {
+    VKR_RENDER_ERROR("Render graph presented before create");
+  }
+
+  for (auto *pass : ordered_passes_) {
+    pass->present();
+  }
+}
+
 auto RenderGraph::passes() -> std::vector<RenderGraphPass *> {
   std::vector<RenderGraphPass *> result{};
   result.reserve(passes_.size());
@@ -207,6 +222,38 @@ auto RenderGraph::validateDependencies() const -> void {
             consumer);
       }
     }
+  }
+}
+
+auto RenderGraph::validatePresentationContract() const -> void {
+  size_t presenterCount = 0;
+  bool writesSwapchain = false;
+
+  for (const auto &pass : passes_) {
+    if (pass->presentsToSwapchain()) {
+      presenterCount++;
+    }
+
+    for (const auto &written : pass->writes()) {
+      if (written == "swapchain") {
+        writesSwapchain = true;
+      }
+    }
+  }
+
+  if (presenterCount > 1) {
+    VKR_RENDER_ERROR("Render graph has {} PresentPass nodes; only one "
+                     "swapchain presenter is allowed",
+                     presenterCount);
+  }
+
+  if (presenterCount == 0) {
+    VKR_RENDER_ERROR("Render graph has no PresentPass");
+  }
+
+  if (!writesSwapchain) {
+    VKR_RENDER_ERROR("Render graph has a PresentPass but no pass writes "
+                     "'swapchain'");
   }
 }
 

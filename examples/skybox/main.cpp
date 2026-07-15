@@ -128,8 +128,9 @@ private:
 
     addUiPass(vkr::render::FullscreenPassSource{skyboxPass});
 
-    auto &presentPass = renderGraph->addPass<vkr::render::PresentPass>();
-    presentPass.setName("present").read("swapchain");
+    auto &presentPass =
+        renderGraph->addPass<vkr::render::PresentPass>(*renderer);
+    presentPass.setName("present");
   }
 
   void onDraw() override {

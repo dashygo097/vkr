@@ -40,18 +40,47 @@ auto Renderer::beginFrame() -> bool {
   }
 
   frame_active_ = true;
+  frame_submitted_ = false;
+  frame_presented_ = false;
   return true;
 }
 
-void Renderer::endFrame() {
-  ensureFrameActive("endFrame");
+void Renderer::submitFrame() {
+  ensureFrameActive("submitFrame");
+
+  if (frame_submitted_) {
+    VKR_RENDER_ERROR("Renderer::submitFrame called twice for one frame");
+  }
 
   if (vkEndCommandBuffer(command_buffer_) != VK_SUCCESS) {
     VKR_RENDER_ERROR("failed to record command buffer");
   }
 
   submitCommandBuffer();
+  frame_submitted_ = true;
+}
+
+void Renderer::presentFrame() {
+  ensureFrameActive("presentFrame");
+
+  if (!frame_submitted_) {
+    VKR_RENDER_ERROR("Renderer::presentFrame called before submitFrame");
+  }
+
+  if (frame_presented_) {
+    VKR_RENDER_ERROR("Renderer::presentFrame called twice for one frame");
+  }
+
   present(image_index_);
+  frame_presented_ = true;
+}
+
+void Renderer::endFrame() {
+  ensureFrameActive("endFrame");
+
+  if (!frame_submitted_) {
+    VKR_RENDER_ERROR("Renderer::endFrame called before submitFrame");
+  }
 
   current_frame_ = (current_frame_ + 1) % core::MAX_FRAMES_IN_FLIGHT;
 
@@ -59,6 +88,8 @@ void Renderer::endFrame() {
   frame_index_ = 0;
   command_buffer_ = VK_NULL_HANDLE;
   frame_active_ = false;
+  frame_submitted_ = false;
+  frame_presented_ = false;
 }
 
 void Renderer::beginPass(const resource::FramebufferSet &framebufferSet,

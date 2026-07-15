@@ -31,6 +31,8 @@ public:
   auto operator=(const Renderer &) -> Renderer & = delete;
 
   auto beginFrame() -> bool;
+  void submitFrame();
+  void presentFrame();
   void endFrame();
 
   [[nodiscard]] auto swapchainOutOfDate() const noexcept -> bool {
@@ -93,6 +95,8 @@ private:
   uint32_t frame_index_{0};
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
   bool frame_active_{false};
+  bool frame_submitted_{false};
+  bool frame_presented_{false};
   bool swapchain_out_of_date_{false};
 
   // helpers
