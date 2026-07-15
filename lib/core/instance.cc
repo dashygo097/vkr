@@ -1,6 +1,7 @@
 #include "vkr/core/instance.hh"
 #include "vkr/core/core_utils.hh"
 #include "vkr/logger.hh"
+#include <vector>
 
 namespace vkr::core {
 Instance::Instance(InstanceDesc &desc) : desc_(desc) {
@@ -9,9 +10,13 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
                 VK_VERSION_MINOR(desc_.version),
                 VK_VERSION_PATCH(desc_.version));
 
+  std::vector<const char *> enabledValidationLayers{};
 #ifndef NDEBUG
-  if (!checkValidationLayerSupport(desc_.validationLayers)) {
-    VKR_CORE_ERROR("validation layers requested, but not available!");
+  if (checkValidationLayerSupport(desc_.validationLayers)) {
+    enabledValidationLayers = desc_.validationLayers;
+  } else if (!desc_.validationLayers.empty()) {
+    VKR_CORE_WARN("validation layers requested, but not available; continuing "
+                  "without validation layers");
   }
 #endif
 
@@ -26,7 +31,11 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   VkInstanceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   createInfo.pApplicationInfo = &appInfo;
+#ifdef __APPLE__
   createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#else
+  createInfo.flags = 0;
+#endif
 
   auto extensions = getRequiredExtensions(desc_.extensions);
   createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
@@ -35,11 +44,15 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 #ifndef NDEBUG
   createInfo.enabledLayerCount =
-      static_cast<uint32_t>(desc_.validationLayers.size());
-  createInfo.ppEnabledLayerNames = desc_.validationLayers.data();
+      static_cast<uint32_t>(enabledValidationLayers.size());
+  createInfo.ppEnabledLayerNames = enabledValidationLayers.data();
 
-  DebugMessenger::populateCreateInfo(debugCreateInfo);
-  createInfo.pNext = &debugCreateInfo;
+  if (!enabledValidationLayers.empty()) {
+    DebugMessenger::populateCreateInfo(debugCreateInfo);
+    createInfo.pNext = &debugCreateInfo;
+  } else {
+    createInfo.pNext = nullptr;
+  }
 #else
   createInfo.enabledLayerCount = 0;
 
@@ -51,7 +64,9 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   }
 
 #ifndef NDEBUG
-  debug_messenger_ = std::make_unique<DebugMessenger>(vk_instance_);
+  if (!enabledValidationLayers.empty()) {
+    debug_messenger_ = std::make_unique<DebugMessenger>(vk_instance_);
+  }
 #endif
 
   for (const auto &ext : extensions) {

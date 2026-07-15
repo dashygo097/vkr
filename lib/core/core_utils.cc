@@ -1,5 +1,6 @@
 #include "vkr/core/core_utils.hh"
 #include <GLFW/glfw3.h>
+#include <algorithm>
 #include <cstring>
 
 namespace vkr::core {
@@ -12,11 +13,19 @@ auto getRequiredExtensions(const std::vector<const char *> &preExtensions)
   std::vector<const char *> extensions(glfwExtensions,
                                        glfwExtensions + glfwExtensionCount);
 
-  extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-  extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+  auto appendUnique = [&extensions](const char *extension) {
+    if (std::find(extensions.begin(), extensions.end(), extension) ==
+        extensions.end()) {
+      extensions.push_back(extension);
+    }
+  };
+
+  for (const auto *extension : preExtensions) {
+    appendUnique(extension);
+  }
 
 #ifndef NDEBUG
-  extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+  appendUnique(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
   return extensions;

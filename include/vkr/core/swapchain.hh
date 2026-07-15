@@ -19,7 +19,7 @@ struct SwapchainDesc {
   uint32_t imageCount{0};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
-    return width == 0 || height == 0;
+    return true;
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
