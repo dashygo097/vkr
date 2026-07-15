@@ -14,6 +14,7 @@ if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/config.cmake")
 endif()
 
 include(Helpers)
+include(VkApp)
 include(CompilerSetup)
 include(SourceCollections)
 include(Dependencies)
@@ -26,7 +27,11 @@ if(ENABLE_TOOLING)
   add_subdirectory(tools)
 endif()
 
-# excutables 
-if(ENABLE_EXECUTABLES) 
-  add_subdirectory(apps)
+# examples
+if(NOT DEFINED ENABLE_EXAMPLES AND DEFINED ENABLE_EXECUTABLES)
+  set(ENABLE_EXAMPLES ${ENABLE_EXECUTABLES})
+endif()
+
+if(ENABLE_EXAMPLES)
+  add_subdirectory(examples)
 endif()
