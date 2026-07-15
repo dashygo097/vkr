@@ -61,8 +61,16 @@ public:
     return ui_ ? ui_->layoutMode() : ui::LayoutMode::FullScreen;
   }
 
-  [[nodiscard]] auto viewportInfo() const noexcept -> ui::ViewportInfo {
-    return ui_ ? ui_->viewportInfo() : ui::ViewportInfo{};
+  [[nodiscard]] auto viewport() const noexcept -> VkViewport {
+    return ui_ ? ui_->viewport() : VkViewport{};
+  }
+
+  [[nodiscard]] auto viewportFocused() const noexcept -> bool {
+    return ui_ && ui_->viewportFocused();
+  }
+
+  [[nodiscard]] auto viewportHovered() const noexcept -> bool {
+    return ui_ && ui_->viewportHovered();
   }
 
   void switchLayoutMode() {

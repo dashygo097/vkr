@@ -144,11 +144,11 @@ private:
     resourceManager->getUniformBuffer("skybox")->updateRaw(frameIndex, &ubo,
                                                            sizeof(ubo));
 
-    if (uiPass()->viewportInfo().height > 0 &&
+    if (uiPass()->viewport().height > 0 &&
         uiPass()->layoutMode() == vkr::ui::LayoutMode::Standard) {
       ctx.camera.aspectRatio =
-          uiPass()->viewportInfo().width /
-          static_cast<float>(uiPass()->viewportInfo().height);
+          uiPass()->viewport().width /
+          static_cast<float>(uiPass()->viewport().height);
     } else {
       ctx.camera.aspectRatio = ctx.window.ratio();
     }

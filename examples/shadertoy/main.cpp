@@ -24,8 +24,8 @@ private:
               static_cast<float>(ctx.window.height - cursor.y)};
     }
 
-    const auto viewport = uiPass()->viewportInfo();
-    if (!viewport.isFocused || viewport.width <= 0.0f ||
+    const auto viewport = uiPass()->viewport();
+    if (!uiPass()->viewportFocused() || viewport.width <= 0.0f ||
         viewport.height <= 0.0f) {
       return {mouseState.x, mouseState.y};
     }
@@ -47,8 +47,8 @@ private:
       return true;
     }
 
-    const auto viewport = uiPass()->viewportInfo();
-    return viewport.isFocused && viewport.width > 0.0f &&
+    const auto viewport = uiPass()->viewport();
+    return uiPass()->viewportFocused() && viewport.width > 0.0f &&
            viewport.height > 0.0f;
   }
 

@@ -1,17 +1,18 @@
 #pragma once
 
+#include "vkr/ui/components/ui_component.hh"
 #include <imgui.h>
 
 namespace vkr::ui {
 
-class LoggingPanel {
+class LoggingPanel final : public UiComponent {
 public:
-  LoggingPanel() = default;
+  LoggingPanel();
   ~LoggingPanel() = default;
 
+private:
   void render();
 
-private:
   bool auto_scroll_{true};
 };
 

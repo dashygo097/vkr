@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vkr/ui/components/ui_component.hh"
 #include "vkr/util/timer.hh"
 #include <array>
 #include <cstdint>
@@ -7,7 +8,7 @@
 namespace vkr::ui {
 static constexpr uint32_t FPS_PANEL_HISTORY_SIZE = 256;
 
-class FPSPanel {
+class FPSPanel final : public UiComponent {
 public:
   explicit FPSPanel(util::Timer &timer);
   ~FPSPanel() = default;
@@ -16,9 +17,10 @@ public:
   auto operator=(const FPSPanel &) -> FPSPanel & = delete;
 
   void clear();
-  void render();
 
 private:
+  void render();
+
   // dependencies
   util::Timer &timer_;
 

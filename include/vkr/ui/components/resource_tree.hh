@@ -1,20 +1,21 @@
 #pragma once
 
 #include "vkr/resource/manager.hh"
+#include "vkr/ui/components/ui_component.hh"
 #include <imgui.h>
 #include <string>
 #include <vector>
 
 namespace vkr::ui {
 
-class ResourceTree {
+class ResourceTree final : public UiComponent {
 public:
   explicit ResourceTree(resource::ResourceManager &resourceManager);
   ~ResourceTree() = default;
 
+private:
   void render();
 
-private:
   resource::ResourceManager &resource_manager_;
 
   std::string selected_type_;

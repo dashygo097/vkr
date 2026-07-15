@@ -567,7 +567,8 @@ auto ShaderEditor::makeEditor() -> TextEditor {
 }
 
 ShaderEditor::ShaderEditor(render::RenderGraph &graph)
-    : graph_(graph), vert_editor_(makeEditor()), frag_editor_(makeEditor()) {
+    : UiComponent("Shader Editor"), graph_(graph), vert_editor_(makeEditor()),
+      frag_editor_(makeEditor()) {
   reloadFromPipeline();
 }
 

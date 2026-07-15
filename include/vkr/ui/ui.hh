@@ -13,49 +13,27 @@
 #include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
 #include "vkr/scene/camera.hh"
+#include "vkr/ui/components/assets_panel.hh"
+#include "vkr/ui/components/camera_panel.hh"
 #include "vkr/ui/components/fps_panel.hh"
 #include "vkr/ui/components/logging_panel.hh"
+#include "vkr/ui/components/mesh_editor_panel.hh"
+#include "vkr/ui/components/render_graph_panel.hh"
 #include "vkr/ui/components/resource_tree.hh"
 #include "vkr/ui/components/shader_editor.hh"
+#include "vkr/ui/components/ui_component.hh"
+#include "vkr/ui/components/viewport_panel.hh"
 #include "vkr/ui/theme.hh"
 #include "vkr/util/asset.hh"
 #include "vkr/util/timer.hh"
-#include <array>
+#include <memory>
+#include <vector>
 
 namespace vkr::ui {
 
 enum LayoutMode {
   FullScreen,
   Standard,
-};
-
-enum class DockPanelId : size_t {
-  Viewport,
-  Resources,
-  RenderGraph,
-  Assets,
-  Camera,
-  MeshEditor,
-  ShaderEditor,
-  Performance,
-  Logging,
-  Count,
-};
-
-struct DockPanelState {
-  DockPanelId id{DockPanelId::Viewport};
-  const char *name{""};
-  bool open{true};
-  bool defaultOpen{true};
-};
-
-struct ViewportInfo {
-  float x{0.0f};
-  float y{0.0f};
-  float width{0.0f};
-  float height{0.0f};
-  bool isFocused{false};
-  bool isHovered{false};
 };
 
 class UI {
@@ -98,16 +76,24 @@ public:
     return should_close_;
   }
 
-  void viewportInfo(const ViewportInfo &info) noexcept {
-    viewport_info_ = info;
+  void viewport(const VkViewport &viewport) noexcept {
+    viewport_ = viewport;
   }
 
   [[nodiscard]] auto layoutMode() const noexcept -> LayoutMode {
     return layout_mode_;
   }
 
-  [[nodiscard]] auto viewportInfo() const noexcept -> const ViewportInfo & {
-    return viewport_info_;
+  [[nodiscard]] auto viewport() const noexcept -> const VkViewport & {
+    return viewport_;
+  }
+
+  [[nodiscard]] auto viewportFocused() const noexcept -> bool {
+    return viewport_focused_;
+  }
+
+  [[nodiscard]] auto viewportHovered() const noexcept -> bool {
+    return viewport_hovered_;
   }
 
 private:
@@ -128,7 +114,12 @@ private:
 
   // components
   ThemeDesc &desc_;
+  std::unique_ptr<ViewportPanel> viewport_panel_;
   std::unique_ptr<ResourceTree> resource_tree_;
+  std::unique_ptr<RenderGraphPanel> render_graph_panel_;
+  std::unique_ptr<AssetsPanel> assets_panel_;
+  std::unique_ptr<CameraPanel> camera_panel_;
+  std::unique_ptr<MeshEditorPanel> mesh_editor_panel_;
   std::unique_ptr<FPSPanel> fps_panel_;
   std::unique_ptr<ShaderEditor> shader_editor_;
   std::unique_ptr<LoggingPanel> logging_panel_;
@@ -137,13 +128,12 @@ private:
 
   // state
   LayoutMode layout_mode_{LayoutMode::FullScreen};
-  ViewportInfo viewport_info_{};
+  VkViewport viewport_{};
+  bool viewport_focused_{false};
+  bool viewport_hovered_{false};
   bool should_close_{false};
   bool dock_layout_dirty_{true};
-  bool show_app_assets_{true};
-  bool show_user_assets_{false};
-  std::array<DockPanelState, static_cast<size_t>(DockPanelId::Count)>
-      dock_panels_{};
+  std::vector<UiComponent *> dock_components_{};
 
   // helpers
   void renderFullScreen();
@@ -152,22 +142,7 @@ private:
   void resetDockingLayout() noexcept;
   void renderMainMenu();
   void renderWorkspacePanels();
-  void renderMainViewport();
-  void renderGraphPanel();
-  void renderResourcePanel();
-  void renderAssetsPanel();
-  void renderCameraPanel();
-  void renderMeshEditorPanel();
-  void renderLoggingPanel();
-  void renderPerformancePanel();
-  void renderShaderEditor();
   void renderThemeControls();
-  void refreshCameraVectors();
-
-  [[nodiscard]] auto panel(DockPanelId id) noexcept -> DockPanelState &;
-  [[nodiscard]] auto panel(DockPanelId id) const noexcept
-      -> const DockPanelState &;
-  [[nodiscard]] auto panelOpen(DockPanelId id) const noexcept -> bool;
 };
 
 } // namespace vkr::ui

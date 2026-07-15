@@ -4,7 +4,7 @@
 namespace vkr::ui {
 
 ResourceTree::ResourceTree(resource::ResourceManager &resourceManager)
-    : resource_manager_(resourceManager) {}
+    : UiComponent("Resources"), resource_manager_(resourceManager) {}
 
 void ResourceTree::render() {
   ImGui::TextUnformatted("Resource Tree");

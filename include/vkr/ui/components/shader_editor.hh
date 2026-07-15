@@ -3,18 +3,19 @@
 #include "TextEditor.h"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/render/graph.hh"
+#include "vkr/ui/components/ui_component.hh"
 #include <string>
 #include <vector>
 
 namespace vkr::ui {
 
-class ShaderEditor {
+class ShaderEditor final : public UiComponent {
 public:
   explicit ShaderEditor(render::RenderGraph &graph);
 
+private:
   void render();
 
-private:
   struct PipelineTarget {
     std::string passName{};
     std::string pipelineName{};

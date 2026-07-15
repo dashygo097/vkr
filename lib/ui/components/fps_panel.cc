@@ -14,7 +14,8 @@ static auto mixColor(const ImVec4 &a, const ImVec4 &b, float t) -> ImVec4 {
                 a.z + (b.z - a.z) * t, a.w + (b.w - a.w) * t};
 }
 
-FPSPanel::FPSPanel(util::Timer &timer) : timer_(timer) {
+FPSPanel::FPSPanel(util::Timer &timer)
+    : UiComponent("Performance"), timer_(timer) {
   clear();
 
   if (timer_.maxFPS() > 0.0f) {
