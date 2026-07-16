@@ -6,8 +6,10 @@
 #include "vkr/resource/buffers/index_buffer.hh"
 #include "vkr/resource/buffers/vertex_buffer.hh"
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <tiny_obj_loader.h>
 #include <type_traits>
 #include <unordered_map>
@@ -171,11 +173,13 @@ class IMesh {
 public:
   virtual ~IMesh() = default;
 
-  [[nodiscard]] virtual auto vertexBufferBase() const -> IVertexBuffer * = 0;
-  [[nodiscard]] virtual auto indexBuffer() const -> IndexBuffer * = 0;
+  [[nodiscard]] virtual auto vertexBufferBase() const
+      -> std::optional<std::reference_wrapper<const IVertexBuffer>> = 0;
+  [[nodiscard]] virtual auto indexBuffer() const
+      -> std::optional<std::reference_wrapper<const IndexBuffer>> = 0;
 
   [[nodiscard]] auto isValid() const -> bool {
-    return vertexBufferBase() != nullptr && indexBuffer() != nullptr;
+    return vertexBufferBase().has_value() && indexBuffer().has_value();
   }
 };
 
@@ -243,8 +247,7 @@ public:
         glm::vec2 texCoord{};
 
         if (index.vertex_index >= 0) {
-          const size_t vertexOffset =
-              static_cast<size_t>(3 * index.vertex_index);
+          const auto vertexOffset = static_cast<size_t>(3 * index.vertex_index);
           if (attrib.vertices.size() > vertexOffset + 2) {
             pos = {attrib.vertices[vertexOffset + 0],
                    attrib.vertices[vertexOffset + 1],
@@ -259,8 +262,7 @@ public:
         }
 
         if (index.normal_index >= 0) {
-          const size_t normalOffset =
-              static_cast<size_t>(3 * index.normal_index);
+          const auto normalOffset = static_cast<size_t>(3 * index.normal_index);
           if (attrib.normals.size() > normalOffset + 2) {
             normal = {attrib.normals[normalOffset + 0],
                       attrib.normals[normalOffset + 1],
@@ -269,7 +271,7 @@ public:
         }
 
         if (index.texcoord_index >= 0) {
-          const size_t texCoordOffset =
+          const auto texCoordOffset =
               static_cast<size_t>(2 * index.texcoord_index);
           if (attrib.texcoords.size() > texCoordOffset + 1) {
             texCoord = {attrib.texcoords[texCoordOffset + 0],
@@ -308,16 +310,31 @@ public:
     index_buffer_->update(indices);
   }
 
-  [[nodiscard]] auto vertexBuffer() const -> VertexBuffer<VBOType> * {
-    return vertex_buffer_.get();
+  [[nodiscard]] auto vertexBuffer() const
+      -> std::optional<std::reference_wrapper<const VertexBuffer<VBOType>>> {
+    if (!vertex_buffer_) {
+      return std::nullopt;
+    }
+
+    return *vertex_buffer_;
   }
 
-  [[nodiscard]] auto vertexBufferBase() const -> IVertexBuffer * override {
-    return vertex_buffer_.get();
+  [[nodiscard]] auto vertexBufferBase() const
+      -> std::optional<std::reference_wrapper<const IVertexBuffer>> override {
+    if (!vertex_buffer_) {
+      return std::nullopt;
+    }
+
+    return *vertex_buffer_;
   }
 
-  [[nodiscard]] auto indexBuffer() const -> IndexBuffer * override {
-    return index_buffer_.get();
+  [[nodiscard]] auto indexBuffer() const
+      -> std::optional<std::reference_wrapper<const IndexBuffer>> override {
+    if (!index_buffer_) {
+      return std::nullopt;
+    }
+
+    return *index_buffer_;
   }
 
 private:
@@ -326,8 +343,8 @@ private:
   const core::CommandPool &command_pool_;
 
   // components
-  std::unique_ptr<VertexBuffer<VBOType>> vertex_buffer_{nullptr};
-  std::unique_ptr<IndexBuffer> index_buffer_{nullptr};
+  std::unique_ptr<VertexBuffer<VBOType>> vertex_buffer_;
+  std::unique_ptr<IndexBuffer> index_buffer_;
 
   void checkDataLoaded() {
     if (!vertex_buffer_ || !index_buffer_) {

@@ -210,13 +210,13 @@ void Renderer::drawGeometry() {
       continue;
     }
 
-    auto vertexBuffer = mesh->vertexBufferBase();
-    auto indexBuffer = mesh->indexBuffer();
+    const auto vertexBuffer = mesh->vertexBufferBase();
+    const auto indexBuffer = mesh->indexBuffer();
     if (!vertexBuffer || !indexBuffer) {
       continue;
     }
 
-    drawIndexed(*vertexBuffer, *indexBuffer);
+    drawIndexed(vertexBuffer->get(), indexBuffer->get());
   }
 }
 

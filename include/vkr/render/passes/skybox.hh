@@ -46,23 +46,24 @@ public:
   [[nodiscard]] auto target() -> resource::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
 
-  [[nodiscard]] auto pipeline() noexcept -> pipeline::GraphicsPipeline * {
-    return pipeline_.get();
-  }
-
-  [[nodiscard]] auto pipeline() const noexcept
-      -> const pipeline::GraphicsPipeline * {
-    return pipeline_.get();
-  }
-
   [[nodiscard]] auto editablePipeline() noexcept
-      -> pipeline::GraphicsPipeline * override {
-    return pipeline_.get();
+      -> std::optional<
+          std::reference_wrapper<pipeline::GraphicsPipeline>> override {
+    if (!pipeline_) {
+      return std::nullopt;
+    }
+
+    return *pipeline_;
   }
 
   [[nodiscard]] auto editablePipeline() const noexcept
-      -> const pipeline::GraphicsPipeline * override {
-    return pipeline_.get();
+      -> std::optional<
+          std::reference_wrapper<const pipeline::GraphicsPipeline>> override {
+    if (!pipeline_) {
+      return std::nullopt;
+    }
+
+    return *pipeline_;
   }
 
 private:

@@ -52,17 +52,16 @@ private:
 
     vkr::pipeline::GraphicsPipelineDesc normal{};
     normal.name = "teapot-local";
-    normal.vertexInput = vkr::resource::VertexNormalTexture3D::vertexInputDesc();
+    normal.vertexInput =
+        vkr::resource::VertexNormalTexture3D::vertexInputDesc();
 
     normal.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
             vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolve("shaders/teapot/teapot.vert")
-                    .string())),
+                assetSystem->resolve("shaders/teapot/teapot.vert").string())),
         vkr::pipeline::GraphicsShaderStageDesc::fragment(
             vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolve("shaders/teapot/teapot.frag")
-                    .string())),
+                assetSystem->resolve("shaders/teapot/teapot.frag").string())),
     };
 
     normal.depthStencil.depthTestEnable = VK_TRUE;
@@ -86,8 +85,7 @@ private:
                            VK_IMAGE_USAGE_SAMPLED_BIT,
                   .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                   .createSampler = true}};
-    postDesc.clearValues = {
-        VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
+    postDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
     vkr::pipeline::GraphicsPipelineDesc postPipeline{};
     postPipeline.name = "postprocess";
@@ -116,7 +114,21 @@ private:
         .write("scene.color");
     postProcessPass.update(postDesc);
 
-    addUiPass(vkr::render::FullscreenPassSource{postProcessPass});
+    vkr::render::UiPassDesc uiDesc{};
+    uiDesc.layoutMode = ctx.ui.layoutMode;
+    uiDesc.descriptorPool = {
+        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
+                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
+        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+    uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
+
+    auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
+        *renderer, *window, *instance, *surface, *device, *commandPool,
+        *swapchain, *resourceManager, *assetSystem, ctx.camera,
+        vkr::render::FullscreenPassSource{postProcessPass}, *renderGraph,
+        *timer, ctx.ui);
+    uiPass.setName("ui").read("scene.color").write("swapchain");
+    uiPass.update(uiDesc);
 
     auto &presentPass =
         renderGraph->addPass<vkr::render::PresentPass>(*renderer);
@@ -135,11 +147,10 @@ private:
     resourceManager->getUniformBuffer("default")->updateRaw(frameIndex, &ubo,
                                                             sizeof(ubo));
 
-    if (uiPass_ && uiPass_->viewport().height > 0 &&
-        uiPass_->layoutMode() == vkr::ui::LayoutMode::Standard) {
+    if (ctx.ui.viewport.height > 0 &&
+        ctx.ui.layoutMode == vkr::ui::LayoutMode::Standard) {
       ctx.camera.aspectRatio =
-          uiPass_->viewport().width /
-          static_cast<float>(uiPass_->viewport().height);
+          ctx.ui.viewport.width / static_cast<float>(ctx.ui.viewport.height);
     } else {
       ctx.camera.aspectRatio = ctx.window.ratio();
     }

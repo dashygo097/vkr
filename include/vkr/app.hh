@@ -64,7 +64,6 @@ public:
   // renderer
   std::unique_ptr<render::Renderer> renderer;
   std::unique_ptr<render::RenderGraph> renderGraph;
-  render::UiPass *uiPass_{nullptr};
 
   // components
   std::unique_ptr<scene::Camera> camera;
@@ -75,11 +74,7 @@ protected:
   virtual void onDraw() {}
   virtual void createResources() {}
   virtual void buildRenderGraph() = 0;
-  [[nodiscard]] virtual auto shouldClose() const noexcept -> bool {
-    return uiPass_ && uiPass_->shouldClose();
-  }
-
-  auto addUiPass(render::FullscreenPassSource source) -> render::UiPass &;
+  [[nodiscard]] virtual auto shouldClose() const -> bool;
 
   [[nodiscard]] virtual auto snapshotPath() const -> std::filesystem::path {
     return "snapshot.toml";

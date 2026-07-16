@@ -4,6 +4,8 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/render/graph.hh"
 #include "vkr/ui/components/ui_component.hh"
+#include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -19,7 +21,7 @@ private:
   struct PipelineTarget {
     std::string passName{};
     std::string pipelineName{};
-    pipeline::GraphicsPipeline *pipeline{nullptr};
+    std::reference_wrapper<pipeline::GraphicsPipeline> pipeline;
 
     [[nodiscard]] auto label() const -> std::string {
       return passName + " / " + pipelineName;
@@ -42,10 +44,11 @@ private:
 
   // pipeline control
   [[nodiscard]] auto collectTargets() -> std::vector<PipelineTarget>;
-  [[nodiscard]] auto activeTarget() -> PipelineTarget;
-  [[nodiscard]] auto activePipeline() noexcept -> pipeline::GraphicsPipeline *;
-  [[nodiscard]] auto hasPipeline() const noexcept -> bool;
-  [[nodiscard]] auto activeTargetKey() noexcept -> std::string;
+  [[nodiscard]] auto activeTarget() -> std::optional<PipelineTarget>;
+  [[nodiscard]] auto activePipeline()
+      -> std::optional<std::reference_wrapper<pipeline::GraphicsPipeline>>;
+  [[nodiscard]] auto hasPipeline() const -> bool;
+  [[nodiscard]] auto activeTargetKey() -> std::string;
 
   void reloadFromPipeline();
   void reloadFromPipelineIfChanged();
@@ -60,15 +63,19 @@ private:
   // shader desc helpers
   [[nodiscard]] static auto findShader(pipeline::GraphicsPipelineDesc &desc,
                                        VkShaderStageFlagBits stage)
-      -> pipeline::GraphicsShaderStageDesc *;
+      -> std::optional<
+          std::reference_wrapper<pipeline::GraphicsShaderStageDesc>>;
 
   [[nodiscard]] static auto
   findShader(const pipeline::GraphicsPipelineDesc &desc,
              VkShaderStageFlagBits stage)
-      -> const pipeline::GraphicsShaderStageDesc *;
+      -> std::optional<
+          std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>;
 
   [[nodiscard]] static auto
-  shaderSource(const pipeline::GraphicsShaderStageDesc *shader) -> std::string;
+  shaderSource(std::optional<std::reference_wrapper<
+                   const pipeline::GraphicsShaderStageDesc>> shader)
+      -> std::string;
 
   [[nodiscard]] static auto
   shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,

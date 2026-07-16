@@ -1,8 +1,41 @@
 #include "vkr/app.hh"
 #include <GLFW/glfw3.h>
+#include <functional>
+#include <optional>
+#include <typeinfo>
 #include <vulkan/vulkan_core.h>
 
 namespace vkr {
+
+namespace {
+
+auto findUiPass(render::RenderGraph &graph)
+    -> std::optional<std::reference_wrapper<render::UiPass>> {
+  for (auto pass : graph.passes()) {
+    auto &graphPass = pass.get();
+
+    if (typeid(graphPass) == typeid(render::UiPass)) {
+      return static_cast<render::UiPass &>(graphPass);
+    }
+  }
+
+  return std::nullopt;
+}
+
+auto findUiPass(const render::RenderGraph &graph)
+    -> std::optional<std::reference_wrapper<const render::UiPass>> {
+  for (auto pass : graph.passes()) {
+    const auto &graphPass = pass.get();
+
+    if (typeid(graphPass) == typeid(render::UiPass)) {
+      return static_cast<const render::UiPass &>(graphPass);
+    }
+  }
+
+  return std::nullopt;
+}
+
+} // namespace
 
 void VulkanApplication::initVulkan() {
   Logger::init();
@@ -115,25 +148,41 @@ void VulkanApplication::drawFrame() {
   }
 }
 
+auto VulkanApplication::shouldClose() const -> bool {
+  if (!renderGraph) {
+    return false;
+  }
+
+  const auto uiPass = findUiPass(*renderGraph);
+  return uiPass && uiPass->get().shouldClose();
+}
+
 void VulkanApplication::updateUiState() {
-  if (!uiPass_) {
+  const auto uiPass = findUiPass(*renderGraph);
+  if (!uiPass) {
     return;
   }
 
   if (inputTracer->wasKeyPressed(GLFW_KEY_TAB)) {
-    uiPass_->switchLayoutMode();
+    uiPass->get().switchLayoutMode();
   }
 
-  ctx.ui.layoutMode = uiPass_->layoutMode();
+  ctx.ui.layoutMode = uiPass->get().layoutMode();
+  ctx.ui.viewport = uiPass->get().viewport();
+  ctx.ui.viewportFocused = uiPass->get().viewportFocused();
+  ctx.ui.viewportHovered = uiPass->get().viewportHovered();
 
-  const bool lockCamera = uiPass_->layoutMode() == ui::LayoutMode::Standard &&
-                          !uiPass_->viewportFocused();
+  const bool lockCamera = ctx.ui.layoutMode == ui::LayoutMode::Standard &&
+                          !ctx.ui.viewportFocused;
   camera->lock(lockCamera);
 }
 
 void VulkanApplication::recreateSwapchain() {
-  if (uiPass_) {
-    ctx.ui.layoutMode = uiPass_->layoutMode();
+  if (renderGraph) {
+    const auto uiPass = findUiPass(*renderGraph);
+    if (uiPass) {
+      ctx.ui.layoutMode = uiPass->get().layoutMode();
+    }
   }
 
   device->waitIdle();
@@ -148,7 +197,6 @@ void VulkanApplication::recreateSwapchain() {
   ctx.camera.aspectRatio = ctx.window.ratio();
 
   renderGraph->destroy();
-  uiPass_ = nullptr;
 
   swapchain->recreate();
   syncObjects->recreate();
@@ -157,27 +205,6 @@ void VulkanApplication::recreateSwapchain() {
   buildRenderGraph();
   renderGraph->compile();
   renderGraph->create();
-}
-
-auto VulkanApplication::addUiPass(render::FullscreenPassSource source)
-    -> render::UiPass & {
-  render::UiPassDesc desc{};
-  desc.target = {};
-  desc.layoutMode = ctx.ui.layoutMode;
-  desc.descriptorPool = {
-      .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
-                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-      .maxSets = core::MAX_FRAMES_IN_FLIGHT};
-  desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
-
-  uiPass_ = &renderGraph->addPass<render::UiPass>(
-      *renderer, *window, *instance, *surface, *device, *commandPool,
-      *swapchain, *resourceManager, *assetSystem, ctx.camera, source,
-      *renderGraph, *timer, ctx.ui);
-  uiPass_->setName("ui").read("scene.color").write("swapchain");
-  uiPass_->update(desc);
-
-  return *uiPass_;
 }
 
 } // namespace vkr

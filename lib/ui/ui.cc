@@ -96,11 +96,11 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   });
 
   viewport_panel_ = std::make_unique<ViewportPanel>(
-      viewport_, viewport_focused_, viewport_hovered_);
+      desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
   render_graph_panel_ = std::make_unique<RenderGraphPanel>(render_graph_);
   assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
   camera_panel_ = std::make_unique<CameraPanel>(
-      camera_, viewport_, viewport_focused_, viewport_hovered_);
+      camera_, desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
   mesh_editor_panel_ = std::make_unique<MeshEditorPanel>(resource_manager_);
 
   VKR_UI_INFO("Initializing FPS Panel...");
@@ -120,13 +120,11 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   resource_tree_ = std::make_unique<ResourceTree>(resource_manager_);
   VKR_UI_INFO("Resource Tree initialized successfully.");
 
-  dock_components_ = {
-      viewport_panel_.get(),      resource_tree_.get(),
-      render_graph_panel_.get(),  assets_panel_.get(),
-      camera_panel_.get(),        mesh_editor_panel_.get(),
-      shader_editor_.get(),       fps_panel_.get(),
-      logging_panel_.get(),
-  };
+  dock_components_ = {*viewport_panel_,     *resource_tree_,
+                      *render_graph_panel_, *assets_panel_,
+                      *camera_panel_,       *mesh_editor_panel_,
+                      *shader_editor_,      *fps_panel_,
+                      *logging_panel_};
 
   VKR_UI_INFO("ImGui UI initialized successfully.");
 }
@@ -286,10 +284,8 @@ void UI::setupDockingLayout() {
 }
 
 void UI::resetDockingLayout() noexcept {
-  for (auto *component : dock_components_) {
-    if (component) {
-      component->resetOpen();
-    }
+  for (auto component : dock_components_) {
+    component.get().resetOpen();
   }
 
   dock_layout_dirty_ = true;
@@ -326,14 +322,11 @@ void UI::renderMainMenu() {
 
     ImGui::SeparatorText("Panels");
 
-    for (auto *component : dock_components_) {
-      if (!component) {
-        continue;
-      }
+    for (auto component : dock_components_) {
+      auto &panel = component.get();
 
-      if (ImGui::MenuItem(component->name().c_str(), nullptr,
-                          component->open())) {
-        component->openRef() = !component->open();
+      if (ImGui::MenuItem(panel.name().c_str(), nullptr, panel.open())) {
+        panel.openRef() = !panel.open();
       }
     }
 
@@ -362,9 +355,10 @@ void UI::renderWorkspacePanels() {
     viewport_panel_->setTexture(texture);
   }
 
-  for (auto *component : dock_components_) {
-    if (component && component->open()) {
-      component->renderWindow();
+  for (auto component : dock_components_) {
+    auto &panel = component.get();
+    if (panel.open()) {
+      panel.renderWindow();
     }
   }
 }

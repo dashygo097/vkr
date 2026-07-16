@@ -26,6 +26,7 @@
 #include "vkr/ui/theme.hh"
 #include "vkr/util/asset.hh"
 #include "vkr/util/timer.hh"
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -39,6 +40,9 @@ enum LayoutMode {
 struct UiDesc {
   LayoutMode layoutMode{LayoutMode::FullScreen};
   ThemeDesc theme{};
+  VkViewport viewport{};
+  bool viewportFocused{false};
+  bool viewportHovered{false};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     switch (layoutMode) {
@@ -98,22 +102,24 @@ public:
     return should_close_;
   }
 
-  void viewport(const VkViewport &viewport) noexcept { viewport_ = viewport; }
+  void viewport(const VkViewport &viewport) noexcept {
+    desc_.viewport = viewport;
+  }
 
   [[nodiscard]] auto layoutMode() const noexcept -> LayoutMode {
     return layout_mode_;
   }
 
   [[nodiscard]] auto viewport() const noexcept -> const VkViewport & {
-    return viewport_;
+    return desc_.viewport;
   }
 
   [[nodiscard]] auto viewportFocused() const noexcept -> bool {
-    return viewport_focused_;
+    return desc_.viewportFocused;
   }
 
   [[nodiscard]] auto viewportHovered() const noexcept -> bool {
-    return viewport_hovered_;
+    return desc_.viewportHovered;
   }
 
 private:
@@ -148,12 +154,9 @@ private:
 
   // state
   LayoutMode layout_mode_{LayoutMode::FullScreen};
-  VkViewport viewport_{};
-  bool viewport_focused_{false};
-  bool viewport_hovered_{false};
   bool should_close_{false};
   bool dock_layout_dirty_{true};
-  std::vector<UiComponent *> dock_components_{};
+  std::vector<std::reference_wrapper<UiComponent>> dock_components_{};
 
   // helpers
   void renderFullScreen();

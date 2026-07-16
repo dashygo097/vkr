@@ -575,35 +575,33 @@ ShaderEditor::ShaderEditor(render::RenderGraph &graph)
 auto ShaderEditor::collectTargets() -> std::vector<PipelineTarget> {
   std::vector<PipelineTarget> targets{};
 
-  for (auto *pass : graph_.passes()) {
-    if (pass == nullptr) {
+  for (auto passRef : graph_.passes()) {
+    auto &pass = passRef.get();
+
+    auto pipeline = pass.editablePipeline();
+    if (!pipeline) {
       continue;
     }
 
-    auto *pipeline = pass->editablePipeline();
-    if (pipeline == nullptr) {
-      continue;
-    }
-
-    const auto &pipelineDesc = pipeline->desc();
+    const auto &pipelineDesc = pipeline->get().desc();
     targets.push_back(PipelineTarget{
-        .passName = pass->name(),
+        .passName = pass.name(),
         .pipelineName = pipelineDesc.name.empty()
                             ? std::string{"<unnamed pipeline>"}
                             : pipelineDesc.name,
-        .pipeline = pipeline,
+        .pipeline = pipeline->get(),
     });
   }
 
   return targets;
 }
 
-auto ShaderEditor::activeTarget() -> PipelineTarget {
+auto ShaderEditor::activeTarget() -> std::optional<PipelineTarget> {
   auto targets = collectTargets();
 
   if (targets.empty()) {
     selected_pass_name_.clear();
-    return {};
+    return std::nullopt;
   }
 
   for (const auto &target : targets) {
@@ -616,13 +614,19 @@ auto ShaderEditor::activeTarget() -> PipelineTarget {
   return targets.front();
 }
 
-auto ShaderEditor::activePipeline() noexcept -> pipeline::GraphicsPipeline * {
-  return activeTarget().pipeline;
+auto ShaderEditor::activePipeline()
+    -> std::optional<std::reference_wrapper<pipeline::GraphicsPipeline>> {
+  const auto target = activeTarget();
+  if (!target) {
+    return std::nullopt;
+  }
+
+  return target->pipeline;
 }
 
-auto ShaderEditor::hasPipeline() const noexcept -> bool {
-  for (auto *pass : graph_.passes()) {
-    if (pass != nullptr && pass->editablePipeline() != nullptr) {
+auto ShaderEditor::hasPipeline() const -> bool {
+  for (auto pass : graph_.passes()) {
+    if (pass.get().editablePipeline()) {
       return true;
     }
   }
@@ -630,13 +634,13 @@ auto ShaderEditor::hasPipeline() const noexcept -> bool {
   return false;
 }
 
-auto ShaderEditor::activeTargetKey() noexcept -> std::string {
+auto ShaderEditor::activeTargetKey() -> std::string {
   const auto target = activeTarget();
-  if (target.pipeline == nullptr) {
+  if (!target) {
     return {};
   }
 
-  return target.label();
+  return target->label();
 }
 
 auto ShaderEditor::currentEditor() noexcept -> TextEditor & {
@@ -654,26 +658,28 @@ void ShaderEditor::setStatus(std::string msg, bool isError) {
 
 auto ShaderEditor::findShader(pipeline::GraphicsPipelineDesc &desc,
                               VkShaderStageFlagBits stage)
-    -> pipeline::GraphicsShaderStageDesc * {
+    -> std::optional<
+        std::reference_wrapper<pipeline::GraphicsShaderStageDesc>> {
   for (auto &shader : desc.shaders) {
     if (shader.stage == stage) {
-      return &shader;
+      return shader;
     }
   }
 
-  return nullptr;
+  return std::nullopt;
 }
 
 auto ShaderEditor::findShader(const pipeline::GraphicsPipelineDesc &desc,
                               VkShaderStageFlagBits stage)
-    -> const pipeline::GraphicsShaderStageDesc * {
+    -> std::optional<
+        std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>> {
   for (const auto &shader : desc.shaders) {
     if (shader.stage == stage) {
-      return &shader;
+      return shader;
     }
   }
 
-  return nullptr;
+  return std::nullopt;
 }
 
 auto ShaderEditor::readTextFile(const std::string &path) -> std::string {
@@ -691,13 +697,15 @@ auto ShaderEditor::readTextFile(const std::string &path) -> std::string {
   return ss.str();
 }
 
-auto ShaderEditor::shaderSource(const pipeline::GraphicsShaderStageDesc *shader)
+auto ShaderEditor::shaderSource(
+    std::optional<
+        std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>> shader)
     -> std::string {
-  if (shader == nullptr) {
+  if (!shader) {
     return {};
   }
 
-  const auto &module = shader->module;
+  const auto &module = shader->get().module;
 
   if (module.sourceKind != resource::ShaderModuleSourceKind::Glsl) {
     return {};
@@ -742,9 +750,9 @@ auto ShaderEditor::makeShaderModule(VkShaderStageFlagBits stage,
 }
 
 void ShaderEditor::reloadFromPipelineIfChanged() {
-  auto *pipeline = activePipeline();
+  auto pipeline = activePipeline();
 
-  if (pipeline == nullptr) {
+  if (!pipeline) {
     if (!loaded_target_key_.empty()) {
       reloadFromPipeline();
     }
@@ -760,9 +768,9 @@ void ShaderEditor::reloadFromPipelineIfChanged() {
 }
 
 void ShaderEditor::reloadFromPipeline() {
-  auto *pipeline = activePipeline();
+  auto pipeline = activePipeline();
 
-  if (pipeline == nullptr) {
+  if (!pipeline) {
     selected_pass_name_.clear();
     loaded_target_key_.clear();
     vert_editor_.SetText("// No graphics pipeline available.\n");
@@ -771,16 +779,16 @@ void ShaderEditor::reloadFromPipeline() {
     return;
   }
 
-  const auto &desc = pipeline->desc();
+  const auto &desc = pipeline->get().desc();
   loaded_target_key_ = activeTargetKey();
 
-  const auto *vert = findShader(desc, VK_SHADER_STAGE_VERTEX_BIT);
-  const auto *frag = findShader(desc, VK_SHADER_STAGE_FRAGMENT_BIT);
+  const auto vert = findShader(desc, VK_SHADER_STAGE_VERTEX_BIT);
+  const auto frag = findShader(desc, VK_SHADER_STAGE_FRAGMENT_BIT);
 
   const std::string vertSource = shaderSource(vert);
   const std::string fragSource = shaderSource(frag);
 
-  if (vert == nullptr) {
+  if (!vert) {
     vert_editor_.SetText("// Selected pipeline has no vertex shader stage.\n");
   } else if (vertSource.empty()) {
     vert_editor_.SetText("// Vertex shader is not GLSL source-backed.\n");
@@ -788,7 +796,7 @@ void ShaderEditor::reloadFromPipeline() {
     vert_editor_.SetText(vertSource);
   }
 
-  if (frag == nullptr) {
+  if (!frag) {
     frag_editor_.SetText(
         "// Selected pipeline has no fragment shader stage.\n");
   } else if (fragSource.empty()) {
@@ -801,14 +809,14 @@ void ShaderEditor::reloadFromPipeline() {
 }
 
 void ShaderEditor::applyToPipeline() {
-  auto *pipeline = activePipeline();
+  auto pipeline = activePipeline();
 
-  if (pipeline == nullptr) {
+  if (!pipeline) {
     setStatus("No graphics pipeline available.", true);
     return;
   }
 
-  const auto oldDesc = pipeline->desc();
+  const auto oldDesc = pipeline->get().desc();
 
   const std::string oldVertSource =
       shaderSource(findShader(oldDesc, VK_SHADER_STAGE_VERTEX_BIT));
@@ -817,29 +825,33 @@ void ShaderEditor::applyToPipeline() {
 
   auto nextDesc = oldDesc;
 
-  auto *vert = findShader(nextDesc, VK_SHADER_STAGE_VERTEX_BIT);
-  auto *frag = findShader(nextDesc, VK_SHADER_STAGE_FRAGMENT_BIT);
+  auto vert = findShader(nextDesc, VK_SHADER_STAGE_VERTEX_BIT);
+  auto frag = findShader(nextDesc, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-  if (vert == nullptr) {
+  if (!vert) {
     setStatus("Selected pipeline has no vertex shader stage.", true);
     return;
   }
 
-  if (frag == nullptr) {
+  if (!frag) {
     setStatus("Selected pipeline has no fragment shader stage.", true);
     return;
   }
 
-  vert->module = makeShaderModule(
-      VK_SHADER_STAGE_VERTEX_BIT, vert_editor_.GetText(),
-      shaderLabel(*vert, nextDesc.name + ".vert"), vert->entryPoint);
+  auto &vertShader = vert->get();
+  auto &fragShader = frag->get();
 
-  frag->module = makeShaderModule(
+  vertShader.module = makeShaderModule(
+      VK_SHADER_STAGE_VERTEX_BIT, vert_editor_.GetText(),
+      shaderLabel(vertShader, nextDesc.name + ".vert"), vertShader.entryPoint);
+
+  fragShader.module = makeShaderModule(
       VK_SHADER_STAGE_FRAGMENT_BIT, frag_editor_.GetText(),
-      shaderLabel(*frag, nextDesc.name + ".frag"), frag->entryPoint);
+      shaderLabel(fragShader, nextDesc.name + ".frag"),
+      fragShader.entryPoint);
 
   try {
-    if (pipeline->update(nextDesc)) {
+    if (pipeline->get().update(nextDesc)) {
       loaded_target_key_ = activeTargetKey();
       setStatus("Compiled and applied: " + loaded_target_key_, false);
       return;
@@ -854,7 +866,7 @@ void ShaderEditor::applyToPipeline() {
   }
 
   try {
-    pipeline->update(oldDesc);
+    pipeline->get().update(oldDesc);
   } catch (...) {
   }
 
@@ -877,8 +889,9 @@ void ShaderEditor::applyToPipeline() {
 void ShaderEditor::renderTargetSelector(
     const std::vector<PipelineTarget> &targets) {
   const bool hasTargets = !targets.empty();
+  const auto active = activeTarget();
   const std::string selectedLabel =
-      hasTargets ? activeTarget().label() : std::string{"No editable passes"};
+      active ? active->label() : std::string{"No editable passes"};
 
   if (!hasTargets) {
     ImGui::BeginDisabled();

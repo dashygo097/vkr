@@ -11,8 +11,10 @@
 #include "vkr/render/renderer.hh"
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/targets/offscreen.hh"
+#include <functional>
 #include <memory>
 #include <utility>
+#include <variant>
 
 namespace vkr::render {
 
@@ -21,24 +23,19 @@ class SkyboxPass;
 class FullscreenPass;
 
 struct FullscreenPassSource {
-  enum class Type {
-    Raster,
-    Skybox,
-    Fullscreen,
-  };
+  using Source = std::variant<std::reference_wrapper<RasterPass>,
+                              std::reference_wrapper<SkyboxPass>,
+                              std::reference_wrapper<FullscreenPass>>;
 
-  Type type{Type::Raster};
-  RasterPass *raster{nullptr};
-  SkyboxPass *skybox{nullptr};
-  FullscreenPass *fullscreen{nullptr};
-
-  FullscreenPassSource() = default;
-  FullscreenPassSource(RasterPass &source);
-  FullscreenPassSource(SkyboxPass &source);
-  FullscreenPassSource(FullscreenPass &source);
+  explicit FullscreenPassSource(RasterPass &source);
+  explicit FullscreenPassSource(SkyboxPass &source);
+  explicit FullscreenPassSource(FullscreenPass &source);
 
   [[nodiscard]] auto target() -> resource::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
+
+private:
+  Source source_;
 };
 
 struct FullscreenPassInputDesc {
@@ -76,23 +73,22 @@ public:
   [[nodiscard]] auto target() -> resource::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
 
-  [[nodiscard]] auto pipeline() noexcept -> pipeline::GraphicsPipeline * {
-    return pipeline_.get();
+  [[nodiscard]] auto editablePipeline() noexcept -> std::optional<
+      std::reference_wrapper<pipeline::GraphicsPipeline>> override {
+    if (!pipeline_) {
+      return std::nullopt;
+    }
+
+    return *pipeline_;
   }
 
-  [[nodiscard]] auto pipeline() const noexcept
-      -> const pipeline::GraphicsPipeline * {
-    return pipeline_.get();
-  }
+  [[nodiscard]] auto editablePipeline() const noexcept -> std::optional<
+      std::reference_wrapper<const pipeline::GraphicsPipeline>> override {
+    if (!pipeline_) {
+      return std::nullopt;
+    }
 
-  [[nodiscard]] auto editablePipeline() noexcept
-      -> pipeline::GraphicsPipeline * override {
-    return pipeline_.get();
-  }
-
-  [[nodiscard]] auto editablePipeline() const noexcept
-      -> const pipeline::GraphicsPipeline * override {
-    return pipeline_.get();
+    return *pipeline_;
   }
 
 private:
@@ -118,11 +114,11 @@ private:
 
   [[nodiscard]] auto resolvedInputs() const
       -> std::vector<FullscreenPassInputDesc>;
-  [[nodiscard]] auto descriptorPoolDesc(
-      const std::vector<FullscreenPassInputDesc> &inputs) const
+  [[nodiscard]] auto
+  descriptorPoolDesc(const std::vector<FullscreenPassInputDesc> &inputs) const
       -> pipeline::DescriptorPoolDesc;
-  [[nodiscard]] auto createDescriptorWrites(
-      const std::vector<FullscreenPassInputDesc> &inputs)
+  [[nodiscard]] auto
+  createDescriptorWrites(const std::vector<FullscreenPassInputDesc> &inputs)
       -> std::vector<pipeline::DescriptorSetWriteDesc>;
 };
 

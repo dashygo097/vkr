@@ -124,13 +124,18 @@ void ResourceTree::renderSelectedResource() {
       return;
     }
 
-    const auto *vertexBuffer = mesh->vertexBufferBase();
-    const auto *indexBuffer = mesh->indexBuffer();
-    const auto vertexInput = vertexBuffer->vertexInputDesc();
+    const auto vertexBuffer = mesh->vertexBufferBase();
+    const auto indexBuffer = mesh->indexBuffer();
+    if (!vertexBuffer || !indexBuffer) {
+      ImGui::TextDisabled("State: unavailable");
+      return;
+    }
+
+    const auto vertexInput = vertexBuffer->get().vertexInputDesc();
 
     ImGui::Text("State: valid");
-    ImGui::Text("Vertices: %zu", vertexBuffer->vertexCount());
-    ImGui::Text("Indices: %zu", indexBuffer->indices().size());
+    ImGui::Text("Vertices: %zu", vertexBuffer->get().vertexCount());
+    ImGui::Text("Indices: %zu", indexBuffer->get().indices().size());
     ImGui::Text("Vertex bindings: %zu", vertexInput.bindings.size());
     ImGui::Text("Vertex attributes: %zu", vertexInput.attributes.size());
     return;

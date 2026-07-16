@@ -56,8 +56,8 @@ void SkyboxPass::record() {
                        desc_.meshName);
     }
 
-    auto *vertexBuffer = mesh->vertexBufferBase();
-    auto *indexBuffer = mesh->indexBuffer();
+    const auto vertexBuffer = mesh->vertexBufferBase();
+    const auto indexBuffer = mesh->indexBuffer();
     if (!vertexBuffer || !indexBuffer) {
       VKR_RENDER_ERROR("SkyboxPass '{}' mesh '{}' has invalid buffers", name(),
                        desc_.meshName);
@@ -67,7 +67,7 @@ void SkyboxPass::record() {
     const auto &sets = descriptor_sets_ ? descriptor_sets_->sets() : emptySets;
 
     renderer_.bindPipeline(pipeline_->pipeline(), pipeline_->layout(), sets);
-    renderer_.drawIndexed(*vertexBuffer, *indexBuffer);
+    renderer_.drawIndexed(vertexBuffer->get(), indexBuffer->get());
   }
 
   renderer_.endPass();

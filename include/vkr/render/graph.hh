@@ -1,10 +1,13 @@
 #pragma once
 
 #include "vkr/render/pass.hh"
+#include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <typeinfo>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -40,19 +43,33 @@ public:
   void record();
   void present();
 
-  [[nodiscard]] auto passes() -> std::vector<RenderGraphPass *>;
-  [[nodiscard]] auto passes() const -> std::vector<const RenderGraphPass *>;
+  [[nodiscard]] auto passes()
+      -> std::vector<std::reference_wrapper<RenderGraphPass>>;
+  [[nodiscard]] auto passes() const
+      -> std::vector<std::reference_wrapper<const RenderGraphPass>>;
 
   template <typename PassT>
-  [[nodiscard]] auto getPass(std::string_view name) -> PassT * {
+  [[nodiscard]] auto getPass(std::string_view name)
+      -> std::optional<std::reference_wrapper<PassT>> {
     const auto index = passIndex(name);
-    return dynamic_cast<PassT *>(passes_[index].get());
+
+    try {
+      return dynamic_cast<PassT &>(*passes_[index]);
+    } catch (const std::bad_cast &) {
+      return std::nullopt;
+    }
   }
 
   template <typename PassT>
-  [[nodiscard]] auto getPass(std::string_view name) const -> const PassT * {
+  [[nodiscard]] auto getPass(std::string_view name) const
+      -> std::optional<std::reference_wrapper<const PassT>> {
     const auto index = passIndex(name);
-    return dynamic_cast<const PassT *>(passes_[index].get());
+
+    try {
+      return dynamic_cast<const PassT &>(*passes_[index]);
+    } catch (const std::bad_cast &) {
+      return std::nullopt;
+    }
   }
 
 private:
@@ -64,7 +81,7 @@ private:
       manual_dependencies_{};
 
   std::vector<std::vector<size_t>> compiled_dependencies_{};
-  std::vector<RenderGraphPass *> ordered_passes_{};
+  std::vector<size_t> ordered_passes_{};
 
   // states
   bool dirty_{true};

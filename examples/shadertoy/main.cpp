@@ -18,14 +18,13 @@ private:
   [[nodiscard]] auto viewportMousePosition() const -> glm::vec2 {
     const auto cursor = inputTracer->cursorPosition();
 
-    if (!uiPass_ ||
-        uiPass_->layoutMode() == vkr::ui::LayoutMode::FullScreen) {
+    if (ctx.ui.layoutMode == vkr::ui::LayoutMode::FullScreen) {
       return {static_cast<float>(cursor.x),
               static_cast<float>(ctx.window.height - cursor.y)};
     }
 
-    const auto viewport = uiPass_->viewport();
-    if (!uiPass_->viewportFocused() || viewport.width <= 0.0f ||
+    const auto viewport = ctx.ui.viewport;
+    if (!ctx.ui.viewportFocused || viewport.width <= 0.0f ||
         viewport.height <= 0.0f) {
       return {mouseState.x, mouseState.y};
     }
@@ -42,13 +41,12 @@ private:
   }
 
   [[nodiscard]] auto isViewportMouseActive() const -> bool {
-    if (!uiPass_ ||
-        uiPass_->layoutMode() == vkr::ui::LayoutMode::FullScreen) {
+    if (ctx.ui.layoutMode == vkr::ui::LayoutMode::FullScreen) {
       return true;
     }
 
-    const auto viewport = uiPass_->viewport();
-    return uiPass_->viewportFocused() && viewport.width > 0.0f &&
+    const auto viewport = ctx.ui.viewport;
+    return ctx.ui.viewportFocused && viewport.width > 0.0f &&
            viewport.height > 0.0f;
   }
 
@@ -111,7 +109,21 @@ private:
     rasterPass.setName("raster").write("scene.color");
     rasterPass.update(desc);
 
-    addUiPass(vkr::render::FullscreenPassSource{rasterPass});
+    vkr::render::UiPassDesc uiDesc{};
+    uiDesc.layoutMode = ctx.ui.layoutMode;
+    uiDesc.descriptorPool = {
+        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
+                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
+        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+    uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
+
+    auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
+        *renderer, *window, *instance, *surface, *device, *commandPool,
+        *swapchain, *resourceManager, *assetSystem, ctx.camera,
+        vkr::render::FullscreenPassSource{rasterPass}, *renderGraph, *timer,
+        ctx.ui);
+    uiPass.setName("ui").read("scene.color").write("swapchain");
+    uiPass.update(uiDesc);
 
     auto &presentPass =
         renderGraph->addPass<vkr::render::PresentPass>(*renderer);

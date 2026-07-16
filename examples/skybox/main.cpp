@@ -40,12 +40,12 @@ void writePpmFace(const std::filesystem::path &path, Rgb base, Rgb accent) {
       const float v = static_cast<float>(y) / static_cast<float>(Size - 1);
       const float t = 0.25f + 0.75f * (0.65f * u + 0.35f * v);
 
-      const uint8_t pixel[3] = {
+      const std::array<uint8_t, 3> pixel = {
           mixByte(base.r, accent.r, t),
           mixByte(base.g, accent.g, t),
           mixByte(base.b, accent.b, t),
       };
-      out.write(reinterpret_cast<const char *>(pixel), sizeof(pixel));
+      out.write(reinterpret_cast<const char *>(pixel.data()), sizeof(pixel));
     }
   }
 }
@@ -126,7 +126,21 @@ private:
     skyboxPass.setName("skybox").write("scene.color");
     skyboxPass.update(skyboxDesc);
 
-    addUiPass(vkr::render::FullscreenPassSource{skyboxPass});
+    vkr::render::UiPassDesc uiDesc{};
+    uiDesc.layoutMode = ctx.ui.layoutMode;
+    uiDesc.descriptorPool = {
+        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
+                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
+        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+    uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
+
+    auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
+        *renderer, *window, *instance, *surface, *device, *commandPool,
+        *swapchain, *resourceManager, *assetSystem, ctx.camera,
+        vkr::render::FullscreenPassSource{skyboxPass}, *renderGraph, *timer,
+        ctx.ui);
+    uiPass.setName("ui").read("scene.color").write("swapchain");
+    uiPass.update(uiDesc);
 
     auto &presentPass =
         renderGraph->addPass<vkr::render::PresentPass>(*renderer);
@@ -144,11 +158,10 @@ private:
     resourceManager->getUniformBuffer("skybox")->updateRaw(frameIndex, &ubo,
                                                            sizeof(ubo));
 
-    if (uiPass_ && uiPass_->viewport().height > 0 &&
-        uiPass_->layoutMode() == vkr::ui::LayoutMode::Standard) {
+    if (ctx.ui.viewport.height > 0 &&
+        ctx.ui.layoutMode == vkr::ui::LayoutMode::Standard) {
       ctx.camera.aspectRatio =
-          uiPass_->viewport().width /
-          static_cast<float>(uiPass_->viewport().height);
+          ctx.ui.viewport.width / static_cast<float>(ctx.ui.viewport.height);
     } else {
       ctx.camera.aspectRatio = ctx.window.ratio();
     }

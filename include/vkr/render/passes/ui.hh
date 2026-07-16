@@ -50,9 +50,6 @@ public:
   void update(const UiPassDesc &desc);
   void record() override;
 
-  [[nodiscard]] auto ui() noexcept -> ui::UI * { return ui_.get(); }
-  [[nodiscard]] auto ui() const noexcept -> const ui::UI * { return ui_.get(); }
-
   [[nodiscard]] auto shouldClose() const noexcept -> bool {
     return ui_ && ui_->shouldClose();
   }

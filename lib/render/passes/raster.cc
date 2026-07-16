@@ -276,13 +276,13 @@ void RasterPass::syncSelectedMeshGrid() {
     return;
   }
 
-  auto indexBuffer = mesh->indexBuffer();
+  const auto indexBuffer = mesh->indexBuffer();
   if (!indexBuffer) {
     mesh_grid_name_.clear();
     return;
   }
 
-  const auto indices = indexBuffer->indices();
+  const auto indices = indexBuffer->get().indices();
   std::vector<uint16_t> lineIndices;
   lineIndices.reserve(indices.size() * 2);
 
@@ -331,14 +331,14 @@ void RasterPass::recordSelectedMeshGrid(
     return;
   }
 
-  auto vertexBuffer = mesh->vertexBufferBase();
+  const auto vertexBuffer = mesh->vertexBufferBase();
   if (!vertexBuffer) {
     return;
   }
 
   renderer_.bindPipeline(mesh_grid_pipeline_->pipeline(),
                          mesh_grid_pipeline_->layout(), sets);
-  renderer_.drawIndexed(*vertexBuffer, *mesh_grid_index_buffer_);
+  renderer_.drawIndexed(vertexBuffer->get(), *mesh_grid_index_buffer_);
 }
 
 } // namespace vkr::render

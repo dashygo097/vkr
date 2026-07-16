@@ -4,10 +4,21 @@
 #include "vkr/resource/gpu/buffer_utils.hh"
 #include <array>
 #include <cstring>
+#include <memory>
 #include <stb_image.h>
 #include <vector>
 
 namespace vkr::resource {
+
+namespace {
+
+struct StbiImageDeleter {
+  void operator()(stbi_uc *pixels) const noexcept { stbi_image_free(pixels); }
+};
+
+using StbiImage = std::unique_ptr<stbi_uc, StbiImageDeleter>;
+
+} // namespace
 
 Image::Image(const core::Device &device, const core::CommandPool &commandPool)
     : device_(device), command_pool_(commandPool) {}
@@ -89,10 +100,10 @@ void Image::createFromFile() {
   int loadedChannels{0};
 
   const int desiredChannels = desc_.forceRgba ? STBI_rgb_alpha : 0;
-  stbi_uc *pixels = stbi_load(desc_.filePath.c_str(), &loadedWidth,
-                              &loadedHeight, &loadedChannels, desiredChannels);
+  StbiImage pixels{stbi_load(desc_.filePath.c_str(), &loadedWidth,
+                             &loadedHeight, &loadedChannels, desiredChannels)};
 
-  if (pixels == nullptr) {
+  if (!pixels) {
     VKR_RES_ERROR("Failed to load texture image from file: {}", desc_.filePath);
   }
 
@@ -101,7 +112,6 @@ void Image::createFromFile() {
   channels_ = desc_.forceRgba ? 4U : static_cast<uint32_t>(loadedChannels);
 
   if (width_ == 0 || height_ == 0 || channels_ == 0) {
-    stbi_image_free(pixels);
     VKR_RES_ERROR("Loaded image '{}' has invalid size/channels",
                   desc_.filePath);
   }
@@ -122,16 +132,13 @@ void Image::createFromFile() {
   void *data{nullptr};
   if (vkMapMemory(device_.device(), stagingBufferMemory, 0, imageSize, 0,
                   &data) != VK_SUCCESS) {
-    stbi_image_free(pixels);
     vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);
     vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
     VKR_RES_ERROR("Failed to map image staging buffer memory");
   }
 
-  std::memcpy(data, pixels, static_cast<size_t>(imageSize));
+  std::memcpy(data, pixels.get(), static_cast<size_t>(imageSize));
   vkUnmapMemory(device_.device(), stagingBufferMemory);
-
-  stbi_image_free(pixels);
 
   const VkImageUsageFlags usage = desc_.usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   createImageObject(width_, height_, desc_.format, desc_.tiling, usage,
@@ -167,7 +174,7 @@ void Image::createCubemapFromFiles() {
   }
 
   constexpr uint32_t FaceCount = 6;
-  std::array<stbi_uc *, FaceCount> facePixels{};
+  std::array<StbiImage, FaceCount> facePixels{};
 
   int loadedWidth{0};
   int loadedHeight{0};
@@ -179,30 +186,21 @@ void Image::createCubemapFromFiles() {
     int faceHeight{0};
     int faceChannels{0};
 
-    facePixels[face] =
-        stbi_load(desc_.cubeFacePaths[face].c_str(), &faceWidth, &faceHeight,
-                  &faceChannels, desiredChannels);
+    facePixels[face].reset(stbi_load(desc_.cubeFacePaths[face].c_str(),
+                                     &faceWidth, &faceHeight, &faceChannels,
+                                     desiredChannels));
 
-    if (facePixels[face] == nullptr) {
-      for (auto *pixels : facePixels) {
-        stbi_image_free(pixels);
-      }
+    if (!facePixels[face]) {
       VKR_RES_ERROR("Failed to load cubemap face {} from file: {}", face,
                     desc_.cubeFacePaths[face]);
     }
 
     if (faceWidth <= 0 || faceHeight <= 0 || faceChannels <= 0) {
-      for (auto *pixels : facePixels) {
-        stbi_image_free(pixels);
-      }
       VKR_RES_ERROR("Loaded cubemap face '{}' has invalid size/channels",
                     desc_.cubeFacePaths[face]);
     }
 
     if (faceWidth != faceHeight) {
-      for (auto *pixels : facePixels) {
-        stbi_image_free(pixels);
-      }
       VKR_RES_ERROR("Cubemap face '{}' must be square, got {}x{}",
                     desc_.cubeFacePaths[face], faceWidth, faceHeight);
     }
@@ -219,9 +217,6 @@ void Image::createCubemapFromFiles() {
 
     if (faceWidth != loadedWidth || faceHeight != loadedHeight ||
         effectiveChannels != loadedChannels) {
-      for (auto *pixels : facePixels) {
-        stbi_image_free(pixels);
-      }
       VKR_RES_ERROR("Cubemap face '{}' size/channels mismatch",
                     desc_.cubeFacePaths[face]);
     }
@@ -248,9 +243,6 @@ void Image::createCubemapFromFiles() {
   void *data{nullptr};
   if (vkMapMemory(device_.device(), stagingBufferMemory, 0, imageSize, 0,
                   &data) != VK_SUCCESS) {
-    for (auto *pixels : facePixels) {
-      stbi_image_free(pixels);
-    }
     vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);
     vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
     VKR_RES_ERROR("Failed to map cubemap staging buffer memory");
@@ -258,14 +250,10 @@ void Image::createCubemapFromFiles() {
 
   auto *dst = static_cast<std::byte *>(data);
   for (uint32_t face = 0; face < FaceCount; ++face) {
-    std::memcpy(dst + faceSize * face, facePixels[face],
+    std::memcpy(dst + faceSize * face, facePixels[face].get(),
                 static_cast<size_t>(faceSize));
   }
   vkUnmapMemory(device_.device(), stagingBufferMemory);
-
-  for (auto *pixels : facePixels) {
-    stbi_image_free(pixels);
-  }
 
   const VkImageUsageFlags usage = desc_.usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   createImageObject(width_, height_, desc_.format, desc_.tiling, usage,
@@ -275,8 +263,7 @@ void Image::createCubemapFromFiles() {
   transitionImageLayout(vk_image_, desc_.format, desc_.aspectMask,
                         VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  copyBufferToImageLayers(stagingBuffer, vk_image_, width_, height_,
-                          FaceCount);
+  copyBufferToImageLayers(stagingBuffer, vk_image_, width_, height_, FaceCount);
 
   if (desc_.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED &&
       desc_.finalLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
@@ -515,8 +502,7 @@ void Image::copyBufferToImageLayers(VkBuffer buffer, VkImage image,
 
   vkCmdCopyBufferToImage(commandBuffer, buffer, image,
                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                         static_cast<uint32_t>(regions.size()),
-                         regions.data());
+                         static_cast<uint32_t>(regions.size()), regions.data());
 
   endSingleTimeCommands(commandBuffer);
 }

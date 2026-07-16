@@ -1,6 +1,8 @@
 #pragma once
 
 #include "vkr/pipeline/graphics_pipeline.hh"
+#include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -66,13 +68,14 @@ public:
   }
 
   [[nodiscard]] virtual auto editablePipeline() noexcept
-      -> pipeline::GraphicsPipeline * {
-    return nullptr;
+      -> std::optional<std::reference_wrapper<pipeline::GraphicsPipeline>> {
+    return std::nullopt;
   }
 
   [[nodiscard]] virtual auto editablePipeline() const noexcept
-      -> const pipeline::GraphicsPipeline * {
-    return nullptr;
+      -> std::optional<
+          std::reference_wrapper<const pipeline::GraphicsPipeline>> {
+    return std::nullopt;
   }
 
 private:

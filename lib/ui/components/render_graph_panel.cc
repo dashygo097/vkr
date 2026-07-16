@@ -13,36 +13,34 @@ void RenderGraphPanel::render() {
   ImGui::TextDisabled("%zu total", passes.size());
   ImGui::Spacing();
 
-  for (const auto *pass : passes) {
-    if (pass == nullptr) {
-      continue;
-    }
+  for (auto passRef : passes) {
+    const auto &pass = passRef.get();
 
     ImGuiTreeNodeFlags flags =
         ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
 
     const bool open =
-        ImGui::TreeNodeEx(pass->name().c_str(), flags, "%s",
-                          pass->name().c_str());
+        ImGui::TreeNodeEx(pass.name().c_str(), flags, "%s",
+                          pass.name().c_str());
 
     if (!open) {
       continue;
     }
 
-    const auto *pipeline = pass->editablePipeline();
-    if (pipeline != nullptr) {
-      ImGui::Text("Pipeline: %s", pipeline->desc().name.empty()
+    const auto pipeline = pass.editablePipeline();
+    if (pipeline) {
+      ImGui::Text("Pipeline: %s", pipeline->get().desc().name.empty()
                                       ? "<unnamed>"
-                                      : pipeline->desc().name.c_str());
+                                      : pipeline->get().desc().name.c_str());
     } else {
       ImGui::TextDisabled("Pipeline: none");
     }
 
     if (ImGui::TreeNodeEx("Reads", ImGuiTreeNodeFlags_SpanAvailWidth)) {
-      if (pass->reads().empty()) {
+      if (pass.reads().empty()) {
         ImGui::TextDisabled("None");
       } else {
-        for (const auto &resource : pass->reads()) {
+        for (const auto &resource : pass.reads()) {
           ImGui::BulletText("%s", resource.c_str());
         }
       }
@@ -50,10 +48,10 @@ void RenderGraphPanel::render() {
     }
 
     if (ImGui::TreeNodeEx("Writes", ImGuiTreeNodeFlags_SpanAvailWidth)) {
-      if (pass->writes().empty()) {
+      if (pass.writes().empty()) {
         ImGui::TextDisabled("None");
       } else {
-        for (const auto &resource : pass->writes()) {
+        for (const auto &resource : pass.writes()) {
           ImGui::BulletText("%s", resource.c_str());
         }
       }

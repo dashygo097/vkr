@@ -41,13 +41,15 @@ public:
   // Mesh management
   template <typename VBOType>
   void createMesh(const std::string &name, const Mesh<VBOType> &mesh) {
-    if (!mesh.vertexBuffer() || !mesh.indexBuffer()) {
+    const auto vertexBuffer = mesh.vertexBuffer();
+    const auto indexBuffer = mesh.indexBuffer();
+
+    if (!vertexBuffer || !indexBuffer) {
       VKR_RES_ERROR("Cannot create mesh resource '{}' from invalid mesh", name);
     }
 
     auto stored = std::make_shared<Mesh<VBOType>>(device_, command_pool_);
-    stored->load(mesh.vertexBuffer()->vertices(),
-                 mesh.indexBuffer()->indices());
+    stored->load(vertexBuffer->get().vertices(), indexBuffer->get().indices());
     meshes_[name] = std::move(stored);
   }
 

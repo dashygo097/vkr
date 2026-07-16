@@ -80,7 +80,7 @@ void RenderGraph::compile() {
     const size_t index = ready.front();
     ready.pop_front();
 
-    ordered_passes_.push_back(passes_[index].get());
+    ordered_passes_.push_back(index);
 
     for (const size_t consumer : compiled_dependencies_[index]) {
       if (indegree[consumer] == 0) {
@@ -109,8 +109,8 @@ auto RenderGraph::create() -> void {
     compile();
   }
 
-  for (auto *pass : ordered_passes_) {
-    pass->create();
+  for (const size_t index : ordered_passes_) {
+    passes_[index]->create();
   }
 
   created_ = true;
@@ -118,9 +118,7 @@ auto RenderGraph::create() -> void {
 
 auto RenderGraph::destroy() -> void {
   for (auto it = ordered_passes_.rbegin(); it != ordered_passes_.rend(); ++it) {
-    if (*it) {
-      (*it)->destroy();
-    }
+    passes_[*it]->destroy();
   }
 
   created_ = false;
@@ -135,8 +133,8 @@ auto RenderGraph::record() -> void {
     create();
   }
 
-  for (auto *pass : ordered_passes_) {
-    pass->record();
+  for (const size_t index : ordered_passes_) {
+    passes_[index]->record();
   }
 }
 
@@ -149,28 +147,30 @@ auto RenderGraph::present() -> void {
     VKR_RENDER_ERROR("Render graph presented before create");
   }
 
-  for (auto *pass : ordered_passes_) {
-    pass->present();
+  for (const size_t index : ordered_passes_) {
+    passes_[index]->present();
   }
 }
 
-auto RenderGraph::passes() -> std::vector<RenderGraphPass *> {
-  std::vector<RenderGraphPass *> result{};
+auto RenderGraph::passes()
+    -> std::vector<std::reference_wrapper<RenderGraphPass>> {
+  std::vector<std::reference_wrapper<RenderGraphPass>> result{};
   result.reserve(passes_.size());
 
   for (const auto &pass : passes_) {
-    result.push_back(pass.get());
+    result.emplace_back(*pass);
   }
 
   return result;
 }
 
-auto RenderGraph::passes() const -> std::vector<const RenderGraphPass *> {
-  std::vector<const RenderGraphPass *> result{};
+auto RenderGraph::passes() const
+    -> std::vector<std::reference_wrapper<const RenderGraphPass>> {
+  std::vector<std::reference_wrapper<const RenderGraphPass>> result{};
   result.reserve(passes_.size());
 
   for (const auto &pass : passes_) {
-    result.push_back(pass.get());
+    result.emplace_back(*pass);
   }
 
   return result;
@@ -201,7 +201,7 @@ auto RenderGraph::validatePassNameAvailable(std::string_view name) const
   }
 
   for (const auto &pass : passes_) {
-    if (pass && pass->name() == name) {
+    if (pass->name() == name) {
       VKR_RENDER_ERROR("Render graph pass '{}' already exists",
                        std::string(name));
     }

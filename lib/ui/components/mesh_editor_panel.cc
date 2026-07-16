@@ -55,12 +55,17 @@ void MeshEditorPanel::render() {
     return;
   }
 
-  const auto *vertexBuffer = mesh->vertexBufferBase();
-  const auto *indexBuffer = mesh->indexBuffer();
-  const auto vertexInput = vertexBuffer->vertexInputDesc();
+  const auto vertexBuffer = mesh->vertexBufferBase();
+  const auto indexBuffer = mesh->indexBuffer();
+  if (!vertexBuffer || !indexBuffer) {
+    ImGui::TextDisabled("State: unavailable");
+    return;
+  }
 
-  ImGui::Text("Vertices: %zu", vertexBuffer->vertexCount());
-  ImGui::Text("Indices: %zu", indexBuffer->indices().size());
+  const auto vertexInput = vertexBuffer->get().vertexInputDesc();
+
+  ImGui::Text("Vertices: %zu", vertexBuffer->get().vertexCount());
+  ImGui::Text("Indices: %zu", indexBuffer->get().indices().size());
   ImGui::Text("Bindings: %zu", vertexInput.bindings.size());
   ImGui::Text("Attributes: %zu", vertexInput.attributes.size());
 }

@@ -7,57 +7,28 @@
 namespace vkr::render {
 
 FullscreenPassSource::FullscreenPassSource(RasterPass &source)
-    : type(Type::Raster), raster(&source) {}
+    : source_(std::ref(source)) {}
 
 FullscreenPassSource::FullscreenPassSource(SkyboxPass &source)
-    : type(Type::Skybox), skybox(&source) {}
+    : source_(std::ref(source)) {}
 
 FullscreenPassSource::FullscreenPassSource(FullscreenPass &source)
-    : type(Type::Fullscreen), fullscreen(&source) {}
+    : source_(std::ref(source)) {}
 
 auto FullscreenPassSource::target() -> resource::OffscreenTarget & {
-  switch (type) {
-  case Type::Raster:
-    if (!raster) {
-      VKR_RENDER_ERROR("FullscreenPassSource has null raster source");
-    }
-    return raster->target();
-  case Type::Skybox:
-    if (!skybox) {
-      VKR_RENDER_ERROR("FullscreenPassSource has null skybox source");
-    }
-    return skybox->target();
-  case Type::Fullscreen:
-    if (!fullscreen) {
-      VKR_RENDER_ERROR("FullscreenPassSource has null fullscreen source");
-    }
-    return fullscreen->target();
-  }
-
-  VKR_RENDER_ERROR("FullscreenPassSource has unknown source type");
+  return std::visit(
+      [](auto source) -> resource::OffscreenTarget & {
+        return source.get().target();
+      },
+      source_);
 }
 
-auto FullscreenPassSource::target() const
-    -> const resource::OffscreenTarget & {
-  switch (type) {
-  case Type::Raster:
-    if (!raster) {
-      VKR_RENDER_ERROR("FullscreenPassSource has null raster source");
-    }
-    return raster->target();
-  case Type::Skybox:
-    if (!skybox) {
-      VKR_RENDER_ERROR("FullscreenPassSource has null skybox source");
-    }
-    return skybox->target();
-  case Type::Fullscreen:
-    if (!fullscreen) {
-      VKR_RENDER_ERROR("FullscreenPassSource has null fullscreen source");
-    }
-    return fullscreen->target();
-  }
-
-  VKR_RENDER_ERROR("FullscreenPassSource has unknown source type");
+auto FullscreenPassSource::target() const -> const resource::OffscreenTarget & {
+  return std::visit(
+      [](auto source) -> const resource::OffscreenTarget & {
+        return source.get().target();
+      },
+      source_);
 }
 
 FullscreenPass::FullscreenPass(Renderer &renderer, const core::Device &device,
@@ -286,9 +257,10 @@ auto FullscreenPass::createDescriptorWrites(
     }
 
     VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = color.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
-                                ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                                : color.desc().finalLayout;
+    imageInfo.imageLayout =
+        color.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+            ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            : color.desc().finalLayout;
     imageInfo.imageView = color.imageView();
     imageInfo.sampler = color.sampler();
 
