@@ -1,19 +1,112 @@
-#include <chrono>
+#include <ctime>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <string>
 #include <vector>
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
 class ShaderToyApp : public vkr::VulkanApplication {
 private:
-  std::chrono::high_resolution_clock::time_point startTime;
-  std::chrono::high_resolution_clock::time_point lastFrameTime;
-  float totalTime{0.0f};
-  int frameCount{0};
+  glm::vec4 shadertoyMouse() const {
+    const auto mousePosition = viewportMousePosition();
+    const bool mouseDown =
+        inputTracer->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
 
-  glm::vec4 mouseState{0.0f};
+    return {mousePosition.x, mousePosition.y, mouseDown ? mousePosition.x : 0.0f,
+            mouseDown ? mousePosition.y : 0.0f};
+  }
+
+  [[nodiscard]] auto shadertoyTargetDesc() const
+      -> vkr::resource::OffscreenTargetDesc {
+    return {.color = {.width = swapchain->width(),
+                      .height = swapchain->height(),
+                      .format = VK_FORMAT_R8G8B8A8_UNORM,
+                      .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                               VK_IMAGE_USAGE_SAMPLED_BIT,
+                      .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                      .createSampler = true}};
+  }
+
+  [[nodiscard]] auto shadertoyDescriptorBindings() const
+      -> std::vector<vkr::pipeline::DescriptorBinding> {
+    return {{.name = "shadertoy",
+             .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                        VK_SHADER_STAGE_FRAGMENT_BIT}}};
+  }
+
+  [[nodiscard]] auto shadertoyDescriptorPool(uint32_t imageSamplerCount) const
+      -> vkr::pipeline::DescriptorPoolDesc {
+    return {.poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                           vkr::core::MAX_FRAMES_IN_FLIGHT},
+                          {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                           vkr::core::MAX_FRAMES_IN_FLIGHT *
+                               imageSamplerCount}},
+            .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+  }
+
+  [[nodiscard]] auto shadertoyPipeline(const std::string &name,
+                                       const std::string &fragmentShader) const
+      -> vkr::pipeline::GraphicsPipelineDesc {
+    vkr::pipeline::GraphicsPipelineDesc pipeline{};
+    pipeline.name = name;
+    pipeline.vertexInput = vkr::resource::VertexInputDesc::none();
+    pipeline.shaders = {
+        vkr::pipeline::GraphicsShaderStageDesc::vertex(
+            vkr::resource::ShaderModuleDesc::vertexGlslFile(
+                assetSystem->resolveApp("shaders/shadertoy/shadertoy.vert")
+                    .string())),
+        vkr::pipeline::GraphicsShaderStageDesc::fragment(
+            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+                assetSystem->resolveApp("shaders/shadertoy/" + fragmentShader)
+                    .string())),
+    };
+    pipeline.depthStencil =
+        vkr::pipeline::GraphicsDepthStencilDesc::disabled();
+    pipeline.rasterization =
+        vkr::pipeline::GraphicsRasterizationDesc::noCull();
+    return pipeline;
+  }
+
+  [[nodiscard]] auto feedbackDesc(const std::string &name,
+                                  const std::string &fragmentShader,
+                                  uint32_t sourceCount)
+      -> vkr::render::FeedbackFullscreenPassDesc {
+    vkr::render::FeedbackFullscreenPassDesc desc{};
+    desc.target = {.target = shadertoyTargetDesc()};
+    desc.descriptorBindings = shadertoyDescriptorBindings();
+    desc.descriptorPool = shadertoyDescriptorPool(sourceCount + 1);
+    desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
+    desc.historyInput = vkr::render::FullscreenPassInputDesc{.binding = 1};
+
+    desc.inputs.reserve(sourceCount);
+    for (uint32_t index = 0; index < sourceCount; ++index) {
+      desc.inputs.push_back(
+          vkr::render::FullscreenPassInputDesc{.binding = 2 + index});
+    }
+
+    desc.pipeline = shadertoyPipeline(name, fragmentShader);
+    return desc;
+  }
+
+  [[nodiscard]] auto imageDesc(uint32_t sourceCount)
+      -> vkr::render::FullscreenPassDesc {
+    vkr::render::FullscreenPassDesc desc{};
+    desc.target = shadertoyTargetDesc();
+    desc.descriptorBindings = shadertoyDescriptorBindings();
+    desc.descriptorPool = shadertoyDescriptorPool(sourceCount);
+    desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
+
+    desc.inputs.reserve(sourceCount);
+    for (uint32_t index = 0; index < sourceCount; ++index) {
+      desc.inputs.push_back(
+          vkr::render::FullscreenPassInputDesc{.binding = 1 + index});
+    }
+
+    desc.pipeline = shadertoyPipeline("shadertoy.image", "image.frag");
+    return desc;
+  }
 
   [[nodiscard]] auto viewportMousePosition() const -> glm::vec2 {
     const auto cursor = inputTracer->cursorPosition();
@@ -26,7 +119,7 @@ private:
     const auto viewport = ctx.ui.viewport;
     if (!ctx.ui.viewportFocused || viewport.width <= 0.0f ||
         viewport.height <= 0.0f) {
-      return {mouseState.x, mouseState.y};
+      return {0.0f, 0.0f};
     }
 
     const float localX = static_cast<float>(cursor.x) - viewport.x;
@@ -57,57 +150,65 @@ private:
   }
 
   void buildRenderGraph() override {
-    vkr::render::RasterPassDesc desc{};
-    desc.target = {
-        .color = {.width = swapchain->width(),
-                  .height = swapchain->height(),
-                  .format = VK_FORMAT_R8G8B8A8_UNORM,
-                  .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                           VK_IMAGE_USAGE_SAMPLED_BIT,
-                  .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  .createSampler = true},
-        .depth =
-            vkr::resource::DepthAttachmentDesc{.width = swapchain->width(),
-                                               .height = swapchain->height(),
-                                               .format = VK_FORMAT_D32_SFLOAT}};
-    desc.descriptorBindings = {
-        {.name = "shadertoy",
-         .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                    VK_SHADER_STAGE_FRAGMENT_BIT}},
-    };
-    desc.descriptorPool = {
-        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
-                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
-    desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
-                        VkClearValue{.depthStencil = {1.0f, 0}}};
+    auto &bufferA =
+        renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
+            *renderer, *device, *commandPool, *resourceManager);
+    bufferA.setName("buffer.a").read("buffer.a.history").write("buffer.a");
+    bufferA.update(feedbackDesc("shadertoy.buffer.a", "buffer_a.frag", 0));
 
-    vkr::pipeline::GraphicsPipelineDesc shadertoy{};
-    shadertoy.name = "shadertoy";
-    shadertoy.vertexInput = vkr::resource::VertexInputDesc::none();
+    auto &bufferB =
+        renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
+            *renderer, *device, *commandPool, *resourceManager,
+            std::vector<vkr::render::FullscreenPassSource>{
+                vkr::render::FullscreenPassSource{bufferA}});
+    bufferB.setName("buffer.b")
+        .read("buffer.b.history")
+        .read("buffer.a")
+        .write("buffer.b");
+    bufferB.update(feedbackDesc("shadertoy.buffer.b", "buffer_b.frag", 1));
 
-    shadertoy.shaders = {
-        vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolve("shaders/shadertoy/shadertoy.vert")
-                    .string())),
-        vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolve("shaders/shadertoy/shadertoy.frag")
-                    .string())),
-    };
+    auto &bufferC =
+        renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
+            *renderer, *device, *commandPool, *resourceManager,
+            std::vector<vkr::render::FullscreenPassSource>{
+                vkr::render::FullscreenPassSource{bufferA},
+                vkr::render::FullscreenPassSource{bufferB}});
+    bufferC.setName("buffer.c")
+        .read("buffer.c.history")
+        .read("buffer.a")
+        .read("buffer.b")
+        .write("buffer.c");
+    bufferC.update(feedbackDesc("shadertoy.buffer.c", "buffer_c.frag", 2));
 
-    shadertoy.depthStencil =
-        vkr::pipeline::GraphicsDepthStencilDesc::disabled();
-    shadertoy.rasterization =
-        vkr::pipeline::GraphicsRasterizationDesc::noCull();
+    auto &bufferD =
+        renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
+            *renderer, *device, *commandPool, *resourceManager,
+            std::vector<vkr::render::FullscreenPassSource>{
+                vkr::render::FullscreenPassSource{bufferA},
+                vkr::render::FullscreenPassSource{bufferB},
+                vkr::render::FullscreenPassSource{bufferC}});
+    bufferD.setName("buffer.d")
+        .read("buffer.d.history")
+        .read("buffer.a")
+        .read("buffer.b")
+        .read("buffer.c")
+        .write("buffer.d");
+    bufferD.update(feedbackDesc("shadertoy.buffer.d", "buffer_d.frag", 3));
 
-    desc.pipeline = shadertoy;
-
-    auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
-        *renderer, *device, *commandPool, *resourceManager);
-    rasterPass.setName("raster").write("scene.color");
-    rasterPass.update(desc);
+    auto &imagePass = renderGraph->addPass<vkr::render::FullscreenPass>(
+        *renderer, *device, *commandPool, *resourceManager,
+        std::vector<vkr::render::FullscreenPassSource>{
+            vkr::render::FullscreenPassSource{bufferA},
+            vkr::render::FullscreenPassSource{bufferB},
+            vkr::render::FullscreenPassSource{bufferC},
+            vkr::render::FullscreenPassSource{bufferD}});
+    imagePass.setName("image")
+        .read("buffer.a")
+        .read("buffer.b")
+        .read("buffer.c")
+        .read("buffer.d")
+        .write("scene.color");
+    imagePass.update(imageDesc(4));
 
     vkr::render::UiPassDesc uiDesc{};
     uiDesc.layoutMode = ctx.ui.layoutMode;
@@ -120,7 +221,7 @@ private:
     auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
         *renderer, *window, *instance, *surface, *device, *commandPool,
         *swapchain, *resourceManager, *assetSystem, ctx.camera,
-        vkr::render::FullscreenPassSource{rasterPass}, *renderGraph, *timer,
+        vkr::render::FullscreenPassSource{imagePass}, *renderGraph, *timer,
         ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
     uiPass.update(uiDesc);
@@ -136,30 +237,6 @@ private:
       return;
     }
 
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float deltaTime =
-        std::chrono::duration<float, std::chrono::seconds::period>(
-            currentTime - lastFrameTime)
-            .count();
-    totalTime = std::chrono::duration<float, std::chrono::seconds::period>(
-                    currentTime - startTime)
-                    .count();
-    lastFrameTime = currentTime;
-
-    const bool viewportMouseActive = isViewportMouseActive();
-    const glm::vec2 mousePosition = viewportMousePosition();
-
-    if (viewportMouseActive &&
-        inputTracer->wasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT)) {
-      mouseState.z = mousePosition.x;
-      mouseState.w = mousePosition.y;
-    }
-
-    if (viewportMouseActive) {
-      mouseState.x = mousePosition.x;
-      mouseState.y = mousePosition.y;
-    }
-
     std::time_t t = std::time(nullptr);
     std::tm *now = std::localtime(&t);
 
@@ -167,16 +244,26 @@ private:
     ubo.iResolution = glm::vec3(static_cast<float>(ctx.window.width),
                                 static_cast<float>(ctx.window.height),
                                 static_cast<float>(ctx.window.ratio()));
-    ubo.iTime = totalTime;
-    ubo.iTimeDelta = deltaTime;
-    ubo.iFrameRate = (deltaTime > 0.0f) ? (1.0f / deltaTime) : 60.0f;
-    ubo.iFrame = frameCount++;
-    ubo.iMouse = mouseState;
+    ubo.iTime = timer->elapsedTime();
+    ubo.iTimeDelta = timer->deltaTime();
+    ubo.iFrameRate = timer->fps();
+    ubo.iFrame = static_cast<int>(timer->frameCount());
+    ubo.iMouse = isViewportMouseActive() ? shadertoyMouse() : glm::vec4{0.0f};
     ubo.iDate = glm::vec4(static_cast<float>(now->tm_year + 1900),
                           static_cast<float>(now->tm_mon),
                           static_cast<float>(now->tm_mday),
                           static_cast<float>(now->tm_hour * 3600 +
                                              now->tm_min * 60 + now->tm_sec));
+    ubo.iChannelTime = glm::vec4(timer->elapsedTime());
+
+    const glm::vec3 channelResolution{
+        static_cast<float>(ctx.window.width),
+        static_cast<float>(ctx.window.height),
+        1.0f,
+    };
+    for (auto &resolution : ubo.iChannelResolution) {
+      resolution = channelResolution;
+    }
 
     shadertoyUBO->updateRaw(renderer->frameIndex(), &ubo, sizeof(ubo));
   }
@@ -200,9 +287,6 @@ private:
     ctx.camera = {
         .locked = true,
     };
-
-    startTime = std::chrono::high_resolution_clock::now();
-    lastFrameTime = startTime;
   }
 };
 

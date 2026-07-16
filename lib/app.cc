@@ -141,6 +141,7 @@ void VulkanApplication::drawFrame() {
 
   renderer->submitFrame();
   renderGraph->present();
+  renderGraph->afterFrame();
   renderer->endFrame();
 
   if (renderer->consumeSwapchainOutOfDate()) {

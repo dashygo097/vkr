@@ -45,6 +45,13 @@ public:
 
   [[nodiscard]] auto target() -> resource::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t) -> resource::OffscreenTarget & {
+    return target();
+  }
+  [[nodiscard]] auto target(uint32_t) const
+      -> const resource::OffscreenTarget & {
+    return target();
+  }
 
   [[nodiscard]] auto editablePipeline() noexcept
       -> std::optional<

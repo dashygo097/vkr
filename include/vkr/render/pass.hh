@@ -62,6 +62,7 @@ public:
   virtual void record() = 0;
 
   virtual void present() {}
+  virtual void afterFrame() {}
 
   [[nodiscard]] virtual auto presentsToSwapchain() const noexcept -> bool {
     return false;

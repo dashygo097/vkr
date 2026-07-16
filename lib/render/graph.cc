@@ -152,6 +152,20 @@ auto RenderGraph::present() -> void {
   }
 }
 
+auto RenderGraph::afterFrame() -> void {
+  if (dirty_) {
+    compile();
+  }
+
+  if (!created_) {
+    VKR_RENDER_ERROR("Render graph afterFrame called before create");
+  }
+
+  for (const size_t index : ordered_passes_) {
+    passes_[index]->afterFrame();
+  }
+}
+
 auto RenderGraph::passes()
     -> std::vector<std::reference_wrapper<RenderGraphPass>> {
   std::vector<std::reference_wrapper<RenderGraphPass>> result{};

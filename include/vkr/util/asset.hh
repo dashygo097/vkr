@@ -8,22 +8,19 @@
 namespace vkr::util {
 
 enum class AssetRootKind {
-  Engine,
   App,
   User,
 };
 
 struct AssetDesc {
-  std::string engineRoot{std::string{ENGINE_ASSETS_DIR} + "assets/"};
   std::string appRoot{"assets"};
   std::string userRoot{"."};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
-    return !engineRoot.empty() && !appRoot.empty() && !userRoot.empty();
+    return !appRoot.empty() && !userRoot.empty();
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
-    ar("engineRoot", engineRoot);
     ar("appRoot", appRoot);
     ar("userRoot", userRoot);
   }
@@ -45,11 +42,6 @@ public:
 
   [[nodiscard]] auto tryResolve(std::string_view logicalPath) const
       -> std::optional<std::filesystem::path>;
-
-  [[nodiscard]] auto resolveEngine(std::string_view path) const
-      -> std::filesystem::path {
-    return resolveWithPrefix("engine://", path);
-  }
 
   [[nodiscard]] auto resolveApp(std::string_view path) const
       -> std::filesystem::path {

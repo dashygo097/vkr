@@ -42,6 +42,7 @@ public:
   void destroy();
   void record();
   void present();
+  void afterFrame();
 
   [[nodiscard]] auto passes()
       -> std::vector<std::reference_wrapper<RenderGraphPass>>;

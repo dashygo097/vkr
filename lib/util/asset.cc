@@ -11,9 +11,6 @@ AssetSystem::AssetSystem(const AssetDesc &desc) : desc_(std::move(desc)) {
   }
 
   VKR_UTIL_INFO(
-      "Asset engine root: {}",
-      std::filesystem::path(desc_.engineRoot).lexically_normal().string());
-  VKR_UTIL_INFO(
       "Asset app root: {}",
       std::filesystem::path(desc_.appRoot).lexically_normal().string());
   VKR_UTIL_INFO(
@@ -35,10 +32,6 @@ auto AssetSystem::resolve(std::string_view logicalPath) const
 auto AssetSystem::tryResolve(std::string_view logicalPath) const
     -> std::optional<std::filesystem::path> {
   auto raw = std::string(logicalPath);
-
-  if (startsWith(raw, "engine://")) {
-    return resolveFromRoot(rootPath(AssetRootKind::Engine), raw.substr(9));
-  }
 
   if (startsWith(raw, "app://")) {
     return resolveFromRoot(rootPath(AssetRootKind::App), raw.substr(6));
@@ -64,7 +57,7 @@ auto AssetSystem::tryResolve(std::string_view logicalPath) const
     return app;
   }
 
-  return resolveFromRoot(rootPath(AssetRootKind::Engine), raw);
+  return std::nullopt;
 }
 
 auto AssetSystem::readText(std::string_view logicalPath) const -> std::string {
@@ -103,8 +96,6 @@ auto AssetSystem::isSafeRelativePath(const std::filesystem::path &path) noexcept
 
 auto AssetSystem::rootPath(AssetRootKind kind) const -> std::filesystem::path {
   switch (kind) {
-  case AssetRootKind::Engine:
-    return std::filesystem::path(desc_.engineRoot).lexically_normal();
   case AssetRootKind::App:
     return std::filesystem::path(desc_.appRoot).lexically_normal();
   case AssetRootKind::User:

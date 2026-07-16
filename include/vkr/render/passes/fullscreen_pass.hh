@@ -10,6 +10,7 @@
 #include "vkr/render/pass.hh"
 #include "vkr/render/renderer.hh"
 #include "vkr/resource/attachments/frame_buffer.hh"
+#include "vkr/resource/manager.hh"
 #include "vkr/resource/targets/offscreen.hh"
 #include <functional>
 #include <memory>
@@ -21,18 +22,24 @@ namespace vkr::render {
 class RasterPass;
 class SkyboxPass;
 class FullscreenPass;
+class FeedbackFullscreenPass;
 
 struct FullscreenPassSource {
   using Source = std::variant<std::reference_wrapper<RasterPass>,
                               std::reference_wrapper<SkyboxPass>,
-                              std::reference_wrapper<FullscreenPass>>;
+                              std::reference_wrapper<FullscreenPass>,
+                              std::reference_wrapper<FeedbackFullscreenPass>>;
 
   explicit FullscreenPassSource(RasterPass &source);
   explicit FullscreenPassSource(SkyboxPass &source);
   explicit FullscreenPassSource(FullscreenPass &source);
+  explicit FullscreenPassSource(FeedbackFullscreenPass &source);
 
   [[nodiscard]] auto target() -> resource::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t frameIndex) -> resource::OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t frameIndex) const
+      -> const resource::OffscreenTarget &;
 
 private:
   Source source_;
@@ -45,6 +52,7 @@ struct FullscreenPassInputDesc {
 
 struct FullscreenPassDesc {
   resource::OffscreenTargetDesc target{};
+  std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
   std::vector<FullscreenPassInputDesc> inputs{};
@@ -55,6 +63,10 @@ class FullscreenPass : public RenderGraphPass {
 public:
   FullscreenPass(Renderer &renderer, const core::Device &device,
                  const core::CommandPool &commandPool,
+                 std::vector<FullscreenPassSource> sources = {});
+  FullscreenPass(Renderer &renderer, const core::Device &device,
+                 const core::CommandPool &commandPool,
+                 resource::ResourceManager &resourceManager,
                  std::vector<FullscreenPassSource> sources = {});
   ~FullscreenPass() override;
 
@@ -72,6 +84,13 @@ public:
 
   [[nodiscard]] auto target() -> resource::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t) -> resource::OffscreenTarget & {
+    return target();
+  }
+  [[nodiscard]] auto target(uint32_t) const
+      -> const resource::OffscreenTarget & {
+    return target();
+  }
 
   [[nodiscard]] auto editablePipeline() noexcept -> std::optional<
       std::reference_wrapper<pipeline::GraphicsPipeline>> override {
@@ -95,6 +114,7 @@ private:
   Renderer &renderer_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
+  resource::ResourceManager *resource_manager_{nullptr};
 
   FullscreenPassDesc desc_{};
   std::vector<FullscreenPassSource> sources_{};

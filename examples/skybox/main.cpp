@@ -115,10 +115,12 @@ private:
     skyboxDesc.pipeline.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
             vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolve("shaders/skybox/skybox.vert").string())),
+                assetSystem->resolveApp("shaders/skybox/skybox.vert")
+                    .string())),
         vkr::pipeline::GraphicsShaderStageDesc::fragment(
             vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolve("shaders/skybox/skybox.frag").string())),
+                assetSystem->resolveApp("shaders/skybox/skybox.frag")
+                    .string())),
     };
 
     auto &skyboxPass = renderGraph->addPass<vkr::render::SkyboxPass>(

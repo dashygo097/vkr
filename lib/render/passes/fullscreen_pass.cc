@@ -1,10 +1,160 @@
 #include "vkr/render/passes/fullscreen_pass.hh"
 #include "vkr/core/core_utils.hh"
 #include "vkr/logger.hh"
+#include "vkr/render/passes/feedback_fullscreen.hh"
 #include "vkr/render/passes/raster.hh"
 #include "vkr/render/passes/skybox.hh"
+#include <algorithm>
 
 namespace vkr::render {
+namespace {
+
+auto defaultDescriptorPoolDesc(
+    pipeline::DescriptorPoolDesc poolDesc,
+    const std::vector<pipeline::DescriptorBinding> &resourceBindings,
+    size_t sourceCount) -> pipeline::DescriptorPoolDesc {
+  if (poolDesc.maxSets != 0) {
+    return poolDesc;
+  }
+
+  uint32_t uniformCount = 0;
+  uint32_t imageCount = static_cast<uint32_t>(sourceCount);
+
+  for (const auto &binding : resourceBindings) {
+    switch (binding.layout.descriptorType) {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+      uniformCount++;
+      break;
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+      imageCount++;
+      break;
+    default:
+      break;
+    }
+  }
+
+  if (uniformCount > 0) {
+    poolDesc.poolSizes.push_back(
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+         static_cast<uint32_t>(core::MAX_FRAMES_IN_FLIGHT * uniformCount)});
+  }
+
+  if (imageCount > 0) {
+    poolDesc.poolSizes.push_back(
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+         static_cast<uint32_t>(core::MAX_FRAMES_IN_FLIGHT * imageCount)});
+  }
+
+  poolDesc.maxSets = core::MAX_FRAMES_IN_FLIGHT;
+  return poolDesc;
+}
+
+auto nextBindingAfter(
+    const std::vector<pipeline::DescriptorBinding> &resourceBindings)
+    -> uint32_t {
+  uint32_t nextBinding = 0;
+
+  for (const auto &binding : resourceBindings) {
+    const uint32_t descriptorCount =
+        binding.layout.descriptorCount == 0 ? 1U
+                                            : binding.layout.descriptorCount;
+    nextBinding =
+        std::max(nextBinding, binding.layout.binding + descriptorCount);
+  }
+
+  return nextBinding;
+}
+
+void appendResourceDescriptorWrites(
+    std::string_view passName, const resource::ResourceManager *resourceManager,
+    const std::vector<pipeline::DescriptorBinding> &bindings,
+    std::vector<pipeline::DescriptorSetWriteDesc> &writes) {
+  if (bindings.empty()) {
+    return;
+  }
+
+  if (resourceManager == nullptr) {
+    VKR_RENDER_ERROR("FullscreenPass '{}' has descriptor resource bindings "
+                     "but no ResourceManager",
+                     std::string(passName));
+  }
+
+  for (const auto &binding : bindings) {
+    if (binding.name.empty()) {
+      VKR_RENDER_ERROR("FullscreenPass '{}' descriptor binding {} has empty "
+                       "resource name",
+                       std::string(passName), binding.layout.binding);
+    }
+
+    switch (binding.layout.descriptorType) {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+      auto uniformBuffer = resourceManager->getUniformBuffer(binding.name);
+      if (!uniformBuffer) {
+        VKR_RENDER_ERROR("FullscreenPass '{}' uniform buffer resource not "
+                         "found: {}",
+                         std::string(passName), binding.name);
+      }
+
+      const auto &buffers = uniformBuffer->buffers();
+      if (buffers.size() != core::MAX_FRAMES_IN_FLIGHT) {
+        VKR_RENDER_ERROR("FullscreenPass '{}' uniform buffer '{}' frame count "
+                         "mismatch: {} vs {}",
+                         std::string(passName), binding.name, buffers.size(),
+                         core::MAX_FRAMES_IN_FLIGHT);
+      }
+
+      for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
+           ++frameIndex) {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = buffers[frameIndex];
+        bufferInfo.offset = 0;
+        bufferInfo.range = uniformBuffer->bufferSize();
+
+        writes[frameIndex].buffers.push_back(
+            pipeline::DescriptorBufferWriteDesc::one(
+                binding.layout.binding, binding.layout.descriptorType,
+                bufferInfo));
+      }
+      break;
+    }
+
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+      auto texture = resourceManager->getTexture(binding.name);
+      if (!texture) {
+        VKR_RENDER_ERROR("FullscreenPass '{}' texture resource not found: {}",
+                         std::string(passName), binding.name);
+      }
+
+      if (!texture->hasSampler()) {
+        VKR_RENDER_ERROR("FullscreenPass '{}' texture sampler not found: {}",
+                         std::string(passName), binding.name);
+      }
+
+      VkDescriptorImageInfo imageInfo{};
+      imageInfo.imageLayout = texture->layout();
+      imageInfo.imageView = texture->imageView();
+      imageInfo.sampler = texture->sampler();
+
+      for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
+           ++frameIndex) {
+        writes[frameIndex].images.push_back(
+            pipeline::DescriptorImageWriteDesc::one(
+                binding.layout.binding, binding.layout.descriptorType,
+                imageInfo));
+      }
+      break;
+    }
+
+    default:
+      VKR_RENDER_ERROR("FullscreenPass '{}' cannot create descriptor writes "
+                       "for resource '{}' with descriptor type {}",
+                       std::string(passName), binding.name,
+                       static_cast<int>(binding.layout.descriptorType));
+    }
+  }
+}
+
+} // namespace
 
 FullscreenPassSource::FullscreenPassSource(RasterPass &source)
     : source_(std::ref(source)) {}
@@ -15,18 +165,31 @@ FullscreenPassSource::FullscreenPassSource(SkyboxPass &source)
 FullscreenPassSource::FullscreenPassSource(FullscreenPass &source)
     : source_(std::ref(source)) {}
 
+FullscreenPassSource::FullscreenPassSource(FeedbackFullscreenPass &source)
+    : source_(std::ref(source)) {}
+
 auto FullscreenPassSource::target() -> resource::OffscreenTarget & {
+  return target(0);
+}
+
+auto FullscreenPassSource::target() const -> const resource::OffscreenTarget & {
+  return target(0);
+}
+
+auto FullscreenPassSource::target(uint32_t frameIndex)
+    -> resource::OffscreenTarget & {
   return std::visit(
-      [](auto source) -> resource::OffscreenTarget & {
-        return source.get().target();
+      [frameIndex](auto source) -> resource::OffscreenTarget & {
+        return source.get().target(frameIndex);
       },
       source_);
 }
 
-auto FullscreenPassSource::target() const -> const resource::OffscreenTarget & {
+auto FullscreenPassSource::target(uint32_t frameIndex) const
+    -> const resource::OffscreenTarget & {
   return std::visit(
-      [](auto source) -> const resource::OffscreenTarget & {
-        return source.get().target();
+      [frameIndex](auto source) -> const resource::OffscreenTarget & {
+        return source.get().target(frameIndex);
       },
       source_);
 }
@@ -36,6 +199,13 @@ FullscreenPass::FullscreenPass(Renderer &renderer, const core::Device &device,
                                std::vector<FullscreenPassSource> sources)
     : renderer_(renderer), device_(device), command_pool_(commandPool),
       sources_(std::move(sources)) {}
+
+FullscreenPass::FullscreenPass(Renderer &renderer, const core::Device &device,
+                               const core::CommandPool &commandPool,
+                               resource::ResourceManager &resourceManager,
+                               std::vector<FullscreenPassSource> sources)
+    : renderer_(renderer), device_(device), command_pool_(commandPool),
+      resource_manager_(&resourceManager), sources_(std::move(sources)) {}
 
 FullscreenPass::~FullscreenPass() { destroy(); }
 
@@ -143,12 +313,12 @@ void FullscreenPass::createFramebuffers() {
 
 void FullscreenPass::createDescriptors() {
   const auto inputs = resolvedInputs();
-  if (inputs.empty()) {
+  if (inputs.empty() && desc_.descriptorBindings.empty()) {
     return;
   }
 
-  std::vector<pipeline::DescriptorBinding> bindings{};
-  bindings.reserve(inputs.size());
+  std::vector<pipeline::DescriptorBinding> bindings = desc_.descriptorBindings;
+  bindings.reserve(desc_.descriptorBindings.size() + inputs.size());
 
   for (size_t index = 0; index < inputs.size(); ++index) {
     const auto &input = inputs[index];
@@ -207,8 +377,9 @@ auto FullscreenPass::resolvedInputs() const
     std::vector<FullscreenPassInputDesc> inputs{};
     inputs.reserve(sources_.size());
 
+    const uint32_t firstBinding = nextBindingAfter(desc_.descriptorBindings);
     for (uint32_t index = 0; index < sources_.size(); ++index) {
-      inputs.push_back(FullscreenPassInputDesc{.binding = index});
+      inputs.push_back(FullscreenPassInputDesc{.binding = firstBinding + index});
     }
 
     return inputs;
@@ -226,16 +397,8 @@ auto FullscreenPass::resolvedInputs() const
 auto FullscreenPass::descriptorPoolDesc(
     const std::vector<FullscreenPassInputDesc> &inputs) const
     -> pipeline::DescriptorPoolDesc {
-  auto poolDesc = desc_.descriptorPool;
-
-  if (poolDesc.maxSets == 0) {
-    poolDesc.poolSizes = {
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-         static_cast<uint32_t>(core::MAX_FRAMES_IN_FLIGHT * inputs.size())}};
-    poolDesc.maxSets = core::MAX_FRAMES_IN_FLIGHT;
-  }
-
-  return poolDesc;
+  return defaultDescriptorPoolDesc(desc_.descriptorPool,
+                                   desc_.descriptorBindings, inputs.size());
 }
 
 auto FullscreenPass::createDescriptorWrites(
@@ -249,22 +412,27 @@ auto FullscreenPass::createDescriptorWrites(
     writes.push_back(pipeline::DescriptorSetWriteDesc::forSet(frameIndex));
   }
 
+  appendResourceDescriptorWrites(name(), resource_manager_,
+                                 desc_.descriptorBindings, writes);
+
   for (size_t index = 0; index < sources_.size(); ++index) {
-    const auto &color = sources_[index].target().color();
-    if (!color.hasSampler()) {
-      VKR_RENDER_ERROR("FullscreenPass '{}' source {} has no sampler", name(),
-                       index);
-    }
+    for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
+         ++frameIndex) {
+      const auto &color = sources_[index].target(frameIndex).color();
+      if (!color.hasSampler()) {
+        VKR_RENDER_ERROR("FullscreenPass '{}' source {} has no sampler",
+                         name(), index);
+      }
 
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout =
-        color.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
-            ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-            : color.desc().finalLayout;
-    imageInfo.imageView = color.imageView();
-    imageInfo.sampler = color.sampler();
+      VkDescriptorImageInfo imageInfo{};
+      imageInfo.imageLayout =
+          color.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+              ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+              : color.desc().finalLayout;
+      imageInfo.imageView = color.imageView();
+      imageInfo.sampler = color.sampler();
 
-    for (auto &write : writes) {
+      auto &write = writes[frameIndex];
       write.images.push_back(pipeline::DescriptorImageWriteDesc::one(
           inputs[index].binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
           imageInfo));
