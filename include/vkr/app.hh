@@ -65,7 +65,6 @@ public:
   std::unique_ptr<render::Renderer> renderer;
   std::unique_ptr<render::RenderGraph> renderGraph;
   render::UiPass *uiPass_{nullptr};
-  ui::LayoutMode uiLayoutMode_{ui::LayoutMode::FullScreen};
 
   // components
   std::unique_ptr<scene::Camera> camera;
@@ -81,11 +80,6 @@ protected:
   }
 
   auto addUiPass(render::FullscreenPassSource source) -> render::UiPass &;
-
-  [[nodiscard]] auto uiPass() noexcept -> render::UiPass * { return uiPass_; }
-  [[nodiscard]] auto uiPass() const noexcept -> const render::UiPass * {
-    return uiPass_;
-  }
 
   [[nodiscard]] virtual auto snapshotPath() const -> std::filesystem::path {
     return "snapshot.toml";

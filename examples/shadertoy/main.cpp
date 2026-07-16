@@ -18,14 +18,14 @@ private:
   [[nodiscard]] auto viewportMousePosition() const -> glm::vec2 {
     const auto cursor = inputTracer->cursorPosition();
 
-    if (!uiPass() ||
-        uiPass()->layoutMode() == vkr::ui::LayoutMode::FullScreen) {
+    if (!uiPass_ ||
+        uiPass_->layoutMode() == vkr::ui::LayoutMode::FullScreen) {
       return {static_cast<float>(cursor.x),
               static_cast<float>(ctx.window.height - cursor.y)};
     }
 
-    const auto viewport = uiPass()->viewport();
-    if (!uiPass()->viewportFocused() || viewport.width <= 0.0f ||
+    const auto viewport = uiPass_->viewport();
+    if (!uiPass_->viewportFocused() || viewport.width <= 0.0f ||
         viewport.height <= 0.0f) {
       return {mouseState.x, mouseState.y};
     }
@@ -42,13 +42,13 @@ private:
   }
 
   [[nodiscard]] auto isViewportMouseActive() const -> bool {
-    if (!uiPass() ||
-        uiPass()->layoutMode() == vkr::ui::LayoutMode::FullScreen) {
+    if (!uiPass_ ||
+        uiPass_->layoutMode() == vkr::ui::LayoutMode::FullScreen) {
       return true;
     }
 
-    const auto viewport = uiPass()->viewport();
-    return uiPass()->viewportFocused() && viewport.width > 0.0f &&
+    const auto viewport = uiPass_->viewport();
+    return uiPass_->viewportFocused() && viewport.width > 0.0f &&
            viewport.height > 0.0f;
   }
 

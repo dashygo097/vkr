@@ -124,7 +124,7 @@ void VulkanApplication::updateUiState() {
     uiPass_->switchLayoutMode();
   }
 
-  uiLayoutMode_ = uiPass_->layoutMode();
+  ctx.ui.layoutMode = uiPass_->layoutMode();
 
   const bool lockCamera = uiPass_->layoutMode() == ui::LayoutMode::Standard &&
                           !uiPass_->viewportFocused();
@@ -133,7 +133,7 @@ void VulkanApplication::updateUiState() {
 
 void VulkanApplication::recreateSwapchain() {
   if (uiPass_) {
-    uiLayoutMode_ = uiPass_->layoutMode();
+    ctx.ui.layoutMode = uiPass_->layoutMode();
   }
 
   device->waitIdle();
@@ -163,7 +163,7 @@ auto VulkanApplication::addUiPass(render::FullscreenPassSource source)
     -> render::UiPass & {
   render::UiPassDesc desc{};
   desc.target = {};
-  desc.layoutMode = uiLayoutMode_;
+  desc.layoutMode = ctx.ui.layoutMode;
   desc.descriptorPool = {
       .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
                     {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
@@ -173,7 +173,7 @@ auto VulkanApplication::addUiPass(render::FullscreenPassSource source)
   uiPass_ = &renderGraph->addPass<render::UiPass>(
       *renderer, *window, *instance, *surface, *device, *commandPool,
       *swapchain, *resourceManager, *assetSystem, ctx.camera, source,
-      *renderGraph, *timer, ctx.theme);
+      *renderGraph, *timer, ctx.ui);
   uiPass_->setName("ui").read("scene.color").write("swapchain");
   uiPass_->update(desc);
 

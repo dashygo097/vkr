@@ -135,11 +135,11 @@ private:
     resourceManager->getUniformBuffer("default")->updateRaw(frameIndex, &ubo,
                                                             sizeof(ubo));
 
-    if (uiPass()->viewport().height > 0 &&
-        uiPass()->layoutMode() == vkr::ui::LayoutMode::Standard) {
+    if (uiPass_ && uiPass_->viewport().height > 0 &&
+        uiPass_->layoutMode() == vkr::ui::LayoutMode::Standard) {
       ctx.camera.aspectRatio =
-          uiPass()->viewport().width /
-          static_cast<float>(uiPass()->viewport().height);
+          uiPass_->viewport().width /
+          static_cast<float>(uiPass_->viewport().height);
     } else {
       ctx.camera.aspectRatio = ctx.window.ratio();
     }

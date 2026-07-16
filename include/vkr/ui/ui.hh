@@ -36,18 +36,37 @@ enum LayoutMode {
   Standard,
 };
 
+struct UiDesc {
+  LayoutMode layoutMode{LayoutMode::FullScreen};
+  ThemeDesc theme{};
+
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    switch (layoutMode) {
+    case LayoutMode::FullScreen:
+    case LayoutMode::Standard:
+      return theme.isValid();
+    }
+
+    return false;
+  }
+
+  template <typename Archive> auto serialize(Archive &ar) -> void {
+    ar("layoutMode", layoutMode);
+    ar("theme", theme);
+  }
+};
+
 class UI {
 public:
   UI(const core::Window &window, const core::Instance &instance,
      const core::Surface &surface, const core::Device &device,
      const core::CommandPool &commandPool,
      resource::ResourceManager &resourceManager,
-     const util::AssetSystem &assetSystem,
-     scene::CameraDesc &camera,
+     const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
      resource::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
-     render::RenderGraph &renderGraph, util::Timer &timer, ThemeDesc &desc);
+     render::RenderGraph &renderGraph, util::Timer &timer, UiDesc &desc);
   ~UI();
 
   UI(const UI &) = delete;
@@ -55,11 +74,12 @@ public:
 
   void render(VkCommandBuffer commandBuffer);
 
-  [[nodiscard]] auto desc() const noexcept -> const ThemeDesc & {
-    return desc_;
-  }
+  [[nodiscard]] auto desc() const noexcept -> const UiDesc & { return desc_; }
 
-  void layoutMode(LayoutMode mode) noexcept { layout_mode_ = mode; }
+  void layoutMode(LayoutMode mode) noexcept {
+    layout_mode_ = mode;
+    desc_.layoutMode = mode;
+  }
 
   void switchLayoutMode() noexcept {
     switch (layout_mode_) {
@@ -70,15 +90,15 @@ public:
       layout_mode_ = LayoutMode::FullScreen;
       break;
     }
+
+    desc_.layoutMode = layout_mode_;
   }
 
   [[nodiscard]] auto shouldClose() const noexcept -> bool {
     return should_close_;
   }
 
-  void viewport(const VkViewport &viewport) noexcept {
-    viewport_ = viewport;
-  }
+  void viewport(const VkViewport &viewport) noexcept { viewport_ = viewport; }
 
   [[nodiscard]] auto layoutMode() const noexcept -> LayoutMode {
     return layout_mode_;
@@ -113,7 +133,7 @@ private:
   util::Timer &timer_;
 
   // components
-  ThemeDesc &desc_;
+  UiDesc &desc_;
   std::unique_ptr<ViewportPanel> viewport_panel_;
   std::unique_ptr<ResourceTree> resource_tree_;
   std::unique_ptr<RenderGraphPanel> render_graph_panel_;

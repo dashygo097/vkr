@@ -39,7 +39,7 @@ public:
          resource::ResourceManager &resourceManager,
          const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
          FullscreenPassSource source, RenderGraph &renderGraph,
-         util::Timer &timer, ui::ThemeDesc &theme);
+         util::Timer &timer, ui::UiDesc &uiDesc);
   ~UiPass() override;
 
   UiPass(const UiPass &) = delete;
@@ -94,7 +94,7 @@ private:
   FullscreenPassSource source_;
   RenderGraph &render_graph_;
   util::Timer &timer_;
-  ui::ThemeDesc &theme_;
+  ui::UiDesc &ui_desc_;
 
   // components
   UiPassDesc desc_{};

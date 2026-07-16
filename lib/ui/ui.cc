@@ -18,7 +18,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        resource::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
-       render::RenderGraph &renderGraph, util::Timer &timer, ThemeDesc &desc)
+       render::RenderGraph &renderGraph, util::Timer &timer, UiDesc &desc)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), resource_manager_(resourceManager),
       asset_system_(assetSystem), camera_(camera),
@@ -33,7 +33,8 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-  Theme::apply(desc_);
+  layout_mode_ = desc_.layoutMode;
+  Theme::apply(desc_.theme);
 
   ImGuiStyle &style = ImGui::GetStyle();
   if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -374,8 +375,8 @@ void UI::renderThemeControls() {
   ImGui::SeparatorText("Accent");
 
   auto accentItem = [&](const char *label, ThemeAccent accent) {
-    if (ImGui::MenuItem(label, nullptr, desc_.accent == accent)) {
-      desc_.accent = accent;
+    if (ImGui::MenuItem(label, nullptr, desc_.theme.accent == accent)) {
+      desc_.theme.accent = accent;
       changed = true;
     }
   };
@@ -388,13 +389,13 @@ void UI::renderThemeControls() {
 
   ImGui::SeparatorText("Mode");
 
-  if (ImGui::MenuItem("Dark", nullptr, desc_.dark)) {
-    desc_.dark = true;
+  if (ImGui::MenuItem("Dark", nullptr, desc_.theme.dark)) {
+    desc_.theme.dark = true;
     changed = true;
   }
 
-  if (ImGui::MenuItem("Light", nullptr, !desc_.dark)) {
-    desc_.dark = false;
+  if (ImGui::MenuItem("Light", nullptr, !desc_.theme.dark)) {
+    desc_.theme.dark = false;
     changed = true;
   }
 
@@ -402,13 +403,15 @@ void UI::renderThemeControls() {
   ImGui::PushItemWidth(140.0f);
 
   changed |=
-      ImGui::SliderFloat("Rounding", &desc_.rounding, 0.0f, 10.0f, "%.1f");
-  changed |= ImGui::SliderFloat("Alpha", &desc_.alpha, 0.35f, 1.0f, "%.2f");
+      ImGui::SliderFloat("Rounding", &desc_.theme.rounding, 0.0f, 10.0f,
+                         "%.1f");
+  changed |=
+      ImGui::SliderFloat("Alpha", &desc_.theme.alpha, 0.35f, 1.0f, "%.2f");
 
   ImGui::PopItemWidth();
 
   if (changed) {
-    Theme::apply(desc_);
+    Theme::apply(desc_.theme);
   }
 }
 
