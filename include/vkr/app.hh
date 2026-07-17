@@ -1,6 +1,12 @@
 #pragma once
 
-#include "vkr/context.hh"
+#include "vkr/core/command/command_pool.hh"
+#include "vkr/core/device.hh"
+#include "vkr/core/instance.hh"
+#include "vkr/core/surface.hh"
+#include "vkr/core/swapchain.hh"
+#include "vkr/core/sync/sync_objects.hh"
+#include "vkr/core/window.hh"
 #include "vkr/logger.hh"
 #include "vkr/render/graph.hh"
 #include "vkr/render/passes/composite.hh"
@@ -12,6 +18,7 @@
 #include "vkr/render/renderer.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/scene/camera.hh"
+#include "vkr/ui/ui.hh"
 #include "vkr/util/asset.hh"
 #include "vkr/util/input_tracer.hh"
 #include "vkr/util/timer.hh"
@@ -21,6 +28,32 @@
 #include <vector>
 
 namespace vkr {
+
+struct AppDesc {
+  util::AssetDesc asset{};
+  core::WindowDesc window{};
+  core::InstanceDesc instance{};
+  core::DeviceDesc device{};
+  core::SwapchainDesc swapchain{};
+  scene::CameraDesc camera{};
+  ui::UiDesc ui{};
+
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return asset.isValid() && window.isValid() && instance.isValid() &&
+           device.isValid() && swapchain.isValid() && camera.isValid() &&
+           ui.isValid();
+  }
+
+  template <typename Archive> auto serialize(Archive &ar) -> void {
+    ar("asset", asset);
+    ar("window", window);
+    ar("instance", instance);
+    ar("device", device);
+    ar("swapchain", swapchain);
+    ar("camera", camera);
+    ar("ui", ui);
+  }
+};
 
 class VulkanApplication {
 public:
@@ -42,7 +75,7 @@ public:
     }
   }
 
-  VulkanContext ctx;
+  AppDesc ctx;
 
   // core
   std::unique_ptr<util::AssetSystem> assetSystem;

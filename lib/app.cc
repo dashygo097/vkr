@@ -43,7 +43,7 @@ void VulkanApplication::initVulkan() {
   loadSnapshot();
 
   if (!ctx.isValid()) {
-    VKR_CORE_ERROR("invalid Vulkan context config");
+    VKR_CORE_ERROR("invalid app config");
   }
 
   // asset
