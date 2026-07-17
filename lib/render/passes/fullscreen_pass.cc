@@ -154,6 +154,21 @@ void appendResourceDescriptorWrites(
   }
 }
 
+void validateUniqueDescriptorBindings(
+    std::string_view passName,
+    const std::vector<pipeline::DescriptorBinding> &bindings) {
+  for (size_t i = 0; i < bindings.size(); ++i) {
+    for (size_t j = i + 1; j < bindings.size(); ++j) {
+      if (bindings[i].layout.binding == bindings[j].layout.binding) {
+        VKR_RENDER_ERROR("FullscreenPass '{}' has duplicate descriptor binding "
+                         "{} for '{}' and '{}'",
+                         std::string(passName), bindings[i].layout.binding,
+                         bindings[i].name, bindings[j].name);
+      }
+    }
+  }
+}
+
 } // namespace
 
 FullscreenPassSource::FullscreenPassSource(RasterPass &source)
@@ -332,6 +347,7 @@ void FullscreenPass::createDescriptors() {
   descriptor_pool_->update(descriptorPoolDesc(inputs));
 
   descriptor_layout_ = std::make_unique<pipeline::DescriptorSetLayout>(device_);
+  validateUniqueDescriptorBindings(name(), bindings);
   descriptor_layout_->update(
       pipeline::DescriptorSetLayoutDesc{.bindings = bindings});
 
