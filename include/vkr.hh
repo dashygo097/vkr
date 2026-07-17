@@ -9,4 +9,4 @@
 #include "vkr/render/passes/present.hh"
 #include "vkr/resource/buffers/ubos.hh"
 #include "vkr/resource/buffers/vbos.hh"
-#include "vkr/resource/targets/ping_pong.hh"
+#include "vkr/resource/targets/frame_history.hh"

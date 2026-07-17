@@ -21,7 +21,7 @@ struct UniformBufferShaderToyObject {
   alignas(16) glm::vec4 iMouse;
   alignas(16) glm::vec4 iDate;
   alignas(16) glm::vec4 iChannelTime;
-  alignas(16) glm::vec3 iChannelResolution[4];
+  alignas(16) glm::vec4 iChannelResolution[4];
 };
 
 } // namespace vkr::resource

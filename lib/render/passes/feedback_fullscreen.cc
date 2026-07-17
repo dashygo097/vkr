@@ -199,8 +199,7 @@ void FeedbackFullscreenPass::destroy() {
   descriptor_sets_.reset();
   descriptor_layout_.reset();
   descriptor_pool_.reset();
-  framebuffers_[0].reset();
-  framebuffers_[1].reset();
+  framebuffers_.clear();
   render_pass_.reset();
   target_.reset();
 }
@@ -217,7 +216,7 @@ void FeedbackFullscreenPass::record() {
 
   const uint32_t frameIndex = renderer_.frameIndex();
   const uint32_t writeIndex =
-      resource::PingPongTarget::writeIndexForFrame(frameIndex);
+      resource::FrameHistoryTarget::writeIndexForFrame(frameIndex);
   auto &writeTarget = target_->writeForFrame(frameIndex);
   auto &framebuffer = framebuffers_[writeIndex];
 
@@ -247,12 +246,6 @@ void FeedbackFullscreenPass::record() {
   renderer_.endPass();
 }
 
-void FeedbackFullscreenPass::afterFrame() {
-  if (target_) {
-    target_->swap();
-  }
-}
-
 auto FeedbackFullscreenPass::addSource(FullscreenPassSource source)
     -> FeedbackFullscreenPass & {
   sources_.push_back(source);
@@ -272,7 +265,7 @@ auto FeedbackFullscreenPass::target() -> resource::OffscreenTarget & {
                      name());
   }
 
-  return target_->write();
+  return target_->writeForFrame(renderer_.frameIndex());
 }
 
 auto FeedbackFullscreenPass::target() const
@@ -283,7 +276,7 @@ auto FeedbackFullscreenPass::target() const
                      name());
   }
 
-  return target_->write();
+  return target_->writeForFrame(renderer_.frameIndex());
 }
 
 auto FeedbackFullscreenPass::target(uint32_t frameIndex)
@@ -315,7 +308,7 @@ auto FeedbackFullscreenPass::historyTarget() -> resource::OffscreenTarget & {
                      name());
   }
 
-  return target_->read();
+  return target_->readForFrame(renderer_.frameIndex());
 }
 
 auto FeedbackFullscreenPass::historyTarget() const
@@ -326,7 +319,7 @@ auto FeedbackFullscreenPass::historyTarget() const
                      name());
   }
 
-  return target_->read();
+  return target_->readForFrame(renderer_.frameIndex());
 }
 
 auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex)
@@ -353,7 +346,7 @@ auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex) const
 
 void FeedbackFullscreenPass::createTarget() {
   target_ =
-      std::make_unique<resource::PingPongTarget>(device_, command_pool_);
+      std::make_unique<resource::FrameHistoryTarget>(device_, command_pool_);
   target_->update(desc_.target);
 }
 
@@ -367,6 +360,9 @@ void FeedbackFullscreenPass::createRenderPass() {
 }
 
 void FeedbackFullscreenPass::createFramebuffers() {
+  framebuffers_.clear();
+  framebuffers_.resize(target_->targetCount());
+
   for (uint32_t index = 0; index < framebuffers_.size(); ++index) {
     auto &offscreen = target_->target(index);
     resource::FramebufferDesc framebufferDesc{

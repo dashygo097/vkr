@@ -1,14 +1,13 @@
 #pragma once
 
 #include "vkr/render/passes/fullscreen_pass.hh"
-#include "vkr/resource/targets/ping_pong.hh"
-#include <array>
+#include "vkr/resource/targets/frame_history.hh"
 #include <optional>
 
 namespace vkr::render {
 
 struct FeedbackFullscreenPassDesc {
-  resource::PingPongTargetDesc target{};
+  resource::FrameHistoryTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
@@ -36,7 +35,6 @@ public:
   void destroy() override;
   void update(const FeedbackFullscreenPassDesc &desc);
   void record() override;
-  void afterFrame() override;
 
   auto addSource(FullscreenPassSource source) -> FeedbackFullscreenPass &;
   auto setSources(std::vector<FullscreenPassSource> sources)
@@ -81,9 +79,9 @@ private:
 
   FeedbackFullscreenPassDesc desc_{};
   std::vector<FullscreenPassSource> sources_{};
-  std::unique_ptr<resource::PingPongTarget> target_{};
+  std::unique_ptr<resource::FrameHistoryTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
-  std::array<std::unique_ptr<resource::FramebufferSet>, 2> framebuffers_{};
+  std::vector<std::unique_ptr<resource::FramebufferSet>> framebuffers_{};
   std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
   std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};

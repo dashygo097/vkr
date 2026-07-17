@@ -1,10 +1,12 @@
-#include <ctime>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <ctime>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 #include <vkr.hh>
+#include <vkr/util/io.hh>
 #include <vulkan/vulkan.h>
 
 class ShaderToyApp : public vkr::VulkanApplication {
@@ -38,12 +40,68 @@ private:
 
   [[nodiscard]] auto shadertoyDescriptorPool(uint32_t imageSamplerCount) const
       -> vkr::pipeline::DescriptorPoolDesc {
-    return {.poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                           vkr::core::MAX_FRAMES_IN_FLIGHT},
-                          {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                           vkr::core::MAX_FRAMES_IN_FLIGHT *
-                               imageSamplerCount}},
-            .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+    vkr::pipeline::DescriptorPoolDesc desc{
+        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                       vkr::core::MAX_FRAMES_IN_FLIGHT}},
+        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+
+    if (imageSamplerCount > 0) {
+      desc.poolSizes.push_back(
+          {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+           vkr::core::MAX_FRAMES_IN_FLIGHT * imageSamplerCount});
+    }
+
+    return desc;
+  }
+
+  [[nodiscard]] static auto channelInput(uint32_t channel)
+      -> vkr::render::FullscreenPassInputDesc {
+    return vkr::render::FullscreenPassInputDesc::shadertoyChannel(channel);
+  }
+
+  [[nodiscard]] auto shadertoyFragmentSource(const std::string &fragmentShader,
+                                             const std::string &label) const
+      -> vkr::resource::ShaderModuleDesc {
+    const auto path =
+        assetSystem->resolveApp("shaders/shadertoy/" + fragmentShader);
+    const std::string body = vkr::util::fread_string(path.string());
+
+    std::string source{};
+    source.reserve(body.size() + 2048);
+    source +=
+        "#version 450\n"
+        "\n"
+        "layout(binding = 0) uniform ShaderToyUBO {\n"
+        "  vec3 iResolution;\n"
+        "  float iTime;\n"
+        "  float iTimeDelta;\n"
+        "  float iFrameRate;\n"
+        "  int iFrame;\n"
+        "  vec4 iMouse;\n"
+        "  vec4 iDate;\n"
+        "  vec4 iChannelTime;\n"
+        "  vec3 iChannelResolution[4];\n"
+        "};\n"
+        "\n"
+        "layout(binding = 1) uniform sampler2D iChannel0;\n"
+        "layout(binding = 2) uniform sampler2D iChannel1;\n"
+        "layout(binding = 3) uniform sampler2D iChannel2;\n"
+        "layout(binding = 4) uniform sampler2D iChannel3;\n"
+        "\n"
+        "layout(location = 0) in vec2 fragUV;\n"
+        "layout(location = 0) out vec4 outColor;\n"
+        "\n"
+        "#define texture2D texture\n"
+        "#define textureCube texture\n"
+        "\n";
+    source += body;
+    source +=
+        "\n"
+        "void main() {\n"
+        "  mainImage(outColor, fragUV * iResolution.xy);\n"
+        "}\n";
+
+    return vkr::resource::ShaderModuleDesc::fragmentGlslSource(source, label);
   }
 
   [[nodiscard]] auto shadertoyPipeline(const std::string &name,
@@ -58,9 +116,7 @@ private:
                 assetSystem->resolveApp("shaders/shadertoy/shadertoy.vert")
                     .string())),
         vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolveApp("shaders/shadertoy/" + fragmentShader)
-                    .string())),
+            shadertoyFragmentSource(fragmentShader, name + ".frag")),
     };
     pipeline.depthStencil =
         vkr::pipeline::GraphicsDepthStencilDesc::disabled();
@@ -71,37 +127,41 @@ private:
 
   [[nodiscard]] auto feedbackDesc(const std::string &name,
                                   const std::string &fragmentShader,
-                                  uint32_t sourceCount)
+                                  std::optional<uint32_t> historyChannel,
+                                  const std::vector<uint32_t> &sourceChannels)
       -> vkr::render::FeedbackFullscreenPassDesc {
     vkr::render::FeedbackFullscreenPassDesc desc{};
     desc.target = {.target = shadertoyTargetDesc()};
     desc.descriptorBindings = shadertoyDescriptorBindings();
-    desc.descriptorPool = shadertoyDescriptorPool(sourceCount + 1);
+    desc.descriptorPool =
+        shadertoyDescriptorPool(static_cast<uint32_t>(
+            sourceChannels.size() + (historyChannel ? 1U : 0U)));
     desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
-    desc.historyInput = vkr::render::FullscreenPassInputDesc{.binding = 1};
+    if (historyChannel) {
+      desc.historyInput = channelInput(*historyChannel);
+    }
 
-    desc.inputs.reserve(sourceCount);
-    for (uint32_t index = 0; index < sourceCount; ++index) {
-      desc.inputs.push_back(
-          vkr::render::FullscreenPassInputDesc{.binding = 2 + index});
+    desc.inputs.reserve(sourceChannels.size());
+    for (uint32_t channel : sourceChannels) {
+      desc.inputs.push_back(channelInput(channel));
     }
 
     desc.pipeline = shadertoyPipeline(name, fragmentShader);
     return desc;
   }
 
-  [[nodiscard]] auto imageDesc(uint32_t sourceCount)
+  [[nodiscard]] auto imageDesc(const std::vector<uint32_t> &sourceChannels)
       -> vkr::render::FullscreenPassDesc {
     vkr::render::FullscreenPassDesc desc{};
     desc.target = shadertoyTargetDesc();
     desc.descriptorBindings = shadertoyDescriptorBindings();
-    desc.descriptorPool = shadertoyDescriptorPool(sourceCount);
+    desc.descriptorPool =
+        shadertoyDescriptorPool(static_cast<uint32_t>(sourceChannels.size()));
     desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
-    desc.inputs.reserve(sourceCount);
-    for (uint32_t index = 0; index < sourceCount; ++index) {
-      desc.inputs.push_back(
-          vkr::render::FullscreenPassInputDesc{.binding = 1 + index});
+    desc.inputs.reserve(sourceChannels.size());
+    for (uint32_t channel : sourceChannels) {
+      desc.inputs.push_back(channelInput(channel));
     }
 
     desc.pipeline = shadertoyPipeline("shadertoy.image", "image.frag");
@@ -150,35 +210,57 @@ private:
   }
 
   void buildRenderGraph() override {
+    auto &blackPass = renderGraph->addPass<vkr::render::FullscreenPass>(
+        *renderer, *device, *commandPool, *resourceManager);
+    blackPass.setName("black").write("black");
+    auto blackDesc = imageDesc({});
+    blackDesc.pipeline = shadertoyPipeline("shadertoy.black", "black.frag");
+    blackPass.update(blackDesc);
+
     auto &bufferA =
         renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-            *renderer, *device, *commandPool, *resourceManager);
-    bufferA.setName("buffer.a").read("buffer.a.history").write("buffer.a");
-    bufferA.update(feedbackDesc("shadertoy.buffer.a", "buffer_a.frag", 0));
+            *renderer, *device, *commandPool, *resourceManager,
+            std::vector<vkr::render::FullscreenPassSource>{
+                vkr::render::FullscreenPassSource{blackPass},
+                vkr::render::FullscreenPassSource{blackPass},
+                vkr::render::FullscreenPassSource{blackPass}});
+    bufferA.setName("buffer.a")
+        .read("buffer.a.history")
+        .read("black")
+        .write("buffer.a");
+    bufferA.update(
+        feedbackDesc("shadertoy.buffer.a", "buffer_a.frag", 0, {1, 2, 3}));
 
     auto &bufferB =
         renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
             *renderer, *device, *commandPool, *resourceManager,
             std::vector<vkr::render::FullscreenPassSource>{
-                vkr::render::FullscreenPassSource{bufferA}});
+                vkr::render::FullscreenPassSource{bufferA},
+                vkr::render::FullscreenPassSource{blackPass},
+                vkr::render::FullscreenPassSource{blackPass}});
     bufferB.setName("buffer.b")
         .read("buffer.b.history")
         .read("buffer.a")
+        .read("black")
         .write("buffer.b");
-    bufferB.update(feedbackDesc("shadertoy.buffer.b", "buffer_b.frag", 1));
+    bufferB.update(
+        feedbackDesc("shadertoy.buffer.b", "buffer_b.frag", 1, {0, 2, 3}));
 
     auto &bufferC =
         renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
             *renderer, *device, *commandPool, *resourceManager,
             std::vector<vkr::render::FullscreenPassSource>{
                 vkr::render::FullscreenPassSource{bufferA},
-                vkr::render::FullscreenPassSource{bufferB}});
+                vkr::render::FullscreenPassSource{bufferB},
+                vkr::render::FullscreenPassSource{blackPass}});
     bufferC.setName("buffer.c")
         .read("buffer.c.history")
         .read("buffer.a")
         .read("buffer.b")
+        .read("black")
         .write("buffer.c");
-    bufferC.update(feedbackDesc("shadertoy.buffer.c", "buffer_c.frag", 2));
+    bufferC.update(
+        feedbackDesc("shadertoy.buffer.c", "buffer_c.frag", 2, {0, 1, 3}));
 
     auto &bufferD =
         renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
@@ -193,7 +275,8 @@ private:
         .read("buffer.b")
         .read("buffer.c")
         .write("buffer.d");
-    bufferD.update(feedbackDesc("shadertoy.buffer.d", "buffer_d.frag", 3));
+    bufferD.update(
+        feedbackDesc("shadertoy.buffer.d", "buffer_d.frag", 3, {0, 1, 2}));
 
     auto &imagePass = renderGraph->addPass<vkr::render::FullscreenPass>(
         *renderer, *device, *commandPool, *resourceManager,
@@ -208,7 +291,7 @@ private:
         .read("buffer.c")
         .read("buffer.d")
         .write("scene.color");
-    imagePass.update(imageDesc(4));
+    imagePass.update(imageDesc({0, 1, 2, 3}));
 
     vkr::render::UiPassDesc uiDesc{};
     uiDesc.layoutMode = ctx.ui.layoutMode;
@@ -256,10 +339,11 @@ private:
                                              now->tm_min * 60 + now->tm_sec));
     ubo.iChannelTime = glm::vec4(timer->elapsedTime());
 
-    const glm::vec3 channelResolution{
+    const glm::vec4 channelResolution{
         static_cast<float>(ctx.window.width),
         static_cast<float>(ctx.window.height),
         1.0f,
+        0.0f,
     };
     for (auto &resolution : ubo.iChannelResolution) {
       resolution = channelResolution;
