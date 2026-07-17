@@ -3,6 +3,17 @@
 
 namespace vkr::ui {
 
+namespace {
+
+void drawViewportImage(VkDescriptorSet texture, const ImVec2 &size,
+                       bool flipY) {
+  const ImVec2 uv0 = flipY ? ImVec2(0.0f, 1.0f) : ImVec2(0.0f, 0.0f);
+  const ImVec2 uv1 = flipY ? ImVec2(1.0f, 0.0f) : ImVec2(1.0f, 1.0f);
+  ImGui::Image(reinterpret_cast<ImTextureID>(texture), size, uv0, uv1);
+}
+
+} // namespace
+
 ViewportPanel::ViewportPanel(VkViewport &viewport, bool &focused,
                              bool &hovered)
     : UiComponent("Viewport"), viewport_(viewport), focused_(focused),
@@ -30,7 +41,7 @@ void ViewportPanel::render() {
   }
 
   if (texture_ != VK_NULL_HANDLE) {
-    ImGui::Image(reinterpret_cast<ImTextureID>(texture_), panelSize);
+    drawViewportImage(texture_, panelSize, flip_y_);
   } else {
     ImGui::TextDisabled("(no offscreen target)");
   }
@@ -54,7 +65,7 @@ void ViewportPanel::renderFullscreen(VkDescriptorSet texture) {
   ImVec2 panelSize = ImGui::GetContentRegionAvail();
 
   if (texture != VK_NULL_HANDLE) {
-    ImGui::Image(reinterpret_cast<ImTextureID>(texture), panelSize);
+    drawViewportImage(texture, panelSize, flip_y_);
   }
 
   ImVec2 windowPos = ImGui::GetWindowPos();

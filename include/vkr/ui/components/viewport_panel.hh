@@ -10,6 +10,7 @@ public:
   ViewportPanel(VkViewport &viewport, bool &focused, bool &hovered);
 
   void setTexture(VkDescriptorSet texture) noexcept { texture_ = texture; }
+  void flipY(bool flip) noexcept { flip_y_ = flip; }
   void renderFullscreen(VkDescriptorSet texture);
 
   void renderWindow() override;
@@ -22,6 +23,7 @@ private:
   bool &focused_;
   bool &hovered_;
   VkDescriptorSet texture_{VK_NULL_HANDLE};
+  bool flip_y_{false};
 };
 
 } // namespace vkr::ui

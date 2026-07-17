@@ -43,6 +43,7 @@ struct UiDesc {
   VkViewport viewport{};
   bool viewportFocused{false};
   bool viewportHovered{false};
+  bool viewportFlipY{false};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     switch (layoutMode) {

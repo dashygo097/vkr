@@ -97,6 +97,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
 
   viewport_panel_ = std::make_unique<ViewportPanel>(
       desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
+  viewport_panel_->flipY(desc_.viewportFlipY);
   render_graph_panel_ = std::make_unique<RenderGraphPanel>(render_graph_);
   assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
   camera_panel_ = std::make_unique<CameraPanel>(

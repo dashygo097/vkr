@@ -34,7 +34,7 @@ private:
       -> vkr::resource::OffscreenTargetDesc {
     return {.color = {.width = swapchain->width(),
                       .height = swapchain->height(),
-                      .format = VK_FORMAT_R8G8B8A8_UNORM,
+                      .format = VK_FORMAT_R16G16B16A16_SFLOAT,
                       .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
                                VK_IMAGE_USAGE_SAMPLED_BIT,
                       .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -442,6 +442,8 @@ private:
     ctx.camera = {
         .locked = true,
     };
+
+    ctx.ui.viewportFlipY = true;
   }
 };
 

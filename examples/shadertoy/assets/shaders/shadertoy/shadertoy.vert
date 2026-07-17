@@ -1,6 +1,6 @@
 #version 450
 
-layout(location = 0) out vec2 fragCoord;
+layout(location = 0) out vec2 fragUV;
 
 void main() {
   vec2 positions[3] = vec2[](
@@ -11,5 +11,5 @@ void main() {
 
   vec2 pos = positions[gl_VertexIndex];
   gl_Position = vec4(pos, 0.0, 1.0);
-  fragCoord = vec2((pos.x + 1.0) * 0.5, 1.0 - (pos.y + 1.0) * 0.5);
+  fragUV = (pos + 1.0) * 0.5;
 }
