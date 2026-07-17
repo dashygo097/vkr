@@ -132,6 +132,7 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
   shader_modules_ = std::move(nextShaderModules);
   vk_pipeline_layout_ = nextLayout;
   vk_graphics_pipeline_ = nextPipeline;
+  ++revision_;
 
   VKR_PIPE_INFO("Graphics pipeline '{}' created", desc_.name);
   return true;

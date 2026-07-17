@@ -3,6 +3,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/resource/buffers/vbos.hh"
 #include "vkr/resource/shader_module.hh"
+#include <cstdint>
 
 namespace vkr::pipeline {
 
@@ -324,6 +325,10 @@ public:
     return vk_graphics_pipeline_ != VK_NULL_HANDLE;
   }
 
+  [[nodiscard]] auto revision() const noexcept -> uint64_t {
+    return revision_;
+  }
+
 private:
   struct RetiredPipeline {
     VkPipeline pipeline{VK_NULL_HANDLE};
@@ -339,6 +344,7 @@ private:
   VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
   VkPipeline vk_graphics_pipeline_{VK_NULL_HANDLE};
   std::vector<RetiredPipeline> retired_pipelines_{};
+  uint64_t revision_{0};
 };
 
 } // namespace vkr::pipeline

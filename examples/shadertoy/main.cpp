@@ -1,4 +1,5 @@
 #include <glm/glm.hpp>
+#include <cstdint>
 #include <ctime>
 #include <iostream>
 #include <optional>
@@ -14,6 +15,10 @@ private:
   static constexpr uint32_t kShaderToyChannelCount = 4;
   static constexpr std::string_view kShaderToyUniformName{"shadertoy"};
   static constexpr std::string_view kFallbackTextureName{"shadertoy.black"};
+
+  uint64_t shadertoy_pipeline_revision_{0};
+  uint64_t shadertoy_frame_offset_{0};
+  float shadertoy_time_offset_{0.0f};
 
   glm::vec4 shadertoyMouse() const {
     const auto mousePosition = viewportMousePosition();
@@ -255,6 +260,33 @@ private:
            viewport.height > 0.0f;
   }
 
+  [[nodiscard]] auto shadertoyPipelineRevision() -> uint64_t {
+    uint64_t hash = 1469598103934665603ULL;
+
+    for (auto pass : renderGraph->passes()) {
+      auto pipeline = pass.get().editablePipeline();
+      if (!pipeline) {
+        continue;
+      }
+
+      hash ^= pipeline->get().revision() + 0x9E3779B97F4A7C15ULL +
+              (hash << 6U) + (hash >> 2U);
+    }
+
+    return hash;
+  }
+
+  void resetShadertoyTimelineIfPipelineChanged() {
+    const uint64_t revision = shadertoyPipelineRevision();
+    if (revision == shadertoy_pipeline_revision_) {
+      return;
+    }
+
+    shadertoy_pipeline_revision_ = revision;
+    shadertoy_frame_offset_ = timer->frameCount();
+    shadertoy_time_offset_ = timer->elapsedTime();
+  }
+
   void createResources() override {
     resourceManager
         ->createUniformBuffer<vkr::resource::UniformBufferShaderToyObject>(
@@ -351,24 +383,32 @@ private:
       return;
     }
 
+    resetShadertoyTimelineIfPipelineChanged();
+
     std::time_t t = std::time(nullptr);
     std::tm *now = std::localtime(&t);
+    const uint64_t frameCount = timer->frameCount();
+    const uint64_t shadertoyFrame =
+        frameCount >= shadertoy_frame_offset_
+            ? frameCount - shadertoy_frame_offset_
+            : 0;
+    const float shadertoyTime = timer->elapsedTime() - shadertoy_time_offset_;
 
     vkr::resource::UniformBufferShaderToyObject ubo{};
     ubo.iResolution = glm::vec3(static_cast<float>(ctx.window.width),
                                 static_cast<float>(ctx.window.height),
                                 static_cast<float>(ctx.window.ratio()));
-    ubo.iTime = timer->elapsedTime();
+    ubo.iTime = shadertoyTime;
     ubo.iTimeDelta = timer->deltaTime();
     ubo.iFrameRate = timer->fps();
-    ubo.iFrame = static_cast<int>(timer->frameCount());
+    ubo.iFrame = static_cast<int>(shadertoyFrame);
     ubo.iMouse = isViewportMouseActive() ? shadertoyMouse() : glm::vec4{0.0f};
     ubo.iDate = glm::vec4(static_cast<float>(now->tm_year + 1900),
                           static_cast<float>(now->tm_mon),
                           static_cast<float>(now->tm_mday),
                           static_cast<float>(now->tm_hour * 3600 +
                                              now->tm_min * 60 + now->tm_sec));
-    ubo.iChannelTime = glm::vec4(timer->elapsedTime());
+    ubo.iChannelTime = glm::vec4(shadertoyTime);
 
     const glm::vec4 channelResolution{
         static_cast<float>(ctx.window.width),
