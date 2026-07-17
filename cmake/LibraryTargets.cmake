@@ -1,6 +1,10 @@
 # vkr
 add_library(vkr ${VKR_SOURCES} ${VKR_HEADERS})
 
+target_precompile_headers(vkr PRIVATE
+  $<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/include/vkr/pch.hh>
+)
+
 target_include_directories(vkr PUBLIC 
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
