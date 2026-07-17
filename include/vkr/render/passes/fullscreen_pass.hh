@@ -49,11 +49,11 @@ struct FullscreenPassInputDesc {
   uint32_t binding{0};
   VkShaderStageFlags stageFlags{VK_SHADER_STAGE_FRAGMENT_BIT};
 
-  [[nodiscard]] static auto shadertoyChannel(
-      uint32_t channel, VkShaderStageFlags stageFlags =
-                            VK_SHADER_STAGE_FRAGMENT_BIT)
+  [[nodiscard]] static auto
+  image(uint32_t binding,
+        VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FullscreenPassInputDesc {
-    return {.binding = 1U + channel, .stageFlags = stageFlags};
+    return {.binding = binding, .stageFlags = stageFlags};
   }
 };
 

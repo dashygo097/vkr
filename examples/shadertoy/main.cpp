@@ -76,7 +76,7 @@ private:
 
   [[nodiscard]] static auto channelInput(uint32_t channel)
       -> vkr::render::FullscreenPassInputDesc {
-    return vkr::render::FullscreenPassInputDesc::shadertoyChannel(channel);
+    return vkr::render::FullscreenPassInputDesc::image(1U + channel);
   }
 
   [[nodiscard]] static auto hasChannel(const std::vector<uint32_t> &channels,
