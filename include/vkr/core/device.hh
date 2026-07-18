@@ -3,12 +3,42 @@
 #include "vkr/core/instance.hh"
 #include "vkr/core/surface.hh"
 #include <algorithm>
+#include <vector>
 
 #ifdef __APPLE__
 #include <vulkan/vulkan_beta.h>
 #endif
 
 namespace vkr::core {
+
+struct QueueFamilySupport {
+  std::vector<VkQueueFamilyProperties> families{};
+
+  uint32_t graphicsFamily{VK_QUEUE_FAMILY_IGNORED};
+  uint32_t presentFamily{VK_QUEUE_FAMILY_IGNORED};
+  uint32_t computeFamily{VK_QUEUE_FAMILY_IGNORED};
+  uint32_t transferFamily{VK_QUEUE_FAMILY_IGNORED};
+
+  [[nodiscard]] auto supportsGraphics() const noexcept -> bool {
+    return graphicsFamily != VK_QUEUE_FAMILY_IGNORED;
+  }
+
+  [[nodiscard]] auto supportsPresent() const noexcept -> bool {
+    return presentFamily != VK_QUEUE_FAMILY_IGNORED;
+  }
+
+  [[nodiscard]] auto supportsCompute() const noexcept -> bool {
+    return computeFamily != VK_QUEUE_FAMILY_IGNORED;
+  }
+
+  [[nodiscard]] auto supportsTransfer() const noexcept -> bool {
+    return transferFamily != VK_QUEUE_FAMILY_IGNORED;
+  }
+
+  [[nodiscard]] auto supportsGraphicsPresentation() const noexcept -> bool {
+    return supportsGraphics() && supportsPresent();
+  }
+};
 
 struct DeviceDesc {
   std::vector<const char *> extensions{
@@ -60,16 +90,44 @@ public:
     return vk_physical_device_;
   }
   [[nodiscard]] auto graphicsFamily() const -> uint32_t {
-    return graphics_family_;
+    return queue_family_support_.graphicsFamily;
   }
   [[nodiscard]] auto presentFamily() const -> uint32_t {
-    return present_family_;
+    return queue_family_support_.presentFamily;
+  }
+  [[nodiscard]] auto computeFamily() const -> uint32_t {
+    return queue_family_support_.computeFamily;
+  }
+  [[nodiscard]] auto transferFamily() const -> uint32_t {
+    return queue_family_support_.transferFamily;
+  }
+  [[nodiscard]] auto queueFamilySupport() const noexcept
+      -> const QueueFamilySupport & {
+    return queue_family_support_;
+  }
+  [[nodiscard]] auto supportsGraphics() const noexcept -> bool {
+    return queue_family_support_.supportsGraphics();
+  }
+  [[nodiscard]] auto supportsPresent() const noexcept -> bool {
+    return queue_family_support_.supportsPresent();
+  }
+  [[nodiscard]] auto supportsCompute() const noexcept -> bool {
+    return queue_family_support_.supportsCompute();
+  }
+  [[nodiscard]] auto supportsTransfer() const noexcept -> bool {
+    return queue_family_support_.supportsTransfer();
   }
   [[nodiscard]] auto graphicsQueue() const noexcept -> VkQueue {
     return vk_graphics_queue_;
   }
   [[nodiscard]] auto presentQueue() const noexcept -> VkQueue {
     return vk_present_queue_;
+  }
+  [[nodiscard]] auto computeQueue() const noexcept -> VkQueue {
+    return vk_compute_queue_;
+  }
+  [[nodiscard]] auto transferQueue() const noexcept -> VkQueue {
+    return vk_transfer_queue_;
   }
 
 private:
@@ -82,19 +140,20 @@ private:
   VkPhysicalDevice vk_physical_device_{VK_NULL_HANDLE};
   VkDevice vk_logical_device_{VK_NULL_HANDLE};
 
-  uint32_t graphics_family_{VK_QUEUE_FAMILY_IGNORED};
-  uint32_t present_family_{VK_QUEUE_FAMILY_IGNORED};
+  QueueFamilySupport queue_family_support_{};
 
   VkQueue vk_graphics_queue_{VK_NULL_HANDLE};
   VkQueue vk_present_queue_{VK_NULL_HANDLE};
+  VkQueue vk_compute_queue_{VK_NULL_HANDLE};
+  VkQueue vk_transfer_queue_{VK_NULL_HANDLE};
 
   // helpers
   void pickPhysicalDevice();
   void createLogicalDevice();
   [[nodiscard]] auto isComplete() const noexcept -> bool {
-    bool graphicsComplete = graphics_family_ != VK_QUEUE_FAMILY_IGNORED;
-    bool presentComplete = present_family_ != VK_QUEUE_FAMILY_IGNORED;
-    return graphicsComplete && presentComplete;
+    return queue_family_support_.supportsGraphicsPresentation();
   }
+  [[nodiscard]] auto queryQueueFamilySupport(VkPhysicalDevice device) const
+      -> QueueFamilySupport;
 };
 } // namespace vkr::core

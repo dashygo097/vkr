@@ -1,13 +1,12 @@
 #pragma once
 
-#include "vkr/core/command/command_pool.hh"
+#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
 #include "vkr/core/window.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
-#include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/render/graph.hh"
 #include "vkr/resource/manager.hh"

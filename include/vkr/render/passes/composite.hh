@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/render/passes/fullscreen_pass.hh"
+#include "vkr/render/passes/fullscreen.hh"
 
 namespace vkr::render {
 

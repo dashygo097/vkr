@@ -60,9 +60,9 @@ auto nextBindingAfter(
   uint32_t nextBinding = 0;
 
   for (const auto &binding : resourceBindings) {
-    const uint32_t descriptorCount =
-        binding.layout.descriptorCount == 0 ? 1U
-                                            : binding.layout.descriptorCount;
+    const uint32_t descriptorCount = binding.layout.descriptorCount == 0
+                                         ? 1U
+                                         : binding.layout.descriptorCount;
     nextBinding =
         std::max(nextBinding, binding.layout.binding + descriptorCount);
   }

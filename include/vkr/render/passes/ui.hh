@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command/command_pool.hh"
+#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
 #include "vkr/core/surface.hh"
@@ -10,7 +10,7 @@
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/render/graph.hh"
 #include "vkr/render/pass.hh"
-#include "vkr/render/passes/fullscreen_pass.hh"
+#include "vkr/render/passes/fullscreen.hh"
 #include "vkr/render/renderer.hh"
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"

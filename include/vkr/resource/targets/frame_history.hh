@@ -1,7 +1,7 @@
 #pragma once
 
-#include "vkr/core/command/command_buffer.hh"
-#include "vkr/core/command/command_pool.hh"
+#include "vkr/core/command/buffers.hh"
+#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/resource/targets/offscreen.hh"
 #include <memory>
@@ -56,14 +56,14 @@ public:
     return static_cast<uint32_t>(core::MAX_FRAMES_IN_FLIGHT);
   }
 
-  [[nodiscard]] static constexpr auto readIndexForFrame(
-      uint32_t frameIndex) noexcept -> uint32_t {
+  [[nodiscard]] static constexpr auto
+  readIndexForFrame(uint32_t frameIndex) noexcept -> uint32_t {
     const uint32_t count = targetCountForFrames();
     return (writeIndexForFrame(frameIndex) + count - 1U) % count;
   }
 
-  [[nodiscard]] static constexpr auto writeIndexForFrame(
-      uint32_t frameIndex) noexcept -> uint32_t {
+  [[nodiscard]] static constexpr auto
+  writeIndexForFrame(uint32_t frameIndex) noexcept -> uint32_t {
     return frameIndex % targetCountForFrames();
   }
 

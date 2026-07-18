@@ -1,9 +1,9 @@
 #pragma once
 
-#include "vkr/core/command/command_buffer.hh"
-#include "vkr/core/command/command_pool.hh"
+#include "vkr/core/command/buffers.hh"
+#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/core/sync/sync_objects.hh"
+#include "vkr/core/sync/objects.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/resource/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"

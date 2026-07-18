@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command/command_pool.hh"
+#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"

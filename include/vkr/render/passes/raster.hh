@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command/command_pool.hh"
+#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
@@ -49,9 +49,8 @@ public:
     return target();
   }
 
-  [[nodiscard]] auto editablePipeline() noexcept
-      -> std::optional<
-          std::reference_wrapper<pipeline::GraphicsPipeline>> override {
+  [[nodiscard]] auto editablePipeline() noexcept -> std::optional<
+      std::reference_wrapper<pipeline::GraphicsPipeline>> override {
     if (!pipeline_) {
       return std::nullopt;
     }
@@ -59,9 +58,8 @@ public:
     return *pipeline_;
   }
 
-  [[nodiscard]] auto editablePipeline() const noexcept
-      -> std::optional<
-          std::reference_wrapper<const pipeline::GraphicsPipeline>> override {
+  [[nodiscard]] auto editablePipeline() const noexcept -> std::optional<
+      std::reference_wrapper<const pipeline::GraphicsPipeline>> override {
     if (!pipeline_) {
       return std::nullopt;
     }

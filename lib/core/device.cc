@@ -2,6 +2,7 @@
 #include "vkr/core/instance.hh"
 #include "vkr/logger.hh"
 #include <set>
+#include <vector>
 
 namespace vkr::core {
 Device::Device(const Instance &instance, const Surface &surface,
@@ -61,35 +62,21 @@ void Device::pickPhysicalDevice() {
     VKR_CORE_TRACE("  -- Vendor ID: {:#06x}", deviceProperties.vendorID);
     VKR_CORE_TRACE("  -- Device ID: {:#06x}", deviceProperties.deviceID);
 
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
-                                             nullptr);
-    if (!queueFamilyCount) {
-      VKR_CORE_ERROR("No queue families found on the physical device.");
-    }
+    const auto support = queryQueueFamilySupport(device);
 
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
-                                             queueFamilies.data());
+    VKR_CORE_TRACE("  -- Queue Families: {}", support.families.size());
+    VKR_CORE_TRACE("  -- Graphics: {}",
+                   support.supportsGraphics() ? "supported" : "unsupported");
+    VKR_CORE_TRACE("  -- Present: {}",
+                   support.supportsPresent() ? "supported" : "unsupported");
+    VKR_CORE_TRACE("  -- Compute: {}",
+                   support.supportsCompute() ? "supported" : "unsupported");
+    VKR_CORE_TRACE("  -- Transfer: {}",
+                   support.supportsTransfer() ? "supported" : "unsupported");
 
-    for (uint32_t i = 0; i < queueFamilies.size(); i++) {
-      const auto &queueFamily = queueFamilies[i];
-      if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-        graphics_family_ = i;
-      }
-      VkBool32 presentSupport = false;
-      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_.surface(),
-                                           &presentSupport);
-      if (presentSupport) {
-        present_family_ = i;
-      }
-      if (isComplete()) {
-        break;
-      }
-    }
-
-    if (isComplete()) {
+    if (support.supportsGraphicsPresentation()) {
       vk_physical_device_ = device;
+      queue_family_support_ = support;
       VKR_CORE_INFO("Selected device: {}", deviceProperties.deviceName);
       break;
     }
@@ -102,7 +89,17 @@ void Device::pickPhysicalDevice() {
 
 void Device::createLogicalDevice() {
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-  std::set<uint32_t> uniqueQueueFamilies = {graphics_family_, present_family_};
+  std::set<uint32_t> uniqueQueueFamilies = {
+      queue_family_support_.graphicsFamily,
+      queue_family_support_.presentFamily,
+  };
+
+  if (queue_family_support_.supportsCompute()) {
+    uniqueQueueFamilies.insert(queue_family_support_.computeFamily);
+  }
+  if (queue_family_support_.supportsTransfer()) {
+    uniqueQueueFamilies.insert(queue_family_support_.transferFamily);
+  }
 
   float queuePriority = 1.0f;
   for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -143,9 +140,70 @@ void Device::createLogicalDevice() {
     VKR_CORE_ERROR("Failed to create logical device!");
   }
 
-  vkGetDeviceQueue(vk_logical_device_, graphics_family_, 0,
+  vkGetDeviceQueue(vk_logical_device_, queue_family_support_.graphicsFamily, 0,
                    &vk_graphics_queue_);
-  vkGetDeviceQueue(vk_logical_device_, present_family_, 0, &vk_present_queue_);
+  vkGetDeviceQueue(vk_logical_device_, queue_family_support_.presentFamily, 0,
+                   &vk_present_queue_);
+
+  if (queue_family_support_.supportsCompute()) {
+    vkGetDeviceQueue(vk_logical_device_, queue_family_support_.computeFamily, 0,
+                     &vk_compute_queue_);
+  }
+
+  if (queue_family_support_.supportsTransfer()) {
+    vkGetDeviceQueue(vk_logical_device_, queue_family_support_.transferFamily,
+                     0, &vk_transfer_queue_);
+  }
+}
+
+auto Device::queryQueueFamilySupport(VkPhysicalDevice device) const
+    -> QueueFamilySupport {
+  QueueFamilySupport support{};
+
+  uint32_t queueFamilyCount = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+  if (!queueFamilyCount) {
+    VKR_CORE_ERROR("No queue families found on the physical device.");
+  }
+
+  support.families.resize(queueFamilyCount);
+  vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
+                                           support.families.data());
+
+  for (uint32_t i = 0; i < support.families.size(); i++) {
+    const auto &queueFamily = support.families[i];
+
+    if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
+        !support.supportsGraphics()) {
+      support.graphicsFamily = i;
+    }
+
+    VkBool32 presentSupport = false;
+    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_.surface(),
+                                         &presentSupport);
+    if (presentSupport && !support.supportsPresent()) {
+      support.presentFamily = i;
+    }
+
+    if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) {
+      const bool dedicatedCompute =
+          (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0;
+      if (!support.supportsCompute() || dedicatedCompute) {
+        support.computeFamily = i;
+      }
+    }
+
+    if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+      const bool dedicatedTransfer =
+          (queueFamily.queueFlags &
+           (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == 0;
+      if (!support.supportsTransfer() || dedicatedTransfer) {
+        support.transferFamily = i;
+      }
+    }
+  }
+
+  return support;
 }
 
 } // namespace vkr::core

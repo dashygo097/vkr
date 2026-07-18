@@ -1,4 +1,4 @@
-#include "vkr/render/passes/fullscreen_pass.hh"
+#include "vkr/render/passes/fullscreen.hh"
 #include "vkr/core/core_utils.hh"
 #include "vkr/logger.hh"
 #include "vkr/render/passes/feedback_fullscreen.hh"
@@ -55,9 +55,9 @@ auto nextBindingAfter(
   uint32_t nextBinding = 0;
 
   for (const auto &binding : resourceBindings) {
-    const uint32_t descriptorCount =
-        binding.layout.descriptorCount == 0 ? 1U
-                                            : binding.layout.descriptorCount;
+    const uint32_t descriptorCount = binding.layout.descriptorCount == 0
+                                         ? 1U
+                                         : binding.layout.descriptorCount;
     nextBinding =
         std::max(nextBinding, binding.layout.binding + descriptorCount);
   }
@@ -395,7 +395,8 @@ auto FullscreenPass::resolvedInputs() const
 
     const uint32_t firstBinding = nextBindingAfter(desc_.descriptorBindings);
     for (uint32_t index = 0; index < sources_.size(); ++index) {
-      inputs.push_back(FullscreenPassInputDesc{.binding = firstBinding + index});
+      inputs.push_back(
+          FullscreenPassInputDesc{.binding = firstBinding + index});
     }
 
     return inputs;
@@ -436,8 +437,8 @@ auto FullscreenPass::createDescriptorWrites(
          ++frameIndex) {
       const auto &color = sources_[index].target(frameIndex).color();
       if (!color.hasSampler()) {
-        VKR_RENDER_ERROR("FullscreenPass '{}' source {} has no sampler",
-                         name(), index);
+        VKR_RENDER_ERROR("FullscreenPass '{}' source {} has no sampler", name(),
+                         index);
       }
 
       VkDescriptorImageInfo imageInfo{};

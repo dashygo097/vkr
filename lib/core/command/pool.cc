@@ -1,4 +1,4 @@
-#include "vkr/core/command/command_pool.hh"
+#include "vkr/core/command/pool.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::core {
