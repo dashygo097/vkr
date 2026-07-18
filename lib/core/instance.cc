@@ -1,6 +1,8 @@
 #include "vkr/core/instance.hh"
-#include "vkr/core/core_utils.hh"
 #include "vkr/logger.hh"
+#include <GLFW/glfw3.h>
+#include <algorithm>
+#include <cstring>
 #include <vector>
 
 namespace vkr::core {
@@ -12,7 +14,30 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
 
   std::vector<const char *> enabledValidationLayers{};
 #ifndef NDEBUG
-  if (checkValidationLayerSupport(desc_.validationLayers)) {
+  uint32_t layerCount;
+  vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+  std::vector<VkLayerProperties> availableLayers(layerCount);
+  vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+  bool validationLayerSupport = true;
+  for (const char *layerName : desc_.validationLayers) {
+    bool layerFound = false;
+
+    for (const auto &layerProperties : availableLayers) {
+      if (strcmp(layerName, layerProperties.layerName) == 0) {
+        layerFound = true;
+        break;
+      }
+    }
+
+    if (!layerFound) {
+      validationLayerSupport = false;
+      break;
+    }
+  }
+
+  if (validationLayerSupport) {
     enabledValidationLayers = desc_.validationLayers;
   } else if (!desc_.validationLayers.empty()) {
     VKR_CORE_WARN("validation layers requested, but not available; continuing "
@@ -37,7 +62,27 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   createInfo.flags = 0;
 #endif
 
-  auto extensions = getRequiredExtensions(desc_.extensions);
+  uint32_t glfwExtensionCount = 0;
+  const char **glfwExtensions;
+  glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+  std::vector<const char *> extensions(glfwExtensions,
+                                       glfwExtensions + glfwExtensionCount);
+
+  for (const auto *extension : desc_.extensions) {
+    if (std::find(extensions.begin(), extensions.end(), extension) ==
+        extensions.end()) {
+      extensions.push_back(extension);
+    }
+  }
+
+#ifndef NDEBUG
+  if (std::find(extensions.begin(), extensions.end(),
+                VK_EXT_DEBUG_UTILS_EXTENSION_NAME) == extensions.end()) {
+    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+  }
+#endif
+
   createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
   createInfo.ppEnabledExtensionNames = extensions.data();
 

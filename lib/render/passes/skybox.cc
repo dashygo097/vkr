@@ -1,5 +1,4 @@
 #include "vkr/render/passes/skybox.hh"
-#include "vkr/core/core_utils.hh"
 #include "vkr/logger.hh"
 #include "vkr/resource/buffers/vbos.hh"
 
@@ -176,8 +175,7 @@ auto SkyboxPass::descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc {
   if (poolDesc.maxSets == 0) {
     poolDesc.poolSizes = {
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, core::MAX_FRAMES_IN_FLIGHT},
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-         core::MAX_FRAMES_IN_FLIGHT},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, core::MAX_FRAMES_IN_FLIGHT},
     };
     poolDesc.maxSets = core::MAX_FRAMES_IN_FLIGHT;
   }

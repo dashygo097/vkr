@@ -1,6 +1,7 @@
 #include "vkr/ui/ui.hh"
-#include "vkr/core/core_utils.hh"
 #include "vkr/logger.hh"
+#include <cstdio>
+#include <cstdlib>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
@@ -8,13 +9,26 @@
 #include <vector>
 
 namespace vkr::ui {
+namespace {
+
+void checkVkResult(VkResult err) {
+  if (err == VK_SUCCESS) {
+    return;
+  }
+
+  std::fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+  if (err < 0) {
+    std::abort();
+  }
+}
+
+} // namespace
 
 UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool,
        resource::ResourceManager &resourceManager,
-       const util::AssetSystem &assetSystem,
-       scene::CameraDesc &camera,
+       const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
        resource::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
@@ -59,7 +73,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   initInfo.Allocator = nullptr;
   initInfo.MinImageCount = core::MAX_FRAMES_IN_FLIGHT;
   initInfo.ImageCount = core::MAX_FRAMES_IN_FLIGHT;
-  initInfo.CheckVkResultFn = core::check_vk_result;
+  initInfo.CheckVkResultFn = checkVkResult;
   initInfo.PipelineInfoMain = pipelineInfo;
 
   ImGui_ImplVulkan_Init(&initInfo);
@@ -121,11 +135,9 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   resource_tree_ = std::make_unique<ResourceTree>(resource_manager_);
   VKR_UI_INFO("Resource Tree initialized successfully.");
 
-  dock_components_ = {*viewport_panel_,     *resource_tree_,
-                      *render_graph_panel_, *assets_panel_,
-                      *camera_panel_,       *mesh_editor_panel_,
-                      *shader_editor_,      *fps_panel_,
-                      *logging_panel_};
+  dock_components_ = {*viewport_panel_, *resource_tree_, *render_graph_panel_,
+                      *assets_panel_,   *camera_panel_,  *mesh_editor_panel_,
+                      *shader_editor_,  *fps_panel_,     *logging_panel_};
 
   VKR_UI_INFO("ImGui UI initialized successfully.");
 }
@@ -397,9 +409,8 @@ void UI::renderThemeControls() {
   ImGui::SeparatorText("Shape");
   ImGui::PushItemWidth(140.0f);
 
-  changed |=
-      ImGui::SliderFloat("Rounding", &desc_.theme.rounding, 0.0f, 10.0f,
-                         "%.1f");
+  changed |= ImGui::SliderFloat("Rounding", &desc_.theme.rounding, 0.0f, 10.0f,
+                                "%.1f");
   changed |=
       ImGui::SliderFloat("Alpha", &desc_.theme.alpha, 0.35f, 1.0f, "%.2f");
 

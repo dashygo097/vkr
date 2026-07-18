@@ -1,5 +1,4 @@
 #include "vkr/render/passes/feedback_fullscreen.hh"
-#include "vkr/core/core_utils.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
 
