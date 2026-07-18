@@ -61,6 +61,10 @@ public:
     return enabled_layers_;
   }
 
+  [[nodiscard]] auto surfaceIntegration() const noexcept -> SurfaceIntegration {
+    return desc_.surfaceIntegration;
+  }
+
   [[nodiscard]] auto hasExtension(const std::string &extension) const noexcept
       -> bool;
   [[nodiscard]] auto hasLayer(const std::string &layer) const noexcept -> bool;

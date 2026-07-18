@@ -24,5 +24,7 @@ private:
 
   // components
   VkSurfaceKHR surface_{VK_NULL_HANDLE};
+
+  void create();
 };
 } // namespace vkr::core
