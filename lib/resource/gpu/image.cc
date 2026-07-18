@@ -545,14 +545,14 @@ void Image::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &commandBuffer;
 
-  if (vkQueueSubmit(device_.graphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE) !=
+  if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo, VK_NULL_HANDLE) !=
       VK_SUCCESS) {
     vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
                          &commandBuffer);
     VKR_RES_ERROR("Failed to submit single-time command buffer");
   }
 
-  vkQueueWaitIdle(device_.graphicsQueue());
+  vkQueueWaitIdle(command_pool_.queue());
   vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
                        &commandBuffer);
 }

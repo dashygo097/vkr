@@ -32,7 +32,7 @@ void IndexBuffer::create() {
                vk_memory_, device_.device(), device_.physicalDevice());
 
   copyBuffer(stagingBuffer, vk_index_buffer_, bufferSize,
-             command_pool_.commandPool(), device_.graphicsQueue(),
+             command_pool_.commandPool(), command_pool_.queue(),
              device_.device());
 
   vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);

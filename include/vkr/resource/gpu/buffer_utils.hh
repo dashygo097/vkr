@@ -13,7 +13,6 @@ void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                   VkPhysicalDevice physicalDevice);
 
 void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size,
-                VkCommandPool commandPool, VkQueue graphicsQueue,
-                VkDevice device);
+                VkCommandPool commandPool, VkQueue queue, VkDevice device);
 
 } // namespace vkr::resource

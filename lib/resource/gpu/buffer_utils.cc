@@ -50,8 +50,7 @@ void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
 }
 
 void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size,
-                VkCommandPool commandPool, VkQueue graphicsQueue,
-                VkDevice device) {
+                VkCommandPool commandPool, VkQueue queue, VkDevice device) {
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -78,8 +77,8 @@ void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size,
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &commandBuffer;
 
-  vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-  vkQueueWaitIdle(graphicsQueue);
+  vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+  vkQueueWaitIdle(queue);
 
   vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }

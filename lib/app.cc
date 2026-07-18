@@ -72,7 +72,7 @@ void VulkanApplication::initVulkan() {
                                                 ctx.swapchain);
 
   // command pool
-  commandPool = std::make_unique<core::CommandPool>(*device);
+  commandPool = std::make_unique<core::CommandPool>(*device, ctx.commandPool);
 
   // sync objects
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);

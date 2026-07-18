@@ -35,13 +35,14 @@ struct AppDesc {
   core::InstanceDesc instance{};
   core::DeviceDesc device{};
   core::SwapchainDesc swapchain{};
+  core::CommandPoolDesc commandPool{};
   scene::CameraDesc camera{};
   ui::UiDesc ui{};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return asset.isValid() && window.isValid() && instance.isValid() &&
-           device.isValid() && swapchain.isValid() && camera.isValid() &&
-           ui.isValid();
+           device.isValid() && swapchain.isValid() && commandPool.isValid() &&
+           camera.isValid() && ui.isValid();
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
@@ -50,6 +51,7 @@ struct AppDesc {
     ar("instance", instance);
     ar("device", device);
     ar("swapchain", swapchain);
+    ar("commandPool", commandPool);
     ar("camera", camera);
     ar("ui", ui);
   }

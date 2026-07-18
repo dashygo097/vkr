@@ -141,7 +141,7 @@ protected:
     vkUnmapMemory(device_.device(), stagingBufferMemory);
 
     copyBuffer(stagingBuffer, vk_vertex_buffer_, bufferSize,
-               command_pool_.commandPool(), device_.graphicsQueue(),
+               command_pool_.commandPool(), command_pool_.queue(),
                device_.device());
 
     vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);

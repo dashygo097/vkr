@@ -9,6 +9,10 @@ Renderer::Renderer(const core::Device &device, const core::Swapchain &swapchain,
                    resource::ResourceManager &resourceManager)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
       sync_objects_(syncObjects), resource_manager_(resourceManager) {
+  if (command_pool_.queueRole() != core::CommandQueueRole::Graphics) {
+    VKR_RENDER_ERROR("Renderer requires a graphics command pool");
+  }
+
   command_buffers_ =
       std::make_unique<core::CommandBuffers>(device_, command_pool_);
 }
@@ -282,7 +286,7 @@ void Renderer::submitCommandBuffer() {
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
-  if (vkQueueSubmit(device_.graphicsQueue(), 1, &submitInfo,
+  if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo,
                     sync_objects_.inFlightFence(frame_index_)) != VK_SUCCESS) {
     VKR_RENDER_ERROR("failed to submit draw command buffer");
   }
