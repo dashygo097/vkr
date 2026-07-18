@@ -57,7 +57,6 @@ void VulkanApplication::initVulkan() {
   inputTracer->installCallbacks();
 
   // instance
-  core::Surface::appendRequiredInstanceExtensions(ctx.instance);
   instance = std::make_unique<core::Instance>(ctx.instance);
 
   // surface

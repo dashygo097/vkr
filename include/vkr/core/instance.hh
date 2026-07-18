@@ -7,9 +7,15 @@
 
 namespace vkr::core {
 
+enum class SurfaceIntegration {
+  None,
+  GLFW,
+};
+
 struct InstanceDesc {
   std::string name{};
   uint32_t version{VK_MAKE_VERSION(1, 0, 0)};
+  SurfaceIntegration surfaceIntegration{SurfaceIntegration::GLFW};
   std::vector<std::string> requiredExtensions{};
   std::vector<std::string> optionalExtensions{};
 
@@ -30,10 +36,6 @@ public:
 
   Instance(const Instance &) = delete;
   auto operator=(const Instance &) -> Instance & = delete;
-
-  [[nodiscard]] auto desc() const noexcept -> const InstanceDesc & {
-    return desc_;
-  }
 
   [[nodiscard]] auto instance() const noexcept -> VkInstance {
     return vk_instance_;

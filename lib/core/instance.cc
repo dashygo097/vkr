@@ -1,5 +1,6 @@
 #include "vkr/core/instance.hh"
 #include "vkr/logger.hh"
+#include <GLFW/glfw3.h>
 #include <algorithm>
 #include <vector>
 
@@ -108,6 +109,44 @@ void Instance::querySupport() {
 
 void Instance::resolveExtensions() {
   enabled_extensions_.clear();
+
+  if (desc_.surfaceIntegration == SurfaceIntegration::GLFW) {
+    uint32_t glfwExtensionCount = 0;
+    const char **glfwExtensions =
+        glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
+      const std::string extension{glfwExtensions[i]};
+      if (!supportsExtension(extension)) {
+        VKR_CORE_ERROR("Required GLFW instance extension is not available: {}",
+                       extension);
+      }
+
+      if (std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
+                    extension) == enabled_extensions_.end()) {
+        enabled_extensions_.push_back(extension);
+      }
+    }
+  }
+
+#ifdef __APPLE__
+  const std::vector<std::string> platformRequiredExtensions{
+      VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+      VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+  };
+
+  for (const auto &extension : platformRequiredExtensions) {
+    if (!supportsExtension(extension)) {
+      VKR_CORE_ERROR("Required Apple instance extension is not available: {}",
+                     extension);
+    }
+
+    if (std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
+                  extension) == enabled_extensions_.end()) {
+      enabled_extensions_.push_back(extension);
+    }
+  }
+#endif
 
   for (const auto &extension : desc_.requiredExtensions) {
     if (!supportsExtension(extension)) {
