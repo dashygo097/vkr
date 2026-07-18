@@ -41,8 +41,10 @@ public:
   Window(const Window &) = delete;
   auto operator=(const Window &) -> Window & = delete;
 
-  [[nodiscard]] auto desc() const noexcept -> const WindowDesc & {
-    return desc_;
+  [[nodiscard]] auto width() const noexcept -> uint32_t { return desc_.width; }
+
+  [[nodiscard]] auto height() const noexcept -> uint32_t {
+    return desc_.height;
   }
 
   [[nodiscard]] auto shouldClose() const -> bool;

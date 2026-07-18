@@ -88,8 +88,7 @@ void VulkanApplication::initVulkan() {
   timer = std::make_unique<util::Timer>();
 
   // camera
-  camera = std::make_unique<scene::Camera>(*window, *timer, *inputTracer,
-                                           ctx.camera);
+  camera = std::make_unique<scene::Camera>(*timer, *inputTracer, ctx.camera);
 
   // renderer
   renderer = std::make_unique<render::Renderer>(

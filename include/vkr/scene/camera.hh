@@ -58,8 +58,8 @@ struct CameraDesc {
 
 class Camera {
 public:
-  explicit Camera(const core::Window &window, const util::Timer &timer,
-                  const util::InputTracer &input, CameraDesc &desc);
+  explicit Camera(const util::Timer &timer, const util::InputTracer &input,
+                  CameraDesc &desc);
   ~Camera() = default;
 
   Camera(const Camera &) = delete;

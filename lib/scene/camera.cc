@@ -3,12 +3,9 @@
 
 namespace vkr::scene {
 
-Camera::Camera(const core::Window &window, const util::Timer &timer,
-               const util::InputTracer &input, CameraDesc &desc)
+Camera::Camera(const util::Timer &timer, const util::InputTracer &input,
+               CameraDesc &desc)
     : timer_(timer), input_(input), desc_(desc) {
-  desc_.lastX = static_cast<float>(window.desc().width) / 2.0f;
-  desc_.lastY = static_cast<float>(window.desc().height) / 2.0f;
-
   updateVectors();
 }
 
