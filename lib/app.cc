@@ -57,6 +57,7 @@ void VulkanApplication::initVulkan() {
   inputTracer->installCallbacks();
 
   // instance
+  core::Surface::appendRequiredInstanceExtensions(ctx.instance);
   instance = std::make_unique<core::Instance>(ctx.instance);
 
   // surface
@@ -173,8 +174,8 @@ void VulkanApplication::updateUiState() {
   ctx.ui.viewportFocused = uiPass->get().viewportFocused();
   ctx.ui.viewportHovered = uiPass->get().viewportHovered();
 
-  const bool lockCamera = ctx.ui.layoutMode == ui::LayoutMode::Standard &&
-                          !ctx.ui.viewportFocused;
+  const bool lockCamera =
+      ctx.ui.layoutMode == ui::LayoutMode::Standard && !ctx.ui.viewportFocused;
   camera->lock(lockCamera);
 }
 

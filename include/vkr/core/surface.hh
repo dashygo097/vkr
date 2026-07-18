@@ -7,6 +7,8 @@ namespace vkr::core {
 
 class Surface {
 public:
+  static void appendRequiredInstanceExtensions(InstanceDesc &desc);
+
   explicit Surface(const Instance &instance, const Window &window);
   ~Surface();
 

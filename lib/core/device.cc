@@ -129,8 +129,8 @@ void Device::createLogicalDevice() {
 
 #ifndef NDEBUG
   createInfo.enabledLayerCount =
-      static_cast<uint32_t>(instance_.desc().validationLayers.size());
-  createInfo.ppEnabledLayerNames = instance_.desc().validationLayers.data();
+      static_cast<uint32_t>(instance_.enabledLayerNames().size());
+  createInfo.ppEnabledLayerNames = instance_.enabledLayerNames().data();
 #else
   createInfo.enabledLayerCount = 0;
 #endif

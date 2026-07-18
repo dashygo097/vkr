@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vkr/core/debug_messenger.hh"
-#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
@@ -11,37 +10,12 @@ namespace vkr::core {
 struct InstanceDesc {
   std::string name{};
   uint32_t version{VK_MAKE_VERSION(1, 0, 0)};
-  std::vector<const char *> extensions{
-#ifdef __APPLE__
-      VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
-#endif
-      VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-  };
-  std::vector<const char *> validationLayers{
-#ifdef NDEBUG
-#else
-      "VK_LAYER_KHRONOS_validation",
-#endif
-  };
+  std::vector<std::string> requiredExtensions{};
+  std::vector<std::string> optionalExtensions{};
 
-  [[nodiscard]] auto hasExtension(const char *extension) const noexcept
-      -> bool {
-    return std::find(extensions.begin(), extensions.end(), extension) !=
-           extensions.end();
-  }
-
-#ifdef __APPLE__
   [[nodiscard]] auto isValid() const noexcept -> bool {
-    return !name.empty() && version != 0 &&
-           hasExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) &&
-           hasExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    return !name.empty() && version != 0;
   }
-#else
-  [[nodiscard]] auto isValid() const noexcept -> bool {
-    return !name.empty() && version != 0 &&
-           hasExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-  }
-#endif
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
     ar("name", name);
@@ -65,13 +39,61 @@ public:
     return vk_instance_;
   }
 
+  [[nodiscard]] auto availableExtensions() const noexcept
+      -> const std::vector<VkExtensionProperties> & {
+    return available_extensions_;
+  }
+
+  [[nodiscard]] auto availableLayers() const noexcept
+      -> const std::vector<VkLayerProperties> & {
+    return available_layers_;
+  }
+
+  [[nodiscard]] auto enabledExtensions() const noexcept
+      -> const std::vector<std::string> & {
+    return enabled_extensions_;
+  }
+
+  [[nodiscard]] auto enabledLayers() const noexcept
+      -> const std::vector<std::string> & {
+    return enabled_layers_;
+  }
+
+  [[nodiscard]] auto enabledExtensionNames() const noexcept
+      -> const std::vector<const char *> & {
+    return enabled_extension_names_;
+  }
+
+  [[nodiscard]] auto enabledLayerNames() const noexcept
+      -> const std::vector<const char *> & {
+    return enabled_layer_names_;
+  }
+
+  [[nodiscard]] auto hasExtension(const std::string &extension) const noexcept
+      -> bool;
+  [[nodiscard]] auto hasLayer(const std::string &layer) const noexcept -> bool;
+
 private:
   // components
   InstanceDesc &desc_;
   VkInstance vk_instance_{VK_NULL_HANDLE};
+  std::vector<VkExtensionProperties> available_extensions_{};
+  std::vector<VkLayerProperties> available_layers_{};
+  std::vector<std::string> enabled_extensions_{};
+  std::vector<std::string> enabled_layers_{};
+  std::vector<const char *> enabled_extension_names_{};
+  std::vector<const char *> enabled_layer_names_{};
 
 #ifndef NDEBUG
   std::unique_ptr<DebugMessenger> debug_messenger_;
 #endif
+
+  void querySupport();
+  void resolveExtensions();
+  void resolveLayers();
+  void rebuildNameViews();
+  [[nodiscard]] auto supportsExtension(const std::string &extension) const
+      -> bool;
+  [[nodiscard]] auto supportsLayer(const std::string &layer) const -> bool;
 };
 } // namespace vkr::core

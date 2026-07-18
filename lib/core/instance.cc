@@ -1,8 +1,6 @@
 #include "vkr/core/instance.hh"
 #include "vkr/logger.hh"
-#include <GLFW/glfw3.h>
 #include <algorithm>
-#include <cstring>
 #include <vector>
 
 namespace vkr::core {
@@ -12,36 +10,15 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
                 VK_VERSION_MINOR(desc_.version),
                 VK_VERSION_PATCH(desc_.version));
 
-  std::vector<const char *> enabledValidationLayers{};
+  querySupport();
+  resolveExtensions();
+  resolveLayers();
+  rebuildNameViews();
+
 #ifndef NDEBUG
-  uint32_t layerCount;
-  vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-  std::vector<VkLayerProperties> availableLayers(layerCount);
-  vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-  bool validationLayerSupport = true;
-  for (const char *layerName : desc_.validationLayers) {
-    bool layerFound = false;
-
-    for (const auto &layerProperties : availableLayers) {
-      if (strcmp(layerName, layerProperties.layerName) == 0) {
-        layerFound = true;
-        break;
-      }
-    }
-
-    if (!layerFound) {
-      validationLayerSupport = false;
-      break;
-    }
-  }
-
-  if (validationLayerSupport) {
-    enabledValidationLayers = desc_.validationLayers;
-  } else if (!desc_.validationLayers.empty()) {
-    VKR_CORE_WARN("validation layers requested, but not available; continuing "
-                  "without validation layers");
+  if (!hasExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)) {
+    VKR_CORE_WARN("{} is not available; debug messenger disabled",
+                  VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
   }
 #endif
 
@@ -57,42 +34,25 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   createInfo.pApplicationInfo = &appInfo;
 #ifdef __APPLE__
-  createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+  if (hasExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)) {
+    createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+  }
 #else
   createInfo.flags = 0;
 #endif
 
-  uint32_t glfwExtensionCount = 0;
-  const char **glfwExtensions;
-  glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-  std::vector<const char *> extensions(glfwExtensions,
-                                       glfwExtensions + glfwExtensionCount);
-
-  for (const auto *extension : desc_.extensions) {
-    if (std::find(extensions.begin(), extensions.end(), extension) ==
-        extensions.end()) {
-      extensions.push_back(extension);
-    }
-  }
-
-#ifndef NDEBUG
-  if (std::find(extensions.begin(), extensions.end(),
-                VK_EXT_DEBUG_UTILS_EXTENSION_NAME) == extensions.end()) {
-    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-  }
-#endif
-
-  createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-  createInfo.ppEnabledExtensionNames = extensions.data();
+  createInfo.enabledExtensionCount =
+      static_cast<uint32_t>(enabled_extension_names_.size());
+  createInfo.ppEnabledExtensionNames = enabled_extension_names_.data();
 
   VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 #ifndef NDEBUG
   createInfo.enabledLayerCount =
-      static_cast<uint32_t>(enabledValidationLayers.size());
-  createInfo.ppEnabledLayerNames = enabledValidationLayers.data();
+      static_cast<uint32_t>(enabled_layer_names_.size());
+  createInfo.ppEnabledLayerNames = enabled_layer_names_.data();
 
-  if (!enabledValidationLayers.empty()) {
+  if (!enabled_layers_.empty() &&
+      hasExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)) {
     DebugMessenger::populateCreateInfo(debugCreateInfo);
     createInfo.pNext = &debugCreateInfo;
   } else {
@@ -109,13 +69,17 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   }
 
 #ifndef NDEBUG
-  if (!enabledValidationLayers.empty()) {
+  if (!enabled_layers_.empty() &&
+      hasExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)) {
     debug_messenger_ = std::make_unique<DebugMessenger>(vk_instance_);
   }
 #endif
 
-  for (const auto &ext : extensions) {
+  for (const auto &ext : enabled_extensions_) {
     VKR_CORE_TRACE("Enabled Extension: {}", ext);
+  }
+  for (const auto &layer : enabled_layers_) {
+    VKR_CORE_TRACE("Enabled Layer: {}", layer);
   }
 
   VKR_CORE_INFO("Vulkan Instance created successfully.");
@@ -127,5 +91,115 @@ Instance::~Instance() {
 #endif
   vkDestroyInstance(vk_instance_, nullptr);
   vk_instance_ = VK_NULL_HANDLE;
+}
+
+void Instance::querySupport() {
+  uint32_t extensionCount = 0;
+  vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+  available_extensions_.resize(extensionCount);
+  vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount,
+                                         available_extensions_.data());
+
+  uint32_t layerCount = 0;
+  vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+  available_layers_.resize(layerCount);
+  vkEnumerateInstanceLayerProperties(&layerCount, available_layers_.data());
+}
+
+void Instance::resolveExtensions() {
+  enabled_extensions_.clear();
+
+  for (const auto &extension : desc_.requiredExtensions) {
+    if (!supportsExtension(extension)) {
+      VKR_CORE_ERROR("Required instance extension is not available: {}",
+                     extension);
+    }
+
+    if (std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
+                  extension) == enabled_extensions_.end()) {
+      enabled_extensions_.push_back(extension);
+    }
+  }
+
+  for (const auto &extension : desc_.optionalExtensions) {
+    if (!supportsExtension(extension)) {
+      VKR_CORE_WARN("Optional instance extension is not available: {}",
+                    extension);
+      continue;
+    }
+
+    if (std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
+                  extension) == enabled_extensions_.end()) {
+      enabled_extensions_.push_back(extension);
+    }
+  }
+
+#ifndef NDEBUG
+  if (supportsExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME) &&
+      std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
+                VK_EXT_DEBUG_UTILS_EXTENSION_NAME) ==
+          enabled_extensions_.end()) {
+    enabled_extensions_.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+  }
+#endif
+}
+
+void Instance::resolveLayers() {
+  enabled_layers_.clear();
+
+#ifndef NDEBUG
+  const std::string validationLayer{"VK_LAYER_KHRONOS_validation"};
+  if (supportsLayer(validationLayer)) {
+    enabled_layers_.push_back(validationLayer);
+  } else {
+    VKR_CORE_WARN("validation layers requested, but not available; continuing "
+                  "without validation layers");
+  }
+#endif
+}
+
+void Instance::rebuildNameViews() {
+  enabled_extension_names_.clear();
+  enabled_extension_names_.reserve(enabled_extensions_.size());
+  for (const auto &extension : enabled_extensions_) {
+    enabled_extension_names_.push_back(extension.c_str());
+  }
+
+  enabled_layer_names_.clear();
+  enabled_layer_names_.reserve(enabled_layers_.size());
+  for (const auto &layer : enabled_layers_) {
+    enabled_layer_names_.push_back(layer.c_str());
+  }
+}
+
+auto Instance::supportsExtension(const std::string &extension) const -> bool {
+  for (const auto &available : available_extensions_) {
+    if (extension == available.extensionName) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+auto Instance::supportsLayer(const std::string &layer) const -> bool {
+  for (const auto &available : available_layers_) {
+    if (layer == available.layerName) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+auto Instance::hasExtension(const std::string &extension) const noexcept
+    -> bool {
+  return std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
+                   extension) != enabled_extensions_.end();
+}
+
+auto Instance::hasLayer(const std::string &layer) const noexcept -> bool {
+  return std::find(enabled_layers_.begin(), enabled_layers_.end(), layer) !=
+         enabled_layers_.end();
 }
 } // namespace vkr::core
