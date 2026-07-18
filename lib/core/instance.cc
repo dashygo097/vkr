@@ -14,7 +14,6 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   querySupport();
   resolveExtensions();
   resolveLayers();
-  rebuildNameViews();
 
 #ifndef NDEBUG
   if (!hasExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)) {
@@ -42,15 +41,27 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   createInfo.flags = 0;
 #endif
 
+  std::vector<const char *> enabledExtensionNames{};
+  enabledExtensionNames.reserve(enabled_extensions_.size());
+  for (const auto &extension : enabled_extensions_) {
+    enabledExtensionNames.push_back(extension.c_str());
+  }
+
   createInfo.enabledExtensionCount =
-      static_cast<uint32_t>(enabled_extension_names_.size());
-  createInfo.ppEnabledExtensionNames = enabled_extension_names_.data();
+      static_cast<uint32_t>(enabledExtensionNames.size());
+  createInfo.ppEnabledExtensionNames = enabledExtensionNames.data();
 
   VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 #ifndef NDEBUG
+  std::vector<const char *> enabledLayerNames{};
+  enabledLayerNames.reserve(enabled_layers_.size());
+  for (const auto &layer : enabled_layers_) {
+    enabledLayerNames.push_back(layer.c_str());
+  }
+
   createInfo.enabledLayerCount =
-      static_cast<uint32_t>(enabled_layer_names_.size());
-  createInfo.ppEnabledLayerNames = enabled_layer_names_.data();
+      static_cast<uint32_t>(enabledLayerNames.size());
+  createInfo.ppEnabledLayerNames = enabledLayerNames.data();
 
   if (!enabled_layers_.empty() &&
       hasExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)) {
@@ -195,20 +206,6 @@ void Instance::resolveLayers() {
                   "without validation layers");
   }
 #endif
-}
-
-void Instance::rebuildNameViews() {
-  enabled_extension_names_.clear();
-  enabled_extension_names_.reserve(enabled_extensions_.size());
-  for (const auto &extension : enabled_extensions_) {
-    enabled_extension_names_.push_back(extension.c_str());
-  }
-
-  enabled_layer_names_.clear();
-  enabled_layer_names_.reserve(enabled_layers_.size());
-  for (const auto &layer : enabled_layers_) {
-    enabled_layer_names_.push_back(layer.c_str());
-  }
 }
 
 auto Instance::supportsExtension(const std::string &extension) const -> bool {

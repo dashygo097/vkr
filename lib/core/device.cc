@@ -128,9 +128,15 @@ void Device::createLogicalDevice() {
   createInfo.ppEnabledExtensionNames = desc_.extensions.data();
 
 #ifndef NDEBUG
+  std::vector<const char *> enabledLayerNames{};
+  enabledLayerNames.reserve(instance_.enabledLayers().size());
+  for (const auto &layer : instance_.enabledLayers()) {
+    enabledLayerNames.push_back(layer.c_str());
+  }
+
   createInfo.enabledLayerCount =
-      static_cast<uint32_t>(instance_.enabledLayerNames().size());
-  createInfo.ppEnabledLayerNames = instance_.enabledLayerNames().data();
+      static_cast<uint32_t>(enabledLayerNames.size());
+  createInfo.ppEnabledLayerNames = enabledLayerNames.data();
 #else
   createInfo.enabledLayerCount = 0;
 #endif

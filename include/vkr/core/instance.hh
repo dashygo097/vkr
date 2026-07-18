@@ -61,16 +61,6 @@ public:
     return enabled_layers_;
   }
 
-  [[nodiscard]] auto enabledExtensionNames() const noexcept
-      -> const std::vector<const char *> & {
-    return enabled_extension_names_;
-  }
-
-  [[nodiscard]] auto enabledLayerNames() const noexcept
-      -> const std::vector<const char *> & {
-    return enabled_layer_names_;
-  }
-
   [[nodiscard]] auto hasExtension(const std::string &extension) const noexcept
       -> bool;
   [[nodiscard]] auto hasLayer(const std::string &layer) const noexcept -> bool;
@@ -83,8 +73,6 @@ private:
   std::vector<VkLayerProperties> available_layers_{};
   std::vector<std::string> enabled_extensions_{};
   std::vector<std::string> enabled_layers_{};
-  std::vector<const char *> enabled_extension_names_{};
-  std::vector<const char *> enabled_layer_names_{};
 
 #ifndef NDEBUG
   std::unique_ptr<DebugMessenger> debug_messenger_;
@@ -93,7 +81,6 @@ private:
   void querySupport();
   void resolveExtensions();
   void resolveLayers();
-  void rebuildNameViews();
   [[nodiscard]] auto supportsExtension(const std::string &extension) const
       -> bool;
   [[nodiscard]] auto supportsLayer(const std::string &layer) const -> bool;
