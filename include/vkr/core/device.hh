@@ -2,6 +2,8 @@
 
 #include "vkr/core/instance.hh"
 #include "vkr/core/surface.hh"
+#include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -92,7 +94,7 @@ public:
 private:
   // dependencies
   const Instance &instance_;
-  const Surface *surface_{nullptr};
+  std::optional<std::reference_wrapper<const Surface>> surface_{};
 
   // components
   DeviceDesc &desc_;

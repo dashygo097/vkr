@@ -22,7 +22,7 @@ Device::Device(const Instance &instance, DeviceDesc &deviceDesc)
 
 Device::Device(const Instance &instance, const Surface &surface,
                DeviceDesc &deviceDesc)
-    : instance_(instance), surface_(&surface), desc_(deviceDesc) {
+    : instance_(instance), surface_(std::cref(surface)), desc_(deviceDesc) {
   VKR_CORE_INFO("Creating logical device...");
 
   pickPhysicalDevice();
@@ -295,9 +295,9 @@ void Device::resolveQueueFamilies(VkPhysicalDevice device) {
       graphics_family_ = i;
     }
 
-    if (surface_ != nullptr) {
+    if (surface_.has_value()) {
       VkBool32 presentSupport = false;
-      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_->surface(),
+      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_->get().surface(),
                                            &presentSupport);
       if (presentSupport && !supportsPresent()) {
         present_family_ = i;
