@@ -3,7 +3,6 @@
 #include <functional>
 #include <optional>
 #include <typeinfo>
-#include <vulkan/vulkan_core.h>
 
 namespace vkr {
 
@@ -64,6 +63,9 @@ void VulkanApplication::initVulkan() {
 
   // device
   device = std::make_unique<core::Device>(*instance, *surface, ctx.device);
+  if (!device->supportsGraphics() || !device->supportsPresent()) {
+    VKR_CORE_ERROR("rendering requires graphics and present queue support");
+  }
 
   // swapchain
   swapchain = std::make_unique<core::Swapchain>(*window, *surface, *device,

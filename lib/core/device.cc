@@ -1,19 +1,34 @@
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
 #include "vkr/logger.hh"
+#include <algorithm>
 #include <set>
 #include <vector>
 
 namespace vkr::core {
-Device::Device(const Instance &instance, const Surface &surface,
-               DeviceDesc &deviceDesc)
-    : instance_(instance), surface_(surface), desc_(deviceDesc) {
+Device::Device(const Instance &instance, DeviceDesc &deviceDesc)
+    : instance_(instance), desc_(deviceDesc) {
   VKR_CORE_INFO("Creating logical device...");
 
   pickPhysicalDevice();
   createLogicalDevice();
 
-  for (const auto &ext : desc_.extensions) {
+  for (const auto &ext : enabled_extensions_) {
+    VKR_CORE_TRACE("Enabled Extension: {}", ext);
+  }
+
+  VKR_CORE_INFO("Logical device created successfully.");
+}
+
+Device::Device(const Instance &instance, const Surface &surface,
+               DeviceDesc &deviceDesc)
+    : instance_(instance), surface_(&surface), desc_(deviceDesc) {
+  VKR_CORE_INFO("Creating logical device...");
+
+  pickPhysicalDevice();
+  createLogicalDevice();
+
+  for (const auto &ext : enabled_extensions_) {
     VKR_CORE_TRACE("Enabled Extension: {}", ext);
   }
 
@@ -47,6 +62,14 @@ void Device::pickPhysicalDevice() {
                              devices.data());
 
   for (const auto &device : devices) {
+    available_extensions_.clear();
+    enabled_extensions_.clear();
+    queue_families_.clear();
+    graphics_family_ = VK_QUEUE_FAMILY_IGNORED;
+    present_family_ = VK_QUEUE_FAMILY_IGNORED;
+    compute_family_ = VK_QUEUE_FAMILY_IGNORED;
+    transfer_family_ = VK_QUEUE_FAMILY_IGNORED;
+
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
@@ -62,24 +85,28 @@ void Device::pickPhysicalDevice() {
     VKR_CORE_TRACE("  -- Vendor ID: {:#06x}", deviceProperties.vendorID);
     VKR_CORE_TRACE("  -- Device ID: {:#06x}", deviceProperties.deviceID);
 
-    const auto support = queryQueueFamilySupport(device);
+    queryDeviceSupport(device);
+    resolveQueueFamilies(device);
 
-    VKR_CORE_TRACE("  -- Queue Families: {}", support.families.size());
+    VKR_CORE_TRACE("  -- Queue Families: {}", queue_families_.size());
     VKR_CORE_TRACE("  -- Graphics: {}",
-                   support.supportsGraphics() ? "supported" : "unsupported");
+                   supportsGraphics() ? "supported" : "unsupported");
     VKR_CORE_TRACE("  -- Present: {}",
-                   support.supportsPresent() ? "supported" : "unsupported");
+                   supportsPresent() ? "supported" : "unsupported");
     VKR_CORE_TRACE("  -- Compute: {}",
-                   support.supportsCompute() ? "supported" : "unsupported");
+                   supportsCompute() ? "supported" : "unsupported");
     VKR_CORE_TRACE("  -- Transfer: {}",
-                   support.supportsTransfer() ? "supported" : "unsupported");
+                   supportsTransfer() ? "supported" : "unsupported");
 
-    if (support.supportsGraphicsPresentation()) {
-      vk_physical_device_ = device;
-      queue_family_support_ = support;
-      VKR_CORE_INFO("Selected device: {}", deviceProperties.deviceName);
-      break;
+    if (!resolveExtensions()) {
+      VKR_CORE_WARN("Skipping device with missing required extension(s): {}",
+                    deviceProperties.deviceName);
+      continue;
     }
+
+    vk_physical_device_ = device;
+    VKR_CORE_INFO("Selected device: {}", deviceProperties.deviceName);
+    break;
   }
 
   if (vk_physical_device_ == VK_NULL_HANDLE) {
@@ -89,16 +116,19 @@ void Device::pickPhysicalDevice() {
 
 void Device::createLogicalDevice() {
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-  std::set<uint32_t> uniqueQueueFamilies = {
-      queue_family_support_.graphicsFamily,
-      queue_family_support_.presentFamily,
-  };
+  std::set<uint32_t> uniqueQueueFamilies{};
 
-  if (queue_family_support_.supportsCompute()) {
-    uniqueQueueFamilies.insert(queue_family_support_.computeFamily);
+  if (supportsGraphics()) {
+    uniqueQueueFamilies.insert(graphics_family_);
   }
-  if (queue_family_support_.supportsTransfer()) {
-    uniqueQueueFamilies.insert(queue_family_support_.transferFamily);
+  if (supportsPresent()) {
+    uniqueQueueFamilies.insert(present_family_);
+  }
+  if (supportsCompute()) {
+    uniqueQueueFamilies.insert(compute_family_);
+  }
+  if (supportsTransfer()) {
+    uniqueQueueFamilies.insert(transfer_family_);
   }
 
   float queuePriority = 1.0f;
@@ -123,9 +153,15 @@ void Device::createLogicalDevice() {
 
   createInfo.pEnabledFeatures = &deviceFeatures;
 
+  std::vector<const char *> enabledExtensionNames{};
+  enabledExtensionNames.reserve(enabled_extensions_.size());
+  for (const auto &extension : enabled_extensions_) {
+    enabledExtensionNames.push_back(extension.c_str());
+  }
+
   createInfo.enabledExtensionCount =
-      static_cast<uint32_t>(desc_.extensions.size());
-  createInfo.ppEnabledExtensionNames = desc_.extensions.data();
+      static_cast<uint32_t>(enabledExtensionNames.size());
+  createInfo.ppEnabledExtensionNames = enabledExtensionNames.data();
 
 #ifndef NDEBUG
   std::vector<const char *> enabledLayerNames{};
@@ -146,25 +182,33 @@ void Device::createLogicalDevice() {
     VKR_CORE_ERROR("Failed to create logical device!");
   }
 
-  vkGetDeviceQueue(vk_logical_device_, queue_family_support_.graphicsFamily, 0,
-                   &vk_graphics_queue_);
-  vkGetDeviceQueue(vk_logical_device_, queue_family_support_.presentFamily, 0,
-                   &vk_present_queue_);
+  if (supportsGraphics()) {
+    vkGetDeviceQueue(vk_logical_device_, graphics_family_, 0,
+                     &vk_graphics_queue_);
+  }
+  if (supportsPresent()) {
+    vkGetDeviceQueue(vk_logical_device_, present_family_, 0,
+                     &vk_present_queue_);
+  }
 
-  if (queue_family_support_.supportsCompute()) {
-    vkGetDeviceQueue(vk_logical_device_, queue_family_support_.computeFamily, 0,
+  if (supportsCompute()) {
+    vkGetDeviceQueue(vk_logical_device_, compute_family_, 0,
                      &vk_compute_queue_);
   }
 
-  if (queue_family_support_.supportsTransfer()) {
-    vkGetDeviceQueue(vk_logical_device_, queue_family_support_.transferFamily,
-                     0, &vk_transfer_queue_);
+  if (supportsTransfer()) {
+    vkGetDeviceQueue(vk_logical_device_, transfer_family_, 0,
+                     &vk_transfer_queue_);
   }
 }
 
-auto Device::queryQueueFamilySupport(VkPhysicalDevice device) const
-    -> QueueFamilySupport {
-  QueueFamilySupport support{};
+void Device::queryDeviceSupport(VkPhysicalDevice device) {
+  uint32_t extensionCount = 0;
+  vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,
+                                       nullptr);
+  available_extensions_.resize(extensionCount);
+  vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,
+                                       available_extensions_.data());
 
   uint32_t queueFamilyCount = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -172,30 +216,99 @@ auto Device::queryQueueFamilySupport(VkPhysicalDevice device) const
     VKR_CORE_ERROR("No queue families found on the physical device.");
   }
 
-  support.families.resize(queueFamilyCount);
+  queue_families_.resize(queueFamilyCount);
   vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
-                                           support.families.data());
+                                           queue_families_.data());
+}
 
-  for (uint32_t i = 0; i < support.families.size(); i++) {
-    const auto &queueFamily = support.families[i];
+auto Device::resolveExtensions() -> bool {
+  enabled_extensions_.clear();
 
-    if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
-        !support.supportsGraphics()) {
-      support.graphicsFamily = i;
+  const std::vector<std::string> platformRequiredExtensions{
+#ifdef __APPLE__
+      VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+#endif
+  };
+
+  for (const auto &extension : platformRequiredExtensions) {
+    if (!hasExtension(extension)) {
+      VKR_CORE_WARN("Required device extension is not available: {}",
+                    extension);
+      return false;
     }
 
-    VkBool32 presentSupport = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_.surface(),
-                                         &presentSupport);
-    if (presentSupport && !support.supportsPresent()) {
-      support.presentFamily = i;
+    if (std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
+                  extension) == enabled_extensions_.end()) {
+      enabled_extensions_.push_back(extension);
+    }
+  }
+
+  if (supportsPresent()) {
+    const std::string extension{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    if (!hasExtension(extension)) {
+      VKR_CORE_WARN("Required device extension is not available: {}",
+                    extension);
+      return false;
+    }
+
+    if (std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
+                  extension) == enabled_extensions_.end()) {
+      enabled_extensions_.push_back(extension);
+    }
+  }
+
+  for (const auto &extension : desc_.requiredExtensions) {
+    if (!hasExtension(extension)) {
+      VKR_CORE_WARN("Required device extension is not available: {}",
+                    extension);
+      return false;
+    }
+
+    if (std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
+                  extension) == enabled_extensions_.end()) {
+      enabled_extensions_.push_back(extension);
+    }
+  }
+
+  for (const auto &extension : desc_.optionalExtensions) {
+    if (!hasExtension(extension)) {
+      VKR_CORE_WARN("Optional device extension is not available: {}",
+                    extension);
+      continue;
+    }
+
+    if (std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
+                  extension) == enabled_extensions_.end()) {
+      enabled_extensions_.push_back(extension);
+    }
+  }
+
+  return true;
+}
+
+void Device::resolveQueueFamilies(VkPhysicalDevice device) {
+  for (uint32_t i = 0; i < queue_families_.size(); i++) {
+    const auto &queueFamily = queue_families_[i];
+
+    if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
+        !supportsGraphics()) {
+      graphics_family_ = i;
+    }
+
+    if (surface_ != nullptr) {
+      VkBool32 presentSupport = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_->surface(),
+                                           &presentSupport);
+      if (presentSupport && !supportsPresent()) {
+        present_family_ = i;
+      }
     }
 
     if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) {
       const bool dedicatedCompute =
           (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0;
-      if (!support.supportsCompute() || dedicatedCompute) {
-        support.computeFamily = i;
+      if (!supportsCompute() || dedicatedCompute) {
+        compute_family_ = i;
       }
     }
 
@@ -203,13 +316,21 @@ auto Device::queryQueueFamilySupport(VkPhysicalDevice device) const
       const bool dedicatedTransfer =
           (queueFamily.queueFlags &
            (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == 0;
-      if (!support.supportsTransfer() || dedicatedTransfer) {
-        support.transferFamily = i;
+      if (!supportsTransfer() || dedicatedTransfer) {
+        transfer_family_ = i;
       }
     }
   }
+}
 
-  return support;
+auto Device::hasExtension(const std::string &extension) const noexcept -> bool {
+  for (const auto &available : available_extensions_) {
+    if (extension == available.extensionName) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 } // namespace vkr::core
