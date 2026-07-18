@@ -179,6 +179,7 @@ private:
     ctx.instance = {
         .name = "skybox",
         .version = VK_MAKE_VERSION(1, 0, 0),
+        .surfaceIntegration = vkr::core::SurfaceIntegration::GLFW,
     };
 
     ctx.camera = {

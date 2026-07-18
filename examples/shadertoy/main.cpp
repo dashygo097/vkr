@@ -1,6 +1,6 @@
-#include <glm/glm.hpp>
 #include <cstdint>
 #include <ctime>
+#include <glm/glm.hpp>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -388,10 +388,9 @@ private:
     std::time_t t = std::time(nullptr);
     std::tm *now = std::localtime(&t);
     const uint64_t frameCount = timer->frameCount();
-    const uint64_t shadertoyFrame =
-        frameCount >= shadertoy_frame_offset_
-            ? frameCount - shadertoy_frame_offset_
-            : 0;
+    const uint64_t shadertoyFrame = frameCount >= shadertoy_frame_offset_
+                                        ? frameCount - shadertoy_frame_offset_
+                                        : 0;
     const float shadertoyTime = timer->elapsedTime() - shadertoy_time_offset_;
 
     vkr::resource::UniformBufferShaderToyObject ubo{};
@@ -433,6 +432,7 @@ private:
     ctx.instance = {
         .name = "shadertoy",
         .version = VK_MAKE_VERSION(1, 0, 0),
+        .surfaceIntegration = vkr::core::SurfaceIntegration::GLFW,
     };
 
     ctx.swapchain = {

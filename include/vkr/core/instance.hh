@@ -15,7 +15,7 @@ enum class SurfaceIntegration {
 struct InstanceDesc {
   std::string name{};
   uint32_t version{VK_MAKE_VERSION(1, 0, 0)};
-  SurfaceIntegration surfaceIntegration{SurfaceIntegration::GLFW};
+  SurfaceIntegration surfaceIntegration{SurfaceIntegration::None};
   std::vector<std::string> requiredExtensions{};
   std::vector<std::string> optionalExtensions{};
 
