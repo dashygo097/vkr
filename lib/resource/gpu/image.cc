@@ -1,8 +1,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "vkr/resource/gpu/image.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/gpu/buffer_utils.hh"
+#include "vkr/resource/buffers/buffer.hh"
 #include <array>
+#include <cstddef>
 #include <cstring>
 #include <memory>
 #include <stb_image.h>
@@ -120,25 +121,11 @@ void Image::createFromFile() {
                                  static_cast<VkDeviceSize>(height_) *
                                  static_cast<VkDeviceSize>(channels_);
 
-  VkBuffer stagingBuffer{VK_NULL_HANDLE};
-  VkDeviceMemory stagingBufferMemory{VK_NULL_HANDLE};
-
-  createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-               stagingBuffer, stagingBufferMemory, device_.device(),
-               device_.physicalDevice());
-
-  void *data{nullptr};
-  if (vkMapMemory(device_.device(), stagingBufferMemory, 0, imageSize, 0,
-                  &data) != VK_SUCCESS) {
-    vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);
-    vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
-    VKR_RES_ERROR("Failed to map image staging buffer memory");
-  }
-
-  std::memcpy(data, pixels.get(), static_cast<size_t>(imageSize));
-  vkUnmapMemory(device_.device(), stagingBufferMemory);
+  Buffer staging{device_};
+  staging.create(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  staging.write(pixels.get(), imageSize);
 
   const VkImageUsageFlags usage = desc_.usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   createImageObject(width_, height_, desc_.format, desc_.tiling, usage,
@@ -148,7 +135,7 @@ void Image::createFromFile() {
   transitionImageLayout(vk_image_, desc_.format, desc_.aspectMask,
                         VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  copyBufferToImage(stagingBuffer, vk_image_, width_, height_);
+  copyBufferToImage(staging.buffer(), vk_image_, width_, height_);
 
   if (desc_.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED &&
       desc_.finalLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
@@ -159,9 +146,6 @@ void Image::createFromFile() {
   } else {
     layout_ = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   }
-
-  vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);
-  vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
 }
 
 void Image::createCubemapFromFiles() {
@@ -231,29 +215,18 @@ void Image::createCubemapFromFiles() {
                                 static_cast<VkDeviceSize>(channels_);
   const VkDeviceSize imageSize = faceSize * FaceCount;
 
-  VkBuffer stagingBuffer{VK_NULL_HANDLE};
-  VkDeviceMemory stagingBufferMemory{VK_NULL_HANDLE};
+  Buffer staging{device_};
+  staging.create(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-  createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-               stagingBuffer, stagingBufferMemory, device_.device(),
-               device_.physicalDevice());
+  auto *data = static_cast<std::byte *>(staging.map(imageSize));
 
-  void *data{nullptr};
-  if (vkMapMemory(device_.device(), stagingBufferMemory, 0, imageSize, 0,
-                  &data) != VK_SUCCESS) {
-    vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);
-    vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
-    VKR_RES_ERROR("Failed to map cubemap staging buffer memory");
-  }
-
-  auto *dst = static_cast<std::byte *>(data);
   for (uint32_t face = 0; face < FaceCount; ++face) {
-    std::memcpy(dst + faceSize * face, facePixels[face].get(),
+    std::memcpy(data + faceSize * face, facePixels[face].get(),
                 static_cast<size_t>(faceSize));
   }
-  vkUnmapMemory(device_.device(), stagingBufferMemory);
+  staging.unmap();
 
   const VkImageUsageFlags usage = desc_.usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   createImageObject(width_, height_, desc_.format, desc_.tiling, usage,
@@ -263,7 +236,8 @@ void Image::createCubemapFromFiles() {
   transitionImageLayout(vk_image_, desc_.format, desc_.aspectMask,
                         VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  copyBufferToImageLayers(stagingBuffer, vk_image_, width_, height_, FaceCount);
+  copyBufferToImageLayers(staging.buffer(), vk_image_, width_, height_,
+                          FaceCount);
 
   if (desc_.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED &&
       desc_.finalLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
@@ -274,9 +248,6 @@ void Image::createCubemapFromFiles() {
   } else {
     layout_ = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   }
-
-  vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);
-  vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
 }
 
 void Image::createImageObject(uint32_t width, uint32_t height, VkFormat format,
@@ -311,8 +282,8 @@ void Image::createImageObject(uint32_t width, uint32_t height, VkFormat format,
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = findMemoryType(
-      memRequirements.memoryTypeBits, properties, device_.physicalDevice());
+  allocInfo.memoryTypeIndex = Buffer::findMemoryType(
+      memRequirements.memoryTypeBits, properties, device_);
 
   if (vkAllocateMemory(device_.device(), &allocInfo, nullptr, &vk_memory_) !=
       VK_SUCCESS) {

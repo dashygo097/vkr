@@ -196,17 +196,17 @@ auto RasterPass::createDescriptorWrites() const
         VKR_RENDER_ERROR("Uniform buffer resource not found: {}", binding.name);
       }
 
-      const auto &buffers = uniformBuffer->buffers();
-      if (buffers.size() != core::MAX_FRAMES_IN_FLIGHT) {
+      const auto &targets = uniformBuffer->targets();
+      if (targets.size() != core::MAX_FRAMES_IN_FLIGHT) {
         VKR_RENDER_ERROR("Uniform buffer '{}' frame count mismatch: {} vs {}",
-                         binding.name, buffers.size(),
+                         binding.name, targets.size(),
                          core::MAX_FRAMES_IN_FLIGHT);
       }
 
       for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
            ++frameIndex) {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = buffers[frameIndex];
+        bufferInfo.buffer = targets[frameIndex].buffer();
         bufferInfo.offset = 0;
         bufferInfo.range = uniformBuffer->bufferSize();
 

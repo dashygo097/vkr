@@ -3,8 +3,8 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
+#include "vkr/resource/buffers/buffer.hh"
 #include "vkr/resource/buffers/vbos.hh"
-#include "vkr/resource/gpu/buffer_utils.hh"
 #include <cstring>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -30,7 +30,7 @@ template <typename VertexType> class VertexBuffer : public IVertexBuffer {
 public:
   explicit VertexBuffer(const core::Device &device,
                         const core::CommandPool &commandPool)
-      : device_(device), command_pool_(commandPool) {}
+      : device_(device), command_pool_(commandPool), target_(device) {}
 
   ~VertexBuffer() override { destroy(); }
 
@@ -49,7 +49,7 @@ public:
 
     vertices_ = vertices;
 
-    if (newBufferSize != oldBufferSize || vk_vertex_buffer_ == VK_NULL_HANDLE) {
+    if (newBufferSize != oldBufferSize || !target_.isValid()) {
       destroy();
       create();
       return;
@@ -69,12 +69,12 @@ public:
   }
 
   [[nodiscard]] auto buffer() const noexcept -> const VkBuffer & override {
-    return vk_vertex_buffer_;
+    return target_.buffer();
   }
 
   [[nodiscard]] auto memory() const noexcept
       -> const VkDeviceMemory & override {
-    return vk_memory_;
+    return target_.memory();
   }
 
   [[nodiscard]] auto vertexCount() const noexcept -> size_t override {
@@ -99,53 +99,27 @@ protected:
     const auto bufferSize =
         static_cast<VkDeviceSize>(sizeof(VertexType) * vertices_.size());
 
-    createBuffer(bufferSize,
-                 VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_vertex_buffer_,
-                 vk_memory_, device_.device(), device_.physicalDevice());
+    target_.create(bufferSize,
+                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     upload(vertices_.data(), bufferSize);
   }
 
-  void destroy() {
-    if (vk_vertex_buffer_ != VK_NULL_HANDLE) {
-      vkDestroyBuffer(device_.device(), vk_vertex_buffer_, nullptr);
-      vk_vertex_buffer_ = VK_NULL_HANDLE;
-    }
-
-    if (vk_memory_ != VK_NULL_HANDLE) {
-      vkFreeMemory(device_.device(), vk_memory_, nullptr);
-      vk_memory_ = VK_NULL_HANDLE;
-    }
-  }
+  void destroy() { target_.destroy(); }
 
   void upload(const VertexType *vertices, VkDeviceSize bufferSize) {
     if (vertices == nullptr || bufferSize == 0) {
       VKR_RES_ERROR("Cannot upload empty vertex buffer data!");
     }
 
-    VkBuffer stagingBuffer{VK_NULL_HANDLE};
-    VkDeviceMemory stagingBufferMemory{VK_NULL_HANDLE};
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 stagingBuffer, stagingBufferMemory, device_.device(),
-                 device_.physicalDevice());
-
-    void *mapped{nullptr};
-    vkMapMemory(device_.device(), stagingBufferMemory, 0, bufferSize, 0,
-                &mapped);
-    std::memcpy(mapped, vertices, static_cast<size_t>(bufferSize));
-    vkUnmapMemory(device_.device(), stagingBufferMemory);
-
-    copyBuffer(stagingBuffer, vk_vertex_buffer_, bufferSize,
-               command_pool_.commandPool(), command_pool_.queue(),
-               device_.device());
-
-    vkDestroyBuffer(device_.device(), stagingBuffer, nullptr);
-    vkFreeMemory(device_.device(), stagingBufferMemory, nullptr);
+    Buffer staging{device_};
+    staging.create(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    staging.write(vertices, bufferSize);
+    Buffer::copy(staging, target_, bufferSize, command_pool_);
   }
 
 protected:
@@ -155,8 +129,7 @@ protected:
 
   // components
   std::vector<VertexType> vertices_{};
-  VkBuffer vk_vertex_buffer_{VK_NULL_HANDLE};
-  VkDeviceMemory vk_memory_{VK_NULL_HANDLE};
+  Buffer target_;
 };
 
 } // namespace vkr::resource

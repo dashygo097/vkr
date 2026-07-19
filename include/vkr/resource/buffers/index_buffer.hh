@@ -2,6 +2,8 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
+#include "vkr/resource/buffers/buffer.hh"
+#include <vector>
 
 namespace vkr::resource {
 
@@ -14,8 +16,8 @@ public:
   IndexBuffer(const IndexBuffer &) = delete;
   auto operator=(const IndexBuffer &) -> IndexBuffer & = delete;
 
-  IndexBuffer(IndexBuffer &&other) noexcept;
-  auto operator=(IndexBuffer &&other) noexcept -> IndexBuffer &;
+  IndexBuffer(IndexBuffer &&other) noexcept = delete;
+  auto operator=(IndexBuffer &&other) noexcept -> IndexBuffer & = delete;
 
   void create();
   void destroy();
@@ -25,10 +27,10 @@ public:
     return indices_;
   }
   [[nodiscard]] auto buffer() const noexcept -> VkBuffer {
-    return vk_index_buffer_;
+    return target_.buffer();
   }
   [[nodiscard]] auto bufferMemory() const noexcept -> VkDeviceMemory {
-    return vk_memory_;
+    return target_.memory();
   }
 
 private:
@@ -38,7 +40,6 @@ private:
 
   // dependencies
   std::vector<uint16_t> indices_{};
-  VkBuffer vk_index_buffer_{VK_NULL_HANDLE};
-  VkDeviceMemory vk_memory_{VK_NULL_HANDLE};
+  Buffer target_;
 };
 } // namespace vkr::resource

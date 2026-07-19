@@ -3,9 +3,12 @@
 #include "vkr/core/command/buffers.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
+#include "vkr/resource/buffers/buffer.hh"
 #include "vkr/resource/buffers/ubos.hh"
-#include "vkr/resource/gpu/buffer_utils.hh"
+#include <cstddef>
+#include <cstring>
 #include <glm/glm.hpp>
+#include <vector>
 
 namespace vkr::resource {
 
@@ -13,12 +16,9 @@ class IUniformBuffer {
 public:
   virtual ~IUniformBuffer() = default;
 
-  [[nodiscard]] virtual auto buffers() const noexcept
-      -> const std::vector<VkBuffer> & = 0;
-  [[nodiscard]] virtual auto buffersMemory() const noexcept
-      -> const std::vector<VkDeviceMemory> & = 0;
-  [[nodiscard]] virtual auto mapped() const noexcept
-      -> const std::vector<void *> & = 0;
+  [[nodiscard]] virtual auto targets() const noexcept
+      -> const std::vector<Buffer> & = 0;
+  [[nodiscard]] virtual auto mappedCount() const noexcept -> size_t = 0;
   [[nodiscard]] virtual auto bufferSize() const noexcept -> VkDeviceSize = 0;
 
   virtual void updateRaw(uint32_t currentFrame, const void *data,
@@ -36,23 +36,23 @@ public:
   UniformBuffer(const UniformBuffer &) = delete;
   auto operator=(const UniformBuffer &) -> UniformBuffer & = delete;
 
-  [[nodiscard]] auto buffers() const noexcept
-      -> const std::vector<VkBuffer> & override {
-    return vk_uniform_buffers_;
-  }
-
-  [[nodiscard]] auto buffersMemory() const noexcept
-      -> const std::vector<VkDeviceMemory> & override {
-    return vk_memories_;
-  }
-
-  [[nodiscard]] auto mapped() const noexcept
-      -> const std::vector<void *> & override {
-    return mapped_;
+  [[nodiscard]] auto targets() const noexcept
+      -> const std::vector<Buffer> & override {
+    return targets_;
   }
 
   [[nodiscard]] auto bufferSize() const noexcept -> VkDeviceSize override {
     return sizeof(UniformType);
+  }
+
+  [[nodiscard]] auto mappedCount() const noexcept -> size_t override {
+    size_t count{0};
+    for (const auto &target : targets_) {
+      if (target.isMapped()) {
+        ++count;
+      }
+    }
+    return count;
   }
 
   void updateRaw(uint32_t currentFrame, const void *data,
@@ -68,49 +68,36 @@ public:
       VKR_RES_ERROR("currentFrame exceeds MAX_FRAMES_IN_FLIGHT({})!",
                     core::MAX_FRAMES_IN_FLIGHT);
     }
-    if (mapped_[currentFrame] == nullptr) {
+    if (currentFrame >= targets_.size()) {
+      VKR_RES_ERROR("Uniform buffer frame {} is unavailable", currentFrame);
+    }
+    if (!targets_[currentFrame].isMapped()) {
       VKR_RES_ERROR("Mapped memory is null for current frame!");
     }
-    memcpy(mapped_[currentFrame], &newObject, sizeof(UniformType));
+    memcpy(targets_[currentFrame].mapped(), &newObject, sizeof(UniformType));
   }
 
 protected:
   void create() {
 
     VkDeviceSize bufferSize = sizeof(UniformType);
-    vk_uniform_buffers_.resize(core::MAX_FRAMES_IN_FLIGHT);
-    vk_memories_.resize(core::MAX_FRAMES_IN_FLIGHT);
-    mapped_.resize(core::MAX_FRAMES_IN_FLIGHT);
+    targets_.reserve(core::MAX_FRAMES_IN_FLIGHT);
 
     for (size_t i = 0; i < core::MAX_FRAMES_IN_FLIGHT; i++) {
-      createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                   vk_uniform_buffers_[i], vk_memories_[i], device_.device(),
-                   device_.physicalDevice());
-      vkMapMemory(device_.device(), vk_memories_[i], 0, bufferSize, 0,
-                  &mapped_[i]);
+      targets_.emplace_back(device_);
+      auto &target = targets_.back();
+      target.create(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+      (void)target.map(bufferSize);
     }
   }
 
   void destroy() {
-    for (size_t i = 0; i < core::MAX_FRAMES_IN_FLIGHT; i++) {
-      if (mapped_[i]) {
-        vkUnmapMemory(device_.device(), vk_memories_[i]);
-        mapped_[i] = nullptr;
-      }
-      if (vk_memories_[i] != VK_NULL_HANDLE) {
-        vkFreeMemory(device_.device(), vk_memories_[i], nullptr);
-        vk_memories_[i] = VK_NULL_HANDLE;
-      }
-      if (vk_uniform_buffers_[i] != VK_NULL_HANDLE) {
-        vkDestroyBuffer(device_.device(), vk_uniform_buffers_[i], nullptr);
-        vk_uniform_buffers_[i] = VK_NULL_HANDLE;
-      }
+    for (auto &target : targets_) {
+      target.unmap();
     }
-    mapped_.clear();
-    vk_memories_.clear();
-    vk_uniform_buffers_.clear();
+    targets_.clear();
   }
 
 private:
@@ -118,10 +105,7 @@ private:
   const core::Device &device_;
 
   // components
-  UniformType _object;
-  std::vector<VkBuffer> vk_uniform_buffers_{};
-  std::vector<VkDeviceMemory> vk_memories_{};
-  std::vector<void *> mapped_{};
+  std::vector<Buffer> targets_{};
 };
 
 class UniformBuffer3D : public UniformBuffer<UniformBuffer3DObject> {

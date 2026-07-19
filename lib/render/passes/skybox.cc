@@ -191,10 +191,10 @@ auto SkyboxPass::createDescriptorWrites() const
                      desc_.uniformName);
   }
 
-  const auto &buffers = uniformBuffer->buffers();
-  if (buffers.size() != core::MAX_FRAMES_IN_FLIGHT) {
+  const auto &targets = uniformBuffer->targets();
+  if (targets.size() != core::MAX_FRAMES_IN_FLIGHT) {
     VKR_RENDER_ERROR("SkyboxPass '{}' uniform frame count mismatch: {} vs {}",
-                     name(), buffers.size(), core::MAX_FRAMES_IN_FLIGHT);
+                     name(), targets.size(), core::MAX_FRAMES_IN_FLIGHT);
   }
 
   auto cubemap = resource_manager_.getTexture(desc_.cubemapName);
@@ -221,7 +221,7 @@ auto SkyboxPass::createDescriptorWrites() const
     auto write = pipeline::DescriptorSetWriteDesc::forSet(frameIndex);
 
     VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = buffers[frameIndex];
+    bufferInfo.buffer = targets[frameIndex].buffer();
     bufferInfo.offset = 0;
     bufferInfo.range = uniformBuffer->bufferSize();
 

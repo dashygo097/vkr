@@ -9,6 +9,7 @@
 #include "vkr/core/sync/semaphore.hh"
 #include "vkr/render/passes/feedback_fullscreen.hh"
 #include "vkr/render/passes/present.hh"
+#include "vkr/resource/buffers/buffer.hh"
 #include "vkr/resource/buffers/ubos.hh"
 #include "vkr/resource/buffers/vbos.hh"
 #include "vkr/resource/targets/frame_history.hh"
