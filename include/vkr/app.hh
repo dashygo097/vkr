@@ -35,14 +35,17 @@ struct AppDesc {
   core::InstanceDesc instance{};
   core::DeviceDesc device{};
   core::SwapchainDesc swapchain{};
-  core::CommandPoolDesc commandPool{};
+  core::CommandPoolDesc graphicsCommandPool{};
+  core::CommandPoolDesc computeCommandPool{core::CommandQueueRole::Compute};
+  core::CommandPoolDesc transferCommandPool{core::CommandQueueRole::Transfer};
   scene::CameraDesc camera{};
   ui::UiDesc ui{};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return asset.isValid() && window.isValid() && instance.isValid() &&
-           device.isValid() && swapchain.isValid() && commandPool.isValid() &&
-           camera.isValid() && ui.isValid();
+           device.isValid() && swapchain.isValid() &&
+           graphicsCommandPool.isValid() && computeCommandPool.isValid() &&
+           transferCommandPool.isValid() && camera.isValid() && ui.isValid();
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
@@ -51,7 +54,9 @@ struct AppDesc {
     ar("instance", instance);
     ar("device", device);
     ar("swapchain", swapchain);
-    ar("commandPool", commandPool);
+    ar("graphicsCommandPool", graphicsCommandPool);
+    ar("computeCommandPool", computeCommandPool);
+    ar("transferCommandPool", transferCommandPool);
     ar("camera", camera);
     ar("ui", ui);
   }
@@ -87,7 +92,9 @@ public:
   std::unique_ptr<core::Surface> surface;
   std::unique_ptr<core::Device> device;
   std::unique_ptr<core::Swapchain> swapchain;
-  std::unique_ptr<core::CommandPool> commandPool;
+  std::unique_ptr<core::CommandPool> graphicsCommandPool;
+  std::unique_ptr<core::CommandPool> computeCommandPool;
+  std::unique_ptr<core::CommandPool> transferCommandPool;
   std::unique_ptr<core::SyncObjects> syncObjects;
 
   // resource management

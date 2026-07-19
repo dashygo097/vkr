@@ -82,8 +82,8 @@ private:
     resourceManager->createCubemap("skybox", createDebugCubemapFaces(),
                                    VK_FORMAT_R8G8B8A8_SRGB);
 
-    vkr::resource::Mesh<vkr::resource::VertexSkybox3D> skybox(*device,
-                                                              *commandPool);
+    vkr::resource::Mesh<vkr::resource::VertexSkybox3D> skybox(
+        *device, *graphicsCommandPool);
     skybox.load(vkr::resource::skyboxCubeVertices(),
                 vkr::resource::skyboxCubeIndices());
     resourceManager->createMesh("skybox", skybox);
@@ -124,7 +124,7 @@ private:
     };
 
     auto &skyboxPass = renderGraph->addPass<vkr::render::SkyboxPass>(
-        *renderer, *device, *commandPool, *resourceManager);
+        *renderer, *device, *graphicsCommandPool, *resourceManager);
     skyboxPass.setName("skybox").write("scene.color");
     skyboxPass.update(skyboxDesc);
 
@@ -137,7 +137,7 @@ private:
     uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
     auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
-        *renderer, *window, *instance, *surface, *device, *commandPool,
+        *renderer, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *resourceManager, *assetSystem, ctx.camera,
         vkr::render::FullscreenPassSource{skyboxPass}, *renderGraph, *timer,
         ctx.ui);

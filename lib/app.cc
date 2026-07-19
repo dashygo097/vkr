@@ -34,12 +34,19 @@ auto findUiPass(const render::RenderGraph &graph)
   return std::nullopt;
 }
 
+void configureCommandPoolRoles(AppDesc &ctx) {
+  ctx.graphicsCommandPool.queueRole = core::CommandQueueRole::Graphics;
+  ctx.computeCommandPool.queueRole = core::CommandQueueRole::Compute;
+  ctx.transferCommandPool.queueRole = core::CommandQueueRole::Transfer;
+}
+
 } // namespace
 
 void VulkanApplication::initVulkan() {
   Logger::init();
   configure();
   loadSnapshot();
+  configureCommandPoolRoles(ctx);
 
   if (!ctx.isValid()) {
     VKR_CORE_ERROR("invalid app config");
@@ -72,14 +79,29 @@ void VulkanApplication::initVulkan() {
                                                 ctx.swapchain);
 
   // command pool
-  commandPool = std::make_unique<core::CommandPool>(*device, ctx.commandPool);
+  graphicsCommandPool =
+      std::make_unique<core::CommandPool>(*device, ctx.graphicsCommandPool);
+  if (device->supportsCompute()) {
+    computeCommandPool =
+        std::make_unique<core::CommandPool>(*device, ctx.computeCommandPool);
+  } else {
+    VKR_CORE_WARN("compute queue is not supported; compute command pool "
+                  "will not be initialized");
+  }
+  if (device->supportsTransfer()) {
+    transferCommandPool =
+        std::make_unique<core::CommandPool>(*device, ctx.transferCommandPool);
+  } else {
+    VKR_CORE_WARN("transfer queue is not supported; transfer command pool "
+                  "will not be initialized");
+  }
 
   // sync objects
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
   // resource manager
-  resourceManager =
-      std::make_unique<resource::ResourceManager>(*device, *commandPool);
+  resourceManager = std::make_unique<resource::ResourceManager>(
+      *device, *graphicsCommandPool);
 
   // user resources
   createResources();
@@ -91,8 +113,9 @@ void VulkanApplication::initVulkan() {
   camera = std::make_unique<scene::Camera>(*timer, *inputTracer, ctx.camera);
 
   // renderer
-  renderer = std::make_unique<render::Renderer>(
-      *device, *swapchain, *commandPool, *syncObjects, *resourceManager);
+  renderer = std::make_unique<render::Renderer>(*device, *swapchain,
+                                                *graphicsCommandPool,
+                                                *syncObjects, *resourceManager);
 
   // render graph
   renderGraph = std::make_unique<render::RenderGraph>();

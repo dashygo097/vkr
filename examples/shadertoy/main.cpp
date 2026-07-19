@@ -298,12 +298,12 @@ private:
 
   void buildRenderGraph() override {
     auto &bufferA = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *commandPool, *resourceManager);
+        *renderer, *device, *graphicsCommandPool, *resourceManager);
     bufferA.setName("buffer.a").read("buffer.a.history").write("buffer.a");
     bufferA.update(feedbackDesc("shadertoy.buffer.a", "buffer_a.frag", 0, {}));
 
     auto &bufferB = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *commandPool, *resourceManager,
+        *renderer, *device, *graphicsCommandPool, *resourceManager,
         std::vector<vkr::render::FullscreenPassSource>{
             vkr::render::FullscreenPassSource{bufferA}});
     bufferB.setName("buffer.b")
@@ -313,7 +313,7 @@ private:
     bufferB.update(feedbackDesc("shadertoy.buffer.b", "buffer_b.frag", 1, {0}));
 
     auto &bufferC = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *commandPool, *resourceManager,
+        *renderer, *device, *graphicsCommandPool, *resourceManager,
         std::vector<vkr::render::FullscreenPassSource>{
             vkr::render::FullscreenPassSource{bufferA},
             vkr::render::FullscreenPassSource{bufferB}});
@@ -326,7 +326,7 @@ private:
         feedbackDesc("shadertoy.buffer.c", "buffer_c.frag", 2, {0, 1}));
 
     auto &bufferD = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *commandPool, *resourceManager,
+        *renderer, *device, *graphicsCommandPool, *resourceManager,
         std::vector<vkr::render::FullscreenPassSource>{
             vkr::render::FullscreenPassSource{bufferA},
             vkr::render::FullscreenPassSource{bufferB},
@@ -341,7 +341,7 @@ private:
         feedbackDesc("shadertoy.buffer.d", "buffer_d.frag", 3, {0, 1, 2}));
 
     auto &imagePass = renderGraph->addPass<vkr::render::FullscreenPass>(
-        *renderer, *device, *commandPool, *resourceManager,
+        *renderer, *device, *graphicsCommandPool, *resourceManager,
         std::vector<vkr::render::FullscreenPassSource>{
             vkr::render::FullscreenPassSource{bufferA},
             vkr::render::FullscreenPassSource{bufferB},
@@ -364,7 +364,7 @@ private:
     uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
     auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
-        *renderer, *window, *instance, *surface, *device, *commandPool,
+        *renderer, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *resourceManager, *assetSystem, ctx.camera,
         vkr::render::FullscreenPassSource{imagePass}, *renderGraph, *timer,
         ctx.ui);

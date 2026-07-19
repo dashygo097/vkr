@@ -9,7 +9,7 @@ class TeapotApp : public vkr::VulkanApplication {
 private:
   void createResources() override {
     vkr::resource::Mesh<vkr::resource::VertexNormalTexture3D> teapot(
-        *device, *commandPool);
+        *device, *graphicsCommandPool);
     teapot.load(assetSystem->resolve("objects/teapot/teapot.obj"));
 
     resourceManager->createMesh("teapot", teapot);
@@ -72,7 +72,7 @@ private:
     desc.pipeline = normal;
 
     auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
-        *renderer, *device, *commandPool, *resourceManager);
+        *renderer, *device, *graphicsCommandPool, *resourceManager);
     rasterPass.setName("raster").write("scene.raw");
     rasterPass.update(desc);
 
@@ -107,7 +107,7 @@ private:
     postDesc.pipeline = postPipeline;
 
     auto &postProcessPass = renderGraph->addPass<vkr::render::PostProcessPass>(
-        *renderer, *device, *commandPool,
+        *renderer, *device, *graphicsCommandPool,
         vkr::render::FullscreenPassSource{rasterPass});
     postProcessPass.setName("postprocess")
         .read("scene.raw")
@@ -123,7 +123,7 @@ private:
     uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
     auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
-        *renderer, *window, *instance, *surface, *device, *commandPool,
+        *renderer, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *resourceManager, *assetSystem, ctx.camera,
         vkr::render::FullscreenPassSource{postProcessPass}, *renderGraph,
         *timer, ctx.ui);
