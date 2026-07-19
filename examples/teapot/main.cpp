@@ -5,6 +5,16 @@
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
+namespace {
+
+struct UniformBuffer3DObject {
+  alignas(16) glm::mat4 model;
+  alignas(16) glm::mat4 view;
+  alignas(16) glm::mat4 proj;
+};
+
+} // namespace
+
 class TeapotApp : public vkr::VulkanApplication {
 private:
   void createResources() override {
@@ -17,8 +27,7 @@ private:
         "teapot_texture",
         assetSystem->resolve("objects/teapot/default.png").string());
 
-    resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
-        "default", {});
+    resourceManager->createUniformBuffer<UniformBuffer3DObject>("default", {});
   }
 
   void buildRenderGraph() override {
@@ -138,7 +147,7 @@ private:
   void onDraw() override {
     const uint32_t frameIndex = renderer->frameIndex();
 
-    vkr::resource::UniformBuffer3DObject ubo{};
+    UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.4f, -7.0f));
     ubo.model = glm::scale(ubo.model, glm::vec3(0.04f));
     ubo.view = camera->getView();

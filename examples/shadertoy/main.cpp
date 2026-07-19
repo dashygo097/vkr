@@ -10,6 +10,22 @@
 #include <vkr/util/io.hh>
 #include <vulkan/vulkan.h>
 
+namespace {
+
+struct UniformBufferShaderToyObject {
+  alignas(16) glm::vec3 iResolution;
+  alignas(4) float iTime;
+  alignas(4) float iTimeDelta;
+  alignas(4) float iFrameRate;
+  alignas(4) int iFrame;
+  alignas(16) glm::vec4 iMouse;
+  alignas(16) glm::vec4 iDate;
+  alignas(16) glm::vec4 iChannelTime;
+  alignas(16) glm::vec4 iChannelResolution[4];
+};
+
+} // namespace
+
 class ShaderToyApp : public vkr::VulkanApplication {
 private:
   static constexpr uint32_t kShaderToyChannelCount = 4;
@@ -288,9 +304,8 @@ private:
   }
 
   void createResources() override {
-    resourceManager
-        ->createUniformBuffer<vkr::resource::UniformBufferShaderToyObject>(
-            std::string(kShaderToyUniformName), {});
+    resourceManager->createUniformBuffer<UniformBufferShaderToyObject>(
+        std::string(kShaderToyUniformName), {});
     resourceManager->createTexture(
         std::string(kFallbackTextureName),
         vkr::resource::TextureDesc::sampled2D(1, 1, VK_FORMAT_R8G8B8A8_UNORM));
@@ -393,7 +408,7 @@ private:
                                         : 0;
     const float shadertoyTime = timer->elapsedTime() - shadertoy_time_offset_;
 
-    vkr::resource::UniformBufferShaderToyObject ubo{};
+    UniformBufferShaderToyObject ubo{};
     ubo.iResolution = glm::vec3(static_cast<float>(ctx.window.width),
                                 static_cast<float>(ctx.window.height),
                                 static_cast<float>(ctx.window.ratio()));

@@ -17,6 +17,12 @@ struct Rgb {
   uint8_t b{0};
 };
 
+struct UniformBuffer3DObject {
+  alignas(16) glm::mat4 model;
+  alignas(16) glm::mat4 view;
+  alignas(16) glm::mat4 proj;
+};
+
 auto mixByte(uint8_t a, uint8_t b, float t) -> uint8_t {
   return static_cast<uint8_t>(static_cast<float>(a) * (1.0f - t) +
                               static_cast<float>(b) * t);
@@ -88,8 +94,7 @@ private:
                 vkr::resource::skyboxCubeIndices());
     resourceManager->createMesh("skybox", skybox);
 
-    resourceManager->createUniformBuffer<vkr::resource::UniformBuffer3DObject>(
-        "skybox", {});
+    resourceManager->createUniformBuffer<UniformBuffer3DObject>("skybox", {});
   }
 
   void buildRenderGraph() override {
@@ -152,7 +157,7 @@ private:
   void onDraw() override {
     const uint32_t frameIndex = renderer->frameIndex();
 
-    vkr::resource::UniformBuffer3DObject ubo{};
+    UniformBuffer3DObject ubo{};
     ubo.model = glm::mat4(1.0f);
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();

@@ -3,7 +3,7 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/uniform_buffer.hh"
+#include "vkr/resource/buffers/frame_uniform_buffers.hh"
 #include "vkr/resource/gpu/texture.hh"
 #include "vkr/resource/mesh.hh"
 #include <array>
@@ -23,7 +23,7 @@ public:
   // Uniform buffer management
   template <typename UBOType>
   void createUniformBuffer(const std::string &name, const UBOType &ubo) {
-    auto buffer = std::make_shared<UniformBuffer<UBOType>>(device_);
+    auto buffer = std::make_shared<FrameUniformBuffers<UBOType>>(device_);
     buffer->update(0, ubo);
     uniform_buffers_[name] = std::move(buffer);
   }

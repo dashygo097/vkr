@@ -1,126 +1,81 @@
 #pragma once
 
-#include "vkr/core/command/buffers.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
 #include "vkr/resource/buffers/buffer.hh"
-#include "vkr/resource/buffers/ubos.hh"
-#include <array>
 #include <cstddef>
 #include <cstring>
-#include <glm/glm.hpp>
 #include <memory>
-#include <vector>
 
 namespace vkr::resource {
 
-class IUniformBuffer {
-public:
-  virtual ~IUniformBuffer() = default;
-
-  [[nodiscard]] virtual auto target(uint32_t index) const -> const Buffer & = 0;
-  [[nodiscard]] virtual auto targetCount() const noexcept -> size_t = 0;
-  [[nodiscard]] virtual auto mappedCount() const noexcept -> size_t = 0;
-  [[nodiscard]] virtual auto bufferSize() const noexcept -> VkDeviceSize = 0;
-
-  virtual void updateRaw(uint32_t currentFrame, const void *data,
-                         size_t size) = 0;
-};
-
-template <typename UniformType> class UniformBuffer : public IUniformBuffer {
+template <typename UniformType> class UniformBuffer {
 public:
   explicit UniformBuffer(const core::Device &device)
-      : device_(device), targets_{std::make_unique<Buffer>(device),
-                                  std::make_unique<Buffer>(device)} {
+      : device_(device), target_(std::make_unique<Buffer>(device)) {
     create();
   }
 
-  ~UniformBuffer() override { destroy(); }
+  ~UniformBuffer() { destroy(); }
 
   UniformBuffer(const UniformBuffer &) = delete;
   auto operator=(const UniformBuffer &) -> UniformBuffer & = delete;
 
-  [[nodiscard]] auto target(uint32_t index) const -> const Buffer & override {
-    if (index >= targets_.size()) {
-      VKR_RES_ERROR("Uniform buffer target {} is unavailable", index);
-    }
-    return *targets_[index];
+  UniformBuffer(UniformBuffer &&) = delete;
+  auto operator=(UniformBuffer &&) -> UniformBuffer & = delete;
+
+  [[nodiscard]] auto target() const noexcept -> const Buffer & {
+    return *target_;
   }
 
-  [[nodiscard]] auto targetCount() const noexcept -> size_t override {
-    return targets_.size();
+  [[nodiscard]] auto buffer() const noexcept -> VkBuffer {
+    return target_->buffer();
   }
 
-  [[nodiscard]] auto bufferSize() const noexcept -> VkDeviceSize override {
+  [[nodiscard]] auto memory() const noexcept -> VkDeviceMemory {
+    return target_->memory();
+  }
+
+  [[nodiscard]] auto bufferSize() const noexcept -> VkDeviceSize {
     return sizeof(UniformType);
   }
 
-  [[nodiscard]] auto mappedCount() const noexcept -> size_t override {
-    size_t count{0};
-    for (const auto &target : targets_) {
-      if (target->isMapped()) {
-        ++count;
-      }
-    }
-    return count;
+  [[nodiscard]] auto isMapped() const noexcept -> bool {
+    return target_->isMapped();
   }
 
-  void updateRaw(uint32_t currentFrame, const void *data,
-                 size_t size) override {
+  void updateRaw(const void *data, size_t size) {
     if (size != sizeof(UniformType)) {
       VKR_RES_ERROR("Size mismatch in uniform buffer update!");
     }
-    update(currentFrame, *static_cast<const UniformType *>(data));
+    update(*static_cast<const UniformType *>(data));
   }
 
-  void update(uint32_t currentFrame, const UniformType &newObject) {
-    if (currentFrame >= core::MAX_FRAMES_IN_FLIGHT) {
-      VKR_RES_ERROR("currentFrame exceeds MAX_FRAMES_IN_FLIGHT({})!",
-                    core::MAX_FRAMES_IN_FLIGHT);
+  void update(const UniformType &newObject) {
+    if (!target_->isMapped()) {
+      VKR_RES_ERROR("Uniform buffer memory is not mapped!");
     }
-    if (currentFrame >= targets_.size()) {
-      VKR_RES_ERROR("Uniform buffer frame {} is unavailable", currentFrame);
-    }
-    if (!targets_[currentFrame]->isMapped()) {
-      VKR_RES_ERROR("Mapped memory is null for current frame!");
-    }
-    memcpy(targets_[currentFrame]->mapped(), &newObject, sizeof(UniformType));
+    memcpy(target_->mapped(), &newObject, sizeof(UniformType));
   }
 
 protected:
   void create() {
 
     VkDeviceSize bufferSize = sizeof(UniformType);
-    for (size_t i = 0; i < core::MAX_FRAMES_IN_FLIGHT; i++) {
-      targets_[i]->update(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-      (void)targets_[i]->map(bufferSize);
-    }
+    target_->update(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    (void)target_->map(bufferSize);
   }
 
-  void destroy() {
-    for (auto &target : targets_) {
-      target->destroy();
-    }
-  }
+  void destroy() { target_->destroy(); }
 
 private:
   // dependencies
   const core::Device &device_;
 
   // components
-  std::array<std::unique_ptr<Buffer>, core::MAX_FRAMES_IN_FLIGHT> targets_{};
-};
-
-class UniformBuffer3D : public UniformBuffer<UniformBuffer3DObject> {
-public:
-  using UniformBuffer<UniformBuffer3DObject>::UniformBuffer;
-};
-
-class ShaderToyUniformBuffer
-    : public UniformBuffer<UniformBufferShaderToyObject> {
-  using UniformBuffer<UniformBufferShaderToyObject>::UniformBuffer;
+  std::unique_ptr<Buffer> target_;
 };
 
 } // namespace vkr::resource
