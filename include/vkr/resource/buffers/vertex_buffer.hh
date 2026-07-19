@@ -6,6 +6,7 @@
 #include "vkr/resource/buffers/buffer.hh"
 #include "vkr/resource/buffers/vbos.hh"
 #include <cstring>
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -15,9 +16,8 @@ class IVertexBuffer {
 public:
   virtual ~IVertexBuffer() = default;
 
-  [[nodiscard]] virtual auto buffer() const noexcept -> const VkBuffer & = 0;
-  [[nodiscard]] virtual auto memory() const noexcept
-      -> const VkDeviceMemory & = 0;
+  [[nodiscard]] virtual auto buffer() const -> const VkBuffer & = 0;
+  [[nodiscard]] virtual auto memory() const -> const VkDeviceMemory & = 0;
 
   [[nodiscard]] virtual auto vertexCount() const noexcept -> size_t = 0;
 
@@ -30,9 +30,10 @@ template <typename VertexType> class VertexBuffer : public IVertexBuffer {
 public:
   explicit VertexBuffer(const core::Device &device,
                         const core::CommandPool &commandPool)
-      : device_(device), command_pool_(commandPool), target_(device) {}
+      : device_(device), command_pool_(commandPool),
+        target_(std::make_unique<Buffer>(device)) {}
 
-  ~VertexBuffer() override { destroy(); }
+  ~VertexBuffer() override = default;
 
   VertexBuffer(const VertexBuffer &) = delete;
   auto operator=(const VertexBuffer &) -> VertexBuffer & = delete;
@@ -49,7 +50,7 @@ public:
 
     vertices_ = vertices;
 
-    if (newBufferSize != oldBufferSize || !target_.isValid()) {
+    if (newBufferSize != oldBufferSize || !target_->isValid()) {
       destroy();
       create();
       return;
@@ -68,13 +69,12 @@ public:
     update(vertices);
   }
 
-  [[nodiscard]] auto buffer() const noexcept -> const VkBuffer & override {
-    return target_.buffer();
+  [[nodiscard]] auto buffer() const -> const VkBuffer & override {
+    return target_->buffer();
   }
 
-  [[nodiscard]] auto memory() const noexcept
-      -> const VkDeviceMemory & override {
-    return target_.memory();
+  [[nodiscard]] auto memory() const -> const VkDeviceMemory & override {
+    return target_->memory();
   }
 
   [[nodiscard]] auto vertexCount() const noexcept -> size_t override {
@@ -99,27 +99,26 @@ protected:
     const auto bufferSize =
         static_cast<VkDeviceSize>(sizeof(VertexType) * vertices_.size());
 
-    target_.create(bufferSize,
-                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    target_->update(bufferSize,
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     upload(vertices_.data(), bufferSize);
   }
 
-  void destroy() { target_.destroy(); }
+  void destroy() { target_->destroy(); }
 
   void upload(const VertexType *vertices, VkDeviceSize bufferSize) {
     if (vertices == nullptr || bufferSize == 0) {
       VKR_RES_ERROR("Cannot upload empty vertex buffer data!");
     }
 
-    Buffer staging{device_};
-    staging.create(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    Buffer staging{device_, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     staging.write(vertices, bufferSize);
-    Buffer::copy(staging, target_, bufferSize, command_pool_);
+    Buffer::copy(staging, *target_, bufferSize, command_pool_);
   }
 
 protected:
@@ -129,7 +128,7 @@ protected:
 
   // components
   std::vector<VertexType> vertices_{};
-  Buffer target_;
+  std::unique_ptr<Buffer> target_{};
 };
 
 } // namespace vkr::resource

@@ -9,6 +9,8 @@ namespace vkr::resource {
 class Buffer {
 public:
   explicit Buffer(const core::Device &device);
+  Buffer(const core::Device &device, VkDeviceSize size,
+         VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
   ~Buffer();
 
   Buffer(const Buffer &) = delete;
@@ -17,7 +19,7 @@ public:
   Buffer(Buffer &&other) noexcept;
   auto operator=(Buffer &&other) -> Buffer & = delete;
 
-  void create(VkDeviceSize size, VkBufferUsageFlags usage,
+  void update(VkDeviceSize size, VkBufferUsageFlags usage,
               VkMemoryPropertyFlags properties);
   void destroy() noexcept;
 
@@ -65,6 +67,9 @@ private:
   VkBufferUsageFlags usage_{0};
   VkMemoryPropertyFlags memory_properties_{0};
   void *mapped_{nullptr};
+
+  void create(VkDeviceSize size, VkBufferUsageFlags usage,
+              VkMemoryPropertyFlags properties);
 };
 
 } // namespace vkr::resource

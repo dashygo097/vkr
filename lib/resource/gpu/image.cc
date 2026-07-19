@@ -121,10 +121,9 @@ void Image::createFromFile() {
                                  static_cast<VkDeviceSize>(height_) *
                                  static_cast<VkDeviceSize>(channels_);
 
-  Buffer staging{device_};
-  staging.create(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+  Buffer staging{device_, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
   staging.write(pixels.get(), imageSize);
 
   const VkImageUsageFlags usage = desc_.usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -215,10 +214,9 @@ void Image::createCubemapFromFiles() {
                                 static_cast<VkDeviceSize>(channels_);
   const VkDeviceSize imageSize = faceSize * FaceCount;
 
-  Buffer staging{device_};
-  staging.create(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+  Buffer staging{device_, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 
   auto *data = static_cast<std::byte *>(staging.map(imageSize));
 

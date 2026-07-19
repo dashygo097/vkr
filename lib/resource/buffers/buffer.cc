@@ -7,6 +7,12 @@ namespace vkr::resource {
 
 Buffer::Buffer(const core::Device &device) : device_(device) {}
 
+Buffer::Buffer(const core::Device &device, VkDeviceSize size,
+               VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+    : device_(device) {
+  create(size, usage, properties);
+}
+
 Buffer::~Buffer() { destroy(); }
 
 Buffer::Buffer(Buffer &&other) noexcept
@@ -26,8 +32,6 @@ void Buffer::create(VkDeviceSize size, VkBufferUsageFlags usage,
   if (size == 0) {
     VKR_RES_ERROR("Cannot create buffer with zero size");
   }
-
-  destroy();
 
   size_ = size;
   usage_ = usage;
@@ -65,6 +69,12 @@ void Buffer::create(VkDeviceSize size, VkBufferUsageFlags usage,
     destroy();
     VKR_RES_ERROR("Failed to bind buffer memory");
   }
+}
+
+void Buffer::update(VkDeviceSize size, VkBufferUsageFlags usage,
+                    VkMemoryPropertyFlags properties) {
+  destroy();
+  create(size, usage, properties);
 }
 
 void Buffer::destroy() noexcept {

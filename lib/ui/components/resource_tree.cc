@@ -151,7 +151,7 @@ void ResourceTree::renderSelectedResource() {
     ImGui::Text("State: valid");
     ImGui::Text("Buffer size: %llu bytes",
                 static_cast<unsigned long long>(uniformBuffer->bufferSize()));
-    ImGui::Text("Frames: %zu", uniformBuffer->targets().size());
+    ImGui::Text("Frames: %zu", uniformBuffer->targetCount());
     ImGui::Text("Mapped frames: %zu", uniformBuffer->mappedCount());
     return;
   }
