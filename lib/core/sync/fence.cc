@@ -4,13 +4,12 @@
 
 namespace vkr::core {
 
-Fence::Fence(const Device &device, FenceDesc desc)
-    : device_(std::cref(device)), desc_(desc) {
+Fence::Fence(const Device &device, bool signaled) : device_(device) {
   VkFenceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  createInfo.flags = desc_.signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
+  createInfo.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
 
-  if (vkCreateFence(device_.get().device(), &createInfo, nullptr, &vk_fence_) !=
+  if (vkCreateFence(device_.device(), &createInfo, nullptr, &vk_fence_) !=
       VK_SUCCESS) {
     VKR_CORE_ERROR("Failed to create fence");
   }
@@ -19,23 +18,11 @@ Fence::Fence(const Device &device, FenceDesc desc)
 Fence::~Fence() { destroy(); }
 
 Fence::Fence(Fence &&other) noexcept
-    : device_(other.device_), desc_(other.desc_),
+    : device_(other.device_),
       vk_fence_(std::exchange(other.vk_fence_, VK_NULL_HANDLE)) {}
 
-auto Fence::operator=(Fence &&other) noexcept -> Fence & {
-  if (this == &other) {
-    return *this;
-  }
-
-  destroy();
-  device_ = other.device_;
-  desc_ = other.desc_;
-  vk_fence_ = std::exchange(other.vk_fence_, VK_NULL_HANDLE);
-  return *this;
-}
-
 auto Fence::isSignaled() const -> bool {
-  const VkResult result = vkGetFenceStatus(device_.get().device(), vk_fence_);
+  const VkResult result = vkGetFenceStatus(device_.device(), vk_fence_);
   if (result == VK_SUCCESS) {
     return true;
   }
@@ -47,21 +34,21 @@ auto Fence::isSignaled() const -> bool {
 }
 
 void Fence::wait(uint64_t timeout) const {
-  if (vkWaitForFences(device_.get().device(), 1, &vk_fence_, VK_TRUE,
-                      timeout) != VK_SUCCESS) {
+  if (vkWaitForFences(device_.device(), 1, &vk_fence_, VK_TRUE, timeout) !=
+      VK_SUCCESS) {
     VKR_CORE_ERROR("Failed to wait for fence");
   }
 }
 
 void Fence::reset() const {
-  if (vkResetFences(device_.get().device(), 1, &vk_fence_) != VK_SUCCESS) {
+  if (vkResetFences(device_.device(), 1, &vk_fence_) != VK_SUCCESS) {
     VKR_CORE_ERROR("Failed to reset fence");
   }
 }
 
 void Fence::destroy() noexcept {
   if (vk_fence_ != VK_NULL_HANDLE) {
-    vkDestroyFence(device_.get().device(), vk_fence_, nullptr);
+    vkDestroyFence(device_.device(), vk_fence_, nullptr);
     vk_fence_ = VK_NULL_HANDLE;
   }
 }

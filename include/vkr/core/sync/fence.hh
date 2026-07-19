@@ -2,30 +2,19 @@
 
 #include "vkr/core/device.hh"
 #include <cstdint>
-#include <functional>
 
 namespace vkr::core {
 
-struct FenceDesc {
-  bool signaled{false};
-
-  [[nodiscard]] auto isValid() const noexcept -> bool { return true; }
-
-  template <typename Archive> auto serialize(Archive &ar) -> void {
-    ar("signaled", signaled);
-  }
-};
-
 class Fence {
 public:
-  explicit Fence(const Device &device, FenceDesc desc = {});
+  explicit Fence(const Device &device, bool signaled = false);
   ~Fence();
 
   Fence(const Fence &) = delete;
   auto operator=(const Fence &) -> Fence & = delete;
 
   Fence(Fence &&other) noexcept;
-  auto operator=(Fence &&other) noexcept -> Fence &;
+  auto operator=(Fence &&other) -> Fence & = delete;
 
   [[nodiscard]] auto fence() const noexcept -> VkFence { return vk_fence_; }
   [[nodiscard]] auto isSignaled() const -> bool;
@@ -35,10 +24,9 @@ public:
 
 private:
   // dependencies
-  std::reference_wrapper<const Device> device_;
+  const Device &device_;
 
   // components
-  FenceDesc desc_{};
   VkFence vk_fence_{VK_NULL_HANDLE};
 
   void destroy() noexcept;
