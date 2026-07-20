@@ -292,24 +292,12 @@ private:
     return hash;
   }
 
-  void resetShadertoyTimelineIfPipelineChanged() {
-    const uint64_t revision = shadertoyPipelineRevision();
-    if (revision == shadertoy_pipeline_revision_) {
-      return;
-    }
-
-    shadertoy_pipeline_revision_ = revision;
-    shadertoy_frame_offset_ = timer->frameCount();
-    shadertoy_time_offset_ = timer->elapsedTime();
-  }
-
   void createResources() override {
     scene->createUniformBuffer<UniformBufferShaderToyObject>(
         std::string(kShaderToyUniformName), {});
     scene->createTexture(
         std::string(kFallbackTextureName),
-        vkr::scene::TextureDesc::sampled2D(1, 1,
-                                           VK_FORMAT_R8G8B8A8_UNORM));
+        vkr::scene::TextureDesc::sampled2D(1, 1, VK_FORMAT_R8G8B8A8_UNORM));
   }
 
   void buildGraph() override {
@@ -382,13 +370,11 @@ private:
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
         *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::exec::FullscreenPassSource{imagePass}, *graph, *timer,
-        ctx.ui);
+        vkr::exec::FullscreenPassSource{imagePass}, *graph, *timer, ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
     uiPass.update(uiDesc);
 
-    auto &presentPass =
-        graph->addPass<vkr::exec::PresentPass>(*executor);
+    auto &presentPass = graph->addPass<vkr::exec::PresentPass>(*executor);
     presentPass.setName("present");
   }
 
@@ -399,7 +385,12 @@ private:
       return;
     }
 
-    resetShadertoyTimelineIfPipelineChanged();
+    const uint64_t revision = shadertoyPipelineRevision();
+    if (revision != shadertoy_pipeline_revision_) {
+      shadertoy_pipeline_revision_ = revision;
+      shadertoy_frame_offset_ = timer->frameCount();
+      shadertoy_time_offset_ = timer->elapsedTime();
+    }
 
     std::time_t t = std::time(nullptr);
     std::tm *now = std::localtime(&t);
