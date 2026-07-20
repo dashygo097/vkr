@@ -13,7 +13,7 @@
 #include "vkr/render/passes/fullscreen.hh"
 #include "vkr/render/renderer.hh"
 #include "vkr/render/attachments/frame_buffer.hh"
-#include "vkr/resource/manager.hh"
+#include "vkr/scene/scene.hh"
 #include "vkr/render/targets/swapchain.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/ui/ui.hh"
@@ -36,7 +36,7 @@ public:
          const core::Instance &instance, const core::Surface &surface,
          const core::Device &device, const core::CommandPool &commandPool,
          const core::Swapchain &swapchain,
-         resource::ResourceManager &resourceManager,
+         scene::Scene &scene,
          const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
          FullscreenPassSource source, RenderGraph &renderGraph,
          util::Timer &timer, ui::UiDesc &uiDesc);
@@ -85,7 +85,7 @@ private:
   const core::Device &device_;
   const core::CommandPool &command_pool_;
   const core::Swapchain &swapchain_;
-  resource::ResourceManager &resource_manager_;
+  scene::Scene &scene_;
   const util::AssetSystem &asset_system_;
   scene::CameraDesc &camera_;
   FullscreenPassSource source_;

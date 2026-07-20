@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/resource/manager.hh"
+#include "vkr/scene/scene.hh"
 #include "vkr/ui/components/ui_component.hh"
 #include <imgui.h>
 #include <string>
@@ -10,13 +10,13 @@ namespace vkr::ui {
 
 class ResourceTree final : public UiComponent {
 public:
-  explicit ResourceTree(resource::ResourceManager &resourceManager);
+  explicit ResourceTree(scene::Scene &scene);
   ~ResourceTree() = default;
 
 private:
   void render();
 
-  resource::ResourceManager &resource_manager_;
+  scene::Scene &scene_;
 
   std::string selected_type_;
   std::string selected_name_;

@@ -3,8 +3,8 @@
 
 namespace vkr::ui {
 
-ResourceTree::ResourceTree(resource::ResourceManager &resourceManager)
-    : UiComponent("Resources"), resource_manager_(resourceManager) {}
+ResourceTree::ResourceTree(scene::Scene &scene)
+    : UiComponent("Resources"), scene_(scene) {}
 
 void ResourceTree::render() {
   ImGui::TextUnformatted("Resource Tree");
@@ -17,18 +17,18 @@ void ResourceTree::render() {
   if (ImGui::BeginChild("ResourceTreeScrollRegion",
                         ImVec2(0.0f, -detailsHeight), true,
                         ImGuiWindowFlags_HorizontalScrollbar)) {
-    renderCategory("Meshes", resource_manager_.listMeshNames(),
-                   resource_manager_.meshCount());
+    renderCategory("Meshes", scene_.listMeshNames(),
+                   scene_.meshCount());
 
     renderCategory("Uniform Buffers",
-                   resource_manager_.listUniformBufferNames(),
-                   resource_manager_.uniformBufferCount());
+                   scene_.listUniformBufferNames(),
+                   scene_.uniformBufferCount());
 
-    renderCategory("Textures", resource_manager_.listTextureImageNames(),
-                   resource_manager_.textureImageCount());
+    renderCategory("Textures", scene_.listTextureImageNames(),
+                   scene_.textureImageCount());
 
-    renderCategory("Cubemaps", resource_manager_.listCubemapNames(),
-                   resource_manager_.cubemapCount());
+    renderCategory("Cubemaps", scene_.listCubemapNames(),
+                   scene_.cubemapCount());
   }
 
   ImGui::EndChild();
@@ -74,9 +74,9 @@ void ResourceTree::renderCategory(const char *type,
           selected_name_ = name;
 
           if (selected_type_ == "Meshes") {
-            resource_manager_.selectMesh(selected_name_);
+            scene_.selectMesh(selected_name_);
           } else {
-            resource_manager_.clearSelectedMesh();
+            scene_.clearSelectedMesh();
           }
         }
 
@@ -121,7 +121,7 @@ void ResourceTree::renderSelectedResource() {
   ImGui::Text("Name: %s", selected_name_.c_str());
 
   if (selected_type_ == "Meshes") {
-    auto mesh = resource_manager_.getMesh(selected_name_);
+    auto mesh = scene_.getMesh(selected_name_);
     if (!mesh || !mesh->isValid()) {
       ImGui::TextDisabled("State: unavailable");
       return;
@@ -145,7 +145,7 @@ void ResourceTree::renderSelectedResource() {
   }
 
   if (selected_type_ == "Uniform Buffers") {
-    auto uniformBuffer = resource_manager_.getUniformBuffer(selected_name_);
+    auto uniformBuffer = scene_.getUniformBuffer(selected_name_);
     if (!uniformBuffer) {
       ImGui::TextDisabled("State: unavailable");
       return;
@@ -160,7 +160,7 @@ void ResourceTree::renderSelectedResource() {
   }
 
   if (selected_type_ == "Textures") {
-    auto texture = resource_manager_.getTexture(selected_name_);
+    auto texture = scene_.getTexture(selected_name_);
     if (!texture) {
       ImGui::TextDisabled("State: unavailable");
       return;
@@ -179,7 +179,7 @@ void ResourceTree::renderSelectedResource() {
   }
 
   if (selected_type_ == "Cubemaps") {
-    auto cubemap = resource_manager_.getCubemap(selected_name_);
+    auto cubemap = scene_.getCubemap(selected_name_);
     if (!cubemap) {
       ImGui::TextDisabled("State: unavailable");
       return;

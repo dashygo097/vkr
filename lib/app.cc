@@ -99,9 +99,8 @@ void VulkanApplication::initVulkan() {
   // sync objects
   syncObjects = std::make_unique<core::SyncObjects>(*device, *swapchain);
 
-  // resource manager
-  resourceManager = std::make_unique<resource::ResourceManager>(
-      *device, *graphicsCommandPool);
+  // scene
+  scene = std::make_unique<vkr::scene::Scene>(*device, *graphicsCommandPool);
 
   // user resources
   createResources();
@@ -110,12 +109,13 @@ void VulkanApplication::initVulkan() {
   timer = std::make_unique<util::Timer>();
 
   // camera
-  camera = std::make_unique<scene::Camera>(*timer, *inputTracer, ctx.camera);
+  camera =
+      std::make_unique<vkr::scene::Camera>(*timer, *inputTracer, ctx.camera);
 
   // renderer
   renderer = std::make_unique<render::Renderer>(*device, *swapchain,
                                                 *graphicsCommandPool,
-                                                *syncObjects, *resourceManager);
+                                                *syncObjects, *scene);
 
   // render graph
   renderGraph = std::make_unique<render::RenderGraph>();

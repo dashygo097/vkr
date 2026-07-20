@@ -304,9 +304,9 @@ private:
   }
 
   void createResources() override {
-    resourceManager->createUniformBuffer<UniformBufferShaderToyObject>(
+    scene->createUniformBuffer<UniformBufferShaderToyObject>(
         std::string(kShaderToyUniformName), {});
-    resourceManager->createTexture(
+    scene->createTexture(
         std::string(kFallbackTextureName),
         vkr::scene::TextureDesc::sampled2D(1, 1,
                                            VK_FORMAT_R8G8B8A8_UNORM));
@@ -314,12 +314,12 @@ private:
 
   void buildRenderGraph() override {
     auto &bufferA = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *graphicsCommandPool, *resourceManager);
+        *renderer, *device, *graphicsCommandPool, *scene);
     bufferA.setName("buffer.a").read("buffer.a.history").write("buffer.a");
     bufferA.update(feedbackDesc("shadertoy.buffer.a", "buffer_a.frag", 0, {}));
 
     auto &bufferB = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *graphicsCommandPool, *resourceManager,
+        *renderer, *device, *graphicsCommandPool, *scene,
         std::vector<vkr::render::FullscreenPassSource>{
             vkr::render::FullscreenPassSource{bufferA}});
     bufferB.setName("buffer.b")
@@ -329,7 +329,7 @@ private:
     bufferB.update(feedbackDesc("shadertoy.buffer.b", "buffer_b.frag", 1, {0}));
 
     auto &bufferC = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *graphicsCommandPool, *resourceManager,
+        *renderer, *device, *graphicsCommandPool, *scene,
         std::vector<vkr::render::FullscreenPassSource>{
             vkr::render::FullscreenPassSource{bufferA},
             vkr::render::FullscreenPassSource{bufferB}});
@@ -342,7 +342,7 @@ private:
         feedbackDesc("shadertoy.buffer.c", "buffer_c.frag", 2, {0, 1}));
 
     auto &bufferD = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *graphicsCommandPool, *resourceManager,
+        *renderer, *device, *graphicsCommandPool, *scene,
         std::vector<vkr::render::FullscreenPassSource>{
             vkr::render::FullscreenPassSource{bufferA},
             vkr::render::FullscreenPassSource{bufferB},
@@ -357,7 +357,7 @@ private:
         feedbackDesc("shadertoy.buffer.d", "buffer_d.frag", 3, {0, 1, 2}));
 
     auto &imagePass = renderGraph->addPass<vkr::render::FullscreenPass>(
-        *renderer, *device, *graphicsCommandPool, *resourceManager,
+        *renderer, *device, *graphicsCommandPool, *scene,
         std::vector<vkr::render::FullscreenPassSource>{
             vkr::render::FullscreenPassSource{bufferA},
             vkr::render::FullscreenPassSource{bufferB},
@@ -381,7 +381,7 @@ private:
 
     auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
         *renderer, *window, *instance, *surface, *device, *graphicsCommandPool,
-        *swapchain, *resourceManager, *assetSystem, ctx.camera,
+        *swapchain, *scene, *assetSystem, ctx.camera,
         vkr::render::FullscreenPassSource{imagePass}, *renderGraph, *timer,
         ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
@@ -394,7 +394,7 @@ private:
 
   void onDraw() override {
     auto shadertoyUBO =
-        resourceManager->getUniformBuffer(std::string(kShaderToyUniformName));
+        scene->getUniformBuffer(std::string(kShaderToyUniformName));
     if (!shadertoyUBO) {
       return;
     }

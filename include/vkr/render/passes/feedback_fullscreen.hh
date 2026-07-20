@@ -23,7 +23,7 @@ public:
                          std::vector<FullscreenPassSource> sources = {});
   FeedbackFullscreenPass(Renderer &renderer, const core::Device &device,
                          const core::CommandPool &commandPool,
-                         resource::ResourceManager &resourceManager,
+                         scene::Scene &scene,
                          std::vector<FullscreenPassSource> sources = {});
   ~FeedbackFullscreenPass() override;
 
@@ -75,7 +75,7 @@ private:
   Renderer &renderer_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  resource::ResourceManager *resource_manager_{nullptr};
+  scene::Scene *scene_{nullptr};
 
   FeedbackFullscreenPassDesc desc_{};
   std::vector<FullscreenPassSource> sources_{};

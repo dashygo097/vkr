@@ -8,9 +8,9 @@ namespace vkr::render {
 
 RasterPass::RasterPass(Renderer &renderer, const core::Device &device,
                        const core::CommandPool &commandPool,
-                       resource::ResourceManager &resourceManager)
+                       scene::Scene &scene)
     : renderer_(renderer), device_(device), command_pool_(commandPool),
-      resource_manager_(resourceManager) {}
+      scene_(scene) {}
 
 RasterPass::~RasterPass() { destroy(); }
 
@@ -190,7 +190,7 @@ auto RasterPass::createDescriptorWrites() const
 
     switch (binding.layout.descriptorType) {
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
-      auto uniformBuffer = resource_manager_.getUniformBuffer(binding.name);
+      auto uniformBuffer = scene_.getUniformBuffer(binding.name);
 
       if (!uniformBuffer) {
         VKR_RENDER_ERROR("Uniform buffer resource not found: {}", binding.name);
@@ -218,7 +218,7 @@ auto RasterPass::createDescriptorWrites() const
     }
 
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-      auto texture = resource_manager_.getTexture(binding.name);
+      auto texture = scene_.getTexture(binding.name);
 
       if (!texture) {
         VKR_RENDER_ERROR("Texture resource not found: {}", binding.name);
@@ -255,7 +255,7 @@ auto RasterPass::createDescriptorWrites() const
 }
 
 void RasterPass::syncSelectedMeshGrid() {
-  const std::string &selectedMesh = resource_manager_.selectedMeshName();
+  const std::string &selectedMesh = scene_.selectedMeshName();
 
   if (selectedMesh == mesh_grid_name_) {
     return;
@@ -269,7 +269,7 @@ void RasterPass::syncSelectedMeshGrid() {
     return;
   }
 
-  auto mesh = resource_manager_.getMesh(selectedMesh);
+  auto mesh = scene_.getMesh(selectedMesh);
   if (!mesh || !mesh->isValid()) {
     mesh_grid_name_.clear();
     return;
@@ -325,7 +325,7 @@ void RasterPass::recordSelectedMeshGrid(
     return;
   }
 
-  auto mesh = resource_manager_.getMesh(mesh_grid_name_);
+  auto mesh = scene_.getMesh(mesh_grid_name_);
   if (!mesh || !mesh->isValid()) {
     return;
   }

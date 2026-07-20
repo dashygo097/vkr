@@ -6,9 +6,9 @@ namespace vkr::render {
 Renderer::Renderer(const core::Device &device, const core::Swapchain &swapchain,
                    const core::CommandPool &commandPool,
                    core::SyncObjects &syncObjects,
-                   resource::ResourceManager &resourceManager)
+                   scene::Scene &scene)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
-      sync_objects_(syncObjects), resource_manager_(resourceManager) {
+      sync_objects_(syncObjects), scene_(scene) {
   if (command_pool_.queueRole() != core::CommandQueueRole::Graphics) {
     VKR_RENDER_ERROR("Renderer requires a graphics command pool");
   }
@@ -201,7 +201,7 @@ void Renderer::drawIndexed(const resource::IVertexBuffer &vertexBuffer,
 void Renderer::drawGeometry() {
   ensureFrameActive("drawGeometry");
 
-  auto meshNames = resource_manager_.listMeshNames();
+  auto meshNames = scene_.listMeshNames();
 
   if (meshNames.empty()) {
     vkCmdDraw(command_buffer_, 3, 1, 0, 0);
@@ -209,7 +209,7 @@ void Renderer::drawGeometry() {
   }
 
   for (const auto &name : meshNames) {
-    auto mesh = resource_manager_.getMesh(name);
+    auto mesh = scene_.getMesh(name);
     if (!mesh || !mesh->isValid()) {
       continue;
     }

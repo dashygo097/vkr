@@ -3,12 +3,12 @@
 
 namespace vkr::ui {
 
-MeshEditorPanel::MeshEditorPanel(resource::ResourceManager &resourceManager)
-    : UiComponent("Mesh Editor"), resource_manager_(resourceManager) {}
+MeshEditorPanel::MeshEditorPanel(scene::Scene &scene)
+    : UiComponent("Mesh Editor"), scene_(scene) {}
 
 void MeshEditorPanel::render() {
-  const auto meshNames = resource_manager_.listMeshNames();
-  const auto selectedMesh = resource_manager_.selectedMeshName();
+  const auto meshNames = scene_.listMeshNames();
+  const auto selectedMesh = scene_.selectedMeshName();
 
   ImGui::SeparatorText("Target");
 
@@ -16,13 +16,13 @@ void MeshEditorPanel::render() {
   if (ImGui::BeginCombo("Mesh", preview)) {
     const bool noneSelected = selectedMesh.empty();
     if (ImGui::Selectable("<none>", noneSelected)) {
-      resource_manager_.clearSelectedMesh();
+      scene_.clearSelectedMesh();
     }
 
     for (const auto &name : meshNames) {
       const bool selected = selectedMesh == name;
       if (ImGui::Selectable(name.c_str(), selected)) {
-        resource_manager_.selectMesh(name);
+        scene_.selectMesh(name);
       }
 
       if (selected) {
@@ -36,12 +36,12 @@ void MeshEditorPanel::render() {
   if (!selectedMesh.empty()) {
     ImGui::SameLine();
     if (ImGui::Button("Clear")) {
-      resource_manager_.clearSelectedMesh();
+      scene_.clearSelectedMesh();
     }
   }
 
   ImGui::SeparatorText("Details");
-  const auto currentMesh = resource_manager_.selectedMeshName();
+  const auto currentMesh = scene_.selectedMeshName();
   if (currentMesh.empty()) {
     ImGui::TextDisabled("No mesh selected");
     return;
@@ -49,7 +49,7 @@ void MeshEditorPanel::render() {
 
   ImGui::Text("Name: %s", currentMesh.c_str());
 
-  auto mesh = resource_manager_.getMesh(currentMesh);
+  auto mesh = scene_.getMesh(currentMesh);
   if (!mesh || !mesh->isValid()) {
     ImGui::TextDisabled("State: unavailable");
     return;

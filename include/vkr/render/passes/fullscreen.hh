@@ -10,7 +10,7 @@
 #include "vkr/render/pass.hh"
 #include "vkr/render/renderer.hh"
 #include "vkr/render/attachments/frame_buffer.hh"
-#include "vkr/resource/manager.hh"
+#include "vkr/scene/scene.hh"
 #include "vkr/render/targets/offscreen.hh"
 #include <functional>
 #include <memory>
@@ -73,7 +73,7 @@ public:
                  std::vector<FullscreenPassSource> sources = {});
   FullscreenPass(Renderer &renderer, const core::Device &device,
                  const core::CommandPool &commandPool,
-                 resource::ResourceManager &resourceManager,
+                 scene::Scene &scene,
                  std::vector<FullscreenPassSource> sources = {});
   ~FullscreenPass() override;
 
@@ -121,7 +121,7 @@ private:
   Renderer &renderer_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  resource::ResourceManager *resource_manager_{nullptr};
+  scene::Scene *scene_{nullptr};
 
   FullscreenPassDesc desc_{};
   std::vector<FullscreenPassSource> sources_{};

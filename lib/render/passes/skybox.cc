@@ -6,9 +6,9 @@ namespace vkr::render {
 
 SkyboxPass::SkyboxPass(Renderer &renderer, const core::Device &device,
                        const core::CommandPool &commandPool,
-                       resource::ResourceManager &resourceManager)
+                       scene::Scene &scene)
     : renderer_(renderer), device_(device), command_pool_(commandPool),
-      resource_manager_(resourceManager) {}
+      scene_(scene) {}
 
 SkyboxPass::~SkyboxPass() { destroy(); }
 
@@ -49,7 +49,7 @@ void SkyboxPass::record() {
   renderer_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
-    auto mesh = resource_manager_.getMesh(desc_.meshName);
+    auto mesh = scene_.getMesh(desc_.meshName);
     if (!mesh || !mesh->isValid()) {
       VKR_RENDER_ERROR("SkyboxPass '{}' mesh resource not found: {}", name(),
                        desc_.meshName);
@@ -185,7 +185,7 @@ auto SkyboxPass::descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc {
 
 auto SkyboxPass::createDescriptorWrites() const
     -> std::vector<pipeline::DescriptorSetWriteDesc> {
-  auto uniformBuffer = resource_manager_.getUniformBuffer(desc_.uniformName);
+  auto uniformBuffer = scene_.getUniformBuffer(desc_.uniformName);
   if (!uniformBuffer) {
     VKR_RENDER_ERROR("SkyboxPass '{}' uniform resource not found: {}", name(),
                      desc_.uniformName);
@@ -197,7 +197,7 @@ auto SkyboxPass::createDescriptorWrites() const
                      core::MAX_FRAMES_IN_FLIGHT);
   }
 
-  auto cubemap = resource_manager_.getCubemap(desc_.cubemapName);
+  auto cubemap = scene_.getCubemap(desc_.cubemapName);
   if (!cubemap) {
     VKR_RENDER_ERROR("SkyboxPass '{}' cubemap resource not found: {}", name(),
                      desc_.cubemapName);

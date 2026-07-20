@@ -16,8 +16,8 @@
 #include "vkr/render/passes/skybox.hh"
 #include "vkr/render/passes/ui.hh"
 #include "vkr/render/renderer.hh"
-#include "vkr/resource/manager.hh"
 #include "vkr/scene/camera.hh"
+#include "vkr/scene/scene.hh"
 #include "vkr/ui/ui.hh"
 #include "vkr/util/asset.hh"
 #include "vkr/util/input_tracer.hh"
@@ -38,7 +38,7 @@ struct AppDesc {
   core::CommandPoolDesc graphicsCommandPool{};
   core::CommandPoolDesc computeCommandPool{core::CommandQueueRole::Compute};
   core::CommandPoolDesc transferCommandPool{core::CommandQueueRole::Transfer};
-  scene::CameraDesc camera{};
+  vkr::scene::CameraDesc camera{};
   ui::UiDesc ui{};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
@@ -98,7 +98,7 @@ public:
   std::unique_ptr<core::SyncObjects> syncObjects;
 
   // resource management
-  std::unique_ptr<resource::ResourceManager> resourceManager;
+  std::unique_ptr<vkr::scene::Scene> scene;
 
   // input
   std::unique_ptr<util::InputTracer> inputTracer;
@@ -108,7 +108,7 @@ public:
   std::unique_ptr<render::RenderGraph> renderGraph;
 
   // components
-  std::unique_ptr<scene::Camera> camera;
+  std::unique_ptr<vkr::scene::Camera> camera;
   std::unique_ptr<util::Timer> timer;
 
 protected:

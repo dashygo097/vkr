@@ -10,7 +10,7 @@
 #include "vkr/render/pass.hh"
 #include "vkr/render/renderer.hh"
 #include "vkr/render/attachments/frame_buffer.hh"
-#include "vkr/resource/manager.hh"
+#include "vkr/scene/scene.hh"
 #include "vkr/render/targets/offscreen.hh"
 #include <memory>
 
@@ -28,7 +28,7 @@ class RasterPass final : public RenderGraphPass {
 public:
   RasterPass(Renderer &renderer, const core::Device &device,
              const core::CommandPool &commandPool,
-             resource::ResourceManager &resourceManager);
+             scene::Scene &scene);
   ~RasterPass() override;
 
   RasterPass(const RasterPass &) = delete;
@@ -72,7 +72,7 @@ private:
   Renderer &renderer_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  resource::ResourceManager &resource_manager_;
+  scene::Scene &scene_;
 
   // components
   RasterPassDesc desc_{};

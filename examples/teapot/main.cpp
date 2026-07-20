@@ -22,12 +22,12 @@ private:
         *device, *graphicsCommandPool);
     teapot.load(assetSystem->resolve("objects/teapot/teapot.obj"));
 
-    resourceManager->createMesh("teapot", teapot);
-    resourceManager->createTexture(
+    scene->createMesh("teapot", teapot);
+    scene->createTexture(
         "teapot_texture",
         assetSystem->resolve("objects/teapot/default.png").string());
 
-    resourceManager->createUniformBuffer<UniformBuffer3DObject>("default", {});
+    scene->createUniformBuffer<UniformBuffer3DObject>("default", {});
   }
 
   void buildRenderGraph() override {
@@ -81,7 +81,7 @@ private:
     desc.pipeline = normal;
 
     auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
-        *renderer, *device, *graphicsCommandPool, *resourceManager);
+        *renderer, *device, *graphicsCommandPool, *scene);
     rasterPass.setName("raster").write("scene.raw");
     rasterPass.update(desc);
 
@@ -133,7 +133,7 @@ private:
 
     auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
         *renderer, *window, *instance, *surface, *device, *graphicsCommandPool,
-        *swapchain, *resourceManager, *assetSystem, ctx.camera,
+        *swapchain, *scene, *assetSystem, ctx.camera,
         vkr::render::FullscreenPassSource{postProcessPass}, *renderGraph,
         *timer, ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
@@ -153,7 +153,7 @@ private:
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();
 
-    resourceManager->getUniformBuffer("default")->updateRaw(frameIndex, &ubo,
+    scene->getUniformBuffer("default")->updateRaw(frameIndex, &ubo,
                                                             sizeof(ubo));
 
     if (ctx.ui.viewport.height > 0 &&

@@ -20,3 +20,4 @@
 #include "vkr/scene/geometry/mesh.hh"
 #include "vkr/scene/material/cubemap.hh"
 #include "vkr/scene/material/texture.hh"
+#include "vkr/scene/scene.hh"

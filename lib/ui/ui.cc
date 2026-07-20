@@ -27,14 +27,14 @@ void checkVkResult(VkResult err) {
 UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool,
-       resource::ResourceManager &resourceManager,
+       scene::Scene &scene,
        const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
        render::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
        render::RenderGraph &renderGraph, util::Timer &timer, UiDesc &desc)
     : window_(window), instance_(instance), surface_(surface), device_(device),
-      command_pool_(commandPool), resource_manager_(resourceManager),
+      command_pool_(commandPool), scene_(scene),
       asset_system_(assetSystem), camera_(camera),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),
       descriptor_pool_(descriptorPool), render_graph_(renderGraph),
@@ -116,7 +116,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
   camera_panel_ = std::make_unique<CameraPanel>(
       camera_, desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
-  mesh_editor_panel_ = std::make_unique<MeshEditorPanel>(resource_manager_);
+  mesh_editor_panel_ = std::make_unique<MeshEditorPanel>(scene_);
 
   VKR_UI_INFO("Initializing FPS Panel...");
   fps_panel_ = std::make_unique<FPSPanel>(timer);
@@ -132,7 +132,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   VKR_UI_INFO("Logging Panel initialized successfully.");
 
   VKR_UI_INFO("Initializing Resource Tree...");
-  resource_tree_ = std::make_unique<ResourceTree>(resource_manager_);
+  resource_tree_ = std::make_unique<ResourceTree>(scene_);
   VKR_UI_INFO("Resource Tree initialized successfully.");
 
   dock_components_ = {*viewport_panel_, *resource_tree_, *render_graph_panel_,

@@ -85,16 +85,16 @@ auto createDebugCubemapFaces() -> std::array<std::string, 6> {
 class SkyboxApp : public vkr::VulkanApplication {
 private:
   void createResources() override {
-    resourceManager->createCubemap("skybox", createDebugCubemapFaces(),
+    scene->createCubemap("skybox", createDebugCubemapFaces(),
                                    VK_FORMAT_R8G8B8A8_SRGB);
 
     vkr::scene::Mesh<vkr::resource::VertexSkybox3D> skybox(
         *device, *graphicsCommandPool);
     skybox.load(vkr::resource::skyboxCubeVertices(),
                 vkr::resource::skyboxCubeIndices());
-    resourceManager->createMesh("skybox", skybox);
+    scene->createMesh("skybox", skybox);
 
-    resourceManager->createUniformBuffer<UniformBuffer3DObject>("skybox", {});
+    scene->createUniformBuffer<UniformBuffer3DObject>("skybox", {});
   }
 
   void buildRenderGraph() override {
@@ -129,7 +129,7 @@ private:
     };
 
     auto &skyboxPass = renderGraph->addPass<vkr::render::SkyboxPass>(
-        *renderer, *device, *graphicsCommandPool, *resourceManager);
+        *renderer, *device, *graphicsCommandPool, *scene);
     skyboxPass.setName("skybox").write("scene.color");
     skyboxPass.update(skyboxDesc);
 
@@ -143,7 +143,7 @@ private:
 
     auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
         *renderer, *window, *instance, *surface, *device, *graphicsCommandPool,
-        *swapchain, *resourceManager, *assetSystem, ctx.camera,
+        *swapchain, *scene, *assetSystem, ctx.camera,
         vkr::render::FullscreenPassSource{skyboxPass}, *renderGraph, *timer,
         ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
@@ -162,7 +162,7 @@ private:
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();
 
-    resourceManager->getUniformBuffer("skybox")->updateRaw(frameIndex, &ubo,
+    scene->getUniformBuffer("skybox")->updateRaw(frameIndex, &ubo,
                                                            sizeof(ubo));
 
     if (ctx.ui.viewport.height > 0 &&

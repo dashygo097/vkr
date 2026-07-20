@@ -8,14 +8,14 @@ UiPass::UiPass(Renderer &renderer, const core::Window &window,
                const core::Instance &instance, const core::Surface &surface,
                const core::Device &device, const core::CommandPool &commandPool,
                const core::Swapchain &swapchain,
-               resource::ResourceManager &resourceManager,
+               scene::Scene &scene,
                const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
                FullscreenPassSource source, RenderGraph &renderGraph,
                util::Timer &timer,
                ui::UiDesc &uiDesc)
     : renderer_(renderer), window_(window), instance_(instance),
       surface_(surface), device_(device), command_pool_(commandPool),
-      swapchain_(swapchain), resource_manager_(resourceManager),
+      swapchain_(swapchain), scene_(scene),
       asset_system_(assetSystem), camera_(camera), source_(source),
       render_graph_(renderGraph), timer_(timer), ui_desc_(uiDesc) {}
 
@@ -47,7 +47,7 @@ void UiPass::create() {
   descriptor_pool_->update(desc_.descriptorPool);
 
   ui_ = std::make_unique<ui::UI>(
-      window_, instance_, surface_, device_, command_pool_, resource_manager_,
+      window_, instance_, surface_, device_, command_pool_, scene_,
       asset_system_, camera_, source_.target(), *render_pass_,
       *descriptor_pool_, render_graph_, timer_, ui_desc_);
   ui_->layoutMode(desc_.layoutMode);

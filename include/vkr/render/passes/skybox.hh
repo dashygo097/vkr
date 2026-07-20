@@ -10,7 +10,7 @@
 #include "vkr/render/pass.hh"
 #include "vkr/render/renderer.hh"
 #include "vkr/render/attachments/frame_buffer.hh"
-#include "vkr/resource/manager.hh"
+#include "vkr/scene/scene.hh"
 #include "vkr/render/targets/offscreen.hh"
 #include <memory>
 #include <string>
@@ -32,7 +32,7 @@ class SkyboxPass final : public RenderGraphPass {
 public:
   SkyboxPass(Renderer &renderer, const core::Device &device,
              const core::CommandPool &commandPool,
-             resource::ResourceManager &resourceManager);
+             scene::Scene &scene);
   ~SkyboxPass() override;
 
   SkyboxPass(const SkyboxPass &) = delete;
@@ -75,7 +75,7 @@ private:
   Renderer &renderer_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  resource::ResourceManager &resource_manager_;
+  scene::Scene &scene_;
 
   SkyboxPassDesc desc_{};
   std::unique_ptr<OffscreenTarget> target_{};

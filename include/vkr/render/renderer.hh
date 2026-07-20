@@ -6,7 +6,7 @@
 #include "vkr/core/sync/objects.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/render/attachments/frame_buffer.hh"
-#include "vkr/resource/manager.hh"
+#include "vkr/scene/scene.hh"
 #include "vkr/ui/ui.hh"
 
 namespace vkr::render {
@@ -24,7 +24,7 @@ public:
                     const core::Swapchain &swapchain,
                     const core::CommandPool &commandPool,
                     core::SyncObjects &syncObjects,
-                    resource::ResourceManager &resourceManager);
+                    scene::Scene &scene);
   ~Renderer() = default;
 
   Renderer(const Renderer &) = delete;
@@ -84,7 +84,7 @@ private:
   const core::Swapchain &swapchain_;
   const core::CommandPool &command_pool_;
   core::SyncObjects &sync_objects_;
-  resource::ResourceManager &resource_manager_;
+  scene::Scene &scene_;
 
   // components
   std::unique_ptr<core::CommandBuffers> command_buffers_{};

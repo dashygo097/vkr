@@ -74,16 +74,16 @@ auto nextBindingAfter(
 }
 
 void appendResourceDescriptorWrites(
-    std::string_view passName, const resource::ResourceManager *resourceManager,
+    std::string_view passName, const scene::Scene *scene,
     const std::vector<pipeline::DescriptorBinding> &bindings,
     std::vector<pipeline::DescriptorSetWriteDesc> &writes) {
   if (bindings.empty()) {
     return;
   }
 
-  if (resourceManager == nullptr) {
+  if (scene == nullptr) {
     VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' has descriptor resource "
-                     "bindings but no ResourceManager",
+                     "bindings but no Scene",
                      std::string(passName));
   }
 
@@ -96,7 +96,7 @@ void appendResourceDescriptorWrites(
 
     switch (binding.layout.descriptorType) {
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
-      auto uniformBuffer = resourceManager->getUniformBuffer(binding.name);
+      auto uniformBuffer = scene->getUniformBuffer(binding.name);
       if (!uniformBuffer) {
         VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' uniform buffer resource "
                          "not found: {}",
@@ -127,7 +127,7 @@ void appendResourceDescriptorWrites(
     }
 
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-      auto texture = resourceManager->getTexture(binding.name);
+      auto texture = scene->getTexture(binding.name);
       if (!texture) {
         VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' texture resource not "
                          "found: {}",
@@ -191,10 +191,10 @@ FeedbackFullscreenPass::FeedbackFullscreenPass(
 FeedbackFullscreenPass::FeedbackFullscreenPass(
     Renderer &renderer, const core::Device &device,
     const core::CommandPool &commandPool,
-    resource::ResourceManager &resourceManager,
+    scene::Scene &scene,
     std::vector<FullscreenPassSource> sources)
     : renderer_(renderer), device_(device), command_pool_(commandPool),
-      resource_manager_(&resourceManager), sources_(std::move(sources)) {}
+      scene_(&scene), sources_(std::move(sources)) {}
 
 FeedbackFullscreenPass::~FeedbackFullscreenPass() { destroy(); }
 
@@ -507,7 +507,7 @@ auto FeedbackFullscreenPass::createDescriptorWrites(
     writes.push_back(pipeline::DescriptorSetWriteDesc::forSet(frameIndex));
   }
 
-  appendResourceDescriptorWrites(name(), resource_manager_,
+  appendResourceDescriptorWrites(name(), scene_,
                                  desc_.descriptorBindings, writes);
 
   if (desc_.historyInput) {
