@@ -1,32 +1,55 @@
 # VKR
 
-VKR is a small graph-based Vulkan renderer and application framework written in
-C++17. It wraps common Vulkan setup, render pass orchestration, resource
-management, shader compilation, and an ImGui workspace so sample applications can
-focus on scene resources and render graph composition.
+VKR is a small C++17 Vulkan framework for graphics and compute experiments. It
+wraps common Vulkan setup, command pools, device capability queries, resource
+ownership, descriptor setup, shader compilation, and graph-style execution so
+examples can focus on rendering or compute work.
 
 ![demo screenshot](assets/screenshots/demo.png)
 
+## Current Shape
+
+The framework is split by responsibility:
+
+- `core`: Vulkan instance, physical/logical device selection, queue-family
+  support queries, command pools, windows, surfaces, swapchains, fences, and
+  semaphores.
+- `resource`: low-level GPU resource ownership such as buffers, storage
+  buffers, uniform buffers, images, image views, samplers, storage images, and
+  shader modules. These types do not own render-frame concepts.
+- `scene`: graphics-facing scene resources such as meshes, vertex/index
+  buffers, vertex input layouts, textures, cubemaps, cameras, and frame uniform
+  buffer sets.
+- `pipeline`: descriptor layouts, descriptor sets, descriptor pools, graphics
+  pipelines, compute pipelines, and render-pass wrappers.
+- `exec::render`: render application shell, render graph, render executor,
+  render targets, attachments, frame sync, and built-in render passes.
+- `exec::compute`: compute application shell, compute graph, compute executor,
+  and compute passes.
+
+Applications usually include `vkr.hh`, then derive from either
+`vkr::exec::RenderApplication` or `vkr::exec::ComputeApplication`.
+
 ## Features
 
-- Vulkan application shell for window creation, instance/device/swapchain setup,
-  command buffers, frame synchronization, resize handling, and snapshot
-  persistence.
-- Render graph with named passes, resource read/write tracking, dependency
-  compilation, and pass recreation on swapchain changes.
-- Built-in render passes for raster rendering, skyboxes, fullscreen
-  post-processing, ImGui UI composition, and presentation.
-- Resource management for meshes, textures, cubemaps, uniform buffers, Vulkan
-  images, samplers, framebuffers, and descriptor sets.
+- Vulkan instance/device setup with queried graphics, present, compute, and
+  transfer queue-family support.
+- Separate render and compute application shells.
+- Render graph with named passes, read/write tracking, dependency compilation,
+  swapchain recreation, and frame synchronization.
+- Compute graph with descriptor-backed compute passes and dispatch execution.
+- Built-in render passes for raster rendering, skyboxes, fullscreen passes,
+  feedback fullscreen passes, ImGui UI composition, and presentation.
+- Generic resource types for buffers, storage buffers, uniform buffers, images,
+  storage images, image views, samplers, and shader modules.
+- Scene-layer graphics resources for meshes, vertex/index buffers, textures,
+  cubemaps, cameras, and frame uniform buffer sets.
 - Runtime GLSL compilation through `shaderc`, with helpers for GLSL files and
   source strings.
 - OBJ loading through `tinyobjloader`, image loading through `stb`, math through
-  `glm`, logging through `spdlog`, and configuration snapshots through
-  `toml++`.
-- ImGui workspace with viewport, render graph, resources, assets, camera,
+  `glm`, logging through `spdlog`, and snapshots through `toml++`.
+- ImGui workspace with viewport, exec graph, resources, assets, camera,
   performance, logging, shader editor, mesh editor, and theme controls.
-- Sample applications for a textured teapot, a debug skybox, and a ShaderToy-like
-  fullscreen shader viewer.
 - Vulkan diagnostic tools for instance extensions, validation layers, and
   physical devices.
 
@@ -45,9 +68,9 @@ main external dependency.
 
 ## Build
 
-The repository includes a small Makefile around CMake. The first build copies
+The repository includes a Makefile wrapper around CMake. The first build copies
 `cmake/config.cmake` to `build/config.cmake`, configures CMake, and builds the
-library, tools, and sample applications.
+library, tools, and examples.
 
 ```sh
 make
@@ -98,12 +121,13 @@ already exist.
 
 ## Run
 
-Sample applications are written to `build/bin/<app-name>/`:
+Examples are written to `build/bin/<app-name>/`:
 
 ```sh
 ./build/bin/teapot/teapot
 ./build/bin/skybox/skybox
 ./build/bin/shadertoy/shadertoy
+./build/bin/vector_add/vector_add
 ```
 
 Tools are written to `build/bin/`:
@@ -114,21 +138,92 @@ Tools are written to `build/bin/`:
 ./build/bin/check_physical_devices
 ```
 
+On macOS, compute and render examples still require a working MoltenVK/Metal
+runtime.
+
 ## Examples
 
-- `teapot`: loads `examples/teapot/assets/objects/teapot/teapot.obj`, applies a
-  texture, renders it through a raster pass, and runs a fullscreen post-process
-  pass before presenting through the UI pass.
-- `skybox`: creates temporary debug cubemap faces, renders a skybox cube, and
-  displays it through the UI pass.
-- `shadertoy`: renders a fullscreen triangle using ShaderToy-style uniforms such
-  as resolution, time, frame count, mouse state, and date.
+- `teapot`: render example that loads an OBJ teapot, creates scene textures and
+  mesh buffers, renders through a raster pass, applies a fullscreen pass, then
+  presents through the UI pass.
+- `skybox`: render example that creates a cubemap and renders a skybox.
+- `shadertoy`: render example with ShaderToy-style fullscreen feedback passes,
+  uniforms for time, frame count, mouse state, date, and a shader editor.
+- `vector_add`: compute example that creates storage buffers and a uniform
+  buffer, binds them to a compute pass, dispatches a GLSL compute shader, then
+  reads back and validates the result.
 
 Each directory under `examples/` has its own `CMakeLists.txt` and uses
 `add_vk_app(...)`. If an example has an `assets/` directory, the helper copies it
 to that example's output directory after build.
 
+## Render App Skeleton
+
+```cpp
+#include "vkr.hh"
+
+class MyRenderApp final : public vkr::exec::RenderApplication {
+  void configure() override {
+    ctx.window.title = "my_render_app";
+    ctx.instance.name = "my_render_app";
+  }
+
+  void createResources() override {
+    // Create scene meshes, textures, cubemaps, and frame uniform buffers.
+  }
+
+  void buildGraph() override {
+    // Add render passes to graph.
+  }
+};
+
+int main() {
+  MyRenderApp app;
+  app.run();
+}
+```
+
+Render applications own a window, surface, swapchain, scene, render executor,
+render graph, graphics command pool, and optional compute/transfer command pools
+when supported by the selected device.
+
+## Compute App Skeleton
+
+```cpp
+#include "vkr.hh"
+
+class MyComputeApp final : public vkr::exec::ComputeApplication {
+  void configure() override {
+    ctx.instance.name = "my_compute_app";
+  }
+
+  void createResources() override {
+    // Create resource::StorageBuffer<T>, resource::UniformBuffer<T>, etc.
+  }
+
+  void buildGraph() override {
+    // Add compute passes to graph.
+  }
+
+  void afterExecute() override {
+    // Read back and validate results if needed.
+  }
+};
+
+int main() {
+  MyComputeApp app;
+  app.run();
+}
+```
+
+For compute uniforms, create a generic `vkr::resource::UniformBuffer<T>` and
+bind `uniform.descriptorInfo()` with `VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER`.
+For input/output arrays, use `vkr::resource::StorageBuffer<T>` and bind
+`storage.descriptorInfo(...)` with `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`.
+
 ## Controls
+
+Render examples use these default controls:
 
 - `Tab`: switch between fullscreen viewport mode and the docked workspace.
 - `W`, `A`, `S`, `D`: move the camera horizontally.
@@ -144,7 +239,7 @@ workspace is active and the viewport is not focused, the camera is locked.
 ## Project Layout
 
 ```text
-examples/    Sample applications and example-local assets.
+examples/    Render and compute sample applications.
 assets/      Engine-level shaders and shared screenshots.
 cmake/       Build configuration, dependency, compiler, and target helpers.
 include/     Public VKR headers.
@@ -154,12 +249,29 @@ tools/       Small Vulkan diagnostic executables.
 doc/         Placeholder project notes.
 ```
 
+Important public header groups:
+
+```text
+include/vkr/core/       Vulkan setup, command pools, sync, window/surface.
+include/vkr/resource/   Low-level buffers, images, samplers, shader modules.
+include/vkr/scene/      Graphics scene resources and frame uniform sets.
+include/vkr/pipeline/   Descriptor and pipeline wrappers.
+include/vkr/exec/       Render and compute execution frameworks.
+include/vkr/ui/         ImGui workspace components.
+include/vkr/util/       Assets, compiler, timer, input, and TOML utilities.
+```
+
 ## Development Notes
 
-- Include `vkr.hh` from applications to get the main application framework,
-  common render passes, and built-in vertex/uniform buffer types.
-- Derive from `vkr::VulkanApplication` and implement `configure()`,
-  `createResources()`, `buildRenderGraph()`, and optionally `onDraw()`.
+- Use `vkr.hh` from examples and applications for the main public API.
+- Public source files include their own headers normally; the library target
+  uses `include/vkr/pch.hh` as a private precompiled header.
+- Keep low-level `resource` types free of render-frame and scene concepts.
+  Graphics-specific vertex/index buffers, meshes, textures, and cubemaps belong
+  in `scene`.
+- Use `resource::UniformBuffer<T>` for a single generic uniform buffer.
+  Use `scene::FrameUniformBufferSet<T>` only when a render pass needs one
+  uniform buffer per frame in flight.
 - Add a new example with a local `CMakeLists.txt`:
 
   ```cmake
@@ -172,11 +284,11 @@ doc/         Placeholder project notes.
   ```
 
   Then add the example directory from `examples/CMakeLists.txt`.
-- Use `assetSystem->resolve(...)` to load app assets first and then engine
-  assets. Explicit prefixes are also available: `app://`, `engine://`, and
-  `user://`.
-- The application saves and loads `snapshot.toml` by default, preserving runtime
-  context such as camera and UI/theme settings.
+
+- Use `assetSystem->resolveApp(...)` for example-local assets. The asset system
+  also supports engine and user roots.
+- Render applications save and load `snapshot.toml` by default, preserving
+  runtime context such as camera and UI/theme settings.
 
 ## License
 
