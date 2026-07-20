@@ -6,7 +6,7 @@ namespace vkr::resource {
 ColorAttachment::ColorAttachment(const core::Device &device,
                                  const core::CommandPool &commandPool)
     : device_(device), command_pool_(commandPool) {
-  image_ = std::make_unique<Image>(device_, command_pool_);
+  image_ = std::make_unique<Image>(device_);
   image_view_ = std::make_unique<ImageView>(device_);
 }
 
@@ -26,9 +26,11 @@ void ColorAttachment::create() {
       ImageDesc::colorAttachment(desc_.width, desc_.height, desc_.format);
 
   imageDesc.usage = desc_.usage;
-  imageDesc.finalLayout = desc_.finalLayout;
 
   image_->update(imageDesc);
+  image_->setLayout(desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+                        ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+                        : desc_.finalLayout);
   image_view_->update(ImageViewDesc::color2D(image_->image(), desc_.format));
 
   if (desc_.createSampler) {

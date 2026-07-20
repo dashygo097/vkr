@@ -6,7 +6,7 @@ namespace vkr::resource {
 DepthAttachment::DepthAttachment(const core::Device &device,
                                  const core::CommandPool &commandPool)
     : device_(device), command_pool_(commandPool) {
-  image_ = std::make_unique<Image>(device_, command_pool_);
+  image_ = std::make_unique<Image>(device_);
   image_view_ = std::make_unique<ImageView>(device_);
 }
 

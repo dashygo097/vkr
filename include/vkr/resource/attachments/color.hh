@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/resource/gpu/image.hh"
 #include "vkr/resource/gpu/image_view.hh"
