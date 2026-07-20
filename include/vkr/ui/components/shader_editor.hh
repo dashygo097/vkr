@@ -2,7 +2,7 @@
 
 #include "TextEditor.h"
 #include "vkr/pipeline/graphics_pipeline.hh"
-#include "vkr/render/graph.hh"
+#include "vkr/exec/render/graph.hh"
 #include "vkr/ui/components/ui_component.hh"
 #include <functional>
 #include <optional>
@@ -13,7 +13,7 @@ namespace vkr::ui {
 
 class ShaderEditor final : public UiComponent {
 public:
-  explicit ShaderEditor(render::RenderGraph &graph);
+  explicit ShaderEditor(exec::RenderGraph &graph);
 
 private:
   void render();
@@ -29,7 +29,7 @@ private:
   };
 
   // dependencies
-  render::RenderGraph &graph_;
+  exec::RenderGraph &graph_;
 
   // components
   TextEditor vert_editor_;

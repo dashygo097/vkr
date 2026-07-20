@@ -26,7 +26,7 @@ struct UniformBufferShaderToyObject {
 
 } // namespace
 
-class ShaderToyApp : public vkr::VulkanApplication {
+class ShaderToyApp : public vkr::exec::RenderApplication {
 private:
   static constexpr uint32_t kShaderToyChannelCount = 4;
   static constexpr std::string_view kShaderToyUniformName{"shadertoy"};
@@ -47,7 +47,7 @@ private:
   }
 
   [[nodiscard]] auto shadertoyTargetDesc() const
-      -> vkr::render::OffscreenTargetDesc {
+      -> vkr::exec::OffscreenTargetDesc {
     return {.color = {.width = swapchain->width(),
                       .height = swapchain->height(),
                       .format = VK_FORMAT_R16G16B16A16_SFLOAT,
@@ -96,8 +96,8 @@ private:
   }
 
   [[nodiscard]] static auto channelInput(uint32_t channel)
-      -> vkr::render::FullscreenPassInputDesc {
-    return vkr::render::FullscreenPassInputDesc::image(1U + channel);
+      -> vkr::exec::FullscreenPassInputDesc {
+    return vkr::exec::FullscreenPassInputDesc::image(1U + channel);
   }
 
   [[nodiscard]] static auto hasChannel(const std::vector<uint32_t> &channels,
@@ -199,10 +199,10 @@ private:
                                   const std::string &fragmentShader,
                                   std::optional<uint32_t> historyChannel,
                                   const std::vector<uint32_t> &sourceChannels)
-      -> vkr::render::FeedbackFullscreenPassDesc {
+      -> vkr::exec::FeedbackFullscreenPassDesc {
     const auto fallback = fallbackChannels(historyChannel, sourceChannels);
 
-    vkr::render::FeedbackFullscreenPassDesc desc{};
+    vkr::exec::FeedbackFullscreenPassDesc desc{};
     desc.target = {.target = shadertoyTargetDesc()};
     desc.descriptorBindings = shadertoyDescriptorBindings(fallback);
     desc.descriptorPool = shadertoyDescriptorPool(static_cast<uint32_t>(
@@ -222,10 +222,10 @@ private:
   }
 
   [[nodiscard]] auto imageDesc(const std::vector<uint32_t> &sourceChannels)
-      -> vkr::render::FullscreenPassDesc {
+      -> vkr::exec::FullscreenPassDesc {
     const auto fallback = fallbackChannels(std::nullopt, sourceChannels);
 
-    vkr::render::FullscreenPassDesc desc{};
+    vkr::exec::FullscreenPassDesc desc{};
     desc.target = shadertoyTargetDesc();
     desc.descriptorBindings = shadertoyDescriptorBindings(fallback);
     desc.descriptorPool = shadertoyDescriptorPool(
@@ -279,7 +279,7 @@ private:
   [[nodiscard]] auto shadertoyPipelineRevision() -> uint64_t {
     uint64_t hash = 1469598103934665603ULL;
 
-    for (auto pass : renderGraph->passes()) {
+    for (auto pass : graph->passes()) {
       auto pipeline = pass.get().editablePipeline();
       if (!pipeline) {
         continue;
@@ -312,27 +312,27 @@ private:
                                            VK_FORMAT_R8G8B8A8_UNORM));
   }
 
-  void buildRenderGraph() override {
-    auto &bufferA = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *graphicsCommandPool, *scene);
+  void buildGraph() override {
+    auto &bufferA = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
+        *executor, *device, *graphicsCommandPool, *scene);
     bufferA.setName("buffer.a").read("buffer.a.history").write("buffer.a");
     bufferA.update(feedbackDesc("shadertoy.buffer.a", "buffer_a.frag", 0, {}));
 
-    auto &bufferB = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *graphicsCommandPool, *scene,
-        std::vector<vkr::render::FullscreenPassSource>{
-            vkr::render::FullscreenPassSource{bufferA}});
+    auto &bufferB = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
+        *executor, *device, *graphicsCommandPool, *scene,
+        std::vector<vkr::exec::FullscreenPassSource>{
+            vkr::exec::FullscreenPassSource{bufferA}});
     bufferB.setName("buffer.b")
         .read("buffer.b.history")
         .read("buffer.a")
         .write("buffer.b");
     bufferB.update(feedbackDesc("shadertoy.buffer.b", "buffer_b.frag", 1, {0}));
 
-    auto &bufferC = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *graphicsCommandPool, *scene,
-        std::vector<vkr::render::FullscreenPassSource>{
-            vkr::render::FullscreenPassSource{bufferA},
-            vkr::render::FullscreenPassSource{bufferB}});
+    auto &bufferC = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
+        *executor, *device, *graphicsCommandPool, *scene,
+        std::vector<vkr::exec::FullscreenPassSource>{
+            vkr::exec::FullscreenPassSource{bufferA},
+            vkr::exec::FullscreenPassSource{bufferB}});
     bufferC.setName("buffer.c")
         .read("buffer.c.history")
         .read("buffer.a")
@@ -341,12 +341,12 @@ private:
     bufferC.update(
         feedbackDesc("shadertoy.buffer.c", "buffer_c.frag", 2, {0, 1}));
 
-    auto &bufferD = renderGraph->addPass<vkr::render::FeedbackFullscreenPass>(
-        *renderer, *device, *graphicsCommandPool, *scene,
-        std::vector<vkr::render::FullscreenPassSource>{
-            vkr::render::FullscreenPassSource{bufferA},
-            vkr::render::FullscreenPassSource{bufferB},
-            vkr::render::FullscreenPassSource{bufferC}});
+    auto &bufferD = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
+        *executor, *device, *graphicsCommandPool, *scene,
+        std::vector<vkr::exec::FullscreenPassSource>{
+            vkr::exec::FullscreenPassSource{bufferA},
+            vkr::exec::FullscreenPassSource{bufferB},
+            vkr::exec::FullscreenPassSource{bufferC}});
     bufferD.setName("buffer.d")
         .read("buffer.d.history")
         .read("buffer.a")
@@ -356,13 +356,13 @@ private:
     bufferD.update(
         feedbackDesc("shadertoy.buffer.d", "buffer_d.frag", 3, {0, 1, 2}));
 
-    auto &imagePass = renderGraph->addPass<vkr::render::FullscreenPass>(
-        *renderer, *device, *graphicsCommandPool, *scene,
-        std::vector<vkr::render::FullscreenPassSource>{
-            vkr::render::FullscreenPassSource{bufferA},
-            vkr::render::FullscreenPassSource{bufferB},
-            vkr::render::FullscreenPassSource{bufferC},
-            vkr::render::FullscreenPassSource{bufferD}});
+    auto &imagePass = graph->addPass<vkr::exec::FullscreenPass>(
+        *executor, *device, *graphicsCommandPool, *scene,
+        std::vector<vkr::exec::FullscreenPassSource>{
+            vkr::exec::FullscreenPassSource{bufferA},
+            vkr::exec::FullscreenPassSource{bufferB},
+            vkr::exec::FullscreenPassSource{bufferC},
+            vkr::exec::FullscreenPassSource{bufferD}});
     imagePass.setName("image")
         .read("buffer.a")
         .read("buffer.b")
@@ -371,7 +371,7 @@ private:
         .write("scene.color");
     imagePass.update(imageDesc({0, 1, 2, 3}));
 
-    vkr::render::UiPassDesc uiDesc{};
+    vkr::exec::UiPassDesc uiDesc{};
     uiDesc.layoutMode = ctx.ui.layoutMode;
     uiDesc.descriptorPool = {
         .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
@@ -379,16 +379,16 @@ private:
         .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
     uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
-    auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
-        *renderer, *window, *instance, *surface, *device, *graphicsCommandPool,
+    auto &uiPass = graph->addPass<vkr::exec::UiPass>(
+        *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::render::FullscreenPassSource{imagePass}, *renderGraph, *timer,
+        vkr::exec::FullscreenPassSource{imagePass}, *graph, *timer,
         ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
     uiPass.update(uiDesc);
 
     auto &presentPass =
-        renderGraph->addPass<vkr::render::PresentPass>(*renderer);
+        graph->addPass<vkr::exec::PresentPass>(*executor);
     presentPass.setName("present");
   }
 
@@ -435,7 +435,7 @@ private:
       resolution = channelResolution;
     }
 
-    shadertoyUBO->updateRaw(renderer->frameIndex(), &ubo, sizeof(ubo));
+    shadertoyUBO->updateRaw(executor->frameIndex(), &ubo, sizeof(ubo));
   }
 
   void configure() override {

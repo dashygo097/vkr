@@ -10,7 +10,7 @@ std::shared_ptr<spdlog::logger> Logger::util_logger_;
 std::shared_ptr<spdlog::logger> Logger::core_logger_;
 std::shared_ptr<spdlog::logger> Logger::resource_logger_;
 std::shared_ptr<spdlog::logger> Logger::pipeline_logger_;
-std::shared_ptr<spdlog::logger> Logger::render_logger_;
+std::shared_ptr<spdlog::logger> Logger::exec_logger_;
 std::shared_ptr<spdlog::logger> Logger::scene_logger_;
 std::shared_ptr<spdlog::logger> Logger::ui_logger_;
 
@@ -42,8 +42,8 @@ void Logger::init() {
       std::make_shared<spdlog::logger>("resource", sinks.begin(), sinks.end());
   pipeline_logger_ =
       std::make_shared<spdlog::logger>("pipeline", sinks.begin(), sinks.end());
-  render_logger_ =
-      std::make_shared<spdlog::logger>("render  ", sinks.begin(), sinks.end());
+  exec_logger_ =
+      std::make_shared<spdlog::logger>("exec    ", sinks.begin(), sinks.end());
   scene_logger_ =
       std::make_shared<spdlog::logger>("scene   ", sinks.begin(), sinks.end());
   ui_logger_ =
@@ -52,7 +52,7 @@ void Logger::init() {
   core_logger_->set_level(spdlog::level::trace);
   resource_logger_->set_level(spdlog::level::trace);
   pipeline_logger_->set_level(spdlog::level::trace);
-  render_logger_->set_level(spdlog::level::trace);
+  exec_logger_->set_level(spdlog::level::trace);
   scene_logger_->set_level(spdlog::level::trace);
   ui_logger_->set_level(spdlog::level::trace);
   util_logger_->set_level(spdlog::level::trace);

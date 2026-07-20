@@ -116,8 +116,8 @@ public:
   static auto getPipelineLogger() -> std::shared_ptr<spdlog::logger> & {
     return pipeline_logger_;
   }
-  static auto getRenderLogger() -> std::shared_ptr<spdlog::logger> & {
-    return render_logger_;
+  static auto getExecLogger() -> std::shared_ptr<spdlog::logger> & {
+    return exec_logger_;
   }
   static auto getSceneLogger() -> std::shared_ptr<spdlog::logger> & {
     return scene_logger_;
@@ -132,7 +132,7 @@ private:
   static std::shared_ptr<spdlog::logger> core_logger_;
   static std::shared_ptr<spdlog::logger> resource_logger_;
   static std::shared_ptr<spdlog::logger> pipeline_logger_;
-  static std::shared_ptr<spdlog::logger> render_logger_;
+  static std::shared_ptr<spdlog::logger> exec_logger_;
   static std::shared_ptr<spdlog::logger> scene_logger_;
   static std::shared_ptr<spdlog::logger> ui_logger_;
 };
@@ -193,19 +193,19 @@ private:
     throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
 
-#define VKR_RENDER_TRACE(...)                                                  \
-  ::vkr::Logger::getRenderLogger()->trace(__VA_ARGS__);
-#define VKR_RENDER_DEBUG(...)                                                  \
-  ::vkr::Logger::getRenderLogger()->debug(__VA_ARGS__);
-#define VKR_RENDER_INFO(...)                                                   \
-  ::vkr::Logger::getRenderLogger()->info(__VA_ARGS__);
-#define VKR_RENDER_WARN(...)                                                   \
-  ::vkr::Logger::getRenderLogger()->warn(__VA_ARGS__);
-#define VKR_RENDER_CRIT(...)                                                   \
-  ::vkr::Logger::getRenderLogger()->critical(__VA_ARGS__);
-#define VKR_RENDER_ERROR(...)                                                  \
+#define VKR_EXEC_TRACE(...)                                                  \
+  ::vkr::Logger::getExecLogger()->trace(__VA_ARGS__);
+#define VKR_EXEC_DEBUG(...)                                                  \
+  ::vkr::Logger::getExecLogger()->debug(__VA_ARGS__);
+#define VKR_EXEC_INFO(...)                                                   \
+  ::vkr::Logger::getExecLogger()->info(__VA_ARGS__);
+#define VKR_EXEC_WARN(...)                                                   \
+  ::vkr::Logger::getExecLogger()->warn(__VA_ARGS__);
+#define VKR_EXEC_CRIT(...)                                                   \
+  ::vkr::Logger::getExecLogger()->critical(__VA_ARGS__);
+#define VKR_EXEC_ERROR(...)                                                  \
   do {                                                                         \
-    ::vkr::Logger::getRenderLogger()->error(__VA_ARGS__);                      \
+    ::vkr::Logger::getExecLogger()->error(__VA_ARGS__);                      \
     throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
 

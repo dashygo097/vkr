@@ -29,15 +29,15 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const core::CommandPool &commandPool,
        scene::Scene &scene,
        const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-       render::OffscreenTarget &offscreenTarget,
+       exec::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
-       render::RenderGraph &renderGraph, util::Timer &timer, UiDesc &desc)
+       exec::RenderGraph &graph, util::Timer &timer, UiDesc &desc)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), scene_(scene),
       asset_system_(assetSystem), camera_(camera),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),
-      descriptor_pool_(descriptorPool), render_graph_(renderGraph),
+      descriptor_pool_(descriptorPool), graph_(graph),
       timer_(timer), desc_(desc) {
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
@@ -112,7 +112,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   viewport_panel_ = std::make_unique<ViewportPanel>(
       desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
   viewport_panel_->flipY(desc_.viewportFlipY);
-  render_graph_panel_ = std::make_unique<RenderGraphPanel>(render_graph_);
+  graph_panel_ = std::make_unique<ExecGraphPanel>(graph_);
   assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
   camera_panel_ = std::make_unique<CameraPanel>(
       camera_, desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
@@ -124,7 +124,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   VKR_UI_INFO("FPS Panel initialized successfully.");
 
   VKR_UI_INFO("Initializing Shader Editor...");
-  shader_editor_ = std::make_unique<ShaderEditor>(render_graph_);
+  shader_editor_ = std::make_unique<ShaderEditor>(graph_);
   VKR_UI_INFO("Shader Editor initialized successfully.");
 
   VKR_UI_INFO("Initializing Logging Panel...");
@@ -135,7 +135,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   resource_tree_ = std::make_unique<ResourceTree>(scene_);
   VKR_UI_INFO("Resource Tree initialized successfully.");
 
-  dock_components_ = {*viewport_panel_, *resource_tree_, *render_graph_panel_,
+  dock_components_ = {*viewport_panel_, *resource_tree_, *graph_panel_,
                       *assets_panel_,   *camera_panel_,  *mesh_editor_panel_,
                       *shader_editor_,  *fps_panel_,     *logging_panel_};
 
@@ -149,7 +149,7 @@ UI::~UI() {
   mesh_editor_panel_.reset();
   camera_panel_.reset();
   assets_panel_.reset();
-  render_graph_panel_.reset();
+  graph_panel_.reset();
   resource_tree_.reset();
   viewport_panel_.reset();
 
@@ -283,7 +283,7 @@ void UI::setupDockingLayout() {
 
   ImGui::DockBuilderDockWindow(resource_tree_->name().c_str(), dockLeft);
   ImGui::DockBuilderDockWindow(assets_panel_->name().c_str(), dockLeft);
-  ImGui::DockBuilderDockWindow(render_graph_panel_->name().c_str(),
+  ImGui::DockBuilderDockWindow(graph_panel_->name().c_str(),
                                dockLeftBottom);
   ImGui::DockBuilderDockWindow(camera_panel_->name().c_str(), dockLeftBottom);
   ImGui::DockBuilderDockWindow(mesh_editor_panel_->name().c_str(),

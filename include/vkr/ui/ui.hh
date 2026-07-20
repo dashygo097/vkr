@@ -8,16 +8,16 @@
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/render_pass.hh"
-#include "vkr/render/graph.hh"
+#include "vkr/exec/render/graph.hh"
 #include "vkr/scene/scene.hh"
-#include "vkr/render/targets/offscreen.hh"
+#include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/ui/components/assets_panel.hh"
 #include "vkr/ui/components/camera_panel.hh"
 #include "vkr/ui/components/fps_panel.hh"
 #include "vkr/ui/components/logging_panel.hh"
 #include "vkr/ui/components/mesh_editor_panel.hh"
-#include "vkr/ui/components/render_graph_panel.hh"
+#include "vkr/ui/components/exec_graph_panel.hh"
 #include "vkr/ui/components/resource_tree.hh"
 #include "vkr/ui/components/shader_editor.hh"
 #include "vkr/ui/components/ui_component.hh"
@@ -67,10 +67,10 @@ public:
      const core::CommandPool &commandPool,
      scene::Scene &scene,
      const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-     render::OffscreenTarget &offscreenTarget,
+     exec::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
-     render::RenderGraph &renderGraph, util::Timer &timer, UiDesc &desc);
+     exec::RenderGraph &graph, util::Timer &timer, UiDesc &desc);
   ~UI();
 
   UI(const UI &) = delete;
@@ -132,17 +132,17 @@ private:
   scene::Scene &scene_;
   const util::AssetSystem &asset_system_;
   scene::CameraDesc &camera_;
-  render::OffscreenTarget &offscreen_target_;
+  exec::OffscreenTarget &offscreen_target_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
-  render::RenderGraph &render_graph_;
+  exec::RenderGraph &graph_;
   util::Timer &timer_;
 
   // components
   UiDesc &desc_;
   std::unique_ptr<ViewportPanel> viewport_panel_;
   std::unique_ptr<ResourceTree> resource_tree_;
-  std::unique_ptr<RenderGraphPanel> render_graph_panel_;
+  std::unique_ptr<ExecGraphPanel> graph_panel_;
   std::unique_ptr<AssetsPanel> assets_panel_;
   std::unique_ptr<CameraPanel> camera_panel_;
   std::unique_ptr<MeshEditorPanel> mesh_editor_panel_;

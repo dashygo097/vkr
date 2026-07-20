@@ -82,7 +82,7 @@ auto createDebugCubemapFaces() -> std::array<std::string, 6> {
 
 } // namespace
 
-class SkyboxApp : public vkr::VulkanApplication {
+class SkyboxApp : public vkr::exec::RenderApplication {
 private:
   void createResources() override {
     scene->createCubemap("skybox", createDebugCubemapFaces(),
@@ -97,8 +97,8 @@ private:
     scene->createUniformBuffer<UniformBuffer3DObject>("skybox", {});
   }
 
-  void buildRenderGraph() override {
-    vkr::render::SkyboxPassDesc skyboxDesc{};
+  void buildGraph() override {
+    vkr::exec::SkyboxPassDesc skyboxDesc{};
     skyboxDesc.target = {
         .color = {.width = swapchain->width(),
                   .height = swapchain->height(),
@@ -108,7 +108,7 @@ private:
                   .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                   .createSampler = true},
         .depth =
-            vkr::render::DepthAttachmentDesc{.width = swapchain->width(),
+            vkr::exec::DepthAttachmentDesc{.width = swapchain->width(),
                                                .height = swapchain->height(),
                                                .format = VK_FORMAT_D32_SFLOAT}};
     skyboxDesc.clearValues = {
@@ -128,12 +128,12 @@ private:
                     .string())),
     };
 
-    auto &skyboxPass = renderGraph->addPass<vkr::render::SkyboxPass>(
-        *renderer, *device, *graphicsCommandPool, *scene);
+    auto &skyboxPass = graph->addPass<vkr::exec::SkyboxPass>(
+        *executor, *device, *graphicsCommandPool, *scene);
     skyboxPass.setName("skybox").write("scene.color");
     skyboxPass.update(skyboxDesc);
 
-    vkr::render::UiPassDesc uiDesc{};
+    vkr::exec::UiPassDesc uiDesc{};
     uiDesc.layoutMode = ctx.ui.layoutMode;
     uiDesc.descriptorPool = {
         .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
@@ -141,21 +141,21 @@ private:
         .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
     uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
-    auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
-        *renderer, *window, *instance, *surface, *device, *graphicsCommandPool,
+    auto &uiPass = graph->addPass<vkr::exec::UiPass>(
+        *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::render::FullscreenPassSource{skyboxPass}, *renderGraph, *timer,
+        vkr::exec::FullscreenPassSource{skyboxPass}, *graph, *timer,
         ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
     uiPass.update(uiDesc);
 
     auto &presentPass =
-        renderGraph->addPass<vkr::render::PresentPass>(*renderer);
+        graph->addPass<vkr::exec::PresentPass>(*executor);
     presentPass.setName("present");
   }
 
   void onDraw() override {
-    const uint32_t frameIndex = renderer->frameIndex();
+    const uint32_t frameIndex = executor->frameIndex();
 
     UniformBuffer3DObject ubo{};
     ubo.model = glm::mat4(1.0f);

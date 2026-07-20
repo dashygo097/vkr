@@ -15,7 +15,7 @@ struct UniformBuffer3DObject {
 
 } // namespace
 
-class TeapotApp : public vkr::VulkanApplication {
+class TeapotApp : public vkr::exec::RenderApplication {
 private:
   void createResources() override {
     vkr::scene::Mesh<vkr::resource::VertexNormalTexture3D> teapot(
@@ -30,8 +30,8 @@ private:
     scene->createUniformBuffer<UniformBuffer3DObject>("default", {});
   }
 
-  void buildRenderGraph() override {
-    vkr::render::RasterPassDesc desc{};
+  void buildGraph() override {
+    vkr::exec::RasterPassDesc desc{};
     desc.target = {
         .color = {.width = swapchain->width(),
                   .height = swapchain->height(),
@@ -41,7 +41,7 @@ private:
                   .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                   .createSampler = true},
         .depth =
-            vkr::render::DepthAttachmentDesc{.width = swapchain->width(),
+            vkr::exec::DepthAttachmentDesc{.width = swapchain->width(),
                                                .height = swapchain->height(),
                                                .format = VK_FORMAT_D32_SFLOAT}};
     desc.descriptorBindings = {
@@ -80,12 +80,12 @@ private:
 
     desc.pipeline = normal;
 
-    auto &rasterPass = renderGraph->addPass<vkr::render::RasterPass>(
-        *renderer, *device, *graphicsCommandPool, *scene);
+    auto &rasterPass = graph->addPass<vkr::exec::RasterPass>(
+        *executor, *device, *graphicsCommandPool, *scene);
     rasterPass.setName("raster").write("scene.raw");
     rasterPass.update(desc);
 
-    vkr::render::FullscreenPassDesc postDesc{};
+    vkr::exec::FullscreenPassDesc postDesc{};
     postDesc.target = {
         .color = {.width = swapchain->width(),
                   .height = swapchain->height(),
@@ -115,15 +115,15 @@ private:
         vkr::pipeline::GraphicsRasterizationDesc::noCull();
     postDesc.pipeline = postPipeline;
 
-    auto &postProcessPass = renderGraph->addPass<vkr::render::PostProcessPass>(
-        *renderer, *device, *graphicsCommandPool,
-        vkr::render::FullscreenPassSource{rasterPass});
+    auto &postProcessPass = graph->addPass<vkr::exec::PostProcessPass>(
+        *executor, *device, *graphicsCommandPool,
+        vkr::exec::FullscreenPassSource{rasterPass});
     postProcessPass.setName("postprocess")
         .read("scene.raw")
         .write("scene.color");
     postProcessPass.update(postDesc);
 
-    vkr::render::UiPassDesc uiDesc{};
+    vkr::exec::UiPassDesc uiDesc{};
     uiDesc.layoutMode = ctx.ui.layoutMode;
     uiDesc.descriptorPool = {
         .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
@@ -131,21 +131,21 @@ private:
         .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
     uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
-    auto &uiPass = renderGraph->addPass<vkr::render::UiPass>(
-        *renderer, *window, *instance, *surface, *device, *graphicsCommandPool,
+    auto &uiPass = graph->addPass<vkr::exec::UiPass>(
+        *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::render::FullscreenPassSource{postProcessPass}, *renderGraph,
+        vkr::exec::FullscreenPassSource{postProcessPass}, *graph,
         *timer, ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
     uiPass.update(uiDesc);
 
     auto &presentPass =
-        renderGraph->addPass<vkr::render::PresentPass>(*renderer);
+        graph->addPass<vkr::exec::PresentPass>(*executor);
     presentPass.setName("present");
   }
 
   void onDraw() override {
-    const uint32_t frameIndex = renderer->frameIndex();
+    const uint32_t frameIndex = executor->frameIndex();
 
     UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.4f, -7.0f));

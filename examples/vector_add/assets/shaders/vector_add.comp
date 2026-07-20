@@ -1,0 +1,24 @@
+#version 450
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) readonly buffer InputA {
+  float values[];
+} inputA;
+
+layout(set = 0, binding = 1) readonly buffer InputB {
+  float values[];
+} inputB;
+
+layout(set = 0, binding = 2) writeonly buffer Output {
+  float values[];
+} outputC;
+
+void main() {
+  const uint index = gl_GlobalInvocationID.x;
+  if (index >= 1024) {
+    return;
+  }
+
+  outputC.values[index] = inputA.values[index] + inputB.values[index];
+}

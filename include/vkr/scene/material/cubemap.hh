@@ -15,8 +15,7 @@ struct CubemapDesc {
   std::array<std::string, 6> facePaths{};
   VkFormat format{VK_FORMAT_R8G8B8A8_SRGB};
   VkImageLayout layout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-  resource::SamplerDesc sampler{
-      resource::SamplerDesc::linearClampToEdge()};
+  resource::SamplerDesc sampler{resource::SamplerDesc::linearClampToEdge()};
   bool forceRgba{true};
 
   [[nodiscard]] static auto
