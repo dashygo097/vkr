@@ -1,6 +1,6 @@
 #include "vkr/render/passes/skybox.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/vbos.hh"
+#include "vkr/resource/buffer/vbos.hh"
 
 namespace vkr::render {
 
@@ -72,7 +72,7 @@ void SkyboxPass::record() {
   renderer_.endPass();
 }
 
-auto SkyboxPass::target() -> resource::OffscreenTarget & {
+auto SkyboxPass::target() -> OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("SkyboxPass '{}' target requested before create", name());
   }
@@ -80,7 +80,7 @@ auto SkyboxPass::target() -> resource::OffscreenTarget & {
   return *target_;
 }
 
-auto SkyboxPass::target() const -> const resource::OffscreenTarget & {
+auto SkyboxPass::target() const -> const OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("SkyboxPass '{}' target requested before create", name());
   }
@@ -89,7 +89,7 @@ auto SkyboxPass::target() const -> const resource::OffscreenTarget & {
 }
 
 void SkyboxPass::createTarget() {
-  target_ = std::make_unique<resource::OffscreenTarget>(device_, command_pool_);
+  target_ = std::make_unique<OffscreenTarget>(device_, command_pool_);
   target_->update(desc_.target);
 }
 
@@ -102,14 +102,14 @@ void SkyboxPass::createRenderPass() {
 }
 
 void SkyboxPass::createFramebuffers() {
-  resource::FramebufferDesc framebufferDesc{
+  FramebufferDesc framebufferDesc{
       .width = target_->width(),
       .height = target_->height(),
       .layers = 1,
       .attachments = {target_->attachmentViews()}};
 
   framebuffers_ =
-      std::make_unique<resource::FramebufferSet>(device_, *render_pass_);
+      std::make_unique<FramebufferSet>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
 }
 

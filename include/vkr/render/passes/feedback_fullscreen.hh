@@ -1,13 +1,13 @@
 #pragma once
 
 #include "vkr/render/passes/fullscreen.hh"
-#include "vkr/resource/targets/frame_history.hh"
+#include "vkr/render/targets/frame_history.hh"
 #include <optional>
 
 namespace vkr::render {
 
 struct FeedbackFullscreenPassDesc {
-  resource::FrameHistoryTargetDesc target{};
+  FrameHistoryTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
@@ -40,18 +40,18 @@ public:
   auto setSources(std::vector<FullscreenPassSource> sources)
       -> FeedbackFullscreenPass &;
 
-  [[nodiscard]] auto target() -> resource::OffscreenTarget &;
-  [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t frameIndex) -> resource::OffscreenTarget &;
+  [[nodiscard]] auto target() -> OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t frameIndex) -> OffscreenTarget &;
   [[nodiscard]] auto target(uint32_t frameIndex) const
-      -> const resource::OffscreenTarget &;
+      -> const OffscreenTarget &;
 
-  [[nodiscard]] auto historyTarget() -> resource::OffscreenTarget &;
-  [[nodiscard]] auto historyTarget() const -> const resource::OffscreenTarget &;
+  [[nodiscard]] auto historyTarget() -> OffscreenTarget &;
+  [[nodiscard]] auto historyTarget() const -> const OffscreenTarget &;
   [[nodiscard]] auto historyTarget(uint32_t frameIndex)
-      -> resource::OffscreenTarget &;
+      -> OffscreenTarget &;
   [[nodiscard]] auto historyTarget(uint32_t frameIndex) const
-      -> const resource::OffscreenTarget &;
+      -> const OffscreenTarget &;
 
   [[nodiscard]] auto editablePipeline() noexcept -> std::optional<
       std::reference_wrapper<pipeline::GraphicsPipeline>> override {
@@ -79,9 +79,9 @@ private:
 
   FeedbackFullscreenPassDesc desc_{};
   std::vector<FullscreenPassSource> sources_{};
-  std::unique_ptr<resource::FrameHistoryTarget> target_{};
+  std::unique_ptr<FrameHistoryTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
-  std::vector<std::unique_ptr<resource::FramebufferSet>> framebuffers_{};
+  std::vector<std::unique_ptr<FramebufferSet>> framebuffers_{};
   std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
   std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};

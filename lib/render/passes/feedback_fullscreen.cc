@@ -5,7 +5,7 @@
 namespace vkr::render {
 namespace {
 
-auto imageLayoutForColor(const resource::ColorAttachment &color)
+auto imageLayoutForColor(const ColorAttachment &color)
     -> VkImageLayout {
   return color.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
              ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -230,7 +230,7 @@ void FeedbackFullscreenPass::record() {
 
   const uint32_t frameIndex = renderer_.frameIndex();
   const uint32_t writeIndex =
-      resource::FrameHistoryTarget::writeIndexForFrame(frameIndex);
+      FrameHistoryTarget::writeIndexForFrame(frameIndex);
   auto &writeTarget = target_->writeForFrame(frameIndex);
   auto &framebuffer = framebuffers_[writeIndex];
 
@@ -272,7 +272,7 @@ auto FeedbackFullscreenPass::setSources(
   return *this;
 }
 
-auto FeedbackFullscreenPass::target() -> resource::OffscreenTarget & {
+auto FeedbackFullscreenPass::target() -> OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' target requested before "
                      "create",
@@ -283,7 +283,7 @@ auto FeedbackFullscreenPass::target() -> resource::OffscreenTarget & {
 }
 
 auto FeedbackFullscreenPass::target() const
-    -> const resource::OffscreenTarget & {
+    -> const OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' target requested before "
                      "create",
@@ -294,7 +294,7 @@ auto FeedbackFullscreenPass::target() const
 }
 
 auto FeedbackFullscreenPass::target(uint32_t frameIndex)
-    -> resource::OffscreenTarget & {
+    -> OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' target requested before "
                      "create",
@@ -305,7 +305,7 @@ auto FeedbackFullscreenPass::target(uint32_t frameIndex)
 }
 
 auto FeedbackFullscreenPass::target(uint32_t frameIndex) const
-    -> const resource::OffscreenTarget & {
+    -> const OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' target requested before "
                      "create",
@@ -315,7 +315,7 @@ auto FeedbackFullscreenPass::target(uint32_t frameIndex) const
   return target_->writeForFrame(frameIndex);
 }
 
-auto FeedbackFullscreenPass::historyTarget() -> resource::OffscreenTarget & {
+auto FeedbackFullscreenPass::historyTarget() -> OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' history target requested "
                      "before create",
@@ -326,7 +326,7 @@ auto FeedbackFullscreenPass::historyTarget() -> resource::OffscreenTarget & {
 }
 
 auto FeedbackFullscreenPass::historyTarget() const
-    -> const resource::OffscreenTarget & {
+    -> const OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' history target requested "
                      "before create",
@@ -337,7 +337,7 @@ auto FeedbackFullscreenPass::historyTarget() const
 }
 
 auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex)
-    -> resource::OffscreenTarget & {
+    -> OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' history target requested "
                      "before create",
@@ -348,7 +348,7 @@ auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex)
 }
 
 auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex) const
-    -> const resource::OffscreenTarget & {
+    -> const OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("FeedbackFullscreenPass '{}' history target requested "
                      "before create",
@@ -360,7 +360,7 @@ auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex) const
 
 void FeedbackFullscreenPass::createTarget() {
   target_ =
-      std::make_unique<resource::FrameHistoryTarget>(device_, command_pool_);
+      std::make_unique<FrameHistoryTarget>(device_, command_pool_);
   target_->update(desc_.target);
 }
 
@@ -379,14 +379,14 @@ void FeedbackFullscreenPass::createFramebuffers() {
 
   for (uint32_t index = 0; index < framebuffers_.size(); ++index) {
     auto &offscreen = target_->target(index);
-    resource::FramebufferDesc framebufferDesc{
+    FramebufferDesc framebufferDesc{
         .width = offscreen.width(),
         .height = offscreen.height(),
         .layers = 1,
         .attachments = {offscreen.attachmentViews()}};
 
     framebuffers_[index] =
-        std::make_unique<resource::FramebufferSet>(device_, *render_pass_);
+        std::make_unique<FramebufferSet>(device_, *render_pass_);
     framebuffers_[index]->update(framebufferDesc);
   }
 }

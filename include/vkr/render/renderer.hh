@@ -5,7 +5,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/core/sync/objects.hh"
 #include "vkr/pipeline/render_pass.hh"
-#include "vkr/resource/attachments/frame_buffer.hh"
+#include "vkr/render/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
 #include "vkr/ui/ui.hh"
 
@@ -62,7 +62,7 @@ public:
     return current_frame_;
   }
 
-  void beginPass(const resource::FramebufferSet &framebufferSet,
+  void beginPass(const FramebufferSet &framebufferSet,
                  const pipeline::RenderPass &renderPass,
                  const RenderPassBeginDesc &desc);
   void endPass();

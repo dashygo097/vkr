@@ -12,9 +12,9 @@
 #include "vkr/render/pass.hh"
 #include "vkr/render/passes/fullscreen.hh"
 #include "vkr/render/renderer.hh"
-#include "vkr/resource/attachments/frame_buffer.hh"
+#include "vkr/render/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
-#include "vkr/resource/targets/swapchain.hh"
+#include "vkr/render/targets/swapchain.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/ui/ui.hh"
 #include "vkr/util/asset.hh"
@@ -24,7 +24,7 @@
 namespace vkr::render {
 
 struct UiPassDesc {
-  resource::SwapchainTargetDesc target{};
+  SwapchainTargetDesc target{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
   ui::LayoutMode layoutMode{ui::LayoutMode::FullScreen};
@@ -95,9 +95,9 @@ private:
 
   // components
   UiPassDesc desc_{};
-  std::unique_ptr<resource::SwapchainTarget> target_{};
+  std::unique_ptr<SwapchainTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
-  std::unique_ptr<resource::FramebufferSet> framebuffers_{};
+  std::unique_ptr<FramebufferSet> framebuffers_{};
   std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
   std::unique_ptr<ui::UI> ui_{};
 };

@@ -108,7 +108,7 @@ private:
                   .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                   .createSampler = true},
         .depth =
-            vkr::resource::DepthAttachmentDesc{.width = swapchain->width(),
+            vkr::render::DepthAttachmentDesc{.width = swapchain->width(),
                                                .height = swapchain->height(),
                                                .format = VK_FORMAT_D32_SFLOAT}};
     skyboxDesc.clearValues = {

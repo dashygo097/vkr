@@ -96,7 +96,7 @@ void Renderer::endFrame() {
   frame_presented_ = false;
 }
 
-void Renderer::beginPass(const resource::FramebufferSet &framebufferSet,
+void Renderer::beginPass(const FramebufferSet &framebufferSet,
                          const pipeline::RenderPass &renderPass,
                          const RenderPassBeginDesc &desc) {
   ensureFrameActive("beginPass");

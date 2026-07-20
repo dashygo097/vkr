@@ -182,27 +182,27 @@ FullscreenPassSource::FullscreenPassSource(FullscreenPass &source)
 FullscreenPassSource::FullscreenPassSource(FeedbackFullscreenPass &source)
     : source_(std::ref(source)) {}
 
-auto FullscreenPassSource::target() -> resource::OffscreenTarget & {
+auto FullscreenPassSource::target() -> OffscreenTarget & {
   return target(0);
 }
 
-auto FullscreenPassSource::target() const -> const resource::OffscreenTarget & {
+auto FullscreenPassSource::target() const -> const OffscreenTarget & {
   return target(0);
 }
 
 auto FullscreenPassSource::target(uint32_t frameIndex)
-    -> resource::OffscreenTarget & {
+    -> OffscreenTarget & {
   return std::visit(
-      [frameIndex](auto source) -> resource::OffscreenTarget & {
+      [frameIndex](auto source) -> OffscreenTarget & {
         return source.get().target(frameIndex);
       },
       source_);
 }
 
 auto FullscreenPassSource::target(uint32_t frameIndex) const
-    -> const resource::OffscreenTarget & {
+    -> const OffscreenTarget & {
   return std::visit(
-      [frameIndex](auto source) -> const resource::OffscreenTarget & {
+      [frameIndex](auto source) -> const OffscreenTarget & {
         return source.get().target(frameIndex);
       },
       source_);
@@ -282,7 +282,7 @@ auto FullscreenPass::setSources(std::vector<FullscreenPassSource> sources)
   return *this;
 }
 
-auto FullscreenPass::target() -> resource::OffscreenTarget & {
+auto FullscreenPass::target() -> OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("FullscreenPass '{}' target requested before create",
                      name());
@@ -291,7 +291,7 @@ auto FullscreenPass::target() -> resource::OffscreenTarget & {
   return *target_;
 }
 
-auto FullscreenPass::target() const -> const resource::OffscreenTarget & {
+auto FullscreenPass::target() const -> const OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("FullscreenPass '{}' target requested before create",
                      name());
@@ -301,7 +301,7 @@ auto FullscreenPass::target() const -> const resource::OffscreenTarget & {
 }
 
 void FullscreenPass::createTarget() {
-  target_ = std::make_unique<resource::OffscreenTarget>(device_, command_pool_);
+  target_ = std::make_unique<OffscreenTarget>(device_, command_pool_);
   target_->update(desc_.target);
 }
 
@@ -314,14 +314,14 @@ void FullscreenPass::createRenderPass() {
 }
 
 void FullscreenPass::createFramebuffers() {
-  resource::FramebufferDesc framebufferDesc{
+  FramebufferDesc framebufferDesc{
       .width = target_->width(),
       .height = target_->height(),
       .layers = 1,
       .attachments = {target_->attachmentViews()}};
 
   framebuffers_ =
-      std::make_unique<resource::FramebufferSet>(device_, *render_pass_);
+      std::make_unique<FramebufferSet>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
 }
 

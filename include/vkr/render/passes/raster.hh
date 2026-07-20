@@ -9,15 +9,15 @@
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/render/pass.hh"
 #include "vkr/render/renderer.hh"
-#include "vkr/resource/attachments/frame_buffer.hh"
+#include "vkr/render/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
-#include "vkr/resource/targets/offscreen.hh"
+#include "vkr/render/targets/offscreen.hh"
 #include <memory>
 
 namespace vkr::render {
 
 struct RasterPassDesc {
-  resource::OffscreenTargetDesc target{};
+  OffscreenTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
@@ -39,13 +39,13 @@ public:
   void update(const RasterPassDesc &desc);
   void record() override;
 
-  [[nodiscard]] auto target() -> resource::OffscreenTarget &;
-  [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t) -> resource::OffscreenTarget & {
+  [[nodiscard]] auto target() -> OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t) -> OffscreenTarget & {
     return target();
   }
   [[nodiscard]] auto target(uint32_t) const
-      -> const resource::OffscreenTarget & {
+      -> const OffscreenTarget & {
     return target();
   }
 
@@ -76,9 +76,9 @@ private:
 
   // components
   RasterPassDesc desc_{};
-  std::unique_ptr<resource::OffscreenTarget> target_{};
+  std::unique_ptr<OffscreenTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
-  std::unique_ptr<resource::FramebufferSet> framebuffers_{};
+  std::unique_ptr<FramebufferSet> framebuffers_{};
   std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
   std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};

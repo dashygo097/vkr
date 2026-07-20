@@ -9,16 +9,16 @@
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/render/pass.hh"
 #include "vkr/render/renderer.hh"
-#include "vkr/resource/attachments/frame_buffer.hh"
+#include "vkr/render/attachments/frame_buffer.hh"
 #include "vkr/resource/manager.hh"
-#include "vkr/resource/targets/offscreen.hh"
+#include "vkr/render/targets/offscreen.hh"
 #include <memory>
 #include <string>
 
 namespace vkr::render {
 
 struct SkyboxPassDesc {
-  resource::OffscreenTargetDesc target{};
+  OffscreenTargetDesc target{};
   std::string uniformName{"skybox"};
   std::string cubemapName{"skybox"};
   std::string meshName{"skybox"};
@@ -43,13 +43,13 @@ public:
   void update(const SkyboxPassDesc &desc);
   void record() override;
 
-  [[nodiscard]] auto target() -> resource::OffscreenTarget &;
-  [[nodiscard]] auto target() const -> const resource::OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t) -> resource::OffscreenTarget & {
+  [[nodiscard]] auto target() -> OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t) -> OffscreenTarget & {
     return target();
   }
   [[nodiscard]] auto target(uint32_t) const
-      -> const resource::OffscreenTarget & {
+      -> const OffscreenTarget & {
     return target();
   }
 
@@ -78,9 +78,9 @@ private:
   resource::ResourceManager &resource_manager_;
 
   SkyboxPassDesc desc_{};
-  std::unique_ptr<resource::OffscreenTarget> target_{};
+  std::unique_ptr<OffscreenTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
-  std::unique_ptr<resource::FramebufferSet> framebuffers_{};
+  std::unique_ptr<FramebufferSet> framebuffers_{};
   std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
   std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};

@@ -24,7 +24,7 @@ UiPass::~UiPass() { destroy(); }
 void UiPass::create() {
   destroy();
 
-  target_ = std::make_unique<resource::SwapchainTarget>(device_, command_pool_,
+  target_ = std::make_unique<SwapchainTarget>(device_, command_pool_,
                                                         swapchain_);
   target_->update(desc_.target);
 
@@ -33,14 +33,14 @@ void UiPass::create() {
       target_->format(), target_->depth() ? target_->depth()->desc().format
                                           : VK_FORMAT_UNDEFINED));
 
-  resource::FramebufferDesc framebufferDesc{.width = target_->width(),
+  FramebufferDesc framebufferDesc{.width = target_->width(),
                                             .height = target_->height(),
                                             .layers = 1,
                                             .attachments =
                                                 target_->attachmentViews()};
 
   framebuffers_ =
-      std::make_unique<resource::FramebufferSet>(device_, *render_pass_);
+      std::make_unique<FramebufferSet>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
 
   descriptor_pool_ = std::make_unique<pipeline::DescriptorPool>(device_);

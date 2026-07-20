@@ -29,7 +29,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const core::CommandPool &commandPool,
        resource::ResourceManager &resourceManager,
        const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-       resource::OffscreenTarget &offscreenTarget,
+       render::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
        render::RenderGraph &renderGraph, util::Timer &timer, UiDesc &desc)

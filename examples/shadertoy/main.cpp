@@ -47,7 +47,7 @@ private:
   }
 
   [[nodiscard]] auto shadertoyTargetDesc() const
-      -> vkr::resource::OffscreenTargetDesc {
+      -> vkr::render::OffscreenTargetDesc {
     return {.color = {.width = swapchain->width(),
                       .height = swapchain->height(),
                       .format = VK_FORMAT_R16G16B16A16_SFLOAT,

@@ -10,7 +10,7 @@
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/render/graph.hh"
 #include "vkr/resource/manager.hh"
-#include "vkr/resource/targets/offscreen.hh"
+#include "vkr/render/targets/offscreen.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/ui/components/assets_panel.hh"
 #include "vkr/ui/components/camera_panel.hh"
@@ -67,7 +67,7 @@ public:
      const core::CommandPool &commandPool,
      resource::ResourceManager &resourceManager,
      const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-     resource::OffscreenTarget &offscreenTarget,
+     render::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
      render::RenderGraph &renderGraph, util::Timer &timer, UiDesc &desc);
@@ -132,7 +132,7 @@ private:
   resource::ResourceManager &resource_manager_;
   const util::AssetSystem &asset_system_;
   scene::CameraDesc &camera_;
-  resource::OffscreenTarget &offscreen_target_;
+  render::OffscreenTarget &offscreen_target_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
   render::RenderGraph &render_graph_;

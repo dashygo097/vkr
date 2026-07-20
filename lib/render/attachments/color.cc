@@ -1,0 +1,64 @@
+#include "vkr/render/attachments/color.hh"
+#include "vkr/logger.hh"
+
+namespace vkr::render {
+
+ColorAttachment::ColorAttachment(const core::Device &device,
+                                 const core::CommandPool &commandPool)
+    : device_(device), command_pool_(commandPool) {
+  image_ = std::make_unique<resource::Image>(device_);
+  image_view_ = std::make_unique<resource::ImageView>(device_);
+}
+
+ColorAttachment::~ColorAttachment() { destory(); }
+
+void ColorAttachment::create() {
+  if (desc_.format == VK_FORMAT_UNDEFINED) {
+    VKR_RES_ERROR("ColorAttachment has undefined format");
+  }
+
+  if (desc_.width == 0 || desc_.height == 0) {
+    VKR_RES_ERROR("ColorAttachment has invalid size: {}x{}", desc_.width,
+                  desc_.height);
+  }
+
+  auto imageDesc =
+      resource::ImageDesc::colorAttachment(desc_.width, desc_.height, desc_.format);
+
+  imageDesc.usage = desc_.usage;
+
+  image_->update(imageDesc);
+  image_->setLayout(desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+                        ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+                        : desc_.finalLayout);
+  image_view_->update(resource::ImageViewDesc::color2D(image_->image(), desc_.format));
+
+  if (desc_.createSampler) {
+    if (!sampler_) {
+      sampler_ = std::make_unique<resource::Sampler>(device_);
+    }
+
+    sampler_->update(desc_.sampler);
+  } else {
+    sampler_.reset();
+  }
+}
+
+void ColorAttachment::destory() {
+  sampler_.reset();
+
+  if (image_view_) {
+    image_view_->destroy();
+  }
+
+  if (image_) {
+    image_->destroy();
+  }
+}
+
+void ColorAttachment::update(const ColorAttachmentDesc &desc) {
+  desc_ = desc;
+  create();
+}
+
+} // namespace vkr::render

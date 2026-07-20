@@ -67,7 +67,7 @@ void RasterPass::record() {
   renderer_.endPass();
 }
 
-auto RasterPass::target() -> resource::OffscreenTarget & {
+auto RasterPass::target() -> OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("RasterPass '{}' target requested before create", name());
   }
@@ -75,7 +75,7 @@ auto RasterPass::target() -> resource::OffscreenTarget & {
   return *target_;
 }
 
-auto RasterPass::target() const -> const resource::OffscreenTarget & {
+auto RasterPass::target() const -> const OffscreenTarget & {
   if (!target_) {
     VKR_RENDER_ERROR("RasterPass '{}' target requested before create", name());
   }
@@ -84,7 +84,7 @@ auto RasterPass::target() const -> const resource::OffscreenTarget & {
 }
 
 void RasterPass::createTarget() {
-  target_ = std::make_unique<resource::OffscreenTarget>(device_, command_pool_);
+  target_ = std::make_unique<OffscreenTarget>(device_, command_pool_);
   target_->update(desc_.target);
 }
 
@@ -97,14 +97,14 @@ void RasterPass::createRenderPass() {
 }
 
 void RasterPass::createFramebuffers() {
-  resource::FramebufferDesc framebufferDesc{
+  FramebufferDesc framebufferDesc{
       .width = target_->width(),
       .height = target_->height(),
       .layers = 1,
       .attachments = {target_->attachmentViews()}};
 
   framebuffers_ =
-      std::make_unique<resource::FramebufferSet>(device_, *render_pass_);
+      std::make_unique<FramebufferSet>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
 }
 

@@ -3,7 +3,7 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/frame_uniform_buffers.hh"
+#include "vkr/resource/buffer/frame_uniform_buffers.hh"
 #include "vkr/scene/geometry/mesh.hh"
 #include "vkr/scene/material/cubemap.hh"
 #include "vkr/scene/material/texture.hh"

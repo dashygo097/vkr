@@ -1,7 +1,7 @@
 #include "vkr/scene/material/cubemap.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/buffer.hh"
-#include "vkr/resource/gpu/image_commands.hh"
+#include "vkr/resource/buffer/buffer.hh"
+#include "vkr/resource/image/image_commands.hh"
 #include <cstddef>
 #include <cstring>
 #include <memory>

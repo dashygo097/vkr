@@ -1,8 +1,8 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/resource/buffers/vbos.hh"
-#include "vkr/resource/shader_module.hh"
+#include "vkr/resource/buffer/vbos.hh"
+#include "vkr/resource/shader/module.hh"
 #include <cstdint>
 
 namespace vkr::pipeline {

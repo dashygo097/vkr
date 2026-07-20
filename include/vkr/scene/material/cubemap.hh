@@ -2,9 +2,9 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/resource/gpu/image.hh"
-#include "vkr/resource/gpu/image_view.hh"
-#include "vkr/resource/gpu/sampler.hh"
+#include "vkr/resource/image/image.hh"
+#include "vkr/resource/image/image_view.hh"
+#include "vkr/resource/image/sampler.hh"
 #include <array>
 #include <memory>
 #include <string>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/resource/shader_module.hh"
+#include "vkr/resource/shader/module.hh"
 #include <cstdint>
 #include <memory>
 #include <string>

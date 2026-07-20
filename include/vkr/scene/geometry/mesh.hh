@@ -3,8 +3,8 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/index_buffer.hh"
-#include "vkr/resource/buffers/vertex_buffer.hh"
+#include "vkr/resource/buffer/index_buffer.hh"
+#include "vkr/resource/buffer/vertex_buffer.hh"
 #include <algorithm>
 #include <functional>
 #include <limits>
