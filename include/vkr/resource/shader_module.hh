@@ -62,6 +62,12 @@ struct ShaderModuleDesc {
         util::ShaderCompileDesc::glslFile(shaderc_glsl_fragment_shader, path));
   }
 
+  [[nodiscard]] static auto computeGlslFile(const std::string &path)
+      -> ShaderModuleDesc {
+    return glsl(
+        util::ShaderCompileDesc::glslFile(shaderc_glsl_compute_shader, path));
+  }
+
   [[nodiscard]] static auto
   vertexGlslSource(const std::string &source,
                    const std::string &label = "vertex") -> ShaderModuleDesc {
@@ -75,6 +81,13 @@ struct ShaderModuleDesc {
       -> ShaderModuleDesc {
     return glsl(util::ShaderCompileDesc::glslSource(
         shaderc_glsl_fragment_shader, source, label));
+  }
+
+  [[nodiscard]] static auto
+  computeGlslSource(const std::string &source,
+                    const std::string &label = "compute") -> ShaderModuleDesc {
+    return glsl(util::ShaderCompileDesc::glslSource(
+        shaderc_glsl_compute_shader, source, label));
   }
 
   void setEntryPoint(const std::string &entryPoint) {

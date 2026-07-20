@@ -23,6 +23,22 @@ struct DescriptorBufferWriteDesc {
     return desc;
   }
 
+  [[nodiscard]] static auto uniform(uint32_t binding,
+                                    VkDescriptorBufferInfo buffer,
+                                    uint32_t arrayElement = 0)
+      -> DescriptorBufferWriteDesc {
+    return one(binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, buffer,
+               arrayElement);
+  }
+
+  [[nodiscard]] static auto storage(uint32_t binding,
+                                    VkDescriptorBufferInfo buffer,
+                                    uint32_t arrayElement = 0)
+      -> DescriptorBufferWriteDesc {
+    return one(binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, buffer,
+               arrayElement);
+  }
+
   [[nodiscard]] auto descriptorCount() const noexcept -> uint32_t {
     return static_cast<uint32_t>(buffers.size());
   }
@@ -44,6 +60,27 @@ struct DescriptorImageWriteDesc {
     desc.type = type;
     desc.images.push_back(image);
     return desc;
+  }
+
+  [[nodiscard]] static auto combinedImageSampler(
+      uint32_t binding, VkDescriptorImageInfo image,
+      uint32_t arrayElement = 0) -> DescriptorImageWriteDesc {
+    return one(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, image,
+               arrayElement);
+  }
+
+  [[nodiscard]] static auto sampled(uint32_t binding,
+                                    VkDescriptorImageInfo image,
+                                    uint32_t arrayElement = 0)
+      -> DescriptorImageWriteDesc {
+    return one(binding, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, image, arrayElement);
+  }
+
+  [[nodiscard]] static auto storage(uint32_t binding,
+                                    VkDescriptorImageInfo image,
+                                    uint32_t arrayElement = 0)
+      -> DescriptorImageWriteDesc {
+    return one(binding, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, image, arrayElement);
   }
 
   [[nodiscard]] auto descriptorCount() const noexcept -> uint32_t {

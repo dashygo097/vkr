@@ -6,6 +6,7 @@
 #include "vkr/resource/gpu/image_view.hh"
 #include "vkr/resource/gpu/sampler.hh"
 #include <array>
+#include <memory>
 #include <string>
 
 namespace vkr::resource {
@@ -196,6 +197,14 @@ public:
     return sampler_->sampler();
   }
 
+  [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
+    VkDescriptorImageInfo info{};
+    info.sampler = hasSampler() ? sampler_->sampler() : VK_NULL_HANDLE;
+    info.imageView = hasImageView() ? image_view_->imageView() : VK_NULL_HANDLE;
+    info.imageLayout = layout();
+    return info;
+  }
+
   [[nodiscard]] auto hasImage() const noexcept -> bool {
     return image_ != nullptr && image_->image() != VK_NULL_HANDLE;
   }
@@ -225,10 +234,6 @@ private:
   void createCubemapFromFiles();
   void createEmpty();
   void createViewAndSampler();
-  void transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
-  void copyBufferToImage(VkBuffer buffer, uint32_t layers, uint32_t channels);
-  [[nodiscard]] auto beginSingleTimeCommands() -> VkCommandBuffer;
-  void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 };
 
 } // namespace vkr::resource
