@@ -17,3 +17,6 @@
 #include "vkr/resource/buffers/vbos.hh"
 #include "vkr/resource/gpu/storage_image.hh"
 #include "vkr/resource/targets/frame_history.hh"
+#include "vkr/scene/geometry/mesh.hh"
+#include "vkr/scene/material/cubemap.hh"
+#include "vkr/scene/material/texture.hh"

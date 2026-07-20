@@ -18,7 +18,7 @@ struct UniformBuffer3DObject {
 class TeapotApp : public vkr::VulkanApplication {
 private:
   void createResources() override {
-    vkr::resource::Mesh<vkr::resource::VertexNormalTexture3D> teapot(
+    vkr::scene::Mesh<vkr::resource::VertexNormalTexture3D> teapot(
         *device, *graphicsCommandPool);
     teapot.load(assetSystem->resolve("objects/teapot/teapot.obj"));
 

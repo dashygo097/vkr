@@ -197,13 +197,13 @@ auto SkyboxPass::createDescriptorWrites() const
                      core::MAX_FRAMES_IN_FLIGHT);
   }
 
-  auto cubemap = resource_manager_.getTexture(desc_.cubemapName);
+  auto cubemap = resource_manager_.getCubemap(desc_.cubemapName);
   if (!cubemap) {
     VKR_RENDER_ERROR("SkyboxPass '{}' cubemap resource not found: {}", name(),
                      desc_.cubemapName);
   }
 
-  if (!cubemap->hasSampler()) {
+  if (!cubemap->valid()) {
     VKR_RENDER_ERROR("SkyboxPass '{}' cubemap has no sampler: {}", name(),
                      desc_.cubemapName);
   }
@@ -211,10 +211,7 @@ auto SkyboxPass::createDescriptorWrites() const
   std::vector<pipeline::DescriptorSetWriteDesc> writes{};
   writes.reserve(core::MAX_FRAMES_IN_FLIGHT);
 
-  VkDescriptorImageInfo imageInfo{};
-  imageInfo.imageLayout = cubemap->layout();
-  imageInfo.imageView = cubemap->imageView();
-  imageInfo.sampler = cubemap->sampler();
+  VkDescriptorImageInfo imageInfo = cubemap->descriptorInfo();
 
   for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
        ++frameIndex) {

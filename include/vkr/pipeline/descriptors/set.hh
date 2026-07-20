@@ -62,9 +62,10 @@ struct DescriptorImageWriteDesc {
     return desc;
   }
 
-  [[nodiscard]] static auto combinedImageSampler(
-      uint32_t binding, VkDescriptorImageInfo image,
-      uint32_t arrayElement = 0) -> DescriptorImageWriteDesc {
+  [[nodiscard]] static auto combinedImageSampler(uint32_t binding,
+                                                 VkDescriptorImageInfo image,
+                                                 uint32_t arrayElement = 0)
+      -> DescriptorImageWriteDesc {
     return one(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, image,
                arrayElement);
   }

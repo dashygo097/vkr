@@ -308,7 +308,8 @@ private:
         std::string(kShaderToyUniformName), {});
     resourceManager->createTexture(
         std::string(kFallbackTextureName),
-        vkr::resource::TextureDesc::sampled2D(1, 1, VK_FORMAT_R8G8B8A8_UNORM));
+        vkr::scene::TextureDesc::sampled2D(1, 1,
+                                           VK_FORMAT_R8G8B8A8_UNORM));
   }
 
   void buildRenderGraph() override {

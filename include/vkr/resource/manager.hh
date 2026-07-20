@@ -4,8 +4,9 @@
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
 #include "vkr/resource/buffers/frame_uniform_buffers.hh"
-#include "vkr/resource/gpu/texture.hh"
-#include "vkr/resource/mesh.hh"
+#include "vkr/scene/geometry/mesh.hh"
+#include "vkr/scene/material/cubemap.hh"
+#include "vkr/scene/material/texture.hh"
 #include <array>
 
 namespace vkr::resource {
@@ -40,7 +41,7 @@ public:
 
   // Mesh management
   template <typename VBOType>
-  void createMesh(const std::string &name, const Mesh<VBOType> &mesh) {
+  void createMesh(const std::string &name, const scene::Mesh<VBOType> &mesh) {
     const auto vertexBuffer = mesh.vertexBuffer();
     const auto indexBuffer = mesh.indexBuffer();
 
@@ -48,7 +49,8 @@ public:
       VKR_RES_ERROR("Cannot create mesh resource '{}' from invalid mesh", name);
     }
 
-    auto stored = std::make_shared<Mesh<VBOType>>(device_, command_pool_);
+    auto stored = std::make_shared<scene::Mesh<VBOType>>(device_,
+                                                         command_pool_);
     stored->load(vertexBuffer->get().vertices(), indexBuffer->get().indices());
     meshes_[name] = std::move(stored);
   }
@@ -67,7 +69,7 @@ public:
   }
 
   [[nodiscard]] auto getMesh(const std::string &name) const
-      -> std::shared_ptr<IMesh> {
+      -> std::shared_ptr<scene::IMesh> {
     auto it = meshes_.find(name);
     return it == meshes_.end() ? nullptr : it->second;
   }
@@ -87,35 +89,55 @@ public:
   void clearSelectedMesh() { selected_mesh_name_.clear(); }
 
   // Texture management
-  void createTexture(const std::string &name, const TextureDesc &desc) {
-    auto texture = std::make_shared<Texture>(device_, command_pool_);
+  void createTexture(const std::string &name, const scene::TextureDesc &desc) {
+    auto texture = std::make_shared<scene::Texture>(device_, command_pool_);
     texture->update(desc);
     textures_[name] = std::move(texture);
   }
 
-  void createTexture(const std::string &name, TextureDesc &&desc) {
-    auto texture = std::make_shared<Texture>(device_, command_pool_);
+  void createTexture(const std::string &name, scene::TextureDesc &&desc) {
+    auto texture = std::make_shared<scene::Texture>(device_, command_pool_);
     texture->update(desc);
     textures_[name] = std::move(texture);
   }
 
   void createTexture(const std::string &name, const std::string &filePath) {
-    createTexture(name, TextureDesc::textureFile(filePath));
+    createTexture(name, scene::TextureDesc::textureFile(filePath));
   }
 
   void createCubemap(const std::string &name,
                      const std::array<std::string, 6> &facePaths,
                      VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
-    createTexture(name, TextureDesc::cubemapFiles(facePaths, format));
+    createCubemap(name, scene::CubemapDesc::files(facePaths, format));
+  }
+
+  void createCubemap(const std::string &name, const scene::CubemapDesc &desc) {
+    auto cubemap = std::make_shared<scene::Cubemap>(device_, command_pool_);
+    cubemap->update(desc);
+    cubemaps_[name] = std::move(cubemap);
+  }
+
+  void createCubemap(const std::string &name, scene::CubemapDesc &&desc) {
+    auto cubemap = std::make_shared<scene::Cubemap>(device_, command_pool_);
+    cubemap->update(desc);
+    cubemaps_[name] = std::move(cubemap);
+  }
+
+  [[nodiscard]] auto getCubemap(const std::string &name) const
+      -> std::shared_ptr<scene::Cubemap> {
+    auto it = cubemaps_.find(name);
+    return it == cubemaps_.end() ? nullptr : it->second;
   }
 
   [[nodiscard]] auto getTexture(const std::string &name) const
-      -> std::shared_ptr<Texture> {
+      -> std::shared_ptr<scene::Texture> {
     auto it = textures_.find(name);
     return it == textures_.end() ? nullptr : it->second;
   }
 
   void destroyTexture(const std::string &name) { textures_.erase(name); }
+
+  void destroyCubemap(const std::string &name) { cubemaps_.erase(name); }
 
   // Counts
   [[nodiscard]] auto uniformBufferCount() const noexcept -> size_t {
@@ -128,6 +150,10 @@ public:
 
   [[nodiscard]] auto textureImageCount() const noexcept -> size_t {
     return textures_.size();
+  }
+
+  [[nodiscard]] auto cubemapCount() const noexcept -> size_t {
+    return cubemaps_.size();
   }
 
   // Names
@@ -144,6 +170,10 @@ public:
     return listTextureNames();
   }
 
+  [[nodiscard]] auto listCubemapNames() const -> std::vector<std::string> {
+    return listResourceNames(cubemaps_);
+  }
+
   [[nodiscard]] auto listMeshNames() const -> std::vector<std::string> {
     return listResourceNames(meshes_);
   }
@@ -155,11 +185,17 @@ public:
   }
 
   [[nodiscard]] auto listTextures() const
-      -> std::vector<std::shared_ptr<Texture>> {
+      -> std::vector<std::shared_ptr<scene::Texture>> {
     return listResources(textures_);
   }
 
-  [[nodiscard]] auto listMeshes() const -> std::vector<std::shared_ptr<IMesh>> {
+  [[nodiscard]] auto listCubemaps() const
+      -> std::vector<std::shared_ptr<scene::Cubemap>> {
+    return listResources(cubemaps_);
+  }
+
+  [[nodiscard]] auto listMeshes() const
+      -> std::vector<std::shared_ptr<scene::IMesh>> {
     return listResources(meshes_);
   }
 
@@ -200,8 +236,9 @@ private:
   // components
   std::unordered_map<std::string, std::shared_ptr<IUniformBuffer>>
       uniform_buffers_{};
-  std::unordered_map<std::string, std::shared_ptr<Texture>> textures_{};
-  std::unordered_map<std::string, std::shared_ptr<IMesh>> meshes_{};
+  std::unordered_map<std::string, std::shared_ptr<scene::Texture>> textures_{};
+  std::unordered_map<std::string, std::shared_ptr<scene::Cubemap>> cubemaps_{};
+  std::unordered_map<std::string, std::shared_ptr<scene::IMesh>> meshes_{};
   std::string selected_mesh_name_{};
 };
 

@@ -88,7 +88,7 @@ private:
     resourceManager->createCubemap("skybox", createDebugCubemapFaces(),
                                    VK_FORMAT_R8G8B8A8_SRGB);
 
-    vkr::resource::Mesh<vkr::resource::VertexSkybox3D> skybox(
+    vkr::scene::Mesh<vkr::resource::VertexSkybox3D> skybox(
         *device, *graphicsCommandPool);
     skybox.load(vkr::resource::skyboxCubeVertices(),
                 vkr::resource::skyboxCubeIndices());

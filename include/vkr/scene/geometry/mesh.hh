@@ -13,8 +13,9 @@
 #include <tiny_obj_loader.h>
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
 
-namespace vkr::resource {
+namespace vkr::scene {
 
 namespace {
 
@@ -174,9 +175,10 @@ public:
   virtual ~IMesh() = default;
 
   [[nodiscard]] virtual auto vertexBufferBase() const
-      -> std::optional<std::reference_wrapper<const IVertexBuffer>> = 0;
+      -> std::optional<std::reference_wrapper<const resource::IVertexBuffer>> =
+      0;
   [[nodiscard]] virtual auto indexBuffer() const
-      -> std::optional<std::reference_wrapper<const IndexBuffer>> = 0;
+      -> std::optional<std::reference_wrapper<const resource::IndexBuffer>> = 0;
 
   [[nodiscard]] auto isValid() const -> bool {
     return vertexBufferBase().has_value() && indexBuffer().has_value();
@@ -198,8 +200,10 @@ public:
             const std::vector<uint16_t> &indices) {
     if (!vertex_buffer_ || !index_buffer_) {
       vertex_buffer_ =
-          std::make_unique<VertexBuffer<VBOType>>(device_, command_pool_);
-      index_buffer_ = std::make_unique<IndexBuffer>(device_, command_pool_);
+          std::make_unique<resource::VertexBuffer<VBOType>>(device_,
+                                                            command_pool_);
+      index_buffer_ =
+          std::make_unique<resource::IndexBuffer>(device_, command_pool_);
       vertex_buffer_->update(vertices);
       index_buffer_->update(indices);
     } else {
@@ -311,7 +315,8 @@ public:
   }
 
   [[nodiscard]] auto vertexBuffer() const
-      -> std::optional<std::reference_wrapper<const VertexBuffer<VBOType>>> {
+      -> std::optional<
+          std::reference_wrapper<const resource::VertexBuffer<VBOType>>> {
     if (!vertex_buffer_) {
       return std::nullopt;
     }
@@ -320,7 +325,8 @@ public:
   }
 
   [[nodiscard]] auto vertexBufferBase() const
-      -> std::optional<std::reference_wrapper<const IVertexBuffer>> override {
+      -> std::optional<std::reference_wrapper<const resource::IVertexBuffer>>
+          override {
     if (!vertex_buffer_) {
       return std::nullopt;
     }
@@ -329,7 +335,8 @@ public:
   }
 
   [[nodiscard]] auto indexBuffer() const
-      -> std::optional<std::reference_wrapper<const IndexBuffer>> override {
+      -> std::optional<std::reference_wrapper<const resource::IndexBuffer>>
+          override {
     if (!index_buffer_) {
       return std::nullopt;
     }
@@ -343,8 +350,8 @@ private:
   const core::CommandPool &command_pool_;
 
   // components
-  std::unique_ptr<VertexBuffer<VBOType>> vertex_buffer_;
-  std::unique_ptr<IndexBuffer> index_buffer_;
+  std::unique_ptr<resource::VertexBuffer<VBOType>> vertex_buffer_;
+  std::unique_ptr<resource::IndexBuffer> index_buffer_;
 
   void checkDataLoaded() {
     if (!vertex_buffer_ || !index_buffer_) {
@@ -352,4 +359,4 @@ private:
     }
   }
 };
-} // namespace vkr::resource
+} // namespace vkr::scene
