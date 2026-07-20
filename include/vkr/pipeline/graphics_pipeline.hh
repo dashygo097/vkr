@@ -1,8 +1,8 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/resource/buffer/vbos.hh"
 #include "vkr/resource/shader/module.hh"
+#include "vkr/scene/geometry/vbos.hh"
 #include <cstdint>
 
 namespace vkr::pipeline {
@@ -256,7 +256,7 @@ struct GraphicsDynamicStateDesc {
 struct GraphicsPipelineDesc {
   std::string name{};
   std::vector<GraphicsShaderStageDesc> shaders{};
-  resource::VertexInputDesc vertexInput{};
+  scene::VertexInputDesc vertexInput{};
 
   GraphicsPipelineLayoutDesc layout{};
   GraphicsInputAssemblyDesc inputAssembly{};
@@ -325,9 +325,7 @@ public:
     return vk_graphics_pipeline_ != VK_NULL_HANDLE;
   }
 
-  [[nodiscard]] auto revision() const noexcept -> uint64_t {
-    return revision_;
-  }
+  [[nodiscard]] auto revision() const noexcept -> uint64_t { return revision_; }
 
 private:
   struct RetiredPipeline {

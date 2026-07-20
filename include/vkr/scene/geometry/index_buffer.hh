@@ -6,7 +6,7 @@
 #include <memory>
 #include <vector>
 
-namespace vkr::resource {
+namespace vkr::scene {
 
 class IndexBuffer {
 public:
@@ -41,6 +41,6 @@ private:
 
   // dependencies
   std::vector<uint16_t> indices_{};
-  std::unique_ptr<Buffer> target_{};
+  std::unique_ptr<resource::Buffer> target_{};
 };
-} // namespace vkr::resource
+} // namespace vkr::scene

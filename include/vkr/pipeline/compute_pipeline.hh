@@ -64,9 +64,7 @@ public:
     return vk_compute_pipeline_ != VK_NULL_HANDLE;
   }
 
-  [[nodiscard]] auto revision() const noexcept -> uint64_t {
-    return revision_;
-  }
+  [[nodiscard]] auto revision() const noexcept -> uint64_t { return revision_; }
 
 private:
   struct RetiredPipeline {

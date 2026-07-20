@@ -14,9 +14,13 @@ layout(set = 0, binding = 2) writeonly buffer Output {
   float values[];
 } outputC;
 
+layout(std140, set = 0, binding = 3) uniform VectorAddParams {
+  uint elementCount;
+} params;
+
 void main() {
   const uint index = gl_GlobalInvocationID.x;
-  if (index >= 1024) {
+  if (index >= params.elementCount) {
     return;
   }
 

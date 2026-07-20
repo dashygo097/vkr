@@ -1,6 +1,5 @@
 #pragma once
 
-#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/resource/image/image.hh"
 #include "vkr/resource/image/image_view.hh"
@@ -36,8 +35,7 @@ struct StorageImageDesc {
 
 class StorageImage {
 public:
-  StorageImage(const core::Device &device,
-               const core::CommandPool &commandPool);
+  explicit StorageImage(const core::Device &device);
   ~StorageImage();
 
   StorageImage(const StorageImage &) = delete;
@@ -78,8 +76,6 @@ public:
 
 private:
   const core::Device &device_;
-  const core::CommandPool &command_pool_;
-
   StorageImageDesc desc_{};
   std::unique_ptr<Image> image_;
   std::unique_ptr<ImageView> image_view_;

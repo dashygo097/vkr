@@ -18,7 +18,7 @@ struct UniformBuffer3DObject {
 class TeapotApp : public vkr::exec::RenderApplication {
 private:
   void createResources() override {
-    vkr::scene::Mesh<vkr::resource::VertexNormalTexture3D> teapot(
+    vkr::scene::Mesh<vkr::scene::VertexNormalTexture3D> teapot(
         *device, *graphicsCommandPool);
     teapot.load(assetSystem->resolve("objects/teapot/teapot.obj"));
 
@@ -42,8 +42,8 @@ private:
                   .createSampler = true},
         .depth =
             vkr::exec::DepthAttachmentDesc{.width = swapchain->width(),
-                                               .height = swapchain->height(),
-                                               .format = VK_FORMAT_D32_SFLOAT}};
+                                           .height = swapchain->height(),
+                                           .format = VK_FORMAT_D32_SFLOAT}};
     desc.descriptorBindings = {
         {.name = "default",
          .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
@@ -61,8 +61,7 @@ private:
 
     vkr::pipeline::GraphicsPipelineDesc normal{};
     normal.name = "teapot-local";
-    normal.vertexInput =
-        vkr::resource::VertexNormalTexture3D::vertexInputDesc();
+    normal.vertexInput = vkr::scene::VertexNormalTexture3D::vertexInputDesc();
 
     normal.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
@@ -98,7 +97,7 @@ private:
 
     vkr::pipeline::GraphicsPipelineDesc postPipeline{};
     postPipeline.name = "postprocess";
-    postPipeline.vertexInput = vkr::resource::VertexInputDesc::none();
+    postPipeline.vertexInput = vkr::scene::VertexInputDesc::none();
     postPipeline.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
             vkr::resource::ShaderModuleDesc::vertexGlslFile(
@@ -134,13 +133,12 @@ private:
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
         *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::exec::FullscreenPassSource{postProcessPass}, *graph,
-        *timer, ctx.ui);
+        vkr::exec::FullscreenPassSource{postProcessPass}, *graph, *timer,
+        ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
     uiPass.update(uiDesc);
 
-    auto &presentPass =
-        graph->addPass<vkr::exec::PresentPass>(*executor);
+    auto &presentPass = graph->addPass<vkr::exec::PresentPass>(*executor);
     presentPass.setName("present");
   }
 
@@ -154,7 +152,7 @@ private:
     ubo.proj = camera->getProjection();
 
     scene->getUniformBuffer("default")->updateRaw(frameIndex, &ubo,
-                                                            sizeof(ubo));
+                                                  sizeof(ubo));
 
     if (ctx.ui.viewport.height > 0 &&
         ctx.ui.layoutMode == vkr::ui::LayoutMode::Standard) {

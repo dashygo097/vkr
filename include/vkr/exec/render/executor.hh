@@ -71,8 +71,8 @@ public:
                     const std::vector<VkDescriptorSet> &descriptorSets);
   void setViewportAndScissor(VkExtent2D extent);
 
-  void drawIndexed(const resource::IVertexBuffer &vertexBuffer,
-                   const resource::IndexBuffer &indexBuffer);
+  void drawIndexed(const scene::IVertexBuffer &vertexBuffer,
+                   const scene::IndexBuffer &indexBuffer);
   void drawGeometry();
   void drawFullscreenTriangle();
   void drawUI(ui::UI &ui);

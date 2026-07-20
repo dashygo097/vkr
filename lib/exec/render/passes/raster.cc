@@ -196,18 +196,15 @@ auto RasterPass::createDescriptorWrites() const
         VKR_EXEC_ERROR("Uniform buffer resource not found: {}", binding.name);
       }
 
-      if (uniformBuffer->targetCount() != core::MAX_FRAMES_IN_FLIGHT) {
+      if (uniformBuffer->frameCount() != core::MAX_FRAMES_IN_FLIGHT) {
         VKR_EXEC_ERROR("Uniform buffer '{}' frame count mismatch: {} vs {}",
-                         binding.name, uniformBuffer->targetCount(),
+                         binding.name, uniformBuffer->frameCount(),
                          core::MAX_FRAMES_IN_FLIGHT);
       }
 
       for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
            ++frameIndex) {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = uniformBuffer->target(frameIndex).buffer();
-        bufferInfo.offset = 0;
-        bufferInfo.range = uniformBuffer->bufferSize();
+        const auto bufferInfo = uniformBuffer->descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
             pipeline::DescriptorBufferWriteDesc::one(
@@ -314,7 +311,7 @@ void RasterPass::syncSelectedMeshGrid() {
   }
 
   mesh_grid_index_buffer_ =
-      std::make_unique<resource::IndexBuffer>(device_, command_pool_);
+      std::make_unique<scene::IndexBuffer>(device_, command_pool_);
   mesh_grid_index_buffer_->update(lineIndices);
 }
 

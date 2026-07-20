@@ -86,8 +86,8 @@ struct ShaderModuleDesc {
   [[nodiscard]] static auto
   computeGlslSource(const std::string &source,
                     const std::string &label = "compute") -> ShaderModuleDesc {
-    return glsl(util::ShaderCompileDesc::glslSource(
-        shaderc_glsl_compute_shader, source, label));
+    return glsl(util::ShaderCompileDesc::glslSource(shaderc_glsl_compute_shader,
+                                                    source, label));
   }
 
   void setEntryPoint(const std::string &entryPoint) {

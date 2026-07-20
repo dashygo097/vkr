@@ -84,10 +84,9 @@ public:
       VKR_RES_ERROR("Storage buffer write exceeds buffer bounds");
     }
 
-    const VkDeviceSize offset =
+    auto offset =
         static_cast<VkDeviceSize>(sizeof(ElementType) * elementOffset);
-    const VkDeviceSize size =
-        static_cast<VkDeviceSize>(sizeof(ElementType) * elementCount);
+    auto size = static_cast<VkDeviceSize>(sizeof(ElementType) * elementCount);
     target_->write(elements, size, offset);
   }
 
@@ -100,9 +99,9 @@ public:
       VKR_RES_ERROR("Storage buffer read exceeds buffer bounds");
     }
 
-    const VkDeviceSize offset =
+    auto offset =
         static_cast<VkDeviceSize>(sizeof(ElementType) * elementOffset);
-    const VkDeviceSize size =
+    auto size =
         static_cast<VkDeviceSize>(sizeof(ElementType) * elements.size());
 
     const bool alreadyMapped = target_->isMapped();

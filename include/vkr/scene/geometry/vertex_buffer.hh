@@ -4,13 +4,13 @@
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
 #include "vkr/resource/buffer/buffer.hh"
-#include "vkr/resource/buffer/vbos.hh"
+#include "vkr/scene/geometry/vbos.hh"
 #include <cstring>
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
 
-namespace vkr::resource {
+namespace vkr::scene {
 
 class IVertexBuffer {
 public:
@@ -31,7 +31,7 @@ public:
   explicit VertexBuffer(const core::Device &device,
                         const core::CommandPool &commandPool)
       : device_(device), command_pool_(commandPool),
-        target_(std::make_unique<Buffer>(device)) {}
+        target_(std::make_unique<resource::Buffer>(device)) {}
 
   ~VertexBuffer() override = default;
 
@@ -114,11 +114,60 @@ protected:
       VKR_RES_ERROR("Cannot upload empty vertex buffer data!");
     }
 
-    Buffer staging{device_, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+    resource::Buffer staging{device_, bufferSize,
+                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     staging.write(vertices, bufferSize);
-    Buffer::copy(staging, *target_, bufferSize, command_pool_);
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = command_pool_.commandPool();
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
+    if (vkAllocateCommandBuffers(device_.device(), &allocInfo,
+                                 &commandBuffer) != VK_SUCCESS) {
+      VKR_RES_ERROR("Failed to allocate vertex upload command buffer");
+    }
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+      vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
+                           &commandBuffer);
+      VKR_RES_ERROR("Failed to begin vertex upload command buffer");
+    }
+
+    VkBufferCopy copyRegion{};
+    copyRegion.size = bufferSize;
+    vkCmdCopyBuffer(commandBuffer, staging.buffer(), target_->buffer(), 1,
+                    &copyRegion);
+
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+      vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
+                           &commandBuffer);
+      VKR_RES_ERROR("Failed to end vertex upload command buffer");
+    }
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo, VK_NULL_HANDLE) !=
+        VK_SUCCESS) {
+      vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
+                           &commandBuffer);
+      VKR_RES_ERROR("Failed to submit vertex upload command buffer");
+    }
+
+    vkQueueWaitIdle(command_pool_.queue());
+    vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
+                         &commandBuffer);
   }
 
 protected:
@@ -128,7 +177,7 @@ protected:
 
   // components
   std::vector<VertexType> vertices_{};
-  std::unique_ptr<Buffer> target_{};
+  std::unique_ptr<resource::Buffer> target_{};
 };
 
-} // namespace vkr::resource
+} // namespace vkr::scene

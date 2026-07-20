@@ -181,7 +181,7 @@ private:
       -> vkr::pipeline::GraphicsPipelineDesc {
     vkr::pipeline::GraphicsPipelineDesc pipeline{};
     pipeline.name = name;
-    pipeline.vertexInput = vkr::resource::VertexInputDesc::none();
+    pipeline.vertexInput = vkr::scene::VertexInputDesc::none();
     pipeline.shaders = {
         vkr::pipeline::GraphicsShaderStageDesc::vertex(
             vkr::resource::ShaderModuleDesc::vertexGlslFile(

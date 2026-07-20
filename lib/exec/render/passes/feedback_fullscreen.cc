@@ -103,20 +103,17 @@ void appendResourceDescriptorWrites(
                          std::string(passName), binding.name);
       }
 
-      if (uniformBuffer->targetCount() != core::MAX_FRAMES_IN_FLIGHT) {
+      if (uniformBuffer->frameCount() != core::MAX_FRAMES_IN_FLIGHT) {
         VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' uniform buffer '{}' "
                          "frame count mismatch: {} vs {}",
                          std::string(passName), binding.name,
-                         uniformBuffer->targetCount(),
+                         uniformBuffer->frameCount(),
                          core::MAX_FRAMES_IN_FLIGHT);
       }
 
       for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
            ++frameIndex) {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = uniformBuffer->target(frameIndex).buffer();
-        bufferInfo.offset = 0;
-        bufferInfo.range = uniformBuffer->bufferSize();
+        const auto bufferInfo = uniformBuffer->descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
             pipeline::DescriptorBufferWriteDesc::one(

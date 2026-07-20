@@ -1,6 +1,6 @@
 #include "vkr/exec/render/passes/skybox.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffer/vbos.hh"
+#include "vkr/scene/geometry/vbos.hh"
 
 namespace vkr::exec {
 
@@ -142,7 +142,7 @@ void SkyboxPass::createPipeline() {
   pipelineDesc.renderPass = render_pass_->renderPass();
 
   if (desc_.configureSkyboxPipelineState) {
-    pipelineDesc.vertexInput = resource::VertexSkybox3D::vertexInputDesc();
+    pipelineDesc.vertexInput = scene::VertexSkybox3D::vertexInputDesc();
     pipelineDesc.rasterization = pipeline::GraphicsRasterizationDesc::noCull();
     pipelineDesc.depthStencil = pipeline::GraphicsDepthStencilDesc::readOnly();
   }
@@ -191,9 +191,9 @@ auto SkyboxPass::createDescriptorWrites() const
                      desc_.uniformName);
   }
 
-  if (uniformBuffer->targetCount() != core::MAX_FRAMES_IN_FLIGHT) {
+  if (uniformBuffer->frameCount() != core::MAX_FRAMES_IN_FLIGHT) {
     VKR_EXEC_ERROR("SkyboxPass '{}' uniform frame count mismatch: {} vs {}",
-                     name(), uniformBuffer->targetCount(),
+                     name(), uniformBuffer->frameCount(),
                      core::MAX_FRAMES_IN_FLIGHT);
   }
 
@@ -217,10 +217,7 @@ auto SkyboxPass::createDescriptorWrites() const
        ++frameIndex) {
     auto write = pipeline::DescriptorSetWriteDesc::forSet(frameIndex);
 
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = uniformBuffer->target(frameIndex).buffer();
-    bufferInfo.offset = 0;
-    bufferInfo.range = uniformBuffer->bufferSize();
+    const auto bufferInfo = uniformBuffer->descriptorInfo(frameIndex);
 
     write.buffers.push_back(pipeline::DescriptorBufferWriteDesc::one(
         0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, bufferInfo));

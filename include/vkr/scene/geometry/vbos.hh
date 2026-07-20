@@ -7,7 +7,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-namespace vkr::resource {
+namespace vkr::scene {
 
 struct VertexInputDesc {
   std::vector<VkVertexInputBindingDescription> bindings{};
@@ -446,7 +446,7 @@ struct VertexSkybox3D {
   };
 }
 
-} // namespace vkr::resource
+} // namespace vkr::scene
 
 namespace std {
 
@@ -467,8 +467,8 @@ template <typename T, glm::qualifier Q> struct hash<glm::vec<3, T, Q>> {
   }
 };
 
-template <> struct hash<vkr::resource::Vertex3D> {
-  auto operator()(const vkr::resource::Vertex3D &vertex) const noexcept
+template <> struct hash<vkr::scene::Vertex3D> {
+  auto operator()(const vkr::scene::Vertex3D &vertex) const noexcept
       -> size_t {
     return ((hash<glm::vec3>{}(vertex.pos) ^
              (hash<glm::vec3>{}(vertex.color) << 1)) >>
@@ -476,8 +476,8 @@ template <> struct hash<vkr::resource::Vertex3D> {
   }
 };
 
-template <> struct hash<vkr::resource::VertexNormal3D> {
-  auto operator()(const vkr::resource::VertexNormal3D &vertex) const noexcept
+template <> struct hash<vkr::scene::VertexNormal3D> {
+  auto operator()(const vkr::scene::VertexNormal3D &vertex) const noexcept
       -> size_t {
     return (((hash<glm::vec3>{}(vertex.pos) ^
               (hash<glm::vec3>{}(vertex.color) << 1)) >>
@@ -486,8 +486,8 @@ template <> struct hash<vkr::resource::VertexNormal3D> {
   }
 };
 
-template <> struct hash<vkr::resource::VertexTextured3D> {
-  auto operator()(const vkr::resource::VertexTextured3D &vertex) const noexcept
+template <> struct hash<vkr::scene::VertexTextured3D> {
+  auto operator()(const vkr::scene::VertexTextured3D &vertex) const noexcept
       -> size_t {
     return (((hash<glm::vec3>{}(vertex.pos) ^
               (hash<glm::vec3>{}(vertex.color) << 1)) >>
@@ -496,9 +496,9 @@ template <> struct hash<vkr::resource::VertexTextured3D> {
   }
 };
 
-template <> struct hash<vkr::resource::VertexNormalTexture3D> {
+template <> struct hash<vkr::scene::VertexNormalTexture3D> {
   auto
-  operator()(const vkr::resource::VertexNormalTexture3D &vertex) const noexcept
+  operator()(const vkr::scene::VertexNormalTexture3D &vertex) const noexcept
       -> size_t {
     return ((((hash<glm::vec3>{}(vertex.pos) ^
                (hash<glm::vec3>{}(vertex.color) << 1)) >>
@@ -509,8 +509,8 @@ template <> struct hash<vkr::resource::VertexNormalTexture3D> {
   }
 };
 
-template <> struct hash<vkr::resource::VertexSkybox3D> {
-  auto operator()(const vkr::resource::VertexSkybox3D &vertex) const noexcept
+template <> struct hash<vkr::scene::VertexSkybox3D> {
+  auto operator()(const vkr::scene::VertexSkybox3D &vertex) const noexcept
       -> size_t {
     return hash<glm::vec3>{}(vertex.pos);
   }

@@ -17,6 +17,12 @@ auto storageBinding(uint32_t binding) -> vkr::pipeline::DescriptorBinding {
                  VK_SHADER_STAGE_COMPUTE_BIT}};
 }
 
+auto uniformBinding(uint32_t binding) -> vkr::pipeline::DescriptorBinding {
+  return vkr::pipeline::DescriptorBinding{
+      .layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                 VK_SHADER_STAGE_COMPUTE_BIT}};
+}
+
 auto storageWrite(uint32_t binding,
                   const vkr::resource::StorageBuffer<float> &buffer)
     -> vkr::pipeline::DescriptorBufferWriteDesc {
@@ -24,12 +30,13 @@ auto storageWrite(uint32_t binding,
       binding, buffer.descriptorInfo(0, buffer.bufferSize()));
 }
 
+struct alignas(16) VectorAddParams {
+  uint32_t elementCount{0};
+};
+
 } // namespace
 
 class VectorAddApp final : public vkr::exec::ComputeApplication {
-public:
-  VectorAddApp() { ctx.instance.name = "vector_add"; }
-
 private:
   std::vector<float> a_{};
   std::vector<float> b_{};
@@ -37,6 +44,7 @@ private:
   std::unique_ptr<vkr::resource::StorageBuffer<float>> input_a_{};
   std::unique_ptr<vkr::resource::StorageBuffer<float>> input_b_{};
   std::unique_ptr<vkr::resource::StorageBuffer<float>> output_c_{};
+  std::unique_ptr<vkr::resource::UniformBuffer<VectorAddParams>> params_{};
 
   void createResources() override {
     a_.resize(ElementCount);
@@ -56,20 +64,26 @@ private:
         *device, storageDesc);
     output_c_ = std::make_unique<vkr::resource::StorageBuffer<float>>(
         *device, storageDesc);
+    params_ = std::make_unique<vkr::resource::UniformBuffer<VectorAddParams>>(
+        *device);
 
     input_a_->write(a_);
     input_b_->write(b_);
     output_c_->write(c_);
+    params_->update(VectorAddParams{.elementCount = ElementCount});
   }
 
   void buildGraph() override {
     vkr::exec::ComputePassDesc passDesc{};
     passDesc.descriptorBindings = {storageBinding(0), storageBinding(1),
-                                   storageBinding(2)};
+                                   storageBinding(2), uniformBinding(3)};
     passDesc.descriptorWrites = {vkr::pipeline::DescriptorSetWriteDesc{
         .setIndex = 0,
         .buffers = {storageWrite(0, *input_a_), storageWrite(1, *input_b_),
-                    storageWrite(2, *output_c_)}}};
+                    storageWrite(2, *output_c_),
+                    vkr::pipeline::DescriptorBufferWriteDesc::one(
+                        3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                        params_->descriptorInfo())}}};
     passDesc.pipeline = vkr::pipeline::ComputePipelineDesc{
         .name = "vector_add",
         .shader = vkr::resource::ShaderModuleDesc::computeGlslFile(
@@ -99,6 +113,8 @@ private:
 
     std::cout << "vector_add passed: " << ElementCount << " elements\n";
   }
+
+  void configure() override { ctx.instance.name = "vector_add"; }
 };
 
 auto main() -> int {

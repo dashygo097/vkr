@@ -24,10 +24,6 @@ public:
   UniformBuffer(UniformBuffer &&) = delete;
   auto operator=(UniformBuffer &&) -> UniformBuffer & = delete;
 
-  [[nodiscard]] auto target() const noexcept -> const Buffer & {
-    return *target_;
-  }
-
   [[nodiscard]] auto buffer() const noexcept -> VkBuffer {
     return target_->buffer();
   }
@@ -36,8 +32,19 @@ public:
     return target_->memory();
   }
 
-  [[nodiscard]] auto bufferSize() const noexcept -> VkDeviceSize {
+  [[nodiscard]] auto byteSize() const noexcept -> VkDeviceSize {
     return sizeof(UniformType);
+  }
+
+  [[nodiscard]] auto descriptorInfo(
+      VkDeviceSize offset = 0,
+      VkDeviceSize range = sizeof(UniformType)) const noexcept
+      -> VkDescriptorBufferInfo {
+    VkDescriptorBufferInfo info{};
+    info.buffer = buffer();
+    info.offset = offset;
+    info.range = range;
+    return info;
   }
 
   [[nodiscard]] auto isMapped() const noexcept -> bool {

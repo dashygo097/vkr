@@ -1,6 +1,5 @@
 #pragma once
 
-#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include <vulkan/vulkan.h>
 
@@ -53,9 +52,6 @@ public:
   static auto findMemoryType(uint32_t typeFilter,
                              VkMemoryPropertyFlags properties,
                              const core::Device &device) -> uint32_t;
-  static void copy(const Buffer &src, const Buffer &dst, VkDeviceSize size,
-                   const core::CommandPool &commandPool);
-
 private:
   // dependencies
   const core::Device &device_;

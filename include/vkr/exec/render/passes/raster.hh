@@ -84,7 +84,7 @@ private:
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
   std::unique_ptr<pipeline::GraphicsPipeline> mesh_grid_pipeline_{};
-  std::unique_ptr<resource::IndexBuffer> mesh_grid_index_buffer_{};
+  std::unique_ptr<scene::IndexBuffer> mesh_grid_index_buffer_{};
   std::string mesh_grid_name_{};
 
   // helpers

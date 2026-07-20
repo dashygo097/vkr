@@ -179,8 +179,8 @@ void Executor::setViewportAndScissor(VkExtent2D extent) {
   vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
 }
 
-void Executor::drawIndexed(const resource::IVertexBuffer &vertexBuffer,
-                           const resource::IndexBuffer &indexBuffer) {
+void Executor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
+                           const scene::IndexBuffer &indexBuffer) {
   ensureFrameActive("drawIndexed");
 
   if (vertexBuffer.vertexCount() == 0 || indexBuffer.indices().empty()) {
