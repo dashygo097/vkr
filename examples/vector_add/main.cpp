@@ -112,6 +112,10 @@ private:
     }
 
     std::cout << "vector_add passed: " << ElementCount << " elements\n";
+
+    for (uint32_t i = 0; i < 16; ++i) {
+      std::cout << a_[i] << " + " << b_[i] << " = " << c_[i] << std::endl;
+    }
   }
 
   void configure() override { ctx.instance.name = "vector_add"; }
