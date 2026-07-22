@@ -86,10 +86,10 @@ class SkyboxApp : public vkr::exec::RenderApplication {
 private:
   void createResources() override {
     scene->createCubemap("skybox", createDebugCubemapFaces(),
-                                   VK_FORMAT_R8G8B8A8_SRGB);
+                         VK_FORMAT_R8G8B8A8_SRGB);
 
-    vkr::scene::Mesh<vkr::scene::VertexSkybox3D> skybox(
-        *device, *graphicsCommandPool);
+    vkr::scene::Mesh<vkr::scene::VertexSkybox3D> skybox(*device,
+                                                        *graphicsCommandPool);
     skybox.load(vkr::scene::skyboxCubeVertices(),
                 vkr::scene::skyboxCubeIndices());
     scene->createMesh("skybox", skybox);
@@ -109,8 +109,8 @@ private:
                   .createSampler = true},
         .depth =
             vkr::exec::DepthAttachmentDesc{.width = swapchain->width(),
-                                               .height = swapchain->height(),
-                                               .format = VK_FORMAT_D32_SFLOAT}};
+                                           .height = swapchain->height(),
+                                           .format = VK_FORMAT_D32_SFLOAT}};
     skyboxDesc.clearValues = {
         VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
         VkClearValue{.depthStencil = {1.0f, 0}},
@@ -144,13 +144,11 @@ private:
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
         *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::exec::FullscreenPassSource{skyboxPass}, *graph, *timer,
-        ctx.ui);
+        vkr::exec::FullscreenPassSource{skyboxPass}, *graph, *timer, ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
     uiPass.update(uiDesc);
 
-    auto &presentPass =
-        graph->addPass<vkr::exec::PresentPass>(*executor);
+    auto &presentPass = graph->addPass<vkr::exec::PresentPass>(*executor);
     presentPass.setName("present");
   }
 
@@ -162,8 +160,7 @@ private:
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();
 
-    scene->getUniformBuffer("skybox")->updateRaw(frameIndex, &ubo,
-                                                           sizeof(ubo));
+    scene->getUniformBuffer("skybox")->updateRaw(frameIndex, &ubo, sizeof(ubo));
 
     if (ctx.ui.viewport.height > 0 &&
         ctx.ui.layoutMode == vkr::ui::LayoutMode::Standard) {
