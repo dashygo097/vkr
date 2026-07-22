@@ -6,6 +6,9 @@
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
+#include "vkr/resource/buffer/storage_buffer.hh"
+#include "vkr/resource/buffer/uniform_buffer.hh"
+#include "vkr/resource/shader/module.hh"
 #include <memory>
 #include <string>
 #include <utility>
@@ -40,6 +43,58 @@ struct ComputePassDesc {
   std::vector<pipeline::DescriptorSetWriteDesc> descriptorWrites{};
   pipeline::ComputePipelineDesc pipeline{};
   ComputeDispatchDesc dispatch{};
+
+  template <typename ElementType>
+  auto storage(uint32_t binding,
+               const resource::StorageBuffer<ElementType> &buffer,
+               uint32_t setIndex = 0) -> ComputePassDesc & {
+    descriptorBindings.push_back(pipeline::DescriptorBinding{
+        .layout = {binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
+                   VK_SHADER_STAGE_COMPUTE_BIT}});
+    descriptorWrite(setIndex).buffers.push_back(
+        pipeline::DescriptorBufferWriteDesc::storage(
+            binding, buffer.descriptorInfo(0, buffer.bufferSize())));
+    return *this;
+  }
+
+  template <typename UniformType>
+  auto uniform(uint32_t binding,
+               const resource::UniformBuffer<UniformType> &buffer,
+               uint32_t setIndex = 0) -> ComputePassDesc & {
+    descriptorBindings.push_back(pipeline::DescriptorBinding{
+        .layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                   VK_SHADER_STAGE_COMPUTE_BIT}});
+    descriptorWrite(setIndex).buffers.push_back(
+        pipeline::DescriptorBufferWriteDesc::uniform(binding,
+                                                     buffer.descriptorInfo()));
+    return *this;
+  }
+
+  auto shader(std::string name, resource::ShaderModuleDesc shaderDesc)
+      -> ComputePassDesc & {
+    pipeline.name = std::move(name);
+    pipeline.shader = std::move(shaderDesc);
+    return *this;
+  }
+
+  auto dispatch1D(uint32_t localSize, uint32_t elementCount)
+      -> ComputePassDesc & {
+    dispatch = ComputeDispatchDesc::dispatch1D(localSize, elementCount);
+    return *this;
+  }
+
+private:
+  auto descriptorWrite(uint32_t setIndex) -> pipeline::DescriptorSetWriteDesc & {
+    for (auto &write : descriptorWrites) {
+      if (write.setIndex == setIndex) {
+        return write;
+      }
+    }
+
+    descriptorWrites.push_back(
+        pipeline::DescriptorSetWriteDesc::forSet(setIndex));
+    return descriptorWrites.back();
+  }
 };
 
 class ComputePass final {

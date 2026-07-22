@@ -220,10 +220,21 @@ int main() {
 }
 ```
 
-For compute uniforms, create a generic `vkr::resource::UniformBuffer<T>` and
-bind `uniform.descriptorInfo()` with `VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER`.
-For input/output arrays, use `vkr::resource::StorageBuffer<T>` and bind
-`storage.descriptorInfo(...)` with `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`.
+For common buffer descriptors, `ComputePassDesc` provides a fluent API:
+
+```cpp
+vkr::exec::ComputePassDesc desc{};
+desc.storage(0, inputA)
+    .storage(1, inputB)
+    .storage(2, output)
+    .uniform(3, params)
+    .shader("vector_ops", shaderDesc)
+    .dispatch1D(localSize, elementCount);
+```
+
+This fills descriptor bindings, descriptor writes, pipeline shader data, and
+dispatch group count. The lower-level descriptor fields remain available when a
+pass needs custom descriptor layout or pool behavior.
 
 `ComputeApplication` creates an `exec::Profiler` by default. When GPU timestamps
 are enabled, execution records an outer `compute_graph` GPU scope and per-pass

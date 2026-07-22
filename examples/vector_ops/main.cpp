@@ -15,25 +15,6 @@ constexpr uint32_t ElementCount = 1U << 18U;
 constexpr uint32_t LocalSize = 64;
 constexpr uint32_t Iterations = 32;
 
-auto storageBinding(uint32_t binding) -> vkr::pipeline::DescriptorBinding {
-  return vkr::pipeline::DescriptorBinding{
-      .layout = {binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-                 VK_SHADER_STAGE_COMPUTE_BIT}};
-}
-
-auto uniformBinding(uint32_t binding) -> vkr::pipeline::DescriptorBinding {
-  return vkr::pipeline::DescriptorBinding{
-      .layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                 VK_SHADER_STAGE_COMPUTE_BIT}};
-}
-
-auto storageWrite(uint32_t binding,
-                  const vkr::resource::StorageBuffer<float> &buffer)
-    -> vkr::pipeline::DescriptorBufferWriteDesc {
-  return vkr::pipeline::DescriptorBufferWriteDesc::storage(
-      binding, buffer.descriptorInfo(0, buffer.bufferSize()));
-}
-
 struct alignas(16) VectorOpsParams {
   uint32_t elementCount{0};
   uint32_t iterations{0};
@@ -122,20 +103,15 @@ private:
 
   void buildGraph() override {
     vkr::exec::ComputePassDesc passDesc{};
-    passDesc.descriptorBindings = {storageBinding(0), storageBinding(1),
-                                   storageBinding(2), uniformBinding(3)};
-    passDesc.descriptorWrites = {vkr::pipeline::DescriptorSetWriteDesc{
-        .setIndex = 0,
-        .buffers = {storageWrite(0, *input_a_), storageWrite(1, *input_b_),
-                    storageWrite(2, *output_c_),
-                    vkr::pipeline::DescriptorBufferWriteDesc::uniform(
-                        3, params_->descriptorInfo())}}};
-    passDesc.pipeline = vkr::pipeline::ComputePipelineDesc{
-        .name = "vector_ops",
-        .shader = vkr::resource::ShaderModuleDesc::computeGlslFile(
-            assetSystem->resolveApp("shaders/vector_ops.comp").string())};
-    passDesc.dispatch =
-        vkr::exec::ComputeDispatchDesc::dispatch1D(LocalSize, ElementCount);
+    passDesc.storage(0, *input_a_)
+        .storage(1, *input_b_)
+        .storage(2, *output_c_)
+        .uniform(3, *params_)
+        .shader(
+            "vector_ops",
+            vkr::resource::ShaderModuleDesc::computeGlslFile(
+                assetSystem->resolveApp("shaders/vector_ops.comp").string()))
+        .dispatch1D(LocalSize, ElementCount);
 
     auto &pass = graph->addPass(*executor, *device);
     pass.setName("vector_ops")
