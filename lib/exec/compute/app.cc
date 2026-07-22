@@ -1,7 +1,9 @@
 #include "vkr/exec/compute/app.hh"
 #include <algorithm>
+#include <functional>
 #include <numeric>
 #include <unordered_map>
+#include <vector>
 
 namespace vkr::exec {
 
@@ -13,46 +15,46 @@ void configureComputeApp(ComputeAppDesc &ctx) {
 }
 
 void logProfileReport(const ProfileReport &report) {
-  if (!report.gpuTimestampsEnabled) {
-    return;
-  }
-
   if (report.empty()) {
-    VKR_EXEC_INFO("GPU profile report: no samples");
+    VKR_EXEC_INFO("profile report: no samples");
     return;
   }
 
-  VKR_EXEC_INFO("GPU profile report:");
-  for (const auto &sample : report.samples) {
-    VKR_EXEC_INFO("  {}: captures={}, min={:.6f} ms, mean={:.6f} ms, "
-                  "median={:.6f} ms, max={:.6f} ms",
-                  sample.name, sample.captureCount, sample.minGpuMilliseconds,
-                  sample.gpuMilliseconds, sample.medianGpuMilliseconds,
-                  sample.maxGpuMilliseconds);
-  }
-}
-
-auto aggregateProfileReports(const std::vector<ProfileReport> &reports)
-    -> ProfileReport {
-  ProfileReport aggregate{};
-
-  for (const auto &report : reports) {
-    aggregate.gpuTimestampsEnabled =
-        aggregate.gpuTimestampsEnabled || report.gpuTimestampsEnabled;
-  }
-
-  if (!aggregate.gpuTimestampsEnabled) {
-    return aggregate;
-  }
-
-  std::unordered_map<std::string, std::vector<double>> timings{};
-  for (const auto &report : reports) {
-    for (const auto &sample : report.samples) {
-      timings[sample.name].push_back(sample.gpuMilliseconds);
+  if (!report.cpuSamples.empty()) {
+    VKR_EXEC_INFO("CPU profile report:");
+    for (const auto &sample : report.cpuSamples) {
+      VKR_EXEC_INFO("  {}: captures={}, min={:.6f} ms, mean={:.6f} ms, "
+                    "median={:.6f} ms, max={:.6f} ms",
+                    sample.name, sample.captureCount, sample.minMilliseconds,
+                    sample.milliseconds, sample.medianMilliseconds,
+                    sample.maxMilliseconds);
     }
   }
 
-  aggregate.samples.reserve(timings.size());
+  if (!report.gpuSamples.empty()) {
+    VKR_EXEC_INFO("GPU profile report:");
+    for (const auto &sample : report.gpuSamples) {
+      VKR_EXEC_INFO("  {}: captures={}, min={:.6f} ms, mean={:.6f} ms, "
+                  "median={:.6f} ms, max={:.6f} ms",
+                    sample.name, sample.captureCount, sample.minMilliseconds,
+                    sample.milliseconds, sample.medianMilliseconds,
+                    sample.maxMilliseconds);
+    }
+  }
+}
+
+auto aggregateSamples(const std::vector<ProfileReport> &reports, bool gpu)
+    -> std::vector<ProfileSample> {
+  std::unordered_map<std::string, std::vector<double>> timings{};
+  for (const auto &report : reports) {
+    const auto &samples = gpu ? report.gpuSamples : report.cpuSamples;
+    for (const auto &sample : samples) {
+      timings[sample.name].push_back(sample.milliseconds);
+    }
+  }
+
+  std::vector<ProfileSample> aggregate{};
+  aggregate.reserve(timings.size());
   for (auto &[name, values] : timings) {
     if (values.empty()) {
       continue;
@@ -67,22 +69,45 @@ auto aggregateProfileReports(const std::vector<ProfileReport> &reports)
       median = (values[(values.size() / 2) - 1] + median) * 0.5;
     }
 
-    aggregate.samples.push_back(ProfileSample{
+    aggregate.push_back(ProfileSample{
         .name = name,
-        .gpuMilliseconds = mean,
-        .minGpuMilliseconds = values.front(),
-        .medianGpuMilliseconds = median,
-        .maxGpuMilliseconds = values.back(),
+        .milliseconds = mean,
+        .minMilliseconds = values.front(),
+        .medianMilliseconds = median,
+        .maxMilliseconds = values.back(),
         .captureCount = static_cast<uint32_t>(values.size()),
     });
   }
 
-  std::sort(aggregate.samples.begin(), aggregate.samples.end(),
+  std::sort(aggregate.begin(), aggregate.end(),
             [](const ProfileSample &lhs, const ProfileSample &rhs) {
               return lhs.name < rhs.name;
             });
 
   return aggregate;
+}
+
+auto aggregateProfileReports(const std::vector<ProfileReport> &reports)
+    -> ProfileReport {
+  ProfileReport aggregate{};
+
+  for (const auto &report : reports) {
+    aggregate.gpuTimestampsEnabled =
+        aggregate.gpuTimestampsEnabled || report.gpuTimestampsEnabled;
+  }
+
+  aggregate.gpuSamples = aggregateSamples(reports, true);
+  aggregate.cpuSamples = aggregateSamples(reports, false);
+
+  return aggregate;
+}
+
+auto timeMilliseconds(util::Timer &timer, const std::function<void()> &fn)
+    -> double {
+  timer.reset();
+  fn();
+  timer.update();
+  return timer.elapsedMilliseconds();
 }
 
 } // namespace
@@ -137,11 +162,39 @@ void ComputeApplication::execute() {
 
   executor->setProfiler(profiler.get());
   for (uint32_t i = 0; i < ctx.profiler.captureFrames; ++i) {
+    ProfileReport capture{};
+
     executor->begin();
-    graph->record();
-    executor->submitAndWait();
+    const double recordMs = timeMilliseconds(*timer, [&]() {
+      executor->beginProfileScope("compute_graph");
+      graph->record();
+      executor->endProfileScope();
+    });
+
+    const double submitWaitMs = timeMilliseconds(*timer, [&]() {
+      executor->submitAndWait();
+    });
     executor->end();
-    captures.push_back(profiler ? profiler->collect() : ProfileReport{});
+
+    capture = profiler ? profiler->collect() : ProfileReport{};
+    capture.cpuSamples.push_back(ProfileSample{
+        .name = "compute_graph.record",
+        .milliseconds = recordMs,
+        .minMilliseconds = recordMs,
+        .medianMilliseconds = recordMs,
+        .maxMilliseconds = recordMs,
+        .captureCount = 1,
+    });
+    capture.cpuSamples.push_back(ProfileSample{
+        .name = "compute_graph.submit_wait",
+        .milliseconds = submitWaitMs,
+        .minMilliseconds = submitWaitMs,
+        .medianMilliseconds = submitWaitMs,
+        .maxMilliseconds = submitWaitMs,
+        .captureCount = 1,
+    });
+
+    captures.push_back(std::move(capture));
   }
 
   profileReport = aggregateProfileReports(captures);

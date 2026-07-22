@@ -189,18 +189,18 @@ auto Profiler::collect() -> ProfileReport {
     return report;
   }
 
-  report.samples.reserve(scopes_.size());
+  report.gpuSamples.reserve(scopes_.size());
   for (const auto &scope : scopes_) {
     const uint64_t delta =
         timestampDelta(timestamps[scope.beginQuery], timestamps[scope.endQuery]);
     const double nanoseconds = static_cast<double>(delta) * timestamp_period_;
     const double milliseconds = nanoseconds / 1'000'000.0;
-    report.samples.push_back(ProfileSample{
+    report.gpuSamples.push_back(ProfileSample{
         .name = scope.name,
-        .gpuMilliseconds = milliseconds,
-        .minGpuMilliseconds = milliseconds,
-        .medianGpuMilliseconds = milliseconds,
-        .maxGpuMilliseconds = milliseconds,
+        .milliseconds = milliseconds,
+        .minMilliseconds = milliseconds,
+        .medianMilliseconds = milliseconds,
+        .maxMilliseconds = milliseconds,
         .captureCount = 1,
     });
   }

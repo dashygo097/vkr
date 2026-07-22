@@ -191,22 +191,21 @@ private:
               << " ms, max=" << cpuStats.maxMs << " ms\n";
 
     const vkr::exec::ProfileSample *gpuSample = nullptr;
-    for (const auto &sample : profileReport.samples) {
+    for (const auto &sample : profileReport.gpuSamples) {
       if (sample.name == "vector_ops") {
         gpuSample = &sample;
         break;
       }
     }
 
-    if (gpuSample != nullptr && gpuSample->gpuMilliseconds > 0.0) {
-      std::cout << "gpu dispatch:   min=" << gpuSample->minGpuMilliseconds
-                << " ms, mean=" << gpuSample->gpuMilliseconds
-                << " ms, median=" << gpuSample->medianGpuMilliseconds
-                << " ms, max=" << gpuSample->maxGpuMilliseconds << " ms\n";
+    if (gpuSample != nullptr && gpuSample->milliseconds > 0.0) {
+      std::cout << "gpu dispatch:   min=" << gpuSample->minMilliseconds
+                << " ms, mean=" << gpuSample->milliseconds
+                << " ms, median=" << gpuSample->medianMilliseconds
+                << " ms, max=" << gpuSample->maxMilliseconds << " ms\n";
       std::cout << "gpu speedup:    mean="
-                << cpuStats.meanMs / gpuSample->gpuMilliseconds << "x, median="
-                << cpuStats.medianMs / gpuSample->medianGpuMilliseconds
-                << "x\n";
+                << cpuStats.meanMs / gpuSample->milliseconds << "x, median="
+                << cpuStats.medianMs / gpuSample->medianMilliseconds << "x\n";
     } else {
       std::cout << "gpu dispatch:   unavailable\n";
       std::cout << "gpu speedup:    unavailable\n";

@@ -32,18 +32,21 @@ struct ProfilerDesc {
 
 struct ProfileSample {
   std::string name{};
-  double gpuMilliseconds{0.0};
-  double minGpuMilliseconds{0.0};
-  double medianGpuMilliseconds{0.0};
-  double maxGpuMilliseconds{0.0};
+  double milliseconds{0.0};
+  double minMilliseconds{0.0};
+  double medianMilliseconds{0.0};
+  double maxMilliseconds{0.0};
   uint32_t captureCount{1};
 };
 
 struct ProfileReport {
   bool gpuTimestampsEnabled{false};
-  std::vector<ProfileSample> samples{};
+  std::vector<ProfileSample> gpuSamples{};
+  std::vector<ProfileSample> cpuSamples{};
 
-  [[nodiscard]] auto empty() const noexcept -> bool { return samples.empty(); }
+  [[nodiscard]] auto empty() const noexcept -> bool {
+    return gpuSamples.empty() && cpuSamples.empty();
+  }
 };
 
 class Profiler {

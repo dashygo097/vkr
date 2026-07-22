@@ -225,13 +225,19 @@ bind `uniform.descriptorInfo()` with `VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER`.
 For input/output arrays, use `vkr::resource::StorageBuffer<T>` and bind
 `storage.descriptorInfo(...)` with `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`.
 
-`ComputeApplication` creates an `exec::Profiler` by default. During execution it
-wraps each compute pass in a GPU timestamp scope and stores the result in
-`profileReport`. The report is also logged after the command buffer completes:
+`ComputeApplication` creates an `exec::Profiler` by default. When GPU timestamps
+are enabled, execution records an outer `compute_graph` GPU scope and per-pass
+GPU scopes. It also records CPU timing samples for graph command recording and
+submit/wait latency. Aggregated results are stored in `profileReport` and can be
+logged after capture:
 
 ```text
+CPU profile report:
+  compute_graph.record: captures=16, min=..., mean=..., median=..., max=...
+  compute_graph.submit_wait: captures=16, min=..., mean=..., median=..., max=...
 GPU profile report:
-  vector_ops: 0.012345 ms
+  compute_graph: captures=16, min=..., mean=..., median=..., max=...
+  vector_ops: captures=16, min=..., mean=..., median=..., max=...
 ```
 
 Profiling can be configured from `ctx.profiler`:
@@ -241,6 +247,8 @@ void configure() override {
   ctx.instance.name = "my_compute_app";
   ctx.profiler.enableGpuTimestamps = true;
   ctx.profiler.maxScopes = 64;
+  ctx.profiler.warmupFrames = 8;
+  ctx.profiler.captureFrames = 16;
 }
 ```
 
