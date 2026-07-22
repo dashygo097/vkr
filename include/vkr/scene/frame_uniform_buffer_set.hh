@@ -77,6 +77,7 @@ public:
   }
 
 private:
+  // components
   std::array<resource::UniformBuffer<UniformType>, core::MAX_FRAMES_IN_FLIGHT>
       buffers_;
 };

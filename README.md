@@ -26,6 +26,8 @@ The framework is split by responsibility:
   render targets, attachments, frame sync, and built-in render passes.
 - `exec::compute`: compute application shell, compute graph, compute executor,
   and compute passes.
+- `exec::profiler`: GPU timestamp profiling infrastructure shared by execution
+  systems.
 
 Applications usually include `vkr.hh`, then derive from either
 `vkr::exec::RenderApplication` or `vkr::exec::ComputeApplication`.
@@ -38,6 +40,8 @@ Applications usually include `vkr.hh`, then derive from either
 - Render graph with named passes, read/write tracking, dependency compilation,
   swapchain recreation, and frame synchronization.
 - Compute graph with descriptor-backed compute passes and dispatch execution.
+- GPU timestamp profiler for pass-level compute profiling when the selected
+  queue family supports timestamp queries.
 - Built-in render passes for raster rendering, skyboxes, fullscreen passes,
   feedback fullscreen passes, ImGui UI composition, and presentation.
 - Generic resource types for buffers, storage buffers, uniform buffers, images,
@@ -221,6 +225,28 @@ bind `uniform.descriptorInfo()` with `VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER`.
 For input/output arrays, use `vkr::resource::StorageBuffer<T>` and bind
 `storage.descriptorInfo(...)` with `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`.
 
+`ComputeApplication` creates an `exec::Profiler` by default. During execution it
+wraps each compute pass in a GPU timestamp scope and stores the result in
+`profileReport`. The report is also logged after the command buffer completes:
+
+```text
+GPU profile report:
+  vector_add: 0.012345 ms
+```
+
+Profiling can be configured from `ctx.profiler`:
+
+```cpp
+void configure() override {
+  ctx.instance.name = "my_compute_app";
+  ctx.profiler.enableGpuTimestamps = true;
+  ctx.profiler.maxScopes = 64;
+}
+```
+
+If the compute queue family reports `timestampValidBits == 0`, the profiler is
+disabled with a warning and the app still runs normally.
+
 ## Controls
 
 Render examples use these default controls:
@@ -257,6 +283,8 @@ include/vkr/resource/   Low-level buffers, images, samplers, shader modules.
 include/vkr/scene/      Graphics scene resources and frame uniform sets.
 include/vkr/pipeline/   Descriptor and pipeline wrappers.
 include/vkr/exec/       Render and compute execution frameworks.
+include/vkr/exec/profiler/
+                        GPU timestamp profiler.
 include/vkr/ui/         ImGui workspace components.
 include/vkr/util/       Assets, compiler, timer, input, and TOML utilities.
 ```

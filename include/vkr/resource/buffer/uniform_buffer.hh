@@ -36,9 +36,9 @@ public:
     return sizeof(UniformType);
   }
 
-  [[nodiscard]] auto descriptorInfo(
-      VkDeviceSize offset = 0,
-      VkDeviceSize range = sizeof(UniformType)) const noexcept
+  [[nodiscard]] auto
+  descriptorInfo(VkDeviceSize offset = 0,
+                 VkDeviceSize range = sizeof(UniformType)) const noexcept
       -> VkDescriptorBufferInfo {
     VkDescriptorBufferInfo info{};
     info.buffer = buffer();

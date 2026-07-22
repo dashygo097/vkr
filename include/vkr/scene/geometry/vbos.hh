@@ -421,8 +421,7 @@ struct VertexSkybox3D {
   }
 };
 
-[[nodiscard]] inline auto skyboxCubeVertices()
-    -> std::vector<VertexSkybox3D> {
+[[nodiscard]] inline auto skyboxCubeVertices() -> std::vector<VertexSkybox3D> {
   return {
       VertexSkybox3D{{-1.0f, -1.0f, -1.0f}},
       VertexSkybox3D{{1.0f, -1.0f, -1.0f}},
@@ -437,12 +436,8 @@ struct VertexSkybox3D {
 
 [[nodiscard]] inline auto skyboxCubeIndices() -> std::vector<uint16_t> {
   return {
-      0, 1, 2, 2, 3, 0,
-      1, 5, 6, 6, 2, 1,
-      5, 4, 7, 7, 6, 5,
-      4, 0, 3, 3, 7, 4,
-      3, 2, 6, 6, 7, 3,
-      4, 5, 1, 1, 0, 4,
+      0, 1, 2, 2, 3, 0, 1, 5, 6, 6, 2, 1, 5, 4, 7, 7, 6, 5,
+      4, 0, 3, 3, 7, 4, 3, 2, 6, 6, 7, 3, 4, 5, 1, 1, 0, 4,
   };
 }
 
@@ -468,8 +463,7 @@ template <typename T, glm::qualifier Q> struct hash<glm::vec<3, T, Q>> {
 };
 
 template <> struct hash<vkr::scene::Vertex3D> {
-  auto operator()(const vkr::scene::Vertex3D &vertex) const noexcept
-      -> size_t {
+  auto operator()(const vkr::scene::Vertex3D &vertex) const noexcept -> size_t {
     return ((hash<glm::vec3>{}(vertex.pos) ^
              (hash<glm::vec3>{}(vertex.color) << 1)) >>
             1);

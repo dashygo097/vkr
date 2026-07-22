@@ -154,11 +154,14 @@ public:
   }
 
 private:
+  // dependencies
   const core::Device &device_;
 
+  // components
   StorageBufferDesc desc_{};
   std::unique_ptr<Buffer> target_;
 
+  // helpers
   void create() {
     destroy();
 

@@ -193,19 +193,15 @@ private:
     throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
 
-#define VKR_EXEC_TRACE(...)                                                  \
-  ::vkr::Logger::getExecLogger()->trace(__VA_ARGS__);
-#define VKR_EXEC_DEBUG(...)                                                  \
-  ::vkr::Logger::getExecLogger()->debug(__VA_ARGS__);
-#define VKR_EXEC_INFO(...)                                                   \
-  ::vkr::Logger::getExecLogger()->info(__VA_ARGS__);
-#define VKR_EXEC_WARN(...)                                                   \
-  ::vkr::Logger::getExecLogger()->warn(__VA_ARGS__);
-#define VKR_EXEC_CRIT(...)                                                   \
+#define VKR_EXEC_TRACE(...) ::vkr::Logger::getExecLogger()->trace(__VA_ARGS__);
+#define VKR_EXEC_DEBUG(...) ::vkr::Logger::getExecLogger()->debug(__VA_ARGS__);
+#define VKR_EXEC_INFO(...) ::vkr::Logger::getExecLogger()->info(__VA_ARGS__);
+#define VKR_EXEC_WARN(...) ::vkr::Logger::getExecLogger()->warn(__VA_ARGS__);
+#define VKR_EXEC_CRIT(...)                                                     \
   ::vkr::Logger::getExecLogger()->critical(__VA_ARGS__);
-#define VKR_EXEC_ERROR(...)                                                  \
+#define VKR_EXEC_ERROR(...)                                                    \
   do {                                                                         \
-    ::vkr::Logger::getExecLogger()->error(__VA_ARGS__);                      \
+    ::vkr::Logger::getExecLogger()->error(__VA_ARGS__);                        \
     throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);
 

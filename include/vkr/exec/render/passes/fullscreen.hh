@@ -2,16 +2,16 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
+#include "vkr/exec/render/attachments/frame_buffer.hh"
+#include "vkr/exec/render/executor.hh"
+#include "vkr/exec/render/pass.hh"
+#include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
-#include "vkr/exec/render/pass.hh"
-#include "vkr/exec/render/executor.hh"
-#include "vkr/exec/render/attachments/frame_buffer.hh"
 #include "vkr/scene/scene.hh"
-#include "vkr/exec/render/targets/offscreen.hh"
 #include <functional>
 #include <memory>
 #include <utility>
@@ -72,8 +72,7 @@ public:
                  const core::CommandPool &commandPool,
                  std::vector<FullscreenPassSource> sources = {});
   FullscreenPass(Executor &executor, const core::Device &device,
-                 const core::CommandPool &commandPool,
-                 scene::Scene &scene,
+                 const core::CommandPool &commandPool, scene::Scene &scene,
                  std::vector<FullscreenPassSource> sources = {});
   ~FullscreenPass() override;
 
@@ -91,11 +90,8 @@ public:
 
   [[nodiscard]] auto target() -> OffscreenTarget &;
   [[nodiscard]] auto target() const -> const OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t) -> OffscreenTarget & {
-    return target();
-  }
-  [[nodiscard]] auto target(uint32_t) const
-      -> const OffscreenTarget & {
+  [[nodiscard]] auto target(uint32_t) -> OffscreenTarget & { return target(); }
+  [[nodiscard]] auto target(uint32_t) const -> const OffscreenTarget & {
     return target();
   }
 
@@ -118,11 +114,13 @@ public:
   }
 
 private:
+  // dependencies
   Executor &executor_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
   scene::Scene *scene_{nullptr};
 
+  // components
   FullscreenPassDesc desc_{};
   std::vector<FullscreenPassSource> sources_{};
   std::unique_ptr<OffscreenTarget> target_{};
@@ -133,6 +131,7 @@ private:
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
 
+  // helpers
   void createTarget();
   void createRenderPass();
   void createFramebuffers();

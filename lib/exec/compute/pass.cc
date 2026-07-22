@@ -76,10 +76,12 @@ void ComputePass::record() {
   const std::vector<VkDescriptorSet> emptySets{};
   const auto &sets = descriptor_sets_ ? descriptor_sets_->sets() : emptySets;
 
+  executor_.beginProfileScope(name());
   executor_.bindComputePipeline(pipeline_->pipeline(), pipeline_->layout(),
                                 sets);
   executor_.dispatch(desc_.dispatch.groupCountX, desc_.dispatch.groupCountY,
                      desc_.dispatch.groupCountZ);
+  executor_.endProfileScope();
 }
 
 void ComputePass::createDescriptors() {

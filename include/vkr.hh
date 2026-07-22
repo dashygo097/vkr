@@ -11,6 +11,7 @@
 #include "vkr/exec/compute/graph.hh"
 #include "vkr/exec/compute/executor.hh"
 #include "vkr/exec/compute/pass.hh"
+#include "vkr/exec/profiler/profiler.hh"
 #include "vkr/pipeline/compute_pipeline.hh"
 #include "vkr/exec/render/passes/feedback_fullscreen.hh"
 #include "vkr/exec/render/passes/present.hh"

@@ -112,13 +112,16 @@ public:
   }
 
 private:
+  // dependencies
   const core::Device &device_;
 
+  // components
   ImageDesc desc_{};
   VkImageLayout layout_{VK_IMAGE_LAYOUT_UNDEFINED};
   VkImage vk_image_{VK_NULL_HANDLE};
   VkDeviceMemory vk_memory_{VK_NULL_HANDLE};
 
+  // helpers
   void create();
 };
 

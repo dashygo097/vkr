@@ -48,8 +48,7 @@ public:
 
   [[nodiscard]] auto historyTarget() -> OffscreenTarget &;
   [[nodiscard]] auto historyTarget() const -> const OffscreenTarget &;
-  [[nodiscard]] auto historyTarget(uint32_t frameIndex)
-      -> OffscreenTarget &;
+  [[nodiscard]] auto historyTarget(uint32_t frameIndex) -> OffscreenTarget &;
   [[nodiscard]] auto historyTarget(uint32_t frameIndex) const
       -> const OffscreenTarget &;
 
@@ -72,11 +71,13 @@ public:
   }
 
 private:
+  // dependencies
   Executor &executor_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
   scene::Scene *scene_{nullptr};
 
+  // components
   FeedbackFullscreenPassDesc desc_{};
   std::vector<FullscreenPassSource> sources_{};
   std::unique_ptr<FrameHistoryTarget> target_{};
@@ -87,6 +88,7 @@ private:
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
 
+  // helpers
   void createTarget();
   void createRenderPass();
   void createFramebuffers();

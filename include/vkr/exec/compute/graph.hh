@@ -41,15 +41,19 @@ public:
       -> std::optional<std::reference_wrapper<const ComputePass>>;
 
 private:
+  // components
   std::vector<std::unique_ptr<ComputePass>> passes_{};
   std::unordered_map<std::string, size_t> pass_indices_{};
   std::unordered_map<std::string, std::vector<std::string>>
       manual_dependencies_{};
   std::vector<std::vector<size_t>> compiled_dependencies_{};
   std::vector<size_t> ordered_passes_{};
+
+  // states
   bool dirty_{true};
   bool created_{false};
 
+  // helpers
   void rebuildNameTable();
   void validatePassNameAvailable(std::string_view name) const;
   void validateDependencies() const;

@@ -75,11 +75,15 @@ public:
   }
 
 private:
+  // dependencies
   const core::Device &device_;
+
+  // components
   StorageImageDesc desc_{};
   std::unique_ptr<Image> image_;
   std::unique_ptr<ImageView> image_view_;
 
+  // helpers
   void create();
 };
 

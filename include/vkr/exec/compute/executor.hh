@@ -3,8 +3,11 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/sync/fence.hh"
+#include <string_view>
 
 namespace vkr::exec {
+
+class Profiler;
 
 class ComputeExecutor {
 public:
@@ -18,19 +21,22 @@ public:
   void begin();
   void submitAndWait();
   void end();
+  void setProfiler(Profiler *profiler) noexcept;
 
   [[nodiscard]] auto commandBuffer() const -> VkCommandBuffer;
 
-  void bindComputePipeline(
-      VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-      const std::vector<VkDescriptorSet> &descriptorSets);
+  void bindComputePipeline(VkPipeline pipeline, VkPipelineLayout pipelineLayout,
+                           const std::vector<VkDescriptorSet> &descriptorSets);
   void dispatch(uint32_t groupCountX, uint32_t groupCountY,
                 uint32_t groupCountZ);
+  void beginProfileScope(std::string_view name);
+  void endProfileScope();
 
 private:
   // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
+  Profiler *profiler_{nullptr};
 
   // components
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};

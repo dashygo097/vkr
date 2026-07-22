@@ -48,8 +48,7 @@ struct TextureDesc {
   [[nodiscard]] static auto
   sampled2D(uint32_t width, uint32_t height, VkFormat format,
             resource::SamplerDesc sampler =
-                resource::SamplerDesc::linearClampToEdge())
-      -> TextureDesc {
+                resource::SamplerDesc::linearClampToEdge()) -> TextureDesc {
     TextureDesc desc{};
     desc.image = resource::ImageDesc::sampled2D(width, height, format);
     desc.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -96,10 +95,9 @@ struct TextureDesc {
     return desc;
   }
 
-  [[nodiscard]] static auto
-  fromImageDesc(resource::ImageDesc image,
-                resource::SamplerDesc sampler =
-                    resource::SamplerDesc::linearRepeat())
+  [[nodiscard]] static auto fromImageDesc(
+      resource::ImageDesc image,
+      resource::SamplerDesc sampler = resource::SamplerDesc::linearRepeat())
       -> TextureDesc {
     TextureDesc desc{};
     desc.image = std::move(image);
@@ -188,14 +186,17 @@ public:
   }
 
 private:
+  // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
 
+  // components
   TextureDesc desc_{};
   std::unique_ptr<resource::Image> image_;
   std::unique_ptr<resource::ImageView> image_view_;
   std::unique_ptr<resource::Sampler> sampler_;
 
+  // helpers
   void createFromFile();
   void createEmpty();
   void createViewAndSampler();

@@ -44,8 +44,7 @@ public:
   void present();
   void afterFrame();
 
-  [[nodiscard]] auto passes()
-      -> std::vector<std::reference_wrapper<Pass>>;
+  [[nodiscard]] auto passes() -> std::vector<std::reference_wrapper<Pass>>;
   [[nodiscard]] auto passes() const
       -> std::vector<std::reference_wrapper<const Pass>>;
 

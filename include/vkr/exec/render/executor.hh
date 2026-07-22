@@ -3,9 +3,9 @@
 #include "vkr/core/command/buffers.hh"
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
+#include "vkr/exec/render/attachments/frame_buffer.hh"
 #include "vkr/exec/render/sync/frame_sync.hh"
 #include "vkr/pipeline/render_pass.hh"
-#include "vkr/exec/render/attachments/frame_buffer.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/ui/ui.hh"
 
@@ -22,8 +22,7 @@ class Executor {
 public:
   explicit Executor(const core::Device &device,
                     const core::Swapchain &swapchain,
-                    const core::CommandPool &commandPool,
-                    FrameSync &frameSync,
+                    const core::CommandPool &commandPool, FrameSync &frameSync,
                     scene::Scene &scene);
   ~Executor() = default;
 

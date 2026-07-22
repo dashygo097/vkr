@@ -73,13 +73,13 @@ public:
     return std::nullopt;
   }
 
-  [[nodiscard]] virtual auto editablePipeline() const noexcept
-      -> std::optional<
-          std::reference_wrapper<const pipeline::GraphicsPipeline>> {
+  [[nodiscard]] virtual auto editablePipeline() const noexcept -> std::optional<
+      std::reference_wrapper<const pipeline::GraphicsPipeline>> {
     return std::nullopt;
   }
 
 private:
+  // components
   std::string name_{};
   std::vector<std::string> reads_{};
   std::vector<std::string> writes_{};

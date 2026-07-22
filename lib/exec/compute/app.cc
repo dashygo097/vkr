@@ -9,6 +9,22 @@ void configureComputeApp(ComputeAppDesc &ctx) {
   ctx.commandPool.queueRole = core::CommandQueueRole::Compute;
 }
 
+void logProfileReport(const ProfileReport &report) {
+  if (!report.gpuTimestampsEnabled) {
+    return;
+  }
+
+  if (report.empty()) {
+    VKR_EXEC_INFO("GPU profile report: no samples");
+    return;
+  }
+
+  VKR_EXEC_INFO("GPU profile report:");
+  for (const auto &sample : report.samples) {
+    VKR_EXEC_INFO("  {}: {:.6f} ms", sample.name, sample.gpuMilliseconds);
+  }
+}
+
 } // namespace
 
 void ComputeApplication::run() {
@@ -34,7 +50,9 @@ void ComputeApplication::initCompute() {
   }
 
   commandPool = std::make_unique<core::CommandPool>(*device, ctx.commandPool);
+  profiler = std::make_unique<Profiler>(*device, *commandPool, ctx.profiler);
   executor = std::make_unique<ComputeExecutor>(*device, *commandPool);
+  executor->setProfiler(profiler.get());
 
   createResources();
 
@@ -49,6 +67,8 @@ void ComputeApplication::execute() {
   graph->record();
   executor->submitAndWait();
   executor->end();
+  profileReport = profiler ? profiler->collect() : ProfileReport{};
+  logProfileReport(profileReport);
 
   device->waitIdle();
   afterExecute();

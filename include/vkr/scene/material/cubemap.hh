@@ -98,14 +98,17 @@ public:
   }
 
 private:
+  // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
 
+  // components
   CubemapDesc desc_{};
   std::unique_ptr<resource::Image> image_;
   std::unique_ptr<resource::ImageView> image_view_;
   std::unique_ptr<resource::Sampler> sampler_;
 
+  // helpers
   void create();
 };
 

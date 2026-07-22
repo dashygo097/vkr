@@ -52,6 +52,7 @@ public:
   static auto findMemoryType(uint32_t typeFilter,
                              VkMemoryPropertyFlags properties,
                              const core::Device &device) -> uint32_t;
+
 private:
   // dependencies
   const core::Device &device_;
