@@ -1,116 +1,10 @@
 #include "vkr/exec/compute/app.hh"
 #include <algorithm>
-#include <functional>
 #include <numeric>
 #include <unordered_map>
 #include <vector>
 
 namespace vkr::exec {
-
-namespace {
-
-void configureComputeApp(ComputeAppDesc &ctx) {
-  ctx.instance.surfaceIntegration = core::SurfaceIntegration::None;
-  ctx.commandPool.queueRole = core::CommandQueueRole::Compute;
-}
-
-void logProfileReport(const ProfileReport &report) {
-  if (report.empty()) {
-    VKR_EXEC_INFO("profile report: no samples");
-    return;
-  }
-
-  if (!report.cpuSamples.empty()) {
-    VKR_EXEC_INFO("CPU profile report:");
-    for (const auto &sample : report.cpuSamples) {
-      VKR_EXEC_INFO("  {}: captures={}, min={:.6f} ms, mean={:.6f} ms, "
-                    "median={:.6f} ms, max={:.6f} ms",
-                    sample.name, sample.captureCount, sample.minMilliseconds,
-                    sample.milliseconds, sample.medianMilliseconds,
-                    sample.maxMilliseconds);
-    }
-  }
-
-  if (!report.gpuSamples.empty()) {
-    VKR_EXEC_INFO("GPU profile report:");
-    for (const auto &sample : report.gpuSamples) {
-      VKR_EXEC_INFO("  {}: captures={}, min={:.6f} ms, mean={:.6f} ms, "
-                  "median={:.6f} ms, max={:.6f} ms",
-                    sample.name, sample.captureCount, sample.minMilliseconds,
-                    sample.milliseconds, sample.medianMilliseconds,
-                    sample.maxMilliseconds);
-    }
-  }
-}
-
-auto aggregateSamples(const std::vector<ProfileReport> &reports, bool gpu)
-    -> std::vector<ProfileSample> {
-  std::unordered_map<std::string, std::vector<double>> timings{};
-  for (const auto &report : reports) {
-    const auto &samples = gpu ? report.gpuSamples : report.cpuSamples;
-    for (const auto &sample : samples) {
-      timings[sample.name].push_back(sample.milliseconds);
-    }
-  }
-
-  std::vector<ProfileSample> aggregate{};
-  aggregate.reserve(timings.size());
-  for (auto &[name, values] : timings) {
-    if (values.empty()) {
-      continue;
-    }
-
-    std::sort(values.begin(), values.end());
-    const double sum = std::accumulate(values.begin(), values.end(), 0.0);
-    const double mean = sum / static_cast<double>(values.size());
-
-    double median = values[values.size() / 2];
-    if (values.size() % 2 == 0) {
-      median = (values[(values.size() / 2) - 1] + median) * 0.5;
-    }
-
-    aggregate.push_back(ProfileSample{
-        .name = name,
-        .milliseconds = mean,
-        .minMilliseconds = values.front(),
-        .medianMilliseconds = median,
-        .maxMilliseconds = values.back(),
-        .captureCount = static_cast<uint32_t>(values.size()),
-    });
-  }
-
-  std::sort(aggregate.begin(), aggregate.end(),
-            [](const ProfileSample &lhs, const ProfileSample &rhs) {
-              return lhs.name < rhs.name;
-            });
-
-  return aggregate;
-}
-
-auto aggregateProfileReports(const std::vector<ProfileReport> &reports)
-    -> ProfileReport {
-  ProfileReport aggregate{};
-
-  for (const auto &report : reports) {
-    aggregate.gpuTimestampsEnabled =
-        aggregate.gpuTimestampsEnabled || report.gpuTimestampsEnabled;
-  }
-
-  aggregate.gpuSamples = aggregateSamples(reports, true);
-  aggregate.cpuSamples = aggregateSamples(reports, false);
-
-  return aggregate;
-}
-
-auto timeMilliseconds(util::Timer &timer, const std::function<void()> &fn)
-    -> double {
-  timer.reset();
-  fn();
-  timer.update();
-  return timer.elapsedMilliseconds();
-}
-
-} // namespace
 
 void ComputeApplication::run() {
   initCompute();
@@ -120,7 +14,8 @@ void ComputeApplication::run() {
 void ComputeApplication::initCompute() {
   Logger::init();
   configure();
-  configureComputeApp(ctx);
+  ctx.instance.surfaceIntegration = core::SurfaceIntegration::None;
+  ctx.commandPool.queueRole = core::CommandQueueRole::Compute;
 
   if (!ctx.isValid()) {
     VKR_CORE_ERROR("invalid compute app config");
@@ -165,15 +60,17 @@ void ComputeApplication::execute() {
     ProfileReport capture{};
 
     executor->begin();
-    const double recordMs = timeMilliseconds(*timer, [&]() {
-      executor->beginProfileScope("compute_graph");
-      graph->record();
-      executor->endProfileScope();
-    });
+    timer->reset();
+    executor->beginProfileScope("compute_graph");
+    graph->record();
+    executor->endProfileScope();
+    timer->update();
+    const double recordMs = timer->elapsedMilliseconds();
 
-    const double submitWaitMs = timeMilliseconds(*timer, [&]() {
-      executor->submitAndWait();
-    });
+    timer->reset();
+    executor->submitAndWait();
+    timer->update();
+    const double submitWaitMs = timer->elapsedMilliseconds();
     executor->end();
 
     capture = profiler ? profiler->collect() : ProfileReport{};
@@ -197,9 +94,104 @@ void ComputeApplication::execute() {
     captures.push_back(std::move(capture));
   }
 
-  profileReport = aggregateProfileReports(captures);
+  profileReport = {};
+  std::unordered_map<std::string, std::vector<double>> cpuTimings{};
+  std::unordered_map<std::string, std::vector<double>> gpuTimings{};
+  for (const auto &capture : captures) {
+    profileReport.gpuTimestampsEnabled =
+        profileReport.gpuTimestampsEnabled || capture.gpuTimestampsEnabled;
+
+    for (const auto &sample : capture.cpuSamples) {
+      cpuTimings[sample.name].push_back(sample.milliseconds);
+    }
+    for (const auto &sample : capture.gpuSamples) {
+      gpuTimings[sample.name].push_back(sample.milliseconds);
+    }
+  }
+
+  profileReport.cpuSamples.reserve(cpuTimings.size());
+  for (auto &[name, values] : cpuTimings) {
+    if (values.empty()) {
+      continue;
+    }
+
+    std::sort(values.begin(), values.end());
+    const double sum = std::accumulate(values.begin(), values.end(), 0.0);
+    const double mean = sum / static_cast<double>(values.size());
+    double median = values[values.size() / 2];
+    if (values.size() % 2 == 0) {
+      median = (values[(values.size() / 2) - 1] + median) * 0.5;
+    }
+
+    profileReport.cpuSamples.push_back(ProfileSample{
+        .name = name,
+        .milliseconds = mean,
+        .minMilliseconds = values.front(),
+        .medianMilliseconds = median,
+        .maxMilliseconds = values.back(),
+        .captureCount = static_cast<uint32_t>(values.size()),
+    });
+  }
+
+  profileReport.gpuSamples.reserve(gpuTimings.size());
+  for (auto &[name, values] : gpuTimings) {
+    if (values.empty()) {
+      continue;
+    }
+
+    std::sort(values.begin(), values.end());
+    const double sum = std::accumulate(values.begin(), values.end(), 0.0);
+    const double mean = sum / static_cast<double>(values.size());
+    double median = values[values.size() / 2];
+    if (values.size() % 2 == 0) {
+      median = (values[(values.size() / 2) - 1] + median) * 0.5;
+    }
+
+    profileReport.gpuSamples.push_back(ProfileSample{
+        .name = name,
+        .milliseconds = mean,
+        .minMilliseconds = values.front(),
+        .medianMilliseconds = median,
+        .maxMilliseconds = values.back(),
+        .captureCount = static_cast<uint32_t>(values.size()),
+    });
+  }
+
+  std::sort(profileReport.cpuSamples.begin(), profileReport.cpuSamples.end(),
+            [](const ProfileSample &lhs, const ProfileSample &rhs) -> bool {
+              return lhs.name < rhs.name;
+            });
+  std::sort(profileReport.gpuSamples.begin(), profileReport.gpuSamples.end(),
+            [](const ProfileSample &lhs, const ProfileSample &rhs) -> bool {
+              return lhs.name < rhs.name;
+            });
+
   if (ctx.profiler.logReport) {
-    logProfileReport(profileReport);
+    if (profileReport.empty()) {
+      VKR_EXEC_INFO("profile report: no samples");
+    }
+
+    if (!profileReport.cpuSamples.empty()) {
+      VKR_EXEC_INFO("CPU profile report:");
+      for (const auto &sample : profileReport.cpuSamples) {
+        VKR_EXEC_INFO("  {}: captures={}, min={:.6f} ms, mean={:.6f} ms, "
+                      "median={:.6f} ms, max={:.6f} ms",
+                      sample.name, sample.captureCount, sample.minMilliseconds,
+                      sample.milliseconds, sample.medianMilliseconds,
+                      sample.maxMilliseconds);
+      }
+    }
+
+    if (!profileReport.gpuSamples.empty()) {
+      VKR_EXEC_INFO("GPU profile report:");
+      for (const auto &sample : profileReport.gpuSamples) {
+        VKR_EXEC_INFO("  {}: captures={}, min={:.6f} ms, mean={:.6f} ms, "
+                      "median={:.6f} ms, max={:.6f} ms",
+                      sample.name, sample.captureCount, sample.minMilliseconds,
+                      sample.milliseconds, sample.medianMilliseconds,
+                      sample.maxMilliseconds);
+      }
+    }
   }
 
   device->waitIdle();
