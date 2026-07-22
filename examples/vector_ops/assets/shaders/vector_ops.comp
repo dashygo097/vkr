@@ -1,0 +1,44 @@
+#version 450
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) readonly buffer InputA {
+  float values[];
+} inputA;
+
+layout(set = 0, binding = 1) readonly buffer InputB {
+  float values[];
+} inputB;
+
+layout(set = 0, binding = 2) writeonly buffer Output {
+  float values[];
+} outputC;
+
+layout(std140, set = 0, binding = 3) uniform VectorOpsParams {
+  uint elementCount;
+  uint iterations;
+} params;
+
+float nonlinearOp(float a, float b) {
+  float x = a * 0.000123 + b * 0.000071;
+  float y = b * 0.000097 + 0.25;
+
+  for (uint i = 0; i < params.iterations; ++i) {
+    x = sin(x) * 0.73 + cos(y) * 0.19 + sqrt(abs(x * y) + 0.001);
+    y = sin(y + x * 0.13) * 0.61 + cos(x - y * 0.07) * 0.29;
+    x = clamp(x, -8.0, 8.0);
+    y = clamp(y, -8.0, 8.0);
+  }
+
+  return x + y * 0.5;
+}
+
+void main() {
+  const uint index = gl_GlobalInvocationID.x;
+  if (index >= params.elementCount) {
+    return;
+  }
+
+  outputC.values[index] = nonlinearOp(inputA.values[index],
+                                      inputB.values[index]);
+}

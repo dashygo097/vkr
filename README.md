@@ -131,7 +131,7 @@ Examples are written to `build/bin/<app-name>/`:
 ./build/bin/teapot/teapot
 ./build/bin/skybox/skybox
 ./build/bin/shadertoy/shadertoy
-./build/bin/vector_add/vector_add
+./build/bin/vector_ops/vector_ops
 ```
 
 Tools are written to `build/bin/`:
@@ -153,9 +153,9 @@ runtime.
 - `skybox`: render example that creates a cubemap and renders a skybox.
 - `shadertoy`: render example with ShaderToy-style fullscreen feedback passes,
   uniforms for time, frame count, mouse state, date, and a shader editor.
-- `vector_add`: compute example that creates storage buffers and a uniform
-  buffer, binds them to a compute pass, dispatches a GLSL compute shader, then
-  reads back and validates the result.
+- `vector_ops`: compute example that runs nonlinear per-element vector
+  operations, profiles repeated GPU dispatches, mirrors the same work on CPU,
+  and reports CPU/GPU timing plus speedup.
 
 Each directory under `examples/` has its own `CMakeLists.txt` and uses
 `add_vk_app(...)`. If an example has an `assets/` directory, the helper copies it
@@ -231,7 +231,7 @@ wraps each compute pass in a GPU timestamp scope and stores the result in
 
 ```text
 GPU profile report:
-  vector_add: 0.012345 ms
+  vector_ops: 0.012345 ms
 ```
 
 Profiling can be configured from `ctx.profiler`:

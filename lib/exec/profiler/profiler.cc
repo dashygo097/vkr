@@ -111,8 +111,8 @@ void Profiler::endFrame(VkCommandBuffer) {
   frame_active_ = false;
 }
 
-void Profiler::beginScope(VkCommandBuffer commandBuffer,
-                          std::string_view name) {
+void Profiler::beginScope(VkCommandBuffer commandBuffer, std::string_view name,
+                          VkPipelineStageFlagBits stage) {
   if (!enabled_) {
     return;
   }
@@ -140,11 +140,12 @@ void Profiler::beginScope(VkCommandBuffer commandBuffer,
   scopes_.push_back(std::move(scope));
   scope_stack_.push_back(scopeIndex);
 
-  vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                      query_pool_, scopes_.back().beginQuery);
+  vkCmdWriteTimestamp(commandBuffer, stage, query_pool_,
+                      scopes_.back().beginQuery);
 }
 
-void Profiler::endScope(VkCommandBuffer commandBuffer) {
+void Profiler::endScope(VkCommandBuffer commandBuffer,
+                        VkPipelineStageFlagBits stage) {
   if (!enabled_) {
     return;
   }
@@ -165,8 +166,8 @@ void Profiler::endScope(VkCommandBuffer commandBuffer) {
   const size_t scopeIndex = scope_stack_.back();
   scope_stack_.pop_back();
 
-  vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                      query_pool_, scopes_[scopeIndex].endQuery);
+  vkCmdWriteTimestamp(commandBuffer, stage, query_pool_,
+                      scopes_[scopeIndex].endQuery);
 }
 
 auto Profiler::collect() -> ProfileReport {
@@ -193,9 +194,14 @@ auto Profiler::collect() -> ProfileReport {
     const uint64_t delta =
         timestampDelta(timestamps[scope.beginQuery], timestamps[scope.endQuery]);
     const double nanoseconds = static_cast<double>(delta) * timestamp_period_;
+    const double milliseconds = nanoseconds / 1'000'000.0;
     report.samples.push_back(ProfileSample{
         .name = scope.name,
-        .gpuMilliseconds = nanoseconds / 1'000'000.0,
+        .gpuMilliseconds = milliseconds,
+        .minGpuMilliseconds = milliseconds,
+        .medianGpuMilliseconds = milliseconds,
+        .maxGpuMilliseconds = milliseconds,
+        .captureCount = 1,
     });
   }
 

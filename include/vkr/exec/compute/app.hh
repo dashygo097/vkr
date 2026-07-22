@@ -8,6 +8,7 @@
 #include "vkr/exec/profiler/profiler.hh"
 #include "vkr/logger.hh"
 #include "vkr/util/asset.hh"
+#include "vkr/util/timer.hh"
 #include <memory>
 
 namespace vkr::exec {
@@ -46,6 +47,7 @@ public:
   ComputeAppDesc ctx;
 
   std::unique_ptr<util::AssetSystem> assetSystem;
+  std::unique_ptr<util::Timer> timer;
   std::unique_ptr<core::Instance> instance;
   std::unique_ptr<core::Device> device;
   std::unique_ptr<core::CommandPool> commandPool;

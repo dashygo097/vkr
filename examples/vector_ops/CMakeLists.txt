@@ -1,4 +1,4 @@
-add_vk_app(vector_add
+add_vk_app(vector_ops
   SOURCES
     main.cpp
 )

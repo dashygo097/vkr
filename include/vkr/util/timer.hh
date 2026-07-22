@@ -35,6 +35,10 @@ public:
     return elapsed_time_;
   }
 
+  [[nodiscard]] auto elapsedMilliseconds() const noexcept -> double {
+    return static_cast<double>(elapsed_time_) * 1000.0;
+  }
+
   [[nodiscard]] auto frameCount() const noexcept -> uint64_t {
     return frame_count_;
   }

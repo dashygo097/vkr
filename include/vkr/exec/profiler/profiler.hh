@@ -11,20 +11,32 @@
 namespace vkr::exec {
 
 struct ProfilerDesc {
-  bool enableGpuTimestamps{true};
+  bool enableGpuTimestamps{false};
   uint32_t maxScopes{64};
+  uint32_t warmupFrames{0};
+  uint32_t captureFrames{1};
+  bool logReport{true};
 
-  [[nodiscard]] auto isValid() const noexcept -> bool { return maxScopes > 0; }
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return maxScopes > 0 && captureFrames > 0;
+  }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
     ar("enableGpuTimestamps", enableGpuTimestamps);
     ar("maxScopes", maxScopes);
+    ar("warmupFrames", warmupFrames);
+    ar("captureFrames", captureFrames);
+    ar("logReport", logReport);
   }
 };
 
 struct ProfileSample {
   std::string name{};
   double gpuMilliseconds{0.0};
+  double minGpuMilliseconds{0.0};
+  double medianGpuMilliseconds{0.0};
+  double maxGpuMilliseconds{0.0};
+  uint32_t captureCount{1};
 };
 
 struct ProfileReport {
@@ -45,8 +57,12 @@ public:
 
   void beginFrame(VkCommandBuffer commandBuffer);
   void endFrame(VkCommandBuffer commandBuffer);
-  void beginScope(VkCommandBuffer commandBuffer, std::string_view name);
-  void endScope(VkCommandBuffer commandBuffer);
+  void beginScope(VkCommandBuffer commandBuffer, std::string_view name,
+                  VkPipelineStageFlagBits stage =
+                      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+  void endScope(VkCommandBuffer commandBuffer,
+                VkPipelineStageFlagBits stage =
+                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
   [[nodiscard]] auto collect() -> ProfileReport;
   [[nodiscard]] auto enabled() const noexcept -> bool { return enabled_; }
