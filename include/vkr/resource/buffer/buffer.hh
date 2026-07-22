@@ -43,6 +43,9 @@ public:
   [[nodiscard]] auto isMapped() const noexcept -> bool {
     return mapped_ != nullptr;
   }
+  [[nodiscard]] auto hostVisible() const noexcept -> bool {
+    return (memory_properties_ & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
+  }
 
   [[nodiscard]] auto map(VkDeviceSize size = VK_WHOLE_SIZE,
                          VkDeviceSize offset = 0) -> void *;

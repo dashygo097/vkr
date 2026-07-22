@@ -100,6 +100,10 @@ auto Buffer::map(VkDeviceSize size, VkDeviceSize offset) -> void * {
     VKR_RES_ERROR("Cannot map invalid buffer");
   }
 
+  if (!hostVisible()) {
+    VKR_RES_ERROR("Cannot map buffer without HOST_VISIBLE memory");
+  }
+
   if (mapped_ != nullptr) {
     return mapped_;
   }

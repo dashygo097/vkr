@@ -21,6 +21,16 @@ struct ComputeDispatchDesc {
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return groupCountX > 0 && groupCountY > 0 && groupCountZ > 0;
   }
+
+  [[nodiscard]] static auto dispatch1D(uint32_t LocalSize,
+                                       uint32_t ElementCount)
+      -> ComputeDispatchDesc {
+    return {
+        .groupCountX = (ElementCount + LocalSize - 1) / LocalSize,
+        .groupCountY = 1,
+        .groupCountZ = 1,
+    };
+  }
 };
 
 struct ComputePassDesc {

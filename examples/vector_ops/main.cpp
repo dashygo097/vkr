@@ -117,8 +117,7 @@ private:
     input_a_->write(a_);
     input_b_->write(b_);
     output_c_->write(c_);
-    params_->update(VectorOpsParams{.elementCount = ElementCount,
-                                    .iterations = Iterations});
+    params_->update({ElementCount, Iterations});
   }
 
   void buildGraph() override {
@@ -136,10 +135,8 @@ private:
         .name = "vector_ops",
         .shader = vkr::resource::ShaderModuleDesc::computeGlslFile(
             assetSystem->resolveApp("shaders/vector_ops.comp").string())};
-    passDesc.dispatch = vkr::exec::ComputeDispatchDesc{
-        .groupCountX = (ElementCount + LocalSize - 1) / LocalSize,
-        .groupCountY = 1,
-        .groupCountZ = 1};
+    passDesc.dispatch =
+        vkr::exec::ComputeDispatchDesc::dispatch1D(LocalSize, ElementCount);
 
     auto &pass = graph->addPass(*executor, *device);
     pass.setName("vector_ops")

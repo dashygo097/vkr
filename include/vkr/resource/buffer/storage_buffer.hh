@@ -21,7 +21,9 @@ struct StorageBufferDesc {
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return elementCount != 0 &&
-           (usage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) != 0;
+           (usage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) != 0 &&
+           (!mapOnCreate ||
+            (memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0);
   }
 
   [[nodiscard]] static auto hostVisible(size_t elementCount)
@@ -84,6 +86,11 @@ public:
       VKR_RES_ERROR("Storage buffer write exceeds buffer bounds");
     }
 
+    if ((desc_.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
+      VKR_RES_ERROR("Cannot write device-local storage buffer directly from "
+                    "CPU; use a staging/upload path");
+    }
+
     auto offset =
         static_cast<VkDeviceSize>(sizeof(ElementType) * elementOffset);
     auto size = static_cast<VkDeviceSize>(sizeof(ElementType) * elementCount);
@@ -97,6 +104,11 @@ public:
 
     if (elementOffset + elements.size() > desc_.elementCount) {
       VKR_RES_ERROR("Storage buffer read exceeds buffer bounds");
+    }
+
+    if ((desc_.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
+      VKR_RES_ERROR("Cannot read device-local storage buffer directly from "
+                    "CPU; use a staging/download path");
     }
 
     auto offset =
@@ -147,6 +159,10 @@ public:
     info.offset = offset;
     info.range = range;
     return info;
+  }
+
+  [[nodiscard]] auto hostVisible() const noexcept -> bool {
+    return (desc_.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
   }
 
   [[nodiscard]] auto valid() const noexcept -> bool {
