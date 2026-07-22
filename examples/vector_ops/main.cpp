@@ -128,9 +128,8 @@ private:
         .setIndex = 0,
         .buffers = {storageWrite(0, *input_a_), storageWrite(1, *input_b_),
                     storageWrite(2, *output_c_),
-                    vkr::pipeline::DescriptorBufferWriteDesc::one(
-                        3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                        params_->descriptorInfo())}}};
+                    vkr::pipeline::DescriptorBufferWriteDesc::uniform(
+                        3, params_->descriptorInfo())}}};
     passDesc.pipeline = vkr::pipeline::ComputePipelineDesc{
         .name = "vector_ops",
         .shader = vkr::resource::ShaderModuleDesc::computeGlslFile(
