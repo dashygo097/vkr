@@ -60,22 +60,14 @@ private:
                         VkClearValue{.depthStencil = {1.0f, 0}}};
 
     vkr::pipeline::GraphicsPipelineDesc normal{};
-    normal.name = "teapot-local";
-    normal.vertexInput = vkr::scene::VertexNormalTexture3D::vertexInputDesc();
-
-    normal.shaders = {
-        vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolve("shaders/teapot/teapot.vert").string())),
-        vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolve("shaders/teapot/teapot.frag").string())),
-    };
-
-    normal.depthStencil.depthTestEnable = VK_TRUE;
-    normal.depthStencil.depthWriteEnable = VK_TRUE;
-    normal.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-    normal.rasterization = vkr::pipeline::GraphicsRasterizationDesc::noCull();
+    normal.setName("teapot-local")
+        .vertexInputDesc(vkr::scene::VertexNormalTexture3D::vertexInputDesc())
+        .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
+            assetSystem->resolve("shaders/teapot/teapot.vert").string()))
+        .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+            assetSystem->resolve("shaders/teapot/teapot.frag").string()))
+        .depth()
+        .noCull();
 
     desc.pipeline = normal;
 
@@ -96,22 +88,16 @@ private:
     postDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
     vkr::pipeline::GraphicsPipelineDesc postPipeline{};
-    postPipeline.name = "postprocess";
-    postPipeline.vertexInput = vkr::scene::VertexInputDesc::none();
-    postPipeline.shaders = {
-        vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolve("shaders/postprocess/postprocess.vert")
-                    .string())),
-        vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolve("shaders/postprocess/postprocess.frag")
-                    .string())),
-    };
-    postPipeline.depthStencil =
-        vkr::pipeline::GraphicsDepthStencilDesc::disabled();
-    postPipeline.rasterization =
-        vkr::pipeline::GraphicsRasterizationDesc::noCull();
+    postPipeline.setName("postprocess")
+        .vertexInputDesc(vkr::scene::VertexInputDesc::none())
+        .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
+            assetSystem->resolve("shaders/postprocess/postprocess.vert")
+                .string()))
+        .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+            assetSystem->resolve("shaders/postprocess/postprocess.frag")
+                .string()))
+        .disableDepth()
+        .noCull();
     postDesc.pipeline = postPipeline;
 
     auto &postProcessPass = graph->addPass<vkr::exec::PostProcessPass>(

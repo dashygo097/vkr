@@ -87,9 +87,8 @@ private:
         .maxSets = ctx.commandBuffers.size};
 
     if (imageSamplerCount > 0) {
-      desc.poolSizes.push_back(
-          {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-           ctx.commandBuffers.size * imageSamplerCount});
+      desc.poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                ctx.commandBuffers.size * imageSamplerCount});
     }
 
     return desc;
@@ -180,18 +179,14 @@ private:
                                        const std::string &fragmentShader) const
       -> vkr::pipeline::GraphicsPipelineDesc {
     vkr::pipeline::GraphicsPipelineDesc pipeline{};
-    pipeline.name = name;
-    pipeline.vertexInput = vkr::scene::VertexInputDesc::none();
-    pipeline.shaders = {
-        vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolveApp("shaders/shadertoy/shadertoy.vert")
-                    .string())),
-        vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            shadertoyFragmentSource(fragmentShader, name + ".frag")),
-    };
-    pipeline.depthStencil = vkr::pipeline::GraphicsDepthStencilDesc::disabled();
-    pipeline.rasterization = vkr::pipeline::GraphicsRasterizationDesc::noCull();
+    pipeline.setName(name)
+        .vertexInputDesc(vkr::scene::VertexInputDesc::none())
+        .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
+            assetSystem->resolveApp("shaders/shadertoy/shadertoy.vert")
+                .string()))
+        .fragmentShader(shadertoyFragmentSource(fragmentShader, name + ".frag"))
+        .disableDepth()
+        .noCull();
     return pipeline;
   }
 

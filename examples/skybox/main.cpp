@@ -116,17 +116,11 @@ private:
         VkClearValue{.depthStencil = {1.0f, 0}},
     };
 
-    skyboxDesc.pipeline.name = "skybox";
-    skyboxDesc.pipeline.shaders = {
-        vkr::pipeline::GraphicsShaderStageDesc::vertex(
-            vkr::resource::ShaderModuleDesc::vertexGlslFile(
-                assetSystem->resolveApp("shaders/skybox/skybox.vert")
-                    .string())),
-        vkr::pipeline::GraphicsShaderStageDesc::fragment(
-            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolveApp("shaders/skybox/skybox.frag")
-                    .string())),
-    };
+    skyboxDesc.pipeline.setName("skybox")
+        .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
+            assetSystem->resolveApp("shaders/skybox/skybox.vert").string()))
+        .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+            assetSystem->resolveApp("shaders/skybox/skybox.frag").string()));
 
     auto &skyboxPass = graph->addPass<vkr::exec::SkyboxPass>(
         *executor, *device, *graphicsCommandPool, *scene);

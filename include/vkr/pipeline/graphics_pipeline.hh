@@ -4,6 +4,9 @@
 #include "vkr/resource/shader/module.hh"
 #include "vkr/scene/geometry/vbos.hh"
 #include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace vkr::pipeline {
 
@@ -272,6 +275,76 @@ struct GraphicsPipelineDesc {
 
   VkPipeline basePipeline{VK_NULL_HANDLE};
   int32_t basePipelineIndex{-1};
+
+  auto setName(std::string pipelineName) -> GraphicsPipelineDesc & {
+    name = std::move(pipelineName);
+    return *this;
+  }
+
+  auto vertexInputDesc(scene::VertexInputDesc desc) -> GraphicsPipelineDesc & {
+    vertexInput = std::move(desc);
+    return *this;
+  }
+
+  auto shader(GraphicsShaderStageDesc shaderDesc) -> GraphicsPipelineDesc & {
+    shaders.push_back(std::move(shaderDesc));
+    return *this;
+  }
+
+  auto vertexShader(resource::ShaderModuleDesc shaderDesc,
+                    std::string entryPoint = "main")
+      -> GraphicsPipelineDesc & {
+    shaders.push_back(GraphicsShaderStageDesc::vertex(std::move(shaderDesc),
+                                                      std::move(entryPoint)));
+    return *this;
+  }
+
+  auto fragmentShader(resource::ShaderModuleDesc shaderDesc,
+                      std::string entryPoint = "main")
+      -> GraphicsPipelineDesc & {
+    shaders.push_back(GraphicsShaderStageDesc::fragment(std::move(shaderDesc),
+                                                        std::move(entryPoint)));
+    return *this;
+  }
+
+  auto depth(VkBool32 testEnable = VK_TRUE, VkBool32 writeEnable = VK_TRUE,
+             VkCompareOp compareOp = VK_COMPARE_OP_LESS)
+      -> GraphicsPipelineDesc & {
+    depthStencil.depthTestEnable = testEnable;
+    depthStencil.depthWriteEnable = writeEnable;
+    depthStencil.depthCompareOp = compareOp;
+    return *this;
+  }
+
+  auto disableDepth() -> GraphicsPipelineDesc & {
+    depthStencil = GraphicsDepthStencilDesc::disabled();
+    return *this;
+  }
+
+  auto readOnlyDepth() -> GraphicsPipelineDesc & {
+    depthStencil = GraphicsDepthStencilDesc::readOnly();
+    return *this;
+  }
+
+  auto rasterize(GraphicsRasterizationDesc desc) -> GraphicsPipelineDesc & {
+    rasterization = desc;
+    return *this;
+  }
+
+  auto noCull() -> GraphicsPipelineDesc & {
+    rasterization = GraphicsRasterizationDesc::noCull();
+    return *this;
+  }
+
+  auto blend(GraphicsColorBlendDesc desc) -> GraphicsPipelineDesc & {
+    colorBlend = std::move(desc);
+    return *this;
+  }
+
+  auto alphaBlend() -> GraphicsPipelineDesc & {
+    colorBlend = GraphicsColorBlendDesc::alphaBlend();
+    return *this;
+  }
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     if (renderPass == VK_NULL_HANDLE || shaders.empty() || name.empty()) {
