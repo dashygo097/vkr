@@ -1,11 +1,11 @@
 #pragma once
 
-#include "vkr/core/command/buffers.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
 #include "vkr/resource/buffer/uniform_buffer.hh"
-#include <array>
 #include <cstddef>
+#include <memory>
+#include <vector>
 
 namespace vkr::scene {
 
@@ -26,9 +26,20 @@ public:
 template <typename UniformType>
 class FrameUniformBufferSet final : public IFrameUniformBufferSet {
 public:
-  explicit FrameUniformBufferSet(const core::Device &device)
-      : buffers_{resource::UniformBuffer<UniformType>{device},
-                 resource::UniformBuffer<UniformType>{device}} {}
+  explicit FrameUniformBufferSet(const core::Device &device,
+                                 uint32_t frameCount)
+      : device_(device) {
+    if (frameCount == 0) {
+      VKR_RES_ERROR("FrameUniformBufferSet frame count must be greater than "
+                    "zero");
+    }
+
+    buffers_.reserve(frameCount);
+    for (uint32_t i = 0; i < frameCount; ++i) {
+      buffers_.push_back(std::make_unique<resource::UniformBuffer<UniformType>>(
+          device_));
+    }
+  }
 
   ~FrameUniformBufferSet() override = default;
 
@@ -41,7 +52,7 @@ public:
     if (frameIndex >= buffers_.size()) {
       VKR_RES_ERROR("Uniform buffer frame {} is unavailable", frameIndex);
     }
-    return buffers_[frameIndex].descriptorInfo();
+    return buffers_[frameIndex]->descriptorInfo();
   }
 
   [[nodiscard]] auto frameCount() const noexcept -> size_t override {
@@ -51,7 +62,7 @@ public:
   [[nodiscard]] auto mappedFrameCount() const noexcept -> size_t override {
     size_t count{0};
     for (const auto &buffer : buffers_) {
-      if (buffer.isMapped()) {
+      if (buffer->isMapped()) {
         ++count;
       }
     }
@@ -73,13 +84,15 @@ public:
     if (frameIndex >= buffers_.size()) {
       VKR_RES_ERROR("Uniform buffer frame {} is unavailable", frameIndex);
     }
-    buffers_[frameIndex].update(object);
+    buffers_[frameIndex]->update(object);
   }
 
 private:
+  // dependencies
+  const core::Device &device_;
+
   // components
-  std::array<resource::UniformBuffer<UniformType>, core::MAX_FRAMES_IN_FLIGHT>
-      buffers_;
+  std::vector<std::unique_ptr<resource::UniformBuffer<UniformType>>> buffers_;
 };
 
 } // namespace vkr::scene

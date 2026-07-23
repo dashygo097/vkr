@@ -1,9 +1,9 @@
 #pragma once
 
-#include "vkr/core/command/buffers.hh"
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/exec/render/targets/offscreen.hh"
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -11,6 +11,7 @@ namespace vkr::exec {
 
 struct FrameHistoryTargetDesc {
   OffscreenTargetDesc target{};
+  uint32_t frameCount{0};
 };
 
 class FrameHistoryTarget {
@@ -51,19 +52,18 @@ public:
     return static_cast<uint32_t>(targets_.size());
   }
 
-  [[nodiscard]] static constexpr auto targetCountForFrames() noexcept
-      -> uint32_t {
-    return static_cast<uint32_t>(core::MAX_FRAMES_IN_FLIGHT);
+  [[nodiscard]] auto targetCountForFrames() const noexcept -> uint32_t {
+    return desc_.frameCount;
   }
 
-  [[nodiscard]] static constexpr auto
-  readIndexForFrame(uint32_t frameIndex) noexcept -> uint32_t {
+  [[nodiscard]] auto readIndexForFrame(uint32_t frameIndex) const noexcept
+      -> uint32_t {
     const uint32_t count = targetCountForFrames();
     return (writeIndexForFrame(frameIndex) + count - 1U) % count;
   }
 
-  [[nodiscard]] static constexpr auto
-  writeIndexForFrame(uint32_t frameIndex) noexcept -> uint32_t {
+  [[nodiscard]] auto writeIndexForFrame(uint32_t frameIndex) const noexcept
+      -> uint32_t {
     return frameIndex % targetCountForFrames();
   }
 

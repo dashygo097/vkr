@@ -4,17 +4,24 @@
 namespace vkr::exec {
 
 Executor::Executor(const core::Device &device, const core::Swapchain &swapchain,
-                   const core::CommandPool &commandPool,
-                   FrameSync &frameSync,
-                   scene::Scene &scene)
+                   const core::CommandPool &commandPool, FrameSync &frameSync,
+                   scene::Scene &scene,
+                   const core::CommandBuffersDesc &commandBuffers)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
       frame_sync_(frameSync), scene_(scene) {
   if (command_pool_.queueRole() != core::CommandQueueRole::Graphics) {
     VKR_EXEC_ERROR("Executor requires a graphics command pool");
   }
 
+  if (commandBuffers.size != frame_sync_.framesInFlight()) {
+    VKR_EXEC_ERROR("Executor command buffer count {} does not match "
+                   "FrameSync frames in flight {}",
+                   commandBuffers.size, frame_sync_.framesInFlight());
+  }
+
   command_buffers_ =
       std::make_unique<core::CommandBuffers>(device_, command_pool_);
+  command_buffers_->update(commandBuffers);
 }
 
 auto Executor::beginFrame() -> bool {
@@ -86,7 +93,7 @@ void Executor::endFrame() {
     VKR_EXEC_ERROR("Executor::endFrame called before submitFrame");
   }
 
-  current_frame_ = (current_frame_ + 1) % core::MAX_FRAMES_IN_FLIGHT;
+  current_frame_ = (current_frame_ + 1) % command_buffers_->size();
 
   image_index_ = 0;
   frame_index_ = 0;
@@ -96,6 +103,10 @@ void Executor::endFrame() {
   frame_presented_ = false;
 }
 
+auto Executor::framesInFlight() const noexcept -> uint32_t {
+  return command_buffers_ ? command_buffers_->size() : 0;
+}
+
 void Executor::beginPass(const FramebufferSet &framebufferSet,
                          const pipeline::RenderPass &renderPass,
                          const RenderPassBeginDesc &desc) {
@@ -103,13 +114,12 @@ void Executor::beginPass(const FramebufferSet &framebufferSet,
 
   if (desc.framebufferIndex >= framebufferSet.buffers().size()) {
     VKR_EXEC_ERROR("Framebuffer index {} out of range, framebuffer count {}",
-                     desc.framebufferIndex, framebufferSet.buffers().size());
+                   desc.framebufferIndex, framebufferSet.buffers().size());
   }
 
   if (desc.renderArea.extent.width == 0 || desc.renderArea.extent.height == 0) {
     VKR_EXEC_ERROR("RenderPassBeginDesc has invalid extent: {}x{}",
-                     desc.renderArea.extent.width,
-                     desc.renderArea.extent.height);
+                   desc.renderArea.extent.width, desc.renderArea.extent.height);
   }
 
   VkRenderPassBeginInfo info{};
@@ -150,7 +160,7 @@ void Executor::bindPipeline(
 
   if (frame_index_ >= descriptorSets.size()) {
     VKR_EXEC_ERROR("Descriptor set frame index {} out of range, count {}",
-                     frame_index_, descriptorSets.size());
+                   frame_index_, descriptorSets.size());
   }
 
   VkDescriptorSet descriptorSet = descriptorSets[frame_index_];

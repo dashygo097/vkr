@@ -2,13 +2,15 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
+#include <cstdint>
 
 namespace vkr::exec {
 
 class FrameSync {
 public:
   explicit FrameSync(const core::Device &device,
-                     const core::Swapchain &swapchain);
+                     const core::Swapchain &swapchain,
+                     uint32_t framesInFlight);
   ~FrameSync();
 
   FrameSync(const FrameSync &) = delete;
@@ -34,6 +36,9 @@ public:
   [[nodiscard]] auto renderFinishedSemaphore(uint32_t imageIndex) const
       -> VkSemaphore;
   [[nodiscard]] auto inFlightFence(uint32_t frameIndex) const -> VkFence;
+  [[nodiscard]] auto framesInFlight() const noexcept -> uint32_t {
+    return frames_in_flight_;
+  }
 
   void waitForFrame(uint32_t frameIndex) const;
   void resetFrame(uint32_t frameIndex) const;
@@ -43,6 +48,7 @@ private:
   // dependencies
   const core::Device &device_;
   const core::Swapchain &swapchain_;
+  uint32_t frames_in_flight_{0};
 
   // components
   std::vector<VkSemaphore> vk_image_available_semaphores_{};

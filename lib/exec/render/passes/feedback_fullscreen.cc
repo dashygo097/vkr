@@ -5,8 +5,7 @@
 namespace vkr::exec {
 namespace {
 
-auto imageLayoutForColor(const ColorAttachment &color)
-    -> VkImageLayout {
+auto imageLayoutForColor(const ColorAttachment &color) -> VkImageLayout {
   return color.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
              ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
              : color.desc().finalLayout;
@@ -15,7 +14,8 @@ auto imageLayoutForColor(const ColorAttachment &color)
 auto defaultFeedbackDescriptorPoolDesc(
     pipeline::DescriptorPoolDesc poolDesc,
     const std::vector<pipeline::DescriptorBinding> &resourceBindings,
-    bool hasHistoryInput, size_t sourceCount) -> pipeline::DescriptorPoolDesc {
+    bool hasHistoryInput, size_t sourceCount, uint32_t frameCount)
+    -> pipeline::DescriptorPoolDesc {
   if (poolDesc.maxSets != 0) {
     return poolDesc;
   }
@@ -40,16 +40,16 @@ auto defaultFeedbackDescriptorPoolDesc(
   if (uniformCount > 0) {
     poolDesc.poolSizes.push_back(
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-         static_cast<uint32_t>(core::MAX_FRAMES_IN_FLIGHT * uniformCount)});
+         static_cast<uint32_t>(frameCount * uniformCount)});
   }
 
   if (imageCount > 0) {
     poolDesc.poolSizes.push_back(
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-         static_cast<uint32_t>(core::MAX_FRAMES_IN_FLIGHT * imageCount)});
+         static_cast<uint32_t>(frameCount * imageCount)});
   }
 
-  poolDesc.maxSets = core::MAX_FRAMES_IN_FLIGHT;
+  poolDesc.maxSets = frameCount;
   return poolDesc;
 }
 
@@ -76,22 +76,23 @@ auto nextBindingAfter(
 void appendResourceDescriptorWrites(
     std::string_view passName, const scene::Scene *scene,
     const std::vector<pipeline::DescriptorBinding> &bindings,
-    std::vector<pipeline::DescriptorSetWriteDesc> &writes) {
+    std::vector<pipeline::DescriptorSetWriteDesc> &writes,
+    uint32_t frameCount) {
   if (bindings.empty()) {
     return;
   }
 
   if (scene == nullptr) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' has descriptor resource "
-                     "bindings but no Scene",
-                     std::string(passName));
+                   "bindings but no Scene",
+                   std::string(passName));
   }
 
   for (const auto &binding : bindings) {
     if (binding.name.empty()) {
       VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' descriptor binding {} has "
-                       "empty resource name",
-                       std::string(passName), binding.layout.binding);
+                     "empty resource name",
+                     std::string(passName), binding.layout.binding);
     }
 
     switch (binding.layout.descriptorType) {
@@ -99,20 +100,18 @@ void appendResourceDescriptorWrites(
       auto uniformBuffer = scene->getUniformBuffer(binding.name);
       if (!uniformBuffer) {
         VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' uniform buffer resource "
-                         "not found: {}",
-                         std::string(passName), binding.name);
+                       "not found: {}",
+                       std::string(passName), binding.name);
       }
 
-      if (uniformBuffer->frameCount() != core::MAX_FRAMES_IN_FLIGHT) {
+      if (uniformBuffer->frameCount() != frameCount) {
         VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' uniform buffer '{}' "
-                         "frame count mismatch: {} vs {}",
-                         std::string(passName), binding.name,
-                         uniformBuffer->frameCount(),
-                         core::MAX_FRAMES_IN_FLIGHT);
+                       "frame count mismatch: {} vs {}",
+                       std::string(passName), binding.name,
+                       uniformBuffer->frameCount(), frameCount);
       }
 
-      for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
-           ++frameIndex) {
+      for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         const auto bufferInfo = uniformBuffer->descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
@@ -127,14 +126,14 @@ void appendResourceDescriptorWrites(
       auto texture = scene->getTexture(binding.name);
       if (!texture) {
         VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' texture resource not "
-                         "found: {}",
-                         std::string(passName), binding.name);
+                       "found: {}",
+                       std::string(passName), binding.name);
       }
 
       if (!texture->hasSampler()) {
         VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' texture sampler not "
-                         "found: {}",
-                         std::string(passName), binding.name);
+                       "found: {}",
+                       std::string(passName), binding.name);
       }
 
       VkDescriptorImageInfo imageInfo{};
@@ -142,8 +141,7 @@ void appendResourceDescriptorWrites(
       imageInfo.imageView = texture->imageView();
       imageInfo.sampler = texture->sampler();
 
-      for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
-           ++frameIndex) {
+      for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         writes[frameIndex].images.push_back(
             pipeline::DescriptorImageWriteDesc::one(
                 binding.layout.binding, binding.layout.descriptorType,
@@ -154,9 +152,9 @@ void appendResourceDescriptorWrites(
 
     default:
       VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' cannot create descriptor "
-                       "writes for resource '{}' with descriptor type {}",
-                       std::string(passName), binding.name,
-                       static_cast<int>(binding.layout.descriptorType));
+                     "writes for resource '{}' with descriptor type {}",
+                     std::string(passName), binding.name,
+                     static_cast<int>(binding.layout.descriptorType));
     }
   }
 }
@@ -168,9 +166,9 @@ void validateUniqueDescriptorBindings(
     for (size_t j = i + 1; j < bindings.size(); ++j) {
       if (bindings[i].layout.binding == bindings[j].layout.binding) {
         VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' has duplicate "
-                         "descriptor binding {} for '{}' and '{}'",
-                         std::string(passName), bindings[i].layout.binding,
-                         bindings[i].name, bindings[j].name);
+                       "descriptor binding {} for '{}' and '{}'",
+                       std::string(passName), bindings[i].layout.binding,
+                       bindings[i].name, bindings[j].name);
       }
     }
   }
@@ -187,8 +185,7 @@ FeedbackFullscreenPass::FeedbackFullscreenPass(
 
 FeedbackFullscreenPass::FeedbackFullscreenPass(
     Executor &executor, const core::Device &device,
-    const core::CommandPool &commandPool,
-    scene::Scene &scene,
+    const core::CommandPool &commandPool, scene::Scene &scene,
     std::vector<FullscreenPassSource> sources)
     : executor_(executor), device_(device), command_pool_(commandPool),
       scene_(&scene), sources_(std::move(sources)) {}
@@ -222,19 +219,18 @@ void FeedbackFullscreenPass::update(const FeedbackFullscreenPassDesc &desc) {
 void FeedbackFullscreenPass::record() {
   if (!target_ || !render_pass_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' recorded before create",
-                     name());
+                   name());
   }
 
   const uint32_t frameIndex = executor_.frameIndex();
-  const uint32_t writeIndex =
-      FrameHistoryTarget::writeIndexForFrame(frameIndex);
+  const uint32_t writeIndex = target_->writeIndexForFrame(frameIndex);
   auto &writeTarget = target_->writeForFrame(frameIndex);
   auto &framebuffer = framebuffers_[writeIndex];
 
   if (!framebuffer) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' has no framebuffer for "
-                     "target index {}",
-                     name(), writeIndex);
+                   "target index {}",
+                   name(), writeIndex);
   }
 
   RenderPassBeginDesc beginDesc{
@@ -272,30 +268,28 @@ auto FeedbackFullscreenPass::setSources(
 auto FeedbackFullscreenPass::target() -> OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target requested before "
-                     "create",
-                     name());
+                   "create",
+                   name());
   }
 
   return target_->writeForFrame(executor_.frameIndex());
 }
 
-auto FeedbackFullscreenPass::target() const
-    -> const OffscreenTarget & {
+auto FeedbackFullscreenPass::target() const -> const OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target requested before "
-                     "create",
-                     name());
+                   "create",
+                   name());
   }
 
   return target_->writeForFrame(executor_.frameIndex());
 }
 
-auto FeedbackFullscreenPass::target(uint32_t frameIndex)
-    -> OffscreenTarget & {
+auto FeedbackFullscreenPass::target(uint32_t frameIndex) -> OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target requested before "
-                     "create",
-                     name());
+                   "create",
+                   name());
   }
 
   return target_->writeForFrame(frameIndex);
@@ -305,8 +299,8 @@ auto FeedbackFullscreenPass::target(uint32_t frameIndex) const
     -> const OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target requested before "
-                     "create",
-                     name());
+                   "create",
+                   name());
   }
 
   return target_->writeForFrame(frameIndex);
@@ -315,19 +309,18 @@ auto FeedbackFullscreenPass::target(uint32_t frameIndex) const
 auto FeedbackFullscreenPass::historyTarget() -> OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' history target requested "
-                     "before create",
-                     name());
+                   "before create",
+                   name());
   }
 
   return target_->readForFrame(executor_.frameIndex());
 }
 
-auto FeedbackFullscreenPass::historyTarget() const
-    -> const OffscreenTarget & {
+auto FeedbackFullscreenPass::historyTarget() const -> const OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' history target requested "
-                     "before create",
-                     name());
+                   "before create",
+                   name());
   }
 
   return target_->readForFrame(executor_.frameIndex());
@@ -337,8 +330,8 @@ auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex)
     -> OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' history target requested "
-                     "before create",
-                     name());
+                   "before create",
+                   name());
   }
 
   return target_->readForFrame(frameIndex);
@@ -348,17 +341,19 @@ auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex) const
     -> const OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' history target requested "
-                     "before create",
-                     name());
+                   "before create",
+                   name());
   }
 
   return target_->readForFrame(frameIndex);
 }
 
 void FeedbackFullscreenPass::createTarget() {
-  target_ =
-      std::make_unique<FrameHistoryTarget>(device_, command_pool_);
-  target_->update(desc_.target);
+  auto targetDesc = desc_.target;
+  targetDesc.frameCount = executor_.framesInFlight();
+
+  target_ = std::make_unique<FrameHistoryTarget>(device_, command_pool_);
+  target_->update(targetDesc);
 }
 
 void FeedbackFullscreenPass::createRenderPass() {
@@ -427,7 +422,7 @@ void FeedbackFullscreenPass::createDescriptors() {
   descriptor_sets_->update(pipeline::DescriptorSetsDesc{
       .pool = descriptor_pool_->pool(),
       .layout = descriptor_layout_->layout(),
-      .setCount = core::MAX_FRAMES_IN_FLIGHT,
+      .setCount = executor_.framesInFlight(),
       .writes = createDescriptorWrites(inputs),
   });
 }
@@ -445,8 +440,8 @@ void FeedbackFullscreenPass::createPipeline() {
 
   if (!pipelineDesc.isValid()) {
     VKR_EXEC_WARN("FeedbackFullscreenPass '{}' has no valid graphics "
-                    "pipeline desc",
-                    name());
+                  "pipeline desc",
+                  name());
     return;
   }
 
@@ -455,8 +450,8 @@ void FeedbackFullscreenPass::createPipeline() {
 
   if (!pipeline_->valid()) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' failed to create graphics "
-                     "pipeline '{}'",
-                     name(), pipelineDesc.name);
+                   "pipeline '{}'",
+                   name(), pipelineDesc.name);
   }
 }
 
@@ -478,8 +473,8 @@ auto FeedbackFullscreenPass::resolvedInputs() const
 
   if (desc_.inputs.size() != sources_.size()) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' input count mismatch: "
-                     "desc={} sources={}",
-                     name(), desc_.inputs.size(), sources_.size());
+                   "desc={} sources={}",
+                   name(), desc_.inputs.size(), sources_.size());
   }
 
   return desc_.inputs;
@@ -490,31 +485,31 @@ auto FeedbackFullscreenPass::descriptorPoolDesc(
     -> pipeline::DescriptorPoolDesc {
   return defaultFeedbackDescriptorPoolDesc(
       desc_.descriptorPool, desc_.descriptorBindings,
-      desc_.historyInput.has_value(), inputs.size());
+      desc_.historyInput.has_value(), inputs.size(),
+      executor_.framesInFlight());
 }
 
 auto FeedbackFullscreenPass::createDescriptorWrites(
     const std::vector<FullscreenPassInputDesc> &inputs)
     -> std::vector<pipeline::DescriptorSetWriteDesc> {
   std::vector<pipeline::DescriptorSetWriteDesc> writes{};
-  writes.reserve(core::MAX_FRAMES_IN_FLIGHT);
+  const uint32_t frameCount = executor_.framesInFlight();
+  writes.reserve(frameCount);
 
-  for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
-       ++frameIndex) {
+  for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
     writes.push_back(pipeline::DescriptorSetWriteDesc::forSet(frameIndex));
   }
 
-  appendResourceDescriptorWrites(name(), scene_,
-                                 desc_.descriptorBindings, writes);
+  appendResourceDescriptorWrites(name(), scene_, desc_.descriptorBindings,
+                                 writes, frameCount);
 
   if (desc_.historyInput) {
-    for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
-         ++frameIndex) {
+    for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
       const auto &color = historyTarget(frameIndex).color();
       if (!color.hasSampler()) {
         VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' history target has no "
-                         "sampler",
-                         name());
+                       "sampler",
+                       name());
       }
 
       VkDescriptorImageInfo imageInfo{};
@@ -530,13 +525,12 @@ auto FeedbackFullscreenPass::createDescriptorWrites(
   }
 
   for (size_t index = 0; index < sources_.size(); ++index) {
-    for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
-         ++frameIndex) {
+    for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
       const auto &color = sources_[index].target(frameIndex).color();
       if (!color.hasSampler()) {
         VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' source {} has no "
-                         "sampler",
-                         name(), index);
+                       "sampler",
+                       name(), index);
       }
 
       VkDescriptorImageInfo imageInfo{};

@@ -8,6 +8,7 @@
 #include "vkr/scene/material/cubemap.hh"
 #include "vkr/scene/material/texture.hh"
 #include <array>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -17,8 +18,13 @@ namespace vkr::scene {
 
 class Scene {
 public:
-  Scene(const core::Device &device, const core::CommandPool &commandPool)
-      : device_(device), command_pool_(commandPool) {}
+  Scene(const core::Device &device, const core::CommandPool &commandPool,
+        uint32_t frameCount)
+      : device_(device), command_pool_(commandPool), frame_count_(frameCount) {
+    if (frame_count_ == 0) {
+      VKR_RES_ERROR("Scene frame count must be greater than zero");
+    }
+  }
   ~Scene() = default;
 
   Scene(const Scene &) = delete;
@@ -27,9 +33,15 @@ public:
   // Uniform buffer management
   template <typename UBOType>
   void createUniformBuffer(const std::string &name, const UBOType &ubo) {
-    auto buffer = std::make_shared<FrameUniformBufferSet<UBOType>>(device_);
+    auto buffer =
+        std::make_shared<FrameUniformBufferSet<UBOType>>(device_,
+                                                         frame_count_);
     buffer->update(0, ubo);
     uniform_buffers_[name] = std::move(buffer);
+  }
+
+  [[nodiscard]] auto frameCount() const noexcept -> uint32_t {
+    return frame_count_;
   }
 
   [[nodiscard]] auto getUniformBuffer(const std::string &name) const
@@ -233,6 +245,7 @@ private:
   // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
+  uint32_t frame_count_{0};
 
   // components
   std::unordered_map<std::string, std::shared_ptr<IFrameUniformBufferSet>>

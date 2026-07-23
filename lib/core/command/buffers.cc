@@ -5,9 +5,24 @@ namespace vkr::core {
 
 CommandBuffers::CommandBuffers(const Device &device,
                                const CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {
+    : device_(device), command_pool_(commandPool) {}
+
+CommandBuffers::~CommandBuffers() { destroy(); }
+
+void CommandBuffers::update(const CommandBuffersDesc &desc) {
+  desc_ = desc;
+  create();
+}
+
+void CommandBuffers::create() {
+  destroy();
+
+  if (!desc_.isValid()) {
+    VKR_CORE_ERROR("CommandBuffersDesc is invalid");
+  }
+
   VKR_CORE_INFO("Creating command buffers...");
-  vk_command_buffers_.resize(MAX_FRAMES_IN_FLIGHT);
+  vk_command_buffers_.resize(desc_.size);
 
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -24,7 +39,7 @@ CommandBuffers::CommandBuffers(const Device &device,
   VKR_CORE_INFO("Command buffers created successfully.");
 }
 
-CommandBuffers::~CommandBuffers() {
+void CommandBuffers::destroy() {
   if (!vk_command_buffers_.empty()) {
     vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(),
                          static_cast<uint32_t>(vk_command_buffers_.size()),

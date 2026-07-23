@@ -124,7 +124,7 @@ void RasterPass::createDescriptors() {
   descriptor_sets_->update(pipeline::DescriptorSetsDesc{
       .pool = descriptor_pool_->pool(),
       .layout = descriptor_layout_->layout(),
-      .setCount = core::MAX_FRAMES_IN_FLIGHT,
+      .setCount = executor_.framesInFlight(),
       .writes = createDescriptorWrites(),
   });
 }
@@ -175,10 +175,10 @@ void RasterPass::createPipeline() {
 auto RasterPass::createDescriptorWrites() const
     -> std::vector<pipeline::DescriptorSetWriteDesc> {
   std::vector<pipeline::DescriptorSetWriteDesc> writes{};
-  writes.reserve(core::MAX_FRAMES_IN_FLIGHT);
+  const uint32_t frameCount = executor_.framesInFlight();
+  writes.reserve(frameCount);
 
-  for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
-       ++frameIndex) {
+  for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
     writes.push_back(pipeline::DescriptorSetWriteDesc::forSet(frameIndex));
   }
 
@@ -196,14 +196,13 @@ auto RasterPass::createDescriptorWrites() const
         VKR_EXEC_ERROR("Uniform buffer resource not found: {}", binding.name);
       }
 
-      if (uniformBuffer->frameCount() != core::MAX_FRAMES_IN_FLIGHT) {
+      if (uniformBuffer->frameCount() != frameCount) {
         VKR_EXEC_ERROR("Uniform buffer '{}' frame count mismatch: {} vs {}",
                          binding.name, uniformBuffer->frameCount(),
-                         core::MAX_FRAMES_IN_FLIGHT);
+                         frameCount);
       }
 
-      for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
-           ++frameIndex) {
+      for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         const auto bufferInfo = uniformBuffer->descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
@@ -230,8 +229,7 @@ auto RasterPass::createDescriptorWrites() const
       imageInfo.imageView = texture->imageView();
       imageInfo.sampler = texture->sampler();
 
-      for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
-           ++frameIndex) {
+      for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         writes[frameIndex].images.push_back(
             pipeline::DescriptorImageWriteDesc::one(
                 binding.layout.binding, binding.layout.descriptorType,

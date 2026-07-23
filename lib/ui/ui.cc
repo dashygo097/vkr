@@ -32,13 +32,18 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        exec::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool,
-       exec::RenderGraph &graph, util::Timer &timer, UiDesc &desc)
+       exec::RenderGraph &graph, util::Timer &timer, UiDesc &desc,
+       uint32_t framesInFlight)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), scene_(scene),
       asset_system_(assetSystem), camera_(camera),
       offscreen_target_(offscreenTarget), render_pass_(renderPass),
       descriptor_pool_(descriptorPool), graph_(graph),
-      timer_(timer), desc_(desc) {
+      timer_(timer), desc_(desc), frames_in_flight_(framesInFlight) {
+  if (frames_in_flight_ == 0) {
+    VKR_UI_ERROR("UI framesInFlight must be greater than zero");
+  }
+
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
 
@@ -71,8 +76,8 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   initInfo.PipelineCache = VK_NULL_HANDLE;
   initInfo.DescriptorPool = descriptor_pool_.pool();
   initInfo.Allocator = nullptr;
-  initInfo.MinImageCount = core::MAX_FRAMES_IN_FLIGHT;
-  initInfo.ImageCount = core::MAX_FRAMES_IN_FLIGHT;
+  initInfo.MinImageCount = frames_in_flight_;
+  initInfo.ImageCount = frames_in_flight_;
   initInfo.CheckVkResultFn = checkVkResult;
   initInfo.PipelineInfoMain = pipelineInfo;
 

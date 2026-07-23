@@ -23,7 +23,8 @@ public:
   explicit Executor(const core::Device &device,
                     const core::Swapchain &swapchain,
                     const core::CommandPool &commandPool, FrameSync &frameSync,
-                    scene::Scene &scene);
+                    scene::Scene &scene,
+                    const core::CommandBuffersDesc &commandBuffers);
   ~Executor() = default;
 
   Executor(const Executor &) = delete;
@@ -60,6 +61,8 @@ public:
   [[nodiscard]] auto currentFrameIndex() const noexcept -> uint32_t {
     return current_frame_;
   }
+
+  [[nodiscard]] auto framesInFlight() const noexcept -> uint32_t;
 
   void beginPass(const FramebufferSet &framebufferSet,
                  const pipeline::RenderPass &renderPass,

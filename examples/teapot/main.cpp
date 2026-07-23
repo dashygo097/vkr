@@ -55,7 +55,7 @@ private:
     desc.descriptorPool = {
         .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
                       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+        .maxSets = ctx.commandBuffers.size};
     desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
                         VkClearValue{.depthStencil = {1.0f, 0}}};
 
@@ -127,7 +127,7 @@ private:
     uiDesc.descriptorPool = {
         .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
                       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+        .maxSets = ctx.commandBuffers.size};
     uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
@@ -175,6 +175,7 @@ private:
         .version = VK_MAKE_VERSION(1, 0, 0),
         .surfaceIntegration = vkr::core::SurfaceIntegration::GLFW,
     };
+    ctx.commandBuffers.size = 2;
 
     ctx.camera = {
         .movementSpeed = 5.0f,

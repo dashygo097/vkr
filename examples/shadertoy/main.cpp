@@ -83,13 +83,13 @@ private:
       -> vkr::pipeline::DescriptorPoolDesc {
     vkr::pipeline::DescriptorPoolDesc desc{
         .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                       vkr::core::MAX_FRAMES_IN_FLIGHT}},
-        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+                       ctx.commandBuffers.size}},
+        .maxSets = ctx.commandBuffers.size};
 
     if (imageSamplerCount > 0) {
       desc.poolSizes.push_back(
           {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-           vkr::core::MAX_FRAMES_IN_FLIGHT * imageSamplerCount});
+           ctx.commandBuffers.size * imageSamplerCount});
     }
 
     return desc;
@@ -364,7 +364,7 @@ private:
     uiDesc.descriptorPool = {
         .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
                       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-        .maxSets = vkr::core::MAX_FRAMES_IN_FLIGHT};
+        .maxSets = ctx.commandBuffers.size};
     uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
@@ -445,6 +445,7 @@ private:
     ctx.swapchain = {
         .presentMode = VK_PRESENT_MODE_FIFO_KHR,
     };
+    ctx.commandBuffers.size = 2;
 
     ctx.camera = {
         .locked = true,

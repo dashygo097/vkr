@@ -132,7 +132,7 @@ void SkyboxPass::createDescriptors() {
   descriptor_sets_->update(pipeline::DescriptorSetsDesc{
       .pool = descriptor_pool_->pool(),
       .layout = descriptor_layout_->layout(),
-      .setCount = core::MAX_FRAMES_IN_FLIGHT,
+      .setCount = executor_.framesInFlight(),
       .writes = createDescriptorWrites(),
   });
 }
@@ -171,13 +171,14 @@ void SkyboxPass::createPipeline() {
 
 auto SkyboxPass::descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc {
   auto poolDesc = desc_.descriptorPool;
+  const uint32_t frameCount = executor_.framesInFlight();
 
   if (poolDesc.maxSets == 0) {
     poolDesc.poolSizes = {
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, core::MAX_FRAMES_IN_FLIGHT},
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, core::MAX_FRAMES_IN_FLIGHT},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, frameCount},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, frameCount},
     };
-    poolDesc.maxSets = core::MAX_FRAMES_IN_FLIGHT;
+    poolDesc.maxSets = frameCount;
   }
 
   return poolDesc;
@@ -191,10 +192,10 @@ auto SkyboxPass::createDescriptorWrites() const
                      desc_.uniformName);
   }
 
-  if (uniformBuffer->frameCount() != core::MAX_FRAMES_IN_FLIGHT) {
+  const uint32_t frameCount = executor_.framesInFlight();
+  if (uniformBuffer->frameCount() != frameCount) {
     VKR_EXEC_ERROR("SkyboxPass '{}' uniform frame count mismatch: {} vs {}",
-                     name(), uniformBuffer->frameCount(),
-                     core::MAX_FRAMES_IN_FLIGHT);
+                     name(), uniformBuffer->frameCount(), frameCount);
   }
 
   auto cubemap = scene_.getCubemap(desc_.cubemapName);
@@ -209,12 +210,11 @@ auto SkyboxPass::createDescriptorWrites() const
   }
 
   std::vector<pipeline::DescriptorSetWriteDesc> writes{};
-  writes.reserve(core::MAX_FRAMES_IN_FLIGHT);
+  writes.reserve(frameCount);
 
   VkDescriptorImageInfo imageInfo = cubemap->descriptorInfo();
 
-  for (uint32_t frameIndex = 0; frameIndex < core::MAX_FRAMES_IN_FLIGHT;
-       ++frameIndex) {
+  for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
     auto write = pipeline::DescriptorSetWriteDesc::forSet(frameIndex);
 
     const auto bufferInfo = uniformBuffer->descriptorInfo(frameIndex);

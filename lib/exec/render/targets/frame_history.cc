@@ -5,13 +5,16 @@ namespace vkr::exec {
 
 FrameHistoryTarget::FrameHistoryTarget(const core::Device &device,
                                        const core::CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {
-  ensureTargets();
-}
+    : device_(device), command_pool_(commandPool) {}
 
 FrameHistoryTarget::~FrameHistoryTarget() { destroy(); }
 
 void FrameHistoryTarget::create() {
+  if (desc_.frameCount == 0) {
+    VKR_RES_ERROR("FrameHistoryTargetDesc frameCount must be greater than "
+                  "zero");
+  }
+
   ensureTargets();
 
   for (auto &target : targets_) {

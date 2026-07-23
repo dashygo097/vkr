@@ -34,19 +34,16 @@ auto findUiPass(const RenderGraph &graph)
   return std::nullopt;
 }
 
-void configureCommandPoolRoles(RenderAppDesc &ctx) {
-  ctx.graphicsCommandPool.queueRole = core::CommandQueueRole::Graphics;
-  ctx.computeCommandPool.queueRole = core::CommandQueueRole::Compute;
-  ctx.transferCommandPool.queueRole = core::CommandQueueRole::Transfer;
-}
-
 } // namespace
 
 void RenderApplication::initVulkan() {
   Logger::init();
   configure();
   loadSnapshot();
-  configureCommandPoolRoles(ctx);
+
+  ctx.graphicsCommandPool.queueRole = core::CommandQueueRole::Graphics;
+  ctx.computeCommandPool.queueRole = core::CommandQueueRole::Compute;
+  ctx.transferCommandPool.queueRole = core::CommandQueueRole::Transfer;
 
   if (!ctx.isValid()) {
     VKR_CORE_ERROR("invalid app config");
@@ -97,10 +94,12 @@ void RenderApplication::initVulkan() {
   }
 
   // sync objects
-  frameSync = std::make_unique<FrameSync>(*device, *swapchain);
+  frameSync =
+      std::make_unique<FrameSync>(*device, *swapchain, ctx.commandBuffers.size);
 
   // scene
-  scene = std::make_unique<vkr::scene::Scene>(*device, *graphicsCommandPool);
+  scene = std::make_unique<vkr::scene::Scene>(*device, *graphicsCommandPool,
+                                              ctx.commandBuffers.size);
 
   // user resources
   createResources();
@@ -113,9 +112,9 @@ void RenderApplication::initVulkan() {
       std::make_unique<vkr::scene::Camera>(*timer, *inputTracer, ctx.camera);
 
   // executor
-  executor = std::make_unique<Executor>(*device, *swapchain,
-                                        *graphicsCommandPool, *frameSync,
-                                        *scene);
+  executor =
+      std::make_unique<Executor>(*device, *swapchain, *graphicsCommandPool,
+                                 *frameSync, *scene, ctx.commandBuffers);
 
   // render graph
   graph = std::make_unique<RenderGraph>();

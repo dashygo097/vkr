@@ -28,8 +28,7 @@ void RenderGraph::addDependency(std::string producer, std::string consumer) {
   }
 
   if (producer == consumer) {
-    VKR_EXEC_ERROR("Render graph pass '{}' cannot depend on itself",
-                     producer);
+    VKR_EXEC_ERROR("Render graph pass '{}' cannot depend on itself", producer);
   }
 
   manual_dependencies_[std::move(producer)].push_back(std::move(consumer));
@@ -166,8 +165,7 @@ auto RenderGraph::afterFrame() -> void {
   }
 }
 
-auto RenderGraph::passes()
-    -> std::vector<std::reference_wrapper<Pass>> {
+auto RenderGraph::passes() -> std::vector<std::reference_wrapper<Pass>> {
   std::vector<std::reference_wrapper<Pass>> result{};
   result.reserve(passes_.size());
 
@@ -217,7 +215,7 @@ auto RenderGraph::validatePassNameAvailable(std::string_view name) const
   for (const auto &pass : passes_) {
     if (pass->name() == name) {
       VKR_EXEC_ERROR("Render graph pass '{}' already exists",
-                       std::string(name));
+                     std::string(name));
     }
   }
 }
@@ -225,8 +223,8 @@ auto RenderGraph::validatePassNameAvailable(std::string_view name) const
 auto RenderGraph::validateDependencies() const -> void {
   for (const auto &[producer, consumers] : manual_dependencies_) {
     if (pass_indices_.find(producer) == pass_indices_.end()) {
-      VKR_EXEC_ERROR(
-          "Render graph dependency references unknown producer '{}'", producer);
+      VKR_EXEC_ERROR("Render graph dependency references unknown producer '{}'",
+                     producer);
     }
 
     for (const auto &consumer : consumers) {
@@ -257,8 +255,8 @@ auto RenderGraph::validatePresentationContract() const -> void {
 
   if (presenterCount > 1) {
     VKR_EXEC_ERROR("Render graph has {} PresentPass nodes; only one "
-                     "swapchain presenter is allowed",
-                     presenterCount);
+                   "swapchain presenter is allowed",
+                   presenterCount);
   }
 
   if (presenterCount == 0) {
@@ -267,7 +265,7 @@ auto RenderGraph::validatePresentationContract() const -> void {
 
   if (!writesSwapchain) {
     VKR_EXEC_ERROR("Render graph has a PresentPass but no pass writes "
-                     "'swapchain'");
+                   "'swapchain'");
   }
 }
 
@@ -328,8 +326,7 @@ auto RenderGraph::passIndex(std::string_view name) const -> size_t {
   auto it = pass_indices_.find(std::string(name));
 
   if (it == pass_indices_.end()) {
-    VKR_EXEC_ERROR("Render graph pass '{}' does not exist",
-                     std::string(name));
+    VKR_EXEC_ERROR("Render graph pass '{}' does not exist", std::string(name));
   }
 
   return it->second;

@@ -38,6 +38,7 @@ struct RenderAppDesc {
   core::CommandPoolDesc graphicsCommandPool{};
   core::CommandPoolDesc computeCommandPool{core::CommandQueueRole::Compute};
   core::CommandPoolDesc transferCommandPool{core::CommandQueueRole::Transfer};
+  core::CommandBuffersDesc commandBuffers{};
   vkr::scene::CameraDesc camera{};
   ui::UiDesc ui{};
 
@@ -45,7 +46,8 @@ struct RenderAppDesc {
     return asset.isValid() && window.isValid() && instance.isValid() &&
            device.isValid() && swapchain.isValid() &&
            graphicsCommandPool.isValid() && computeCommandPool.isValid() &&
-           transferCommandPool.isValid() && camera.isValid() && ui.isValid();
+           transferCommandPool.isValid() && commandBuffers.isValid() &&
+           camera.isValid() && ui.isValid();
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
@@ -57,6 +59,7 @@ struct RenderAppDesc {
     ar("graphicsCommandPool", graphicsCommandPool);
     ar("computeCommandPool", computeCommandPool);
     ar("transferCommandPool", transferCommandPool);
+    ar("commandBuffers", commandBuffers);
     ar("camera", camera);
     ar("ui", ui);
   }

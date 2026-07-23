@@ -70,7 +70,8 @@ public:
      exec::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool,
-     exec::RenderGraph &graph, util::Timer &timer, UiDesc &desc);
+     exec::RenderGraph &graph, util::Timer &timer, UiDesc &desc,
+     uint32_t framesInFlight);
   ~UI();
 
   UI(const UI &) = delete;
@@ -140,6 +141,7 @@ private:
 
   // components
   UiDesc &desc_;
+  uint32_t frames_in_flight_{0};
   std::unique_ptr<ViewportPanel> viewport_panel_;
   std::unique_ptr<ResourceTree> resource_tree_;
   std::unique_ptr<ExecGraphPanel> graph_panel_;

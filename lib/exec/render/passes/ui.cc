@@ -49,7 +49,7 @@ void UiPass::create() {
   ui_ = std::make_unique<ui::UI>(
       window_, instance_, surface_, device_, command_pool_, scene_,
       asset_system_, camera_, source_.target(), *render_pass_,
-      *descriptor_pool_, graph_, timer_, ui_desc_);
+      *descriptor_pool_, graph_, timer_, ui_desc_, executor_.framesInFlight());
   ui_->layoutMode(desc_.layoutMode);
 }
 
