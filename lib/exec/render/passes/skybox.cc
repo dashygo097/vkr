@@ -52,14 +52,14 @@ void SkyboxPass::record() {
     auto mesh = scene_.getMesh(desc_.meshName);
     if (!mesh || !mesh->isValid()) {
       VKR_EXEC_ERROR("SkyboxPass '{}' mesh resource not found: {}", name(),
-                       desc_.meshName);
+                     desc_.meshName);
     }
 
     const auto vertexBuffer = mesh->vertexBufferBase();
     const auto indexBuffer = mesh->indexBuffer();
     if (!vertexBuffer || !indexBuffer) {
       VKR_EXEC_ERROR("SkyboxPass '{}' mesh '{}' has invalid buffers", name(),
-                       desc_.meshName);
+                     desc_.meshName);
     }
 
     const std::vector<VkDescriptorSet> emptySets{};
@@ -102,14 +102,12 @@ void SkyboxPass::createRenderPass() {
 }
 
 void SkyboxPass::createFramebuffers() {
-  FramebufferDesc framebufferDesc{
-      .width = target_->width(),
-      .height = target_->height(),
-      .layers = 1,
-      .attachments = {target_->attachmentViews()}};
+  FramebufferDesc framebufferDesc{.width = target_->width(),
+                                  .height = target_->height(),
+                                  .layers = 1,
+                                  .attachments = {target_->attachmentViews()}};
 
-  framebuffers_ =
-      std::make_unique<FramebufferSet>(device_, *render_pass_);
+  framebuffers_ = std::make_unique<FramebufferSet>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
 }
 
@@ -156,7 +154,7 @@ void SkyboxPass::createPipeline() {
 
   if (!pipelineDesc.isValid()) {
     VKR_EXEC_WARN("SkyboxPass '{}' has no valid graphics pipeline desc",
-                    name());
+                  name());
     return;
   }
 
@@ -165,7 +163,7 @@ void SkyboxPass::createPipeline() {
 
   if (!pipeline_->valid()) {
     VKR_EXEC_ERROR("SkyboxPass '{}' failed to create graphics pipeline '{}'",
-                     name(), pipelineDesc.name);
+                   name(), pipelineDesc.name);
   }
 }
 
@@ -189,24 +187,24 @@ auto SkyboxPass::createDescriptorWrites() const
   auto uniformBuffer = scene_.getUniformBuffer(desc_.uniformName);
   if (!uniformBuffer) {
     VKR_EXEC_ERROR("SkyboxPass '{}' uniform resource not found: {}", name(),
-                     desc_.uniformName);
+                   desc_.uniformName);
   }
 
   const uint32_t frameCount = executor_.framesInFlight();
   if (uniformBuffer->frameCount() != frameCount) {
     VKR_EXEC_ERROR("SkyboxPass '{}' uniform frame count mismatch: {} vs {}",
-                     name(), uniformBuffer->frameCount(), frameCount);
+                   name(), uniformBuffer->frameCount(), frameCount);
   }
 
   auto cubemap = scene_.getCubemap(desc_.cubemapName);
   if (!cubemap) {
     VKR_EXEC_ERROR("SkyboxPass '{}' cubemap resource not found: {}", name(),
-                     desc_.cubemapName);
+                   desc_.cubemapName);
   }
 
   if (!cubemap->valid()) {
     VKR_EXEC_ERROR("SkyboxPass '{}' cubemap has no sampler: {}", name(),
-                     desc_.cubemapName);
+                   desc_.cubemapName);
   }
 
   std::vector<pipeline::DescriptorSetWriteDesc> writes{};

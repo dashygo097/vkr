@@ -4,8 +4,7 @@
 namespace vkr::exec {
 
 FrameSync::FrameSync(const core::Device &device,
-                     const core::Swapchain &swapchain,
-                     uint32_t framesInFlight)
+                     const core::Swapchain &swapchain, uint32_t framesInFlight)
     : device_(device), swapchain_(swapchain),
       frames_in_flight_(framesInFlight) {
   if (frames_in_flight_ == 0) {

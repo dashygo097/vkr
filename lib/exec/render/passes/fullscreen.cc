@@ -8,62 +8,6 @@
 namespace vkr::exec {
 namespace {
 
-auto defaultDescriptorPoolDesc(
-    pipeline::DescriptorPoolDesc poolDesc,
-    const std::vector<pipeline::DescriptorBinding> &resourceBindings,
-    size_t sourceCount, uint32_t frameCount) -> pipeline::DescriptorPoolDesc {
-  if (poolDesc.maxSets != 0) {
-    return poolDesc;
-  }
-
-  uint32_t uniformCount = 0;
-  uint32_t imageCount = static_cast<uint32_t>(sourceCount);
-
-  for (const auto &binding : resourceBindings) {
-    switch (binding.layout.descriptorType) {
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-      uniformCount++;
-      break;
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-      imageCount++;
-      break;
-    default:
-      break;
-    }
-  }
-
-  if (uniformCount > 0) {
-    poolDesc.poolSizes.push_back(
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-         static_cast<uint32_t>(frameCount * uniformCount)});
-  }
-
-  if (imageCount > 0) {
-    poolDesc.poolSizes.push_back(
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-         static_cast<uint32_t>(frameCount * imageCount)});
-  }
-
-  poolDesc.maxSets = frameCount;
-  return poolDesc;
-}
-
-auto nextBindingAfter(
-    const std::vector<pipeline::DescriptorBinding> &resourceBindings)
-    -> uint32_t {
-  uint32_t nextBinding = 0;
-
-  for (const auto &binding : resourceBindings) {
-    const uint32_t descriptorCount = binding.layout.descriptorCount == 0
-                                         ? 1U
-                                         : binding.layout.descriptorCount;
-    nextBinding =
-        std::max(nextBinding, binding.layout.binding + descriptorCount);
-  }
-
-  return nextBinding;
-}
-
 void appendResourceDescriptorWrites(
     std::string_view passName, const scene::Scene *scene,
     const std::vector<pipeline::DescriptorBinding> &bindings,
@@ -382,7 +326,15 @@ auto FullscreenPass::resolvedInputs() const
     std::vector<FullscreenPassInputDesc> inputs{};
     inputs.reserve(sources_.size());
 
-    const uint32_t firstBinding = nextBindingAfter(desc_.descriptorBindings);
+    uint32_t firstBinding = 0;
+    for (const auto &binding : desc_.descriptorBindings) {
+      const uint32_t descriptorCount = binding.layout.descriptorCount == 0
+                                           ? 1U
+                                           : binding.layout.descriptorCount;
+      firstBinding =
+          std::max(firstBinding, binding.layout.binding + descriptorCount);
+    }
+
     for (uint32_t index = 0; index < sources_.size(); ++index) {
       inputs.push_back(
           FullscreenPassInputDesc{.binding = firstBinding + index});
@@ -403,9 +355,40 @@ auto FullscreenPass::resolvedInputs() const
 auto FullscreenPass::descriptorPoolDesc(
     const std::vector<FullscreenPassInputDesc> &inputs) const
     -> pipeline::DescriptorPoolDesc {
-  return defaultDescriptorPoolDesc(desc_.descriptorPool,
-                                   desc_.descriptorBindings, inputs.size(),
-                                   executor_.framesInFlight());
+  auto poolDesc = desc_.descriptorPool;
+  if (poolDesc.maxSets != 0) {
+    return poolDesc;
+  }
+
+  uint32_t uniformCount = 0;
+  auto imageCount = static_cast<uint32_t>(inputs.size());
+
+  for (const auto &binding : desc_.descriptorBindings) {
+    switch (binding.layout.descriptorType) {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+      ++uniformCount;
+      break;
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+      ++imageCount;
+      break;
+    default:
+      break;
+    }
+  }
+
+  const uint32_t frameCount = executor_.framesInFlight();
+  if (uniformCount > 0) {
+    poolDesc.poolSizes.push_back(
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, frameCount * uniformCount});
+  }
+
+  if (imageCount > 0) {
+    poolDesc.poolSizes.push_back(
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, frameCount * imageCount});
+  }
+
+  poolDesc.maxSets = frameCount;
+  return poolDesc;
 }
 
 auto FullscreenPass::createDescriptorWrites(

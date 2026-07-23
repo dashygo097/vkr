@@ -1,6 +1,6 @@
 #include "vkr/exec/render/passes/raster.hh"
-#include "vkr/logger.hh"
 #include "vkr/exec/render/executor.hh"
+#include "vkr/logger.hh"
 #include <algorithm>
 #include <unordered_set>
 
@@ -97,14 +97,12 @@ void RasterPass::createRenderPass() {
 }
 
 void RasterPass::createFramebuffers() {
-  FramebufferDesc framebufferDesc{
-      .width = target_->width(),
-      .height = target_->height(),
-      .layers = 1,
-      .attachments = {target_->attachmentViews()}};
+  FramebufferDesc framebufferDesc{.width = target_->width(),
+                                  .height = target_->height(),
+                                  .layers = 1,
+                                  .attachments = {target_->attachmentViews()}};
 
-  framebuffers_ =
-      std::make_unique<FramebufferSet>(device_, *render_pass_);
+  framebuffers_ = std::make_unique<FramebufferSet>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
 }
 
@@ -142,7 +140,7 @@ void RasterPass::createPipeline() {
 
   if (!pipelineDesc.isValid()) {
     VKR_EXEC_WARN("RasterPass '{}' has no valid graphics pipeline desc",
-                    name());
+                  name());
     return;
   }
 
@@ -151,7 +149,7 @@ void RasterPass::createPipeline() {
 
   if (!pipeline_->valid()) {
     VKR_EXEC_ERROR("RasterPass '{}' failed to create graphics pipeline '{}'",
-                     name(), pipelineDesc.name);
+                   name(), pipelineDesc.name);
   }
 
   auto gridPipelineDesc = pipelineDesc;
@@ -185,7 +183,7 @@ auto RasterPass::createDescriptorWrites() const
   for (const auto &binding : desc_.descriptorBindings) {
     if (binding.name.empty()) {
       VKR_EXEC_ERROR("Descriptor binding {} has empty resource name",
-                       binding.layout.binding);
+                     binding.layout.binding);
     }
 
     switch (binding.layout.descriptorType) {
@@ -198,8 +196,7 @@ auto RasterPass::createDescriptorWrites() const
 
       if (uniformBuffer->frameCount() != frameCount) {
         VKR_EXEC_ERROR("Uniform buffer '{}' frame count mismatch: {} vs {}",
-                         binding.name, uniformBuffer->frameCount(),
-                         frameCount);
+                       binding.name, uniformBuffer->frameCount(), frameCount);
       }
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -240,9 +237,9 @@ auto RasterPass::createDescriptorWrites() const
 
     default:
       VKR_EXEC_ERROR("RasterPass '{}' cannot create descriptor writes for "
-                       "resource '{}' with descriptor type {}",
-                       name(), binding.name,
-                       static_cast<int>(binding.layout.descriptorType));
+                     "resource '{}' with descriptor type {}",
+                     name(), binding.name,
+                     static_cast<int>(binding.layout.descriptorType));
     }
   }
 

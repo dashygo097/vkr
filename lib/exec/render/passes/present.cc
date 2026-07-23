@@ -12,8 +12,6 @@ void PresentPass::record() {
   // explicit, but it records no commands.
 }
 
-void PresentPass::present() {
-  executor_.presentFrame();
-}
+void PresentPass::present() { executor_.presentFrame(); }
 
 } // namespace vkr::exec

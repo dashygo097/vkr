@@ -29,9 +29,7 @@ void FrameHistoryTarget::update(const FrameHistoryTargetDesc &desc) {
   create();
 }
 
-auto FrameHistoryTarget::read() -> OffscreenTarget & {
-  return readForFrame(0);
-}
+auto FrameHistoryTarget::read() -> OffscreenTarget & { return readForFrame(0); }
 
 auto FrameHistoryTarget::read() const -> const OffscreenTarget & {
   return readForFrame(0);
