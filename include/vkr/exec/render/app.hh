@@ -7,14 +7,7 @@
 #include "vkr/core/swapchain.hh"
 #include "vkr/exec/render/sync/frame_sync.hh"
 #include "vkr/core/window.hh"
-#include "vkr/logger.hh"
 #include "vkr/exec/render/graph.hh"
-#include "vkr/exec/render/passes/composite.hh"
-#include "vkr/exec/render/passes/fullscreen.hh"
-#include "vkr/exec/render/passes/post_process.hh"
-#include "vkr/exec/render/passes/raster.hh"
-#include "vkr/exec/render/passes/skybox.hh"
-#include "vkr/exec/render/passes/ui.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/scene/scene.hh"
@@ -22,10 +15,8 @@
 #include "vkr/util/asset.hh"
 #include "vkr/util/input_tracer.hh"
 #include "vkr/util/timer.hh"
-#include "vkr/util/toml.hh"
 #include <filesystem>
 #include <memory>
-#include <vector>
 
 namespace vkr::exec {
 
@@ -73,17 +64,7 @@ public:
   RenderApplication(const RenderApplication &) = delete;
   auto operator=(const RenderApplication &) -> RenderApplication & = delete;
 
-  void run() {
-    initVulkan();
-
-    try {
-      mainLoop();
-      saveSnapshot();
-    } catch (...) {
-      saveSnapshot();
-      throw;
-    }
-  }
+  void run();
 
   RenderAppDesc ctx;
 
@@ -133,28 +114,8 @@ private:
   void updateUiState();
   void recreateSwapchain();
 
-  void loadSnapshot() {
-    const auto path = snapshotPath();
-
-    if (!std::filesystem::exists(path)) {
-      VKR_UTIL_INFO("snapshot not found, using default config: {}",
-                    path.string());
-      return;
-    }
-
-    if (!vkr::util::loadTomlFile(path, ctx)) {
-      VKR_UTIL_WARN("failed to load snapshot, using default config: {}",
-                    path.string());
-    }
-  }
-
-  void saveSnapshot() {
-    const auto path = snapshotPath();
-
-    if (!vkr::util::saveTomlFile(path, ctx)) {
-      VKR_UTIL_WARN("failed to save snapshot: {}", path.string());
-    }
-  }
+  void loadSnapshot();
+  void saveSnapshot();
 };
 
 } // namespace vkr::exec

@@ -1,40 +1,46 @@
 #include "vkr/exec/render/app.hh"
+#include "vkr/exec/render/passes/ui.hh"
+#include "vkr/logger.hh"
+#include "vkr/util/toml.hh"
 #include <GLFW/glfw3.h>
-#include <functional>
-#include <optional>
-#include <typeinfo>
+#include <filesystem>
 
 namespace vkr::exec {
 
-namespace {
+void RenderApplication::run() {
+  initVulkan();
 
-auto findUiPass(RenderGraph &graph)
-    -> std::optional<std::reference_wrapper<UiPass>> {
-  for (auto pass : graph.passes()) {
-    auto &graphPass = pass.get();
-
-    if (typeid(graphPass) == typeid(UiPass)) {
-      return static_cast<UiPass &>(graphPass);
-    }
+  try {
+    mainLoop();
+    saveSnapshot();
+  } catch (...) {
+    saveSnapshot();
+    throw;
   }
-
-  return std::nullopt;
 }
 
-auto findUiPass(const RenderGraph &graph)
-    -> std::optional<std::reference_wrapper<const UiPass>> {
-  for (auto pass : graph.passes()) {
-    const auto &graphPass = pass.get();
+void RenderApplication::loadSnapshot() {
+  const auto path = snapshotPath();
 
-    if (typeid(graphPass) == typeid(UiPass)) {
-      return static_cast<const UiPass &>(graphPass);
-    }
+  if (!std::filesystem::exists(path)) {
+    VKR_UTIL_INFO("snapshot not found, using default config: {}",
+                  path.string());
+    return;
   }
 
-  return std::nullopt;
+  if (!vkr::util::loadTomlFile(path, ctx)) {
+    VKR_UTIL_WARN("failed to load snapshot, using default config: {}",
+                  path.string());
+  }
 }
 
-} // namespace
+void RenderApplication::saveSnapshot() {
+  const auto path = snapshotPath();
+
+  if (!vkr::util::saveTomlFile(path, ctx)) {
+    VKR_UTIL_WARN("failed to save snapshot: {}", path.string());
+  }
+}
 
 void RenderApplication::initVulkan() {
   Logger::init();
@@ -177,12 +183,12 @@ auto RenderApplication::shouldClose() const -> bool {
     return false;
   }
 
-  const auto uiPass = findUiPass(*graph);
+  const auto uiPass = graph->uiPass();
   return uiPass && uiPass->get().shouldClose();
 }
 
 void RenderApplication::updateUiState() {
-  const auto uiPass = findUiPass(*graph);
+  const auto uiPass = graph->uiPass();
   if (!uiPass) {
     return;
   }
@@ -203,7 +209,7 @@ void RenderApplication::updateUiState() {
 
 void RenderApplication::recreateSwapchain() {
   if (graph) {
-    const auto uiPass = findUiPass(*graph);
+    const auto uiPass = graph->uiPass();
     if (uiPass) {
       ctx.ui.layoutMode = uiPass->get().layoutMode();
     }

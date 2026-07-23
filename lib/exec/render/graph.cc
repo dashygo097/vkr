@@ -1,4 +1,5 @@
 #include "vkr/exec/render/graph.hh"
+#include "vkr/exec/render/passes/ui.hh"
 #include "vkr/logger.hh"
 #include <deque>
 #include <string_view>
@@ -186,6 +187,28 @@ auto RenderGraph::passes() const
   }
 
   return result;
+}
+
+auto RenderGraph::uiPass()
+    -> std::optional<std::reference_wrapper<UiPass>> {
+  for (auto &pass : passes_) {
+    if (auto *ui = dynamic_cast<UiPass *>(pass.get())) {
+      return *ui;
+    }
+  }
+
+  return std::nullopt;
+}
+
+auto RenderGraph::uiPass() const
+    -> std::optional<std::reference_wrapper<const UiPass>> {
+  for (const auto &pass : passes_) {
+    if (const auto *ui = dynamic_cast<const UiPass *>(pass.get())) {
+      return *ui;
+    }
+  }
+
+  return std::nullopt;
 }
 
 auto RenderGraph::rebuildNameTable() -> void {
