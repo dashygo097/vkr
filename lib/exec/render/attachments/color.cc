@@ -22,8 +22,8 @@ void ColorAttachment::create() {
                   desc_.height);
   }
 
-  auto imageDesc =
-      resource::ImageDesc::colorAttachment(desc_.width, desc_.height, desc_.format);
+  auto imageDesc = resource::ImageDesc::colorAttachment(
+      desc_.width, desc_.height, desc_.format);
 
   imageDesc.usage = desc_.usage;
 
@@ -31,7 +31,8 @@ void ColorAttachment::create() {
   image_->setLayout(desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
                         ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
                         : desc_.finalLayout);
-  image_view_->update(resource::ImageViewDesc::color2D(image_->image(), desc_.format));
+  image_view_->update(
+      resource::ImageViewDesc::color2D(image_->image(), desc_.format));
 
   if (desc_.createSampler) {
     if (!sampler_) {

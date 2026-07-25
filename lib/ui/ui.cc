@@ -26,19 +26,16 @@ void checkVkResult(VkResult err) {
 
 UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
-       const core::CommandPool &commandPool,
-       scene::Scene &scene,
+       const core::CommandPool &commandPool, scene::Scene &scene,
        const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
        exec::OffscreenTarget &offscreenTarget,
        const pipeline::RenderPass &renderPass,
-       const pipeline::DescriptorPool &descriptorPool,
-       exec::RenderGraph &graph, util::Timer &timer, UiDesc &desc,
-       uint32_t framesInFlight)
+       const pipeline::DescriptorPool &descriptorPool, exec::RenderGraph &graph,
+       util::Timer &timer, UiDesc &desc, uint32_t framesInFlight)
     : window_(window), instance_(instance), surface_(surface), device_(device),
-      command_pool_(commandPool), scene_(scene),
-      asset_system_(assetSystem), camera_(camera),
-      offscreen_target_(offscreenTarget), render_pass_(renderPass),
-      descriptor_pool_(descriptorPool), graph_(graph),
+      command_pool_(commandPool), scene_(scene), asset_system_(assetSystem),
+      camera_(camera), offscreen_target_(offscreenTarget),
+      render_pass_(renderPass), descriptor_pool_(descriptorPool), graph_(graph),
       timer_(timer), desc_(desc), frames_in_flight_(framesInFlight) {
   if (frames_in_flight_ == 0) {
     VKR_UI_ERROR("UI framesInFlight must be greater than zero");
@@ -288,8 +285,7 @@ void UI::setupDockingLayout() {
 
   ImGui::DockBuilderDockWindow(resource_tree_->name().c_str(), dockLeft);
   ImGui::DockBuilderDockWindow(assets_panel_->name().c_str(), dockLeft);
-  ImGui::DockBuilderDockWindow(graph_panel_->name().c_str(),
-                               dockLeftBottom);
+  ImGui::DockBuilderDockWindow(graph_panel_->name().c_str(), dockLeftBottom);
   ImGui::DockBuilderDockWindow(camera_panel_->name().c_str(), dockLeftBottom);
   ImGui::DockBuilderDockWindow(mesh_editor_panel_->name().c_str(),
                                dockLeftBottom);

@@ -292,8 +292,7 @@ struct GraphicsPipelineDesc {
   }
 
   auto vertexShader(resource::ShaderModuleDesc shaderDesc,
-                    std::string entryPoint = "main")
-      -> GraphicsPipelineDesc & {
+                    std::string entryPoint = "main") -> GraphicsPipelineDesc & {
     shaders.push_back(GraphicsShaderStageDesc::vertex(std::move(shaderDesc),
                                                       std::move(entryPoint)));
     return *this;

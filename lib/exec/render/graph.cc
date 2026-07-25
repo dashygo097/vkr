@@ -189,8 +189,7 @@ auto RenderGraph::passes() const
   return result;
 }
 
-auto RenderGraph::uiPass()
-    -> std::optional<std::reference_wrapper<UiPass>> {
+auto RenderGraph::uiPass() -> std::optional<std::reference_wrapper<UiPass>> {
   for (auto &pass : passes_) {
     if (auto *ui = dynamic_cast<UiPass *>(pass.get())) {
       return *ui;

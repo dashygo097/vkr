@@ -22,9 +22,10 @@ void DepthAttachment::create() {
                   desc_.height);
   }
 
-  image_->update(
-      resource::ImageDesc::depthAttachment(desc_.width, desc_.height, desc_.format));
-  image_view_->update(resource::ImageViewDesc::depth2D(image_->image(), desc_.format));
+  image_->update(resource::ImageDesc::depthAttachment(desc_.width, desc_.height,
+                                                      desc_.format));
+  image_view_->update(
+      resource::ImageViewDesc::depth2D(image_->image(), desc_.format));
 }
 
 void DepthAttachment::destory() {
