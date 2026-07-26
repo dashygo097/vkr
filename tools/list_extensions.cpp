@@ -21,10 +21,25 @@ auto main() -> int {
     return 1;
   }
 
-  std::cout << "Available Vulkan Instance Extensions:\n";
+  uint32_t instanceVersion = VK_API_VERSION_1_0;
+  auto enumerateInstanceVersion =
+      reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
+          vkGetInstanceProcAddr(VK_NULL_HANDLE,
+                                "vkEnumerateInstanceVersion"));
+  if (enumerateInstanceVersion != nullptr) {
+    enumerateInstanceVersion(&instanceVersion);
+  }
+
+  std::cout << "Vulkan Instance Version: "
+            << VK_VERSION_MAJOR(instanceVersion) << "."
+            << VK_VERSION_MINOR(instanceVersion) << "."
+            << VK_VERSION_PATCH(instanceVersion) << "\n\n";
+
+  std::cout << "Instance Extensions: count = " << extensions.size() << "\n";
+  std::cout << "-------------------------------\n";
   for (const auto &extension : extensions) {
-    std::cout << '\t' << extension.extensionName << " (version "
-              << extension.specVersion << ")\n";
+    std::cout << extension.extensionName << " : extension revision "
+              << extension.specVersion << "\n";
   }
 
   return 0;
