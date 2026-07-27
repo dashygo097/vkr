@@ -13,6 +13,9 @@
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/scene/scene.hh"
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace vkr::exec {
 
@@ -21,7 +24,183 @@ struct RasterPassDesc {
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
-  pipeline::GraphicsPipelineDesc pipeline{};
+  pipeline::GraphicsPipelineDesc graphicsPipeline{};
+
+  auto color(uint32_t width, uint32_t height, VkFormat format)
+      -> RasterPassDesc & {
+    target.color.width = width;
+    target.color.height = height;
+    target.color.format = format;
+    return *this;
+  }
+
+  auto color(ColorAttachmentDesc desc) -> RasterPassDesc & {
+    target.color = std::move(desc);
+    return *this;
+  }
+
+  auto colorUsage(VkImageUsageFlags usage) -> RasterPassDesc & {
+    target.color.usage = usage;
+    return *this;
+  }
+
+  auto sampledColor(bool enabled = true) -> RasterPassDesc & {
+    if (enabled) {
+      target.color.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+      target.color.createSampler = true;
+      if (target.color.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
+        target.color.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      }
+      return *this;
+    }
+
+    target.color.usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;
+    target.color.createSampler = false;
+    return *this;
+  }
+
+  auto colorFinalLayout(VkImageLayout layout) -> RasterPassDesc & {
+    target.color.finalLayout = layout;
+    return *this;
+  }
+
+  auto colorSampler(resource::SamplerDesc desc) -> RasterPassDesc & {
+    target.color.sampler = std::move(desc);
+    target.color.createSampler = true;
+    return *this;
+  }
+
+  auto depth(VkFormat format) -> RasterPassDesc & {
+    target.depth = DepthAttachmentDesc{
+        .width = target.color.width,
+        .height = target.color.height,
+        .format = format,
+    };
+    return *this;
+  }
+
+  auto depth(uint32_t width, uint32_t height, VkFormat format)
+      -> RasterPassDesc & {
+    target.depth = DepthAttachmentDesc{
+        .width = width,
+        .height = height,
+        .format = format,
+    };
+    return *this;
+  }
+
+  auto disableDepthAttachment() -> RasterPassDesc & {
+    target.depth.reset();
+    return *this;
+  }
+
+  auto descriptor(pipeline::DescriptorBinding binding) -> RasterPassDesc & {
+    descriptorBindings.push_back(std::move(binding));
+    return *this;
+  }
+
+  auto uniform(uint32_t binding, std::string name,
+               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+               uint32_t descriptorCount = 1) -> RasterPassDesc & {
+    return descriptor({.name = std::move(name),
+                       .layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                  descriptorCount, stageFlags}});
+  }
+
+  auto texture(uint32_t binding, std::string name,
+               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+               uint32_t descriptorCount = 1) -> RasterPassDesc & {
+    return descriptor(
+        {.name = std::move(name),
+         .layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    descriptorCount, stageFlags}});
+  }
+
+  auto clearColor(float r, float g, float b, float a) -> RasterPassDesc & {
+    clearValues.push_back(VkClearValue{.color = {{r, g, b, a}}});
+    return *this;
+  }
+
+  auto clearDepth(float depthValue = 1.0f, uint32_t stencil = 0)
+      -> RasterPassDesc & {
+    clearValues.push_back(
+        VkClearValue{.depthStencil = {depthValue, stencil}});
+    return *this;
+  }
+
+  auto pipelineDesc(pipeline::GraphicsPipelineDesc desc) -> RasterPassDesc & {
+    graphicsPipeline = std::move(desc);
+    return *this;
+  }
+
+  auto pipeline(std::string name) -> RasterPassDesc & {
+    graphicsPipeline.setName(std::move(name));
+    return *this;
+  }
+
+  auto vertexInput(scene::VertexInputDesc desc) -> RasterPassDesc & {
+    graphicsPipeline.vertexInputDesc(std::move(desc));
+    return *this;
+  }
+
+  auto shader(pipeline::GraphicsShaderStageDesc shaderDesc)
+      -> RasterPassDesc & {
+    graphicsPipeline.shader(std::move(shaderDesc));
+    return *this;
+  }
+
+  auto vertexShader(resource::ShaderModuleDesc shaderDesc,
+                    std::string entryPoint = "main") -> RasterPassDesc & {
+    graphicsPipeline.vertexShader(std::move(shaderDesc),
+                                  std::move(entryPoint));
+    return *this;
+  }
+
+  auto fragmentShader(resource::ShaderModuleDesc shaderDesc,
+                      std::string entryPoint = "main") -> RasterPassDesc & {
+    graphicsPipeline.fragmentShader(std::move(shaderDesc),
+                                    std::move(entryPoint));
+    return *this;
+  }
+
+  auto depthTest(VkBool32 testEnable = VK_TRUE,
+                 VkBool32 writeEnable = VK_TRUE,
+                 VkCompareOp compareOp = VK_COMPARE_OP_LESS)
+      -> RasterPassDesc & {
+    graphicsPipeline.depth(testEnable, writeEnable, compareOp);
+    return *this;
+  }
+
+  auto disableDepthTest() -> RasterPassDesc & {
+    graphicsPipeline.disableDepth();
+    return *this;
+  }
+
+  auto readOnlyDepthTest() -> RasterPassDesc & {
+    graphicsPipeline.readOnlyDepth();
+    return *this;
+  }
+
+  auto rasterize(pipeline::GraphicsRasterizationDesc desc)
+      -> RasterPassDesc & {
+    graphicsPipeline.rasterize(desc);
+    return *this;
+  }
+
+  auto noCull() -> RasterPassDesc & {
+    graphicsPipeline.noCull();
+    return *this;
+  }
+
+  auto blend(pipeline::GraphicsColorBlendDesc desc) -> RasterPassDesc & {
+    graphicsPipeline.blend(std::move(desc));
+    return *this;
+  }
+
+  auto alphaBlend() -> RasterPassDesc & {
+    graphicsPipeline.alphaBlend();
+    return *this;
+  }
 };
 
 class RasterPass final : public Pass {

@@ -128,7 +128,7 @@ void RasterPass::createDescriptors() {
 }
 
 void RasterPass::createPipeline() {
-  auto pipelineDesc = desc_.pipeline;
+  auto pipelineDesc = desc_.graphicsPipeline;
   pipelineDesc.renderPass = render_pass_->renderPass();
 
   const VkDescriptorSetLayout descriptorSetLayout =

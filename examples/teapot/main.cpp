@@ -32,40 +32,22 @@ private:
 
   void buildGraph() override {
     vkr::exec::RasterPassDesc desc{};
-    desc.target = {
-        .color = {.width = swapchain->width(),
-                  .height = swapchain->height(),
-                  .format = VK_FORMAT_R8G8B8A8_UNORM,
-                  .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                           VK_IMAGE_USAGE_SAMPLED_BIT,
-                  .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  .createSampler = true},
-        .depth =
-            vkr::exec::DepthAttachmentDesc{.width = swapchain->width(),
-                                           .height = swapchain->height(),
-                                           .format = VK_FORMAT_D32_SFLOAT}};
-    desc.descriptorBindings = {
-        {.name = "default",
-         .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                    VK_SHADER_STAGE_VERTEX_BIT}},
-        {.name = "teapot_texture",
-         .layout = {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                    VK_SHADER_STAGE_FRAGMENT_BIT}},
-    };
-    desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
-                        VkClearValue{.depthStencil = {1.0f, 0}}};
-
-    vkr::pipeline::GraphicsPipelineDesc normal{};
-    normal.setName("teapot-local")
-        .vertexInputDesc(vkr::scene::VertexNormalTexture3D::vertexInputDesc())
+    desc.color(swapchain->width(), swapchain->height(),
+               VK_FORMAT_R8G8B8A8_UNORM)
+        .sampledColor()
+        .depth(VK_FORMAT_D32_SFLOAT)
+        .uniform(0, "default", VK_SHADER_STAGE_VERTEX_BIT)
+        .texture(1, "teapot_texture", VK_SHADER_STAGE_FRAGMENT_BIT)
+        .pipeline("teapot-local")
+        .vertexInput(vkr::scene::VertexNormalTexture3D::vertexInputDesc())
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolve("shaders/teapot/teapot.vert").string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
             assetSystem->resolve("shaders/teapot/teapot.frag").string()))
-        .depth()
-        .noCull();
-
-    desc.pipeline = normal;
+        .depthTest()
+        .noCull()
+        .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        .clearDepth();
 
     auto &rasterPass = graph->addPass<vkr::exec::RasterPass>(
         *executor, *device, *graphicsCommandPool, *scene);
