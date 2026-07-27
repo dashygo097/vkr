@@ -23,13 +23,6 @@
 
 namespace vkr::exec {
 
-struct UiPassDesc {
-  SwapchainTargetDesc target{};
-  pipeline::DescriptorPoolDesc descriptorPool{};
-  std::vector<VkClearValue> clearValues{};
-  ui::LayoutMode layoutMode{ui::LayoutMode::FullScreen};
-};
-
 class UiPass final : public Pass {
 public:
   UiPass(Executor &executor, const core::Window &window,
@@ -46,7 +39,6 @@ public:
 
   void create() override;
   void destroy() override;
-  void update(const UiPassDesc &desc);
   void record() override;
 
   [[nodiscard]] auto shouldClose() const noexcept -> bool {
@@ -93,7 +85,6 @@ private:
   ui::UiDesc &ui_desc_;
 
   // components
-  UiPassDesc desc_{};
   std::unique_ptr<SwapchainTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
   std::unique_ptr<FramebufferSet> framebuffers_{};

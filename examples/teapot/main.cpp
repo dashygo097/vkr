@@ -86,21 +86,12 @@ private:
         .write("scene.color");
     postProcessPass.update(postDesc);
 
-    vkr::exec::UiPassDesc uiDesc{};
-    uiDesc.layoutMode = ctx.ui.layoutMode;
-    uiDesc.descriptorPool = {
-        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
-                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-        .maxSets = ctx.commandBuffers.size};
-    uiDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
-
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
         *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *scene, *assetSystem, ctx.camera,
         vkr::exec::FullscreenPassSource{postProcessPass}, *graph, *timer,
         ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
-    uiPass.update(uiDesc);
 
     auto &presentPass = graph->addPass<vkr::exec::PresentPass>(*executor);
     presentPass.setName("present");

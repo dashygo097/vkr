@@ -24,7 +24,7 @@ void UiPass::create() {
 
   target_ =
       std::make_unique<SwapchainTarget>(device_, command_pool_, swapchain_);
-  target_->update(desc_.target);
+  target_->update(SwapchainTargetDesc{});
 
   render_pass_ = std::make_unique<pipeline::RenderPass>(device_);
   render_pass_->update(pipeline::RenderPassDesc::makeSwapchain(
@@ -40,13 +40,15 @@ void UiPass::create() {
   framebuffers_->update(framebufferDesc);
 
   descriptor_pool_ = std::make_unique<pipeline::DescriptorPool>(device_);
-  descriptor_pool_->update(desc_.descriptorPool);
+  descriptor_pool_->update({
+      .poolSizes = {{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
+      .maxSets = 16,
+  });
 
   ui_ = std::make_unique<ui::UI>(
       window_, instance_, surface_, device_, command_pool_, scene_,
       asset_system_, camera_, source_.target(), *render_pass_,
       *descriptor_pool_, graph_, timer_, ui_desc_, executor_.framesInFlight());
-  ui_->layoutMode(desc_.layoutMode);
 }
 
 void UiPass::destroy() {
@@ -57,8 +59,6 @@ void UiPass::destroy() {
   target_.reset();
 }
 
-void UiPass::update(const UiPassDesc &desc) { desc_ = desc; }
-
 void UiPass::record() {
   if (!target_ || !render_pass_ || !framebuffers_ || !ui_) {
     VKR_EXEC_ERROR("UiPass '{}' recorded before create", name());
@@ -68,7 +68,7 @@ void UiPass::record() {
       .framebufferIndex = executor_.imageIndex(),
       .renderArea = {.offset = {0, 0},
                      .extent = {target_->width(), target_->height()}},
-      .clearValues = desc_.clearValues};
+      .clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}}};
 
   executor_.beginPass(*framebuffers_, *render_pass_, beginDesc);
   executor_.setViewportAndScissor({target_->width(), target_->height()});
