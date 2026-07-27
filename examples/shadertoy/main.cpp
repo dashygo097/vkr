@@ -79,21 +79,6 @@ private:
     return bindings;
   }
 
-  [[nodiscard]] auto shadertoyDescriptorPool(uint32_t imageSamplerCount) const
-      -> vkr::pipeline::DescriptorPoolDesc {
-    vkr::pipeline::DescriptorPoolDesc desc{
-        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                       ctx.commandBuffers.size}},
-        .maxSets = ctx.commandBuffers.size};
-
-    if (imageSamplerCount > 0) {
-      desc.poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                ctx.commandBuffers.size * imageSamplerCount});
-    }
-
-    return desc;
-  }
-
   [[nodiscard]] static auto channelInput(uint32_t channel)
       -> vkr::exec::FullscreenPassInputDesc {
     return vkr::exec::FullscreenPassInputDesc::image(1U + channel);
@@ -200,8 +185,6 @@ private:
     vkr::exec::FeedbackFullscreenPassDesc desc{};
     desc.target = {.target = shadertoyTargetDesc()};
     desc.descriptorBindings = shadertoyDescriptorBindings(fallback);
-    desc.descriptorPool = shadertoyDescriptorPool(static_cast<uint32_t>(
-        sourceChannels.size() + fallback.size() + (historyChannel ? 1U : 0U)));
     desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
     if (historyChannel) {
       desc.historyInput = channelInput(*historyChannel);
@@ -223,8 +206,6 @@ private:
     vkr::exec::FullscreenPassDesc desc{};
     desc.target = shadertoyTargetDesc();
     desc.descriptorBindings = shadertoyDescriptorBindings(fallback);
-    desc.descriptorPool = shadertoyDescriptorPool(
-        static_cast<uint32_t>(sourceChannels.size() + fallback.size()));
     desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
 
     desc.inputs.reserve(sourceChannels.size());

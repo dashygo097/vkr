@@ -112,7 +112,7 @@ void RasterPass::createDescriptors() {
   }
 
   descriptor_pool_ = std::make_unique<pipeline::DescriptorPool>(device_);
-  descriptor_pool_->update(desc_.descriptorPool);
+  descriptor_pool_->update(descriptorPoolDesc());
 
   descriptor_layout_ = std::make_unique<pipeline::DescriptorSetLayout>(device_);
   descriptor_layout_->update(
@@ -246,6 +246,37 @@ auto RasterPass::createDescriptorWrites() const
   return writes;
 }
 
+auto RasterPass::descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc {
+  auto poolDesc = desc_.descriptorPool;
+  if (poolDesc.maxSets != 0) {
+    return poolDesc;
+  }
+
+  const uint32_t frameCount = executor_.framesInFlight();
+  for (const auto &binding : desc_.descriptorBindings) {
+    const uint32_t descriptorCount = binding.layout.descriptorCount == 0
+                                         ? 1U
+                                         : binding.layout.descriptorCount;
+    const uint32_t totalCount = frameCount * descriptorCount;
+
+    auto existing =
+        std::find_if(poolDesc.poolSizes.begin(), poolDesc.poolSizes.end(),
+                     [&binding](const VkDescriptorPoolSize &poolSize) -> bool {
+                       return poolSize.type == binding.layout.descriptorType;
+                     });
+
+    if (existing != poolDesc.poolSizes.end()) {
+      existing->descriptorCount += totalCount;
+      continue;
+    }
+
+    poolDesc.poolSizes.push_back({binding.layout.descriptorType, totalCount});
+  }
+
+  poolDesc.maxSets = frameCount;
+  return poolDesc;
+}
+
 void RasterPass::syncSelectedMeshGrid() {
   const std::string &selectedMesh = scene_.selectedMeshName();
 
@@ -280,7 +311,7 @@ void RasterPass::syncSelectedMeshGrid() {
   std::unordered_set<uint32_t> edges;
   edges.reserve(indices.size());
 
-  auto addEdge = [&](uint16_t a, uint16_t b) {
+  auto addEdge = [&](uint16_t a, uint16_t b) -> void {
     const uint16_t lo = std::min(a, b);
     const uint16_t hi = std::max(a, b);
     const uint32_t key =

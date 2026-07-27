@@ -92,6 +92,8 @@ private:
 
   [[nodiscard]] auto createDescriptorWrites() const
       -> std::vector<pipeline::DescriptorSetWriteDesc>;
+  [[nodiscard]] auto descriptorPoolDesc() const
+      -> pipeline::DescriptorPoolDesc;
   void syncSelectedMeshGrid();
   void recordSelectedMeshGrid(const std::vector<VkDescriptorSet> &sets);
 };

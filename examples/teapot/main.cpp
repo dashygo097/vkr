@@ -52,10 +52,6 @@ private:
          .layout = {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                     VK_SHADER_STAGE_FRAGMENT_BIT}},
     };
-    desc.descriptorPool = {
-        .poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16},
-                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-        .maxSets = ctx.commandBuffers.size};
     desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
                         VkClearValue{.depthStencil = {1.0f, 0}}};
 
