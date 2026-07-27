@@ -60,7 +60,26 @@ void RasterPass::record() {
     const auto &sets = descriptor_sets_ ? descriptor_sets_->sets() : emptySets;
 
     executor_.bindPipeline(pipeline_->pipeline(), pipeline_->layout(), sets);
-    executor_.drawGeometry();
+    if (desc_.meshNames.empty()) {
+      executor_.drawGeometry();
+    } else {
+      for (const auto &meshName : desc_.meshNames) {
+        auto mesh = scene_.getMesh(meshName);
+        if (!mesh || !mesh->isValid()) {
+          VKR_EXEC_ERROR("RasterPass '{}' mesh resource not found: {}", name(),
+                         meshName);
+        }
+
+        const auto vertexBuffer = mesh->vertexBufferBase();
+        const auto indexBuffer = mesh->indexBuffer();
+        if (!vertexBuffer || !indexBuffer) {
+          VKR_EXEC_ERROR("RasterPass '{}' mesh '{}' has invalid buffers",
+                         name(), meshName);
+        }
+
+        executor_.drawIndexed(vertexBuffer->get(), indexBuffer->get());
+      }
+    }
     recordSelectedMeshGrid(sets);
   }
 
@@ -212,19 +231,28 @@ auto RasterPass::createDescriptorWrites() const
 
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
       auto texture = scene_.getTexture(binding.name);
+      auto cubemap = texture ? nullptr : scene_.getCubemap(binding.name);
 
-      if (!texture) {
-        VKR_EXEC_ERROR("Texture resource not found: {}", binding.name);
+      if (!texture && !cubemap) {
+        VKR_EXEC_ERROR("Texture or cubemap resource not found: {}",
+                       binding.name);
       }
 
-      if (!texture->hasSampler()) {
+      if (texture && !texture->hasSampler()) {
         VKR_EXEC_ERROR("Texture sampler not found: {}", binding.name);
       }
 
+      if (cubemap && !cubemap->valid()) {
+        VKR_EXEC_ERROR("Cubemap resource is invalid: {}", binding.name);
+      }
+
       VkDescriptorImageInfo imageInfo{};
-      imageInfo.imageLayout = texture->layout();
-      imageInfo.imageView = texture->imageView();
-      imageInfo.sampler = texture->sampler();
+      imageInfo = texture ? VkDescriptorImageInfo{
+                                .sampler = texture->sampler(),
+                                .imageView = texture->imageView(),
+                                .imageLayout = texture->layout(),
+                            }
+                          : cubemap->descriptorInfo();
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         writes[frameIndex].images.push_back(
@@ -345,6 +373,12 @@ void RasterPass::recordSelectedMeshGrid(
     const std::vector<VkDescriptorSet> &sets) {
   if (!mesh_grid_pipeline_ || !mesh_grid_pipeline_->valid() ||
       !mesh_grid_index_buffer_ || mesh_grid_name_.empty()) {
+    return;
+  }
+
+  if (!desc_.meshNames.empty() &&
+      std::find(desc_.meshNames.begin(), desc_.meshNames.end(),
+                mesh_grid_name_) == desc_.meshNames.end()) {
     return;
   }
 

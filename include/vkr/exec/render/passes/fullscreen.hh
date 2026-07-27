@@ -20,18 +20,15 @@
 namespace vkr::exec {
 
 class RasterPass;
-class SkyboxPass;
 class FullscreenPass;
 class FeedbackFullscreenPass;
 
 struct FullscreenPassSource {
   using Source = std::variant<std::reference_wrapper<RasterPass>,
-                              std::reference_wrapper<SkyboxPass>,
                               std::reference_wrapper<FullscreenPass>,
                               std::reference_wrapper<FeedbackFullscreenPass>>;
 
   explicit FullscreenPassSource(RasterPass &source);
-  explicit FullscreenPassSource(SkyboxPass &source);
   explicit FullscreenPassSource(FullscreenPass &source);
   explicit FullscreenPassSource(FeedbackFullscreenPass &source);
 

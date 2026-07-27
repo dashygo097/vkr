@@ -1,7 +1,6 @@
 #include "vkr/exec/render/passes/fullscreen.hh"
 #include "vkr/exec/render/passes/feedback_fullscreen.hh"
 #include "vkr/exec/render/passes/raster.hh"
-#include "vkr/exec/render/passes/skybox.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
 
@@ -110,9 +109,6 @@ void validateUniqueDescriptorBindings(
 } // namespace
 
 FullscreenPassSource::FullscreenPassSource(RasterPass &source)
-    : source_(std::ref(source)) {}
-
-FullscreenPassSource::FullscreenPassSource(SkyboxPass &source)
     : source_(std::ref(source)) {}
 
 FullscreenPassSource::FullscreenPassSource(FullscreenPass &source)

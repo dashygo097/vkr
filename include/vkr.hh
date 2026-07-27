@@ -19,7 +19,6 @@
 #include "vkr/exec/render/passes/present.hh"
 #include "vkr/exec/render/passes/post_process.hh"
 #include "vkr/exec/render/passes/raster.hh"
-#include "vkr/exec/render/passes/skybox.hh"
 #include "vkr/exec/render/passes/ui.hh"
 #include "vkr/resource/buffer/buffer.hh"
 #include "vkr/resource/buffer/storage_buffer.hh"

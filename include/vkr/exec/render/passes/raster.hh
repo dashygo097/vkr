@@ -25,6 +25,7 @@ struct RasterPassDesc {
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
   pipeline::GraphicsPipelineDesc graphicsPipeline{};
+  std::vector<std::string> meshNames{};
 
   auto color(uint32_t width, uint32_t height, VkFormat format)
       -> RasterPassDesc & {
@@ -114,6 +115,22 @@ struct RasterPassDesc {
         {.name = std::move(name),
          .layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                     descriptorCount, stageFlags}});
+  }
+
+  auto cubemap(uint32_t binding, std::string name,
+               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+               uint32_t descriptorCount = 1) -> RasterPassDesc & {
+    return texture(binding, std::move(name), stageFlags, descriptorCount);
+  }
+
+  auto mesh(std::string name) -> RasterPassDesc & {
+    meshNames.push_back(std::move(name));
+    return *this;
+  }
+
+  auto meshes(std::vector<std::string> names) -> RasterPassDesc & {
+    meshNames = std::move(names);
+    return *this;
   }
 
   auto clearColor(float r, float g, float b, float a) -> RasterPassDesc & {
