@@ -23,8 +23,7 @@ public:
   explicit Executor(const core::Device &device,
                     const core::Swapchain &swapchain,
                     const core::CommandPool &commandPool, FrameSync &frameSync,
-                    scene::Scene &scene,
-                    const core::CommandBuffersDesc &commandBuffers);
+                    scene::Scene &scene, core::CommandBuffers &commandBuffers);
   ~Executor() = default;
 
   Executor(const Executor &) = delete;
@@ -86,9 +85,7 @@ private:
   const core::CommandPool &command_pool_;
   FrameSync &frame_sync_;
   scene::Scene &scene_;
-
-  // components
-  std::unique_ptr<core::CommandBuffers> command_buffers_{};
+  core::CommandBuffers &command_buffers_;
 
   // state
   uint32_t current_frame_{0};

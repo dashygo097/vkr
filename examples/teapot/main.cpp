@@ -18,8 +18,8 @@ struct UniformBuffer3DObject {
 class TeapotApp : public vkr::exec::RenderApplication {
 private:
   void createResources() override {
-    vkr::scene::Mesh<vkr::scene::VertexNormalTexture3D> teapot(
-        *device, *graphicsCommandPool);
+    vkr::scene::Mesh<vkr::scene::VertexNormalTexture3D> teapot(*device,
+                                                               *commandPool);
     teapot.load(assetSystem->resolve("objects/teapot/teapot.obj"));
 
     scene->createMesh("teapot", teapot);
@@ -50,7 +50,7 @@ private:
         .clearDepth();
 
     auto &rasterPass = graph->addPass<vkr::exec::RasterPass>(
-        *executor, *device, *graphicsCommandPool, *scene);
+        *executor, *device, *commandPool, *scene);
     rasterPass.setName("raster").write("scene.raw");
     rasterPass.update(desc);
 
@@ -72,7 +72,7 @@ private:
         .noCull();
 
     auto &postProcessPass = graph->addPass<vkr::exec::PostProcessPass>(
-        *executor, *device, *graphicsCommandPool,
+        *executor, *device, *commandPool,
         vkr::exec::FullscreenPassSource{rasterPass});
     postProcessPass.setName("postprocess")
         .read("scene.raw")
@@ -80,8 +80,8 @@ private:
     postProcessPass.update(postDesc);
 
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
-        *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
-        *swapchain, *scene, *assetSystem, ctx.camera,
+        *executor, *window, *instance, *surface, *device, *commandPool,
+        *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera,
         vkr::exec::FullscreenPassSource{postProcessPass}, *graph, *timer,
         ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");

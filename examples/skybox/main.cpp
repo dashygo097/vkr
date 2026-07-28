@@ -23,16 +23,14 @@ private:
   void createResources() override {
     scene->createCubemap("skybox", skyboxFaces(), VK_FORMAT_R8G8B8A8_SRGB);
 
-    vkr::scene::Mesh<vkr::scene::VertexSkybox3D> skybox(*device,
-                                                        *graphicsCommandPool);
+    vkr::scene::Mesh<vkr::scene::VertexSkybox3D> skybox(*device, *commandPool);
     skybox.load(vkr::scene::skyboxCubeVertices(),
                 vkr::scene::skyboxCubeIndices());
     scene->createMesh("skybox", skybox);
     scene->createUniformBuffer<UniformBuffer3DObject>("skybox", {});
 
     for (const char *part : CornellBoxParts) {
-      vkr::scene::Mesh<vkr::scene::Vertex3D> cornellPart(*device,
-                                                         *graphicsCommandPool);
+      vkr::scene::Mesh<vkr::scene::Vertex3D> cornellPart(*device, *commandPool);
 
       std::string path = "objects/cornellbox/";
       path += part;
@@ -69,7 +67,7 @@ private:
         .clearDepth();
 
     auto &skyboxPass = graph->addPass<vkr::exec::RasterPass>(
-        *executor, *device, *graphicsCommandPool, *scene);
+        *executor, *device, *commandPool, *scene);
     skyboxPass.setName("skybox").write("scene.skybox");
     skyboxPass.update(skyboxDesc);
 
@@ -98,7 +96,7 @@ private:
     }
 
     auto &cornellPass = graph->addPass<vkr::exec::RasterPass>(
-        *executor, *device, *graphicsCommandPool, *scene);
+        *executor, *device, *commandPool, *scene);
     cornellPass.setName("cornellbox").write("scene.cornell");
     cornellPass.update(cornellDesc);
 
@@ -120,7 +118,7 @@ private:
         .noCull();
 
     auto &compositePass = graph->addPass<vkr::exec::CompositePass>(
-        *executor, *device, *graphicsCommandPool,
+        *executor, *device, *commandPool,
         std::vector<vkr::exec::FullscreenPassSource>{
             vkr::exec::FullscreenPassSource{skyboxPass},
             vkr::exec::FullscreenPassSource{cornellPass}});
@@ -131,8 +129,8 @@ private:
     compositePass.update(compositeDesc);
 
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
-        *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
-        *swapchain, *scene, *assetSystem, ctx.camera,
+        *executor, *window, *instance, *surface, *device, *commandPool,
+        *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera,
         vkr::exec::FullscreenPassSource{compositePass}, *graph, *timer, ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
 

@@ -4,11 +4,11 @@
 namespace vkr::exec {
 
 FrameSync::FrameSync(const core::Device &device,
-                     const core::Swapchain &swapchain, uint32_t framesInFlight)
-    : device_(device), swapchain_(swapchain),
-      frames_in_flight_(framesInFlight) {
-  if (frames_in_flight_ == 0) {
-    VKR_EXEC_ERROR("FrameSync framesInFlight must be greater than zero");
+                     const core::Swapchain &swapchain,
+                     const core::CommandBuffers &commandBuffers)
+    : device_(device), swapchain_(swapchain), command_buffers_(commandBuffers) {
+  if (command_buffers_.empty()) {
+    VKR_EXEC_ERROR("FrameSync requires initialized command buffers");
   }
 
   create();
@@ -33,9 +33,10 @@ void FrameSync::create() {
     VKR_EXEC_ERROR("swapchain has no images for sync objects");
   }
 
-  vk_image_available_semaphores_.resize(frames_in_flight_);
+  const uint32_t frameCount = framesInFlight();
+  vk_image_available_semaphores_.resize(frameCount);
   vk_render_finished_semaphores_.resize(imageCount);
-  vk_in_flight_fences_.resize(frames_in_flight_);
+  vk_in_flight_fences_.resize(frameCount);
 
   VkSemaphoreCreateInfo semaphoreInfo{};
   semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -44,7 +45,7 @@ void FrameSync::create() {
   fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-  for (uint32_t i = 0; i < frames_in_flight_; i++) {
+  for (uint32_t i = 0; i < frameCount; i++) {
     if (vkCreateSemaphore(device_.device(), &semaphoreInfo, nullptr,
                           &vk_image_available_semaphores_[i]) != VK_SUCCESS) {
       VKR_EXEC_ERROR("failed to create image available semaphore {}", i);

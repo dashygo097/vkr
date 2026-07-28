@@ -183,8 +183,7 @@ private:
     const auto fallback = fallbackChannels(historyChannel, sourceChannels);
 
     vkr::exec::FeedbackFullscreenPassDesc desc{};
-    desc.targetDesc(shadertoyTargetDesc())
-        .clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    desc.targetDesc(shadertoyTargetDesc()).clearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     for (auto binding : shadertoyDescriptorBindings(fallback)) {
       desc.descriptor(std::move(binding));
@@ -207,8 +206,7 @@ private:
     const auto fallback = fallbackChannels(std::nullopt, sourceChannels);
 
     vkr::exec::FullscreenPassDesc desc{};
-    desc.targetDesc(shadertoyTargetDesc())
-        .clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    desc.targetDesc(shadertoyTargetDesc()).clearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     for (auto binding : shadertoyDescriptorBindings(fallback)) {
       desc.descriptor(std::move(binding));
@@ -283,12 +281,12 @@ private:
 
   void buildGraph() override {
     auto &bufferA = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
-        *executor, *device, *graphicsCommandPool, *scene);
+        *executor, *device, *commandPool, *scene);
     bufferA.setName("buffer.a").read("buffer.a.history").write("buffer.a");
     bufferA.update(feedbackDesc("shadertoy.buffer.a", "buffer_a.frag", 0, {}));
 
     auto &bufferB = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
-        *executor, *device, *graphicsCommandPool, *scene,
+        *executor, *device, *commandPool, *scene,
         std::vector<vkr::exec::FullscreenPassSource>{
             vkr::exec::FullscreenPassSource{bufferA}});
     bufferB.setName("buffer.b")
@@ -298,7 +296,7 @@ private:
     bufferB.update(feedbackDesc("shadertoy.buffer.b", "buffer_b.frag", 1, {0}));
 
     auto &bufferC = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
-        *executor, *device, *graphicsCommandPool, *scene,
+        *executor, *device, *commandPool, *scene,
         std::vector<vkr::exec::FullscreenPassSource>{
             vkr::exec::FullscreenPassSource{bufferA},
             vkr::exec::FullscreenPassSource{bufferB}});
@@ -311,7 +309,7 @@ private:
         feedbackDesc("shadertoy.buffer.c", "buffer_c.frag", 2, {0, 1}));
 
     auto &bufferD = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
-        *executor, *device, *graphicsCommandPool, *scene,
+        *executor, *device, *commandPool, *scene,
         std::vector<vkr::exec::FullscreenPassSource>{
             vkr::exec::FullscreenPassSource{bufferA},
             vkr::exec::FullscreenPassSource{bufferB},
@@ -326,7 +324,7 @@ private:
         feedbackDesc("shadertoy.buffer.d", "buffer_d.frag", 3, {0, 1, 2}));
 
     auto &imagePass = graph->addPass<vkr::exec::FullscreenPass>(
-        *executor, *device, *graphicsCommandPool, *scene,
+        *executor, *device, *commandPool, *scene,
         std::vector<vkr::exec::FullscreenPassSource>{
             vkr::exec::FullscreenPassSource{bufferA},
             vkr::exec::FullscreenPassSource{bufferB},
@@ -341,8 +339,8 @@ private:
     imagePass.update(imageDesc({0, 1, 2, 3}));
 
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
-        *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
-        *swapchain, *scene, *assetSystem, ctx.camera,
+        *executor, *window, *instance, *surface, *device, *commandPool,
+        *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera,
         vkr::exec::FullscreenPassSource{imagePass}, *graph, *timer, ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
 

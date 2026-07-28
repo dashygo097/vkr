@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vkr/core/command/buffers.hh"
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
@@ -28,6 +29,7 @@ public:
   UiPass(Executor &executor, const core::Window &window,
          const core::Instance &instance, const core::Surface &surface,
          const core::Device &device, const core::CommandPool &commandPool,
+         const core::CommandBuffers &commandBuffers,
          const core::Swapchain &swapchain, scene::Scene &scene,
          const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
          FullscreenPassSource source, RenderGraph &graph, util::Timer &timer,
@@ -75,6 +77,7 @@ private:
   const core::Surface &surface_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
+  const core::CommandBuffers &command_buffers_;
   const core::Swapchain &swapchain_;
   scene::Scene &scene_;
   const util::AssetSystem &asset_system_;

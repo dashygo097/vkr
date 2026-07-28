@@ -1,23 +1,24 @@
 #pragma once
 
+#include "vkr/core/command/buffers.hh"
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
 #include "vkr/core/window.hh"
+#include "vkr/exec/render/graph.hh"
+#include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/render_pass.hh"
-#include "vkr/exec/render/graph.hh"
-#include "vkr/scene/scene.hh"
-#include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/scene/camera.hh"
+#include "vkr/scene/scene.hh"
 #include "vkr/ui/components/assets_panel.hh"
 #include "vkr/ui/components/camera_panel.hh"
+#include "vkr/ui/components/exec_graph_panel.hh"
 #include "vkr/ui/components/fps_panel.hh"
 #include "vkr/ui/components/logging_panel.hh"
 #include "vkr/ui/components/mesh_editor_panel.hh"
-#include "vkr/ui/components/exec_graph_panel.hh"
 #include "vkr/ui/components/resource_tree.hh"
 #include "vkr/ui/components/shader_editor.hh"
 #include "vkr/ui/components/ui_component.hh"
@@ -64,14 +65,13 @@ class UI {
 public:
   UI(const core::Window &window, const core::Instance &instance,
      const core::Surface &surface, const core::Device &device,
-     const core::CommandPool &commandPool,
-     scene::Scene &scene,
+     const core::CommandPool &commandPool, scene::Scene &scene,
      const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
      exec::OffscreenTarget &offscreenTarget,
      const pipeline::RenderPass &renderPass,
-     const pipeline::DescriptorPool &descriptorPool,
-     exec::RenderGraph &graph, util::Timer &timer, UiDesc &desc,
-     uint32_t framesInFlight);
+     const pipeline::DescriptorPool &descriptorPool, exec::RenderGraph &graph,
+     util::Timer &timer, UiDesc &desc,
+     const core::CommandBuffers &commandBuffers);
   ~UI();
 
   UI(const UI &) = delete;
@@ -138,10 +138,10 @@ private:
   const pipeline::DescriptorPool &descriptor_pool_;
   exec::RenderGraph &graph_;
   util::Timer &timer_;
+  const core::CommandBuffers &command_buffers_;
 
   // components
   UiDesc &desc_;
-  uint32_t frames_in_flight_{0};
   std::unique_ptr<ViewportPanel> viewport_panel_;
   std::unique_ptr<ResourceTree> resource_tree_;
   std::unique_ptr<ExecGraphPanel> graph_panel_;

@@ -5,23 +5,18 @@ namespace vkr::exec {
 
 Executor::Executor(const core::Device &device, const core::Swapchain &swapchain,
                    const core::CommandPool &commandPool, FrameSync &frameSync,
-                   scene::Scene &scene,
-                   const core::CommandBuffersDesc &commandBuffers)
+                   scene::Scene &scene, core::CommandBuffers &commandBuffers)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
-      frame_sync_(frameSync), scene_(scene) {
+      frame_sync_(frameSync), scene_(scene), command_buffers_(commandBuffers) {
   if (command_pool_.queueRole() != core::CommandQueueRole::Graphics) {
     VKR_EXEC_ERROR("Executor requires a graphics command pool");
   }
 
-  if (commandBuffers.size != frame_sync_.framesInFlight()) {
+  if (command_buffers_.size() != frame_sync_.framesInFlight()) {
     VKR_EXEC_ERROR("Executor command buffer count {} does not match "
                    "FrameSync frames in flight {}",
-                   commandBuffers.size, frame_sync_.framesInFlight());
+                   command_buffers_.size(), frame_sync_.framesInFlight());
   }
-
-  command_buffers_ =
-      std::make_unique<core::CommandBuffers>(device_, command_pool_);
-  command_buffers_->update(commandBuffers);
 }
 
 auto Executor::beginFrame() -> bool {
@@ -36,7 +31,7 @@ auto Executor::beginFrame() -> bool {
 
   frame_sync_.resetFrame(current_frame_);
 
-  VkCommandBuffer commandBuffer = command_buffers_->buffer(current_frame_);
+  VkCommandBuffer commandBuffer = command_buffers_.buffer(current_frame_);
   vkResetCommandBuffer(commandBuffer, 0);
 
   image_index_ = imageIndex;
@@ -93,7 +88,7 @@ void Executor::endFrame() {
     VKR_EXEC_ERROR("Executor::endFrame called before submitFrame");
   }
 
-  current_frame_ = (current_frame_ + 1) % command_buffers_->size();
+  current_frame_ = (current_frame_ + 1) % command_buffers_.size();
 
   image_index_ = 0;
   frame_index_ = 0;
@@ -104,7 +99,7 @@ void Executor::endFrame() {
 }
 
 auto Executor::framesInFlight() const noexcept -> uint32_t {
-  return command_buffers_ ? command_buffers_->size() : 0;
+  return command_buffers_.size();
 }
 
 void Executor::beginPass(const FramebufferSet &framebufferSet,

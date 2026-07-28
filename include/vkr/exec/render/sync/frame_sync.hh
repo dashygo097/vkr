@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vkr/core/command/buffers.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
 #include <cstdint>
@@ -10,7 +11,7 @@ class FrameSync {
 public:
   explicit FrameSync(const core::Device &device,
                      const core::Swapchain &swapchain,
-                     uint32_t framesInFlight);
+                     const core::CommandBuffers &commandBuffers);
   ~FrameSync();
 
   FrameSync(const FrameSync &) = delete;
@@ -37,7 +38,7 @@ public:
       -> VkSemaphore;
   [[nodiscard]] auto inFlightFence(uint32_t frameIndex) const -> VkFence;
   [[nodiscard]] auto framesInFlight() const noexcept -> uint32_t {
-    return frames_in_flight_;
+    return command_buffers_.size();
   }
 
   void waitForFrame(uint32_t frameIndex) const;
@@ -48,7 +49,7 @@ private:
   // dependencies
   const core::Device &device_;
   const core::Swapchain &swapchain_;
-  uint32_t frames_in_flight_{0};
+  const core::CommandBuffers &command_buffers_;
 
   // components
   std::vector<VkSemaphore> vk_image_available_semaphores_{};

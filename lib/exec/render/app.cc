@@ -47,9 +47,7 @@ void RenderApplication::initVulkan() {
   configure();
   loadSnapshot();
 
-  ctx.graphicsCommandPool.queueRole = core::CommandQueueRole::Graphics;
-  ctx.computeCommandPool.queueRole = core::CommandQueueRole::Compute;
-  ctx.transferCommandPool.queueRole = core::CommandQueueRole::Transfer;
+  ctx.commandPool.queueRole = core::CommandQueueRole::Graphics;
 
   if (!ctx.isValid()) {
     VKR_CORE_ERROR("invalid app config");
@@ -82,30 +80,19 @@ void RenderApplication::initVulkan() {
                                                 ctx.swapchain);
 
   // command pool
-  graphicsCommandPool =
-      std::make_unique<core::CommandPool>(*device, ctx.graphicsCommandPool);
-  if (device->supportsCompute()) {
-    computeCommandPool =
-        std::make_unique<core::CommandPool>(*device, ctx.computeCommandPool);
-  } else {
-    VKR_CORE_WARN("compute queue is not supported; compute command pool "
-                  "will not be initialized");
-  }
-  if (device->supportsTransfer()) {
-    transferCommandPool =
-        std::make_unique<core::CommandPool>(*device, ctx.transferCommandPool);
-  } else {
-    VKR_CORE_WARN("transfer queue is not supported; transfer command pool "
-                  "will not be initialized");
-  }
+  commandPool = std::make_unique<core::CommandPool>(*device, ctx.commandPool);
+
+  // command buffers
+  commandBuffers =
+      std::make_unique<core::CommandBuffers>(*device, *commandPool);
+  commandBuffers->update(ctx.commandBuffers);
 
   // sync objects
-  frameSync =
-      std::make_unique<FrameSync>(*device, *swapchain, ctx.commandBuffers.size);
+  frameSync = std::make_unique<FrameSync>(*device, *swapchain, *commandBuffers);
 
   // scene
-  scene = std::make_unique<vkr::scene::Scene>(*device, *graphicsCommandPool,
-                                              ctx.commandBuffers.size);
+  scene = std::make_unique<vkr::scene::Scene>(*device, *commandPool,
+                                              *commandBuffers);
 
   // user resources
   createResources();
@@ -118,9 +105,8 @@ void RenderApplication::initVulkan() {
       std::make_unique<vkr::scene::Camera>(*timer, *inputTracer, ctx.camera);
 
   // executor
-  executor =
-      std::make_unique<Executor>(*device, *swapchain, *graphicsCommandPool,
-                                 *frameSync, *scene, ctx.commandBuffers);
+  executor = std::make_unique<Executor>(*device, *swapchain, *commandPool,
+                                        *frameSync, *scene, *commandBuffers);
 
   // render graph
   graph = std::make_unique<RenderGraph>();

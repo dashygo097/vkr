@@ -7,15 +7,16 @@ namespace vkr::exec {
 UiPass::UiPass(Executor &executor, const core::Window &window,
                const core::Instance &instance, const core::Surface &surface,
                const core::Device &device, const core::CommandPool &commandPool,
+               const core::CommandBuffers &commandBuffers,
                const core::Swapchain &swapchain, scene::Scene &scene,
                const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
                FullscreenPassSource source, RenderGraph &graph,
                util::Timer &timer, ui::UiDesc &uiDesc)
     : executor_(executor), window_(window), instance_(instance),
       surface_(surface), device_(device), command_pool_(commandPool),
-      swapchain_(swapchain), scene_(scene), asset_system_(assetSystem),
-      camera_(camera), source_(source), graph_(graph), timer_(timer),
-      ui_desc_(uiDesc) {}
+      command_buffers_(commandBuffers), swapchain_(swapchain), scene_(scene),
+      asset_system_(assetSystem), camera_(camera), source_(source),
+      graph_(graph), timer_(timer), ui_desc_(uiDesc) {}
 
 UiPass::~UiPass() { destroy(); }
 
@@ -48,7 +49,7 @@ void UiPass::create() {
   ui_ = std::make_unique<ui::UI>(
       window_, instance_, surface_, device_, command_pool_, scene_,
       asset_system_, camera_, source_.target(), *render_pass_,
-      *descriptor_pool_, graph_, timer_, ui_desc_, executor_.framesInFlight());
+      *descriptor_pool_, graph_, timer_, ui_desc_, command_buffers_);
 }
 
 void UiPass::destroy() {

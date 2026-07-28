@@ -188,8 +188,7 @@ int main() {
 ```
 
 Render applications own a window, surface, swapchain, scene, render executor,
-render graph, graphics command pool, and optional compute/transfer command pools
-when supported by the selected device.
+render graph, command pool, and command buffers.
 
 ## Compute App Skeleton
 

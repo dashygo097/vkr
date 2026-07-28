@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vkr/core/command/buffers.hh"
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
@@ -19,10 +20,11 @@ namespace vkr::scene {
 class Scene {
 public:
   Scene(const core::Device &device, const core::CommandPool &commandPool,
-        uint32_t frameCount)
-      : device_(device), command_pool_(commandPool), frame_count_(frameCount) {
-    if (frame_count_ == 0) {
-      VKR_RES_ERROR("Scene frame count must be greater than zero");
+        const core::CommandBuffers &commandBuffers)
+      : device_(device), command_pool_(commandPool),
+        command_buffers_(commandBuffers) {
+    if (command_buffers_.empty()) {
+      VKR_RES_ERROR("Scene requires initialized command buffers");
     }
   }
   ~Scene() = default;
@@ -33,15 +35,10 @@ public:
   // Uniform buffer management
   template <typename UBOType>
   void createUniformBuffer(const std::string &name, const UBOType &ubo) {
-    auto buffer =
-        std::make_shared<FrameUniformBufferSet<UBOType>>(device_,
-                                                         frame_count_);
+    auto buffer = std::make_shared<FrameUniformBufferSet<UBOType>>(
+        device_, command_buffers_.size());
     buffer->update(0, ubo);
     uniform_buffers_[name] = std::move(buffer);
-  }
-
-  [[nodiscard]] auto frameCount() const noexcept -> uint32_t {
-    return frame_count_;
   }
 
   [[nodiscard]] auto getUniformBuffer(const std::string &name) const
@@ -245,7 +242,7 @@ private:
   // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  uint32_t frame_count_{0};
+  const core::CommandBuffers &command_buffers_;
 
   // components
   std::unordered_map<std::string, std::shared_ptr<IFrameUniformBufferSet>>
