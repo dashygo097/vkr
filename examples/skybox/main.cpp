@@ -13,27 +13,37 @@ struct UniformBuffer3DObject {
   alignas(16) glm::mat4 proj;
 };
 
+constexpr std::array<const char *, 6> CornellBoxParts{
+    "floor", "left", "light", "right", "shortbox", "tallbox"};
+
 } // namespace
 
 class SkyboxApp : public vkr::exec::RenderApplication {
 private:
   void createResources() override {
-    scene->createCubemap("skybox", skyboxFaces(),
-                         VK_FORMAT_R8G8B8A8_SRGB);
+    scene->createCubemap("skybox", skyboxFaces(), VK_FORMAT_R8G8B8A8_SRGB);
 
-    vkr::scene::Mesh<vkr::scene::VertexSkybox3D> skybox(
-        *device, *graphicsCommandPool);
+    vkr::scene::Mesh<vkr::scene::VertexSkybox3D> skybox(*device,
+                                                        *graphicsCommandPool);
     skybox.load(vkr::scene::skyboxCubeVertices(),
                 vkr::scene::skyboxCubeIndices());
     scene->createMesh("skybox", skybox);
     scene->createUniformBuffer<UniformBuffer3DObject>("skybox", {});
 
-    vkr::scene::Mesh<vkr::scene::Vertex3D> cornellBox(*device,
-                                                      *graphicsCommandPool);
-    cornellBox.load(
-        assetSystem->resolveApp("objects/cornellbox/scene.obj").string());
+    for (const char *part : CornellBoxParts) {
+      vkr::scene::Mesh<vkr::scene::Vertex3D> cornellPart(*device,
+                                                         *graphicsCommandPool);
 
-    scene->createMesh("cornellbox", cornellBox);
+      std::string path = "objects/cornellbox/";
+      path += part;
+      path += ".obj";
+      cornellPart.load(assetSystem->resolveApp(path).string());
+
+      std::string meshName = "cornellbox.";
+      meshName += part;
+      scene->createMesh(meshName, cornellPart);
+    }
+
     scene->createUniformBuffer<UniformBuffer3DObject>("cornellbox", {});
   }
 
@@ -70,7 +80,6 @@ private:
         .sampledColor()
         .depth(VK_FORMAT_D32_SFLOAT)
         .uniform(0, "cornellbox", VK_SHADER_STAGE_VERTEX_BIT)
-        .mesh("cornellbox")
         .pipeline("cornellbox")
         .vertexInput(vkr::scene::Vertex3D::vertexInputDesc())
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
@@ -81,6 +90,12 @@ private:
         .noCull()
         .clearColor(0.0f, 0.0f, 0.0f, 0.0f)
         .clearDepth();
+
+    for (const char *part : CornellBoxParts) {
+      std::string meshName = "cornellbox.";
+      meshName += part;
+      cornellDesc.mesh(meshName);
+    }
 
     auto &cornellPass = graph->addPass<vkr::exec::RasterPass>(
         *executor, *device, *graphicsCommandPool, *scene);
@@ -123,8 +138,7 @@ private:
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
         *executor, *window, *instance, *surface, *device, *graphicsCommandPool,
         *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::exec::FullscreenPassSource{compositePass}, *graph, *timer,
-        ctx.ui);
+        vkr::exec::FullscreenPassSource{compositePass}, *graph, *timer, ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
 
     auto &presentPass = graph->addPass<vkr::exec::PresentPass>(*executor);
@@ -139,8 +153,7 @@ private:
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();
 
-    scene->getUniformBuffer("skybox")->updateRaw(frameIndex, &ubo,
-                                                 sizeof(ubo));
+    scene->getUniformBuffer("skybox")->updateRaw(frameIndex, &ubo, sizeof(ubo));
     scene->getUniformBuffer("cornellbox")
         ->updateRaw(frameIndex, &ubo, sizeof(ubo));
 
