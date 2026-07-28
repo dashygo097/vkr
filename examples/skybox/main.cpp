@@ -103,25 +103,20 @@ private:
     cornellPass.update(cornellDesc);
 
     vkr::exec::FullscreenPassDesc compositeDesc{};
-    compositeDesc.target = {
-        .color = {.width = swapchain->width(),
-                  .height = swapchain->height(),
-                  .format = VK_FORMAT_R8G8B8A8_UNORM,
-                  .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                           VK_IMAGE_USAGE_SAMPLED_BIT,
-                  .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  .createSampler = true}};
-    compositeDesc.clearValues = {
-        VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
-    compositeDesc.pipeline.setName("skybox-cornell-composite")
-        .vertexInputDesc(vkr::scene::VertexInputDesc::none())
+    compositeDesc
+        .color(swapchain->width(), swapchain->height(),
+               VK_FORMAT_R8G8B8A8_UNORM)
+        .sampledColor()
+        .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        .pipeline("skybox-cornell-composite")
+        .vertexInput(vkr::scene::VertexInputDesc::none())
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/composite/composite.vert")
                 .string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
             assetSystem->resolveApp("shaders/composite/composite.frag")
                 .string()))
-        .disableDepth()
+        .disableDepthTest()
         .noCull();
 
     auto &compositePass = graph->addPass<vkr::exec::CompositePass>(

@@ -183,19 +183,22 @@ private:
     const auto fallback = fallbackChannels(historyChannel, sourceChannels);
 
     vkr::exec::FeedbackFullscreenPassDesc desc{};
-    desc.target = {.target = shadertoyTargetDesc()};
-    desc.descriptorBindings = shadertoyDescriptorBindings(fallback);
-    desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
+    desc.targetDesc(shadertoyTargetDesc())
+        .clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    for (auto binding : shadertoyDescriptorBindings(fallback)) {
+      desc.descriptor(std::move(binding));
+    }
+
     if (historyChannel) {
-      desc.historyInput = channelInput(*historyChannel);
+      desc.history(channelInput(*historyChannel));
     }
 
-    desc.inputs.reserve(sourceChannels.size());
     for (uint32_t channel : sourceChannels) {
-      desc.inputs.push_back(channelInput(channel));
+      desc.input(channelInput(channel));
     }
 
-    desc.pipeline = shadertoyPipeline(name, fragmentShader);
+    desc.pipelineDesc(shadertoyPipeline(name, fragmentShader));
     return desc;
   }
 
@@ -204,16 +207,18 @@ private:
     const auto fallback = fallbackChannels(std::nullopt, sourceChannels);
 
     vkr::exec::FullscreenPassDesc desc{};
-    desc.target = shadertoyTargetDesc();
-    desc.descriptorBindings = shadertoyDescriptorBindings(fallback);
-    desc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
+    desc.targetDesc(shadertoyTargetDesc())
+        .clearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-    desc.inputs.reserve(sourceChannels.size());
-    for (uint32_t channel : sourceChannels) {
-      desc.inputs.push_back(channelInput(channel));
+    for (auto binding : shadertoyDescriptorBindings(fallback)) {
+      desc.descriptor(std::move(binding));
     }
 
-    desc.pipeline = shadertoyPipeline("shadertoy.image", "image.frag");
+    for (uint32_t channel : sourceChannels) {
+      desc.input(channelInput(channel));
+    }
+
+    desc.pipelineDesc(shadertoyPipeline("shadertoy.image", "image.frag"));
     return desc;
   }
 

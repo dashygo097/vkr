@@ -14,8 +14,10 @@
 #include "vkr/scene/scene.hh"
 #include <functional>
 #include <memory>
+#include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 namespace vkr::exec {
 
@@ -60,7 +62,204 @@ struct FullscreenPassDesc {
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
   std::vector<FullscreenPassInputDesc> inputs{};
-  pipeline::GraphicsPipelineDesc pipeline{};
+  pipeline::GraphicsPipelineDesc graphicsPipeline{};
+
+  auto targetDesc(OffscreenTargetDesc desc) -> FullscreenPassDesc & {
+    target = std::move(desc);
+    return *this;
+  }
+
+  auto color(uint32_t width, uint32_t height, VkFormat format)
+      -> FullscreenPassDesc & {
+    target.color.width = width;
+    target.color.height = height;
+    target.color.format = format;
+    return *this;
+  }
+
+  auto color(ColorAttachmentDesc desc) -> FullscreenPassDesc & {
+    target.color = std::move(desc);
+    return *this;
+  }
+
+  auto colorUsage(VkImageUsageFlags usage) -> FullscreenPassDesc & {
+    target.color.usage = usage;
+    return *this;
+  }
+
+  auto sampledColor(bool enabled = true) -> FullscreenPassDesc & {
+    if (enabled) {
+      target.color.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+      target.color.createSampler = true;
+      if (target.color.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
+        target.color.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      }
+      return *this;
+    }
+
+    target.color.usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;
+    target.color.createSampler = false;
+    return *this;
+  }
+
+  auto colorFinalLayout(VkImageLayout layout) -> FullscreenPassDesc & {
+    target.color.finalLayout = layout;
+    return *this;
+  }
+
+  auto colorSampler(resource::SamplerDesc desc) -> FullscreenPassDesc & {
+    target.color.sampler = std::move(desc);
+    target.color.createSampler = true;
+    return *this;
+  }
+
+  auto depth(VkFormat format) -> FullscreenPassDesc & {
+    target.depth = DepthAttachmentDesc{
+        .width = target.color.width,
+        .height = target.color.height,
+        .format = format,
+    };
+    return *this;
+  }
+
+  auto depth(uint32_t width, uint32_t height, VkFormat format)
+      -> FullscreenPassDesc & {
+    target.depth = DepthAttachmentDesc{
+        .width = width,
+        .height = height,
+        .format = format,
+    };
+    return *this;
+  }
+
+  auto disableDepthAttachment() -> FullscreenPassDesc & {
+    target.depth.reset();
+    return *this;
+  }
+
+  auto descriptor(pipeline::DescriptorBinding binding)
+      -> FullscreenPassDesc & {
+    descriptorBindings.push_back(std::move(binding));
+    return *this;
+  }
+
+  auto uniform(uint32_t binding, std::string name,
+               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+               uint32_t descriptorCount = 1) -> FullscreenPassDesc & {
+    return descriptor({.name = std::move(name),
+                       .layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                  descriptorCount, stageFlags}});
+  }
+
+  auto texture(uint32_t binding, std::string name,
+               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+               uint32_t descriptorCount = 1) -> FullscreenPassDesc & {
+    return descriptor(
+        {.name = std::move(name),
+         .layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    descriptorCount, stageFlags}});
+  }
+
+  auto input(uint32_t binding,
+             VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
+      -> FullscreenPassDesc & {
+    inputs.push_back(FullscreenPassInputDesc::image(binding, stageFlags));
+    return *this;
+  }
+
+  auto input(FullscreenPassInputDesc desc) -> FullscreenPassDesc & {
+    inputs.push_back(desc);
+    return *this;
+  }
+
+  auto clearColor(float r, float g, float b, float a)
+      -> FullscreenPassDesc & {
+    clearValues.push_back(VkClearValue{.color = {{r, g, b, a}}});
+    return *this;
+  }
+
+  auto clearDepth(float depthValue = 1.0f, uint32_t stencil = 0)
+      -> FullscreenPassDesc & {
+    clearValues.push_back(
+        VkClearValue{.depthStencil = {depthValue, stencil}});
+    return *this;
+  }
+
+  auto pipelineDesc(pipeline::GraphicsPipelineDesc desc)
+      -> FullscreenPassDesc & {
+    graphicsPipeline = std::move(desc);
+    return *this;
+  }
+
+  auto pipeline(std::string name) -> FullscreenPassDesc & {
+    graphicsPipeline.setName(std::move(name));
+    return *this;
+  }
+
+  auto vertexInput(scene::VertexInputDesc desc) -> FullscreenPassDesc & {
+    graphicsPipeline.vertexInputDesc(std::move(desc));
+    return *this;
+  }
+
+  auto shader(pipeline::GraphicsShaderStageDesc shaderDesc)
+      -> FullscreenPassDesc & {
+    graphicsPipeline.shader(std::move(shaderDesc));
+    return *this;
+  }
+
+  auto vertexShader(resource::ShaderModuleDesc shaderDesc,
+                    std::string entryPoint = "main") -> FullscreenPassDesc & {
+    graphicsPipeline.vertexShader(std::move(shaderDesc),
+                                  std::move(entryPoint));
+    return *this;
+  }
+
+  auto fragmentShader(resource::ShaderModuleDesc shaderDesc,
+                      std::string entryPoint = "main")
+      -> FullscreenPassDesc & {
+    graphicsPipeline.fragmentShader(std::move(shaderDesc),
+                                    std::move(entryPoint));
+    return *this;
+  }
+
+  auto depthTest(VkBool32 testEnable = VK_TRUE,
+                 VkBool32 writeEnable = VK_TRUE,
+                 VkCompareOp compareOp = VK_COMPARE_OP_LESS)
+      -> FullscreenPassDesc & {
+    graphicsPipeline.depth(testEnable, writeEnable, compareOp);
+    return *this;
+  }
+
+  auto disableDepthTest() -> FullscreenPassDesc & {
+    graphicsPipeline.disableDepth();
+    return *this;
+  }
+
+  auto readOnlyDepthTest() -> FullscreenPassDesc & {
+    graphicsPipeline.readOnlyDepth();
+    return *this;
+  }
+
+  auto rasterize(pipeline::GraphicsRasterizationDesc desc)
+      -> FullscreenPassDesc & {
+    graphicsPipeline.rasterize(desc);
+    return *this;
+  }
+
+  auto noCull() -> FullscreenPassDesc & {
+    graphicsPipeline.noCull();
+    return *this;
+  }
+
+  auto blend(pipeline::GraphicsColorBlendDesc desc) -> FullscreenPassDesc & {
+    graphicsPipeline.blend(std::move(desc));
+    return *this;
+  }
+
+  auto alphaBlend() -> FullscreenPassDesc & {
+    graphicsPipeline.alphaBlend();
+    return *this;
+  }
 };
 
 class FullscreenPass : public Pass {

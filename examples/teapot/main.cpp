@@ -55,28 +55,21 @@ private:
     rasterPass.update(desc);
 
     vkr::exec::FullscreenPassDesc postDesc{};
-    postDesc.target = {
-        .color = {.width = swapchain->width(),
-                  .height = swapchain->height(),
-                  .format = VK_FORMAT_R8G8B8A8_UNORM,
-                  .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                           VK_IMAGE_USAGE_SAMPLED_BIT,
-                  .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  .createSampler = true}};
-    postDesc.clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}};
-
-    vkr::pipeline::GraphicsPipelineDesc postPipeline{};
-    postPipeline.setName("postprocess")
-        .vertexInputDesc(vkr::scene::VertexInputDesc::none())
+    postDesc
+        .color(swapchain->width(), swapchain->height(),
+               VK_FORMAT_R8G8B8A8_UNORM)
+        .sampledColor()
+        .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        .pipeline("postprocess")
+        .vertexInput(vkr::scene::VertexInputDesc::none())
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolve("shaders/postprocess/postprocess.vert")
                 .string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
             assetSystem->resolve("shaders/postprocess/postprocess.frag")
                 .string()))
-        .disableDepth()
+        .disableDepthTest()
         .noCull();
-    postDesc.pipeline = postPipeline;
 
     auto &postProcessPass = graph->addPass<vkr::exec::PostProcessPass>(
         *executor, *device, *graphicsCommandPool,

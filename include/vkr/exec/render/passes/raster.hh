@@ -27,6 +27,11 @@ struct RasterPassDesc {
   pipeline::GraphicsPipelineDesc graphicsPipeline{};
   std::vector<std::string> meshNames{};
 
+  auto targetDesc(OffscreenTargetDesc desc) -> RasterPassDesc & {
+    target = std::move(desc);
+    return *this;
+  }
+
   auto color(uint32_t width, uint32_t height, VkFormat format)
       -> RasterPassDesc & {
     target.color.width = width;
