@@ -4,7 +4,7 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffer/frame_uniform_buffer_set.hh"
+#include "vkr/scene/frame_uniform_buffer_set.hh"
 #include "vkr/scene/geometry/mesh.hh"
 #include "vkr/scene/material/cubemap.hh"
 #include "vkr/scene/material/texture.hh"
@@ -35,14 +35,14 @@ public:
   // Uniform buffer management
   template <typename UBOType>
   void createUniformBuffer(const std::string &name, const UBOType &ubo) {
-    auto buffer = std::make_shared<resource::FrameUniformBufferSet<UBOType>>(
+    auto buffer = std::make_shared<FrameUniformBufferSet<UBOType>>(
         device_, command_buffers_.size());
     buffer->update(0, ubo);
     uniform_buffers_[name] = std::move(buffer);
   }
 
   [[nodiscard]] auto getUniformBuffer(const std::string &name) const
-      -> std::shared_ptr<resource::IFrameUniformBufferSet> {
+      -> std::shared_ptr<IFrameUniformBufferSet> {
     auto it = uniform_buffers_.find(name);
     return it == uniform_buffers_.end() ? nullptr : it->second;
   }
@@ -191,7 +191,7 @@ public:
 
   // Lists
   [[nodiscard]] auto listUniformBuffers() const
-      -> std::vector<std::shared_ptr<resource::IFrameUniformBufferSet>> {
+      -> std::vector<std::shared_ptr<IFrameUniformBufferSet>> {
     return listResources(uniform_buffers_);
   }
 
@@ -245,8 +245,7 @@ private:
   const core::CommandBuffers &command_buffers_;
 
   // components
-  std::unordered_map<std::string,
-                     std::shared_ptr<resource::IFrameUniformBufferSet>>
+  std::unordered_map<std::string, std::shared_ptr<IFrameUniformBufferSet>>
       uniform_buffers_{};
   std::unordered_map<std::string, std::shared_ptr<Texture>> textures_{};
   std::unordered_map<std::string, std::shared_ptr<Cubemap>> cubemaps_{};

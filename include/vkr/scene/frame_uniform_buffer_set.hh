@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-namespace vkr::resource {
+namespace vkr::scene {
 
 class IFrameUniformBufferSet {
 public:
@@ -36,7 +36,8 @@ public:
 
     buffers_.reserve(frameCount);
     for (uint32_t i = 0; i < frameCount; ++i) {
-      buffers_.push_back(std::make_unique<UniformBuffer<UniformType>>(device_));
+      buffers_.push_back(
+          std::make_unique<resource::UniformBuffer<UniformType>>(device_));
     }
   }
 
@@ -91,7 +92,7 @@ private:
   const core::Device &device_;
 
   // components
-  std::vector<std::unique_ptr<UniformBuffer<UniformType>>> buffers_;
+  std::vector<std::unique_ptr<resource::UniformBuffer<UniformType>>> buffers_;
 };
 
-} // namespace vkr::resource
+} // namespace vkr::scene
