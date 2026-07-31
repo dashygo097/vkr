@@ -1,4 +1,6 @@
 #include "vkr/logger.hh"
+#include "vkr/util/runtime_path.hh"
+#include <filesystem>
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <vector>
@@ -25,8 +27,12 @@ void Logger::init() {
   console_sink->set_formatter(std::move(console_formatter));
   sinks.push_back(console_sink);
 
-  auto file_sink =
-      std::make_shared<spdlog::sinks::basic_file_sink_mt>("vkr.log", true);
+  const auto logPath =
+      (util::executableDir() / "logs" / "vkr.log").lexically_normal();
+  std::filesystem::create_directories(logPath.parent_path());
+
+  auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+      logPath.string(), true);
   file_sink->set_pattern("[%T] [%l] %n: %v");
   sinks.push_back(file_sink);
 

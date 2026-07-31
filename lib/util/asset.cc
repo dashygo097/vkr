@@ -1,13 +1,19 @@
 #include "vkr/util/asset.hh"
 #include "vkr/logger.hh"
+#include "vkr/util/runtime_path.hh"
 #include <fstream>
 #include <sstream>
 
 namespace vkr::util {
 
-AssetSystem::AssetSystem(const AssetDesc &desc) : desc_(std::move(desc)) {
+AssetSystem::AssetSystem(const AssetDesc &desc) : desc_(desc) {
   if (!desc_.isValid()) {
     VKR_UTIL_ERROR("Invalid asset descriptor");
+  }
+
+  auto appRoot = std::filesystem::path(desc_.appRoot);
+  if (appRoot.is_relative()) {
+    desc_.appRoot = (executableDir() / appRoot).lexically_normal().string();
   }
 
   VKR_UTIL_INFO(
