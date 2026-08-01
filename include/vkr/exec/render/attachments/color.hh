@@ -53,10 +53,6 @@ public:
     return sampler_ ? sampler_->sampler() : VK_NULL_HANDLE;
   }
 
-  [[nodiscard]] auto samplerRef() const noexcept -> const resource::Sampler * {
-    return sampler_.get();
-  }
-
   [[nodiscard]] auto hasSampler() const noexcept -> bool {
     return sampler_ && sampler_->sampler() != VK_NULL_HANDLE;
   }
