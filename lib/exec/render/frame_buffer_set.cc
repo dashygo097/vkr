@@ -1,4 +1,4 @@
-#include "vkr/exec/render/attachments/frame_buffer_set.hh"
+#include "vkr/exec/render/frame_buffer_set.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::exec {

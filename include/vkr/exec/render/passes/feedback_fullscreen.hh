@@ -66,7 +66,8 @@ struct FeedbackFullscreenPassDesc {
     return *this;
   }
 
-  auto colorSampler(resource::SamplerDesc desc) -> FeedbackFullscreenPassDesc & {
+  auto colorSampler(resource::SamplerDesc desc)
+      -> FeedbackFullscreenPassDesc & {
     target.target.color.sampler = std::move(desc);
     target.target.color.createSampler = true;
     return *this;
@@ -109,8 +110,7 @@ struct FeedbackFullscreenPassDesc {
 
   auto uniform(uint32_t binding, std::string name,
                VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-               uint32_t descriptorCount = 1)
-      -> FeedbackFullscreenPassDesc & {
+               uint32_t descriptorCount = 1) -> FeedbackFullscreenPassDesc & {
     return descriptor({.name = std::move(name),
                        .layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                   descriptorCount, stageFlags}});
@@ -118,8 +118,7 @@ struct FeedbackFullscreenPassDesc {
 
   auto texture(uint32_t binding, std::string name,
                VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-               uint32_t descriptorCount = 1)
-      -> FeedbackFullscreenPassDesc & {
+               uint32_t descriptorCount = 1) -> FeedbackFullscreenPassDesc & {
     return descriptor(
         {.name = std::move(name),
          .layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -158,8 +157,7 @@ struct FeedbackFullscreenPassDesc {
 
   auto clearDepth(float depthValue = 1.0f, uint32_t stencil = 0)
       -> FeedbackFullscreenPassDesc & {
-    clearValues.push_back(
-        VkClearValue{.depthStencil = {depthValue, stencil}});
+    clearValues.push_back(VkClearValue{.depthStencil = {depthValue, stencil}});
     return *this;
   }
 
@@ -189,8 +187,7 @@ struct FeedbackFullscreenPassDesc {
   auto vertexShader(resource::ShaderModuleDesc shaderDesc,
                     std::string entryPoint = "main")
       -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.vertexShader(std::move(shaderDesc),
-                                  std::move(entryPoint));
+    graphicsPipeline.vertexShader(std::move(shaderDesc), std::move(entryPoint));
     return *this;
   }
 
@@ -202,8 +199,7 @@ struct FeedbackFullscreenPassDesc {
     return *this;
   }
 
-  auto depthTest(VkBool32 testEnable = VK_TRUE,
-                 VkBool32 writeEnable = VK_TRUE,
+  auto depthTest(VkBool32 testEnable = VK_TRUE, VkBool32 writeEnable = VK_TRUE,
                  VkCompareOp compareOp = VK_COMPARE_OP_LESS)
       -> FeedbackFullscreenPassDesc & {
     graphicsPipeline.depth(testEnable, writeEnable, compareOp);

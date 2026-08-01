@@ -2,8 +2,8 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/exec/render/attachments/frame_buffer_set.hh"
 #include "vkr/exec/render/executor.hh"
+#include "vkr/exec/render/frame_buffer_set.hh"
 #include "vkr/exec/render/pass.hh"
 #include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
@@ -145,8 +145,7 @@ struct RasterPassDesc {
 
   auto clearDepth(float depthValue = 1.0f, uint32_t stencil = 0)
       -> RasterPassDesc & {
-    clearValues.push_back(
-        VkClearValue{.depthStencil = {depthValue, stencil}});
+    clearValues.push_back(VkClearValue{.depthStencil = {depthValue, stencil}});
     return *this;
   }
 
@@ -173,8 +172,7 @@ struct RasterPassDesc {
 
   auto vertexShader(resource::ShaderModuleDesc shaderDesc,
                     std::string entryPoint = "main") -> RasterPassDesc & {
-    graphicsPipeline.vertexShader(std::move(shaderDesc),
-                                  std::move(entryPoint));
+    graphicsPipeline.vertexShader(std::move(shaderDesc), std::move(entryPoint));
     return *this;
   }
 
@@ -185,8 +183,7 @@ struct RasterPassDesc {
     return *this;
   }
 
-  auto depthTest(VkBool32 testEnable = VK_TRUE,
-                 VkBool32 writeEnable = VK_TRUE,
+  auto depthTest(VkBool32 testEnable = VK_TRUE, VkBool32 writeEnable = VK_TRUE,
                  VkCompareOp compareOp = VK_COMPARE_OP_LESS)
       -> RasterPassDesc & {
     graphicsPipeline.depth(testEnable, writeEnable, compareOp);
@@ -203,8 +200,7 @@ struct RasterPassDesc {
     return *this;
   }
 
-  auto rasterize(pipeline::GraphicsRasterizationDesc desc)
-      -> RasterPassDesc & {
+  auto rasterize(pipeline::GraphicsRasterizationDesc desc) -> RasterPassDesc & {
     graphicsPipeline.rasterize(desc);
     return *this;
   }
@@ -293,8 +289,7 @@ private:
 
   [[nodiscard]] auto createDescriptorWrites() const
       -> std::vector<pipeline::DescriptorSetWriteDesc>;
-  [[nodiscard]] auto descriptorPoolDesc() const
-      -> pipeline::DescriptorPoolDesc;
+  [[nodiscard]] auto descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc;
   void syncSelectedMeshGrid();
   void recordSelectedMeshGrid(const std::vector<VkDescriptorSet> &sets);
 };

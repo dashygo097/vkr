@@ -49,8 +49,7 @@ public:
   [[nodiscard]] auto passes() -> std::vector<std::reference_wrapper<Pass>>;
   [[nodiscard]] auto passes() const
       -> std::vector<std::reference_wrapper<const Pass>>;
-  [[nodiscard]] auto uiPass()
-      -> std::optional<std::reference_wrapper<UiPass>>;
+  [[nodiscard]] auto uiPass() -> std::optional<std::reference_wrapper<UiPass>>;
   [[nodiscard]] auto uiPass() const
       -> std::optional<std::reference_wrapper<const UiPass>>;
 

@@ -2,8 +2,8 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/exec/render/attachments/frame_buffer_set.hh"
 #include "vkr/exec/render/executor.hh"
+#include "vkr/exec/render/frame_buffer_set.hh"
 #include "vkr/exec/render/pass.hh"
 #include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
@@ -137,8 +137,7 @@ struct FullscreenPassDesc {
     return *this;
   }
 
-  auto descriptor(pipeline::DescriptorBinding binding)
-      -> FullscreenPassDesc & {
+  auto descriptor(pipeline::DescriptorBinding binding) -> FullscreenPassDesc & {
     descriptorBindings.push_back(std::move(binding));
     return *this;
   }
@@ -172,16 +171,14 @@ struct FullscreenPassDesc {
     return *this;
   }
 
-  auto clearColor(float r, float g, float b, float a)
-      -> FullscreenPassDesc & {
+  auto clearColor(float r, float g, float b, float a) -> FullscreenPassDesc & {
     clearValues.push_back(VkClearValue{.color = {{r, g, b, a}}});
     return *this;
   }
 
   auto clearDepth(float depthValue = 1.0f, uint32_t stencil = 0)
       -> FullscreenPassDesc & {
-    clearValues.push_back(
-        VkClearValue{.depthStencil = {depthValue, stencil}});
+    clearValues.push_back(VkClearValue{.depthStencil = {depthValue, stencil}});
     return *this;
   }
 
@@ -209,21 +206,18 @@ struct FullscreenPassDesc {
 
   auto vertexShader(resource::ShaderModuleDesc shaderDesc,
                     std::string entryPoint = "main") -> FullscreenPassDesc & {
-    graphicsPipeline.vertexShader(std::move(shaderDesc),
-                                  std::move(entryPoint));
+    graphicsPipeline.vertexShader(std::move(shaderDesc), std::move(entryPoint));
     return *this;
   }
 
   auto fragmentShader(resource::ShaderModuleDesc shaderDesc,
-                      std::string entryPoint = "main")
-      -> FullscreenPassDesc & {
+                      std::string entryPoint = "main") -> FullscreenPassDesc & {
     graphicsPipeline.fragmentShader(std::move(shaderDesc),
                                     std::move(entryPoint));
     return *this;
   }
 
-  auto depthTest(VkBool32 testEnable = VK_TRUE,
-                 VkBool32 writeEnable = VK_TRUE,
+  auto depthTest(VkBool32 testEnable = VK_TRUE, VkBool32 writeEnable = VK_TRUE,
                  VkCompareOp compareOp = VK_COMPARE_OP_LESS)
       -> FullscreenPassDesc & {
     graphicsPipeline.depth(testEnable, writeEnable, compareOp);
