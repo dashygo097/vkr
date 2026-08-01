@@ -13,8 +13,8 @@ struct FeedbackFullscreenPassDesc {
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
-  std::optional<FullscreenPassInputDesc> historyInput{};
-  std::vector<FullscreenPassInputDesc> inputs{};
+  std::optional<RenderPassInputDesc> historyInput{};
+  std::vector<RenderPassInputDesc> inputs{};
   pipeline::GraphicsPipelineDesc graphicsPipeline{};
 
   auto targetDesc(OffscreenTargetDesc desc) -> FeedbackFullscreenPassDesc & {
@@ -128,11 +128,19 @@ struct FeedbackFullscreenPassDesc {
   auto history(uint32_t binding,
                VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FeedbackFullscreenPassDesc & {
-    historyInput = FullscreenPassInputDesc::image(binding, stageFlags);
+    historyInput = RenderPassInputDesc::color(binding, stageFlags);
     return *this;
   }
 
-  auto history(FullscreenPassInputDesc desc) -> FeedbackFullscreenPassDesc & {
+  auto historyDepth(
+      uint32_t binding,
+      VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
+      -> FeedbackFullscreenPassDesc & {
+    historyInput = RenderPassInputDesc::depth(binding, stageFlags);
+    return *this;
+  }
+
+  auto history(RenderPassInputDesc desc) -> FeedbackFullscreenPassDesc & {
     historyInput = desc;
     return *this;
   }
@@ -140,11 +148,18 @@ struct FeedbackFullscreenPassDesc {
   auto input(uint32_t binding,
              VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FeedbackFullscreenPassDesc & {
-    inputs.push_back(FullscreenPassInputDesc::image(binding, stageFlags));
+    inputs.push_back(RenderPassInputDesc::color(binding, stageFlags));
     return *this;
   }
 
-  auto input(FullscreenPassInputDesc desc) -> FeedbackFullscreenPassDesc & {
+  auto inputDepth(uint32_t binding,
+                  VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
+      -> FeedbackFullscreenPassDesc & {
+    inputs.push_back(RenderPassInputDesc::depth(binding, stageFlags));
+    return *this;
+  }
+
+  auto input(RenderPassInputDesc desc) -> FeedbackFullscreenPassDesc & {
     inputs.push_back(desc);
     return *this;
   }
@@ -243,11 +258,11 @@ class FeedbackFullscreenPass final : public Pass {
 public:
   FeedbackFullscreenPass(Executor &executor, const core::Device &device,
                          const core::CommandPool &commandPool,
-                         std::vector<FullscreenPassSource> sources = {});
+                         std::vector<RenderPassSource> sources = {});
   FeedbackFullscreenPass(Executor &executor, const core::Device &device,
                          const core::CommandPool &commandPool,
                          scene::Scene &scene,
-                         std::vector<FullscreenPassSource> sources = {});
+                         std::vector<RenderPassSource> sources = {});
   ~FeedbackFullscreenPass() override;
 
   FeedbackFullscreenPass(const FeedbackFullscreenPass &) = delete;
@@ -259,8 +274,8 @@ public:
   void update(const FeedbackFullscreenPassDesc &desc);
   void record() override;
 
-  auto addSource(FullscreenPassSource source) -> FeedbackFullscreenPass &;
-  auto setSources(std::vector<FullscreenPassSource> sources)
+  auto addSource(RenderPassSource source) -> FeedbackFullscreenPass &;
+  auto setSources(std::vector<RenderPassSource> sources)
       -> FeedbackFullscreenPass &;
 
   [[nodiscard]] auto target() -> OffscreenTarget &;
@@ -302,7 +317,7 @@ private:
 
   // components
   FeedbackFullscreenPassDesc desc_{};
-  std::vector<FullscreenPassSource> sources_{};
+  std::vector<RenderPassSource> sources_{};
   std::unique_ptr<FrameHistoryTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
   std::vector<std::unique_ptr<FramebufferSet>> framebuffers_{};
@@ -319,12 +334,12 @@ private:
   void createPipeline();
 
   [[nodiscard]] auto resolvedInputs() const
-      -> std::vector<FullscreenPassInputDesc>;
+      -> std::vector<RenderPassInputDesc>;
   [[nodiscard]] auto
-  descriptorPoolDesc(const std::vector<FullscreenPassInputDesc> &inputs) const
+  descriptorPoolDesc(const std::vector<RenderPassInputDesc> &inputs) const
       -> pipeline::DescriptorPoolDesc;
   [[nodiscard]] auto
-  createDescriptorWrites(const std::vector<FullscreenPassInputDesc> &inputs)
+  createDescriptorWrites(const std::vector<RenderPassInputDesc> &inputs)
       -> std::vector<pipeline::DescriptorSetWriteDesc>;
 };
 

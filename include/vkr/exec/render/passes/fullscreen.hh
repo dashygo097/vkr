@@ -4,7 +4,9 @@
 #include "vkr/core/device.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
-#include "vkr/exec/render/pass.hh"
+#include "vkr/exec/pass.hh"
+#include "vkr/exec/render/passes/input.hh"
+#include "vkr/exec/render/passes/source.hh"
 #include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
@@ -12,56 +14,19 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/scene/scene.hh"
-#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
-#include <variant>
 #include <vector>
 
 namespace vkr::exec {
-
-class RasterPass;
-class FullscreenPass;
-class FeedbackFullscreenPass;
-
-struct FullscreenPassSource {
-  using Source = std::variant<std::reference_wrapper<RasterPass>,
-                              std::reference_wrapper<FullscreenPass>,
-                              std::reference_wrapper<FeedbackFullscreenPass>>;
-
-  explicit FullscreenPassSource(RasterPass &source);
-  explicit FullscreenPassSource(FullscreenPass &source);
-  explicit FullscreenPassSource(FeedbackFullscreenPass &source);
-
-  [[nodiscard]] auto target() -> OffscreenTarget &;
-  [[nodiscard]] auto target() const -> const OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t frameIndex) -> OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t frameIndex) const
-      -> const OffscreenTarget &;
-
-private:
-  Source source_;
-};
-
-struct FullscreenPassInputDesc {
-  uint32_t binding{0};
-  VkShaderStageFlags stageFlags{VK_SHADER_STAGE_FRAGMENT_BIT};
-
-  [[nodiscard]] static auto
-  image(uint32_t binding,
-        VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
-      -> FullscreenPassInputDesc {
-    return {.binding = binding, .stageFlags = stageFlags};
-  }
-};
 
 struct FullscreenPassDesc {
   OffscreenTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
-  std::vector<FullscreenPassInputDesc> inputs{};
+  std::vector<RenderPassInputDesc> inputs{};
   pipeline::GraphicsPipelineDesc graphicsPipeline{};
 
   auto targetDesc(OffscreenTargetDesc desc) -> FullscreenPassDesc & {
@@ -162,11 +127,18 @@ struct FullscreenPassDesc {
   auto input(uint32_t binding,
              VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FullscreenPassDesc & {
-    inputs.push_back(FullscreenPassInputDesc::image(binding, stageFlags));
+    inputs.push_back(RenderPassInputDesc::color(binding, stageFlags));
     return *this;
   }
 
-  auto input(FullscreenPassInputDesc desc) -> FullscreenPassDesc & {
+  auto inputDepth(uint32_t binding,
+                  VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
+      -> FullscreenPassDesc & {
+    inputs.push_back(RenderPassInputDesc::depth(binding, stageFlags));
+    return *this;
+  }
+
+  auto input(RenderPassInputDesc desc) -> FullscreenPassDesc & {
     inputs.push_back(desc);
     return *this;
   }
@@ -260,10 +232,10 @@ class FullscreenPass : public Pass {
 public:
   FullscreenPass(Executor &executor, const core::Device &device,
                  const core::CommandPool &commandPool,
-                 std::vector<FullscreenPassSource> sources = {});
+                 std::vector<RenderPassSource> sources = {});
   FullscreenPass(Executor &executor, const core::Device &device,
                  const core::CommandPool &commandPool, scene::Scene &scene,
-                 std::vector<FullscreenPassSource> sources = {});
+                 std::vector<RenderPassSource> sources = {});
   ~FullscreenPass() override;
 
   FullscreenPass(const FullscreenPass &) = delete;
@@ -274,8 +246,8 @@ public:
   void update(const FullscreenPassDesc &desc);
   void record() override;
 
-  auto addSource(FullscreenPassSource source) -> FullscreenPass &;
-  auto setSources(std::vector<FullscreenPassSource> sources)
+  auto addSource(RenderPassSource source) -> FullscreenPass &;
+  auto setSources(std::vector<RenderPassSource> sources)
       -> FullscreenPass &;
 
   [[nodiscard]] auto target() -> OffscreenTarget &;
@@ -312,7 +284,7 @@ private:
 
   // components
   FullscreenPassDesc desc_{};
-  std::vector<FullscreenPassSource> sources_{};
+  std::vector<RenderPassSource> sources_{};
   std::unique_ptr<OffscreenTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
   std::unique_ptr<FramebufferSet> framebuffers_{};
@@ -329,12 +301,12 @@ private:
   void createPipeline();
 
   [[nodiscard]] auto resolvedInputs() const
-      -> std::vector<FullscreenPassInputDesc>;
+      -> std::vector<RenderPassInputDesc>;
   [[nodiscard]] auto
-  descriptorPoolDesc(const std::vector<FullscreenPassInputDesc> &inputs) const
+  descriptorPoolDesc(const std::vector<RenderPassInputDesc> &inputs) const
       -> pipeline::DescriptorPoolDesc;
   [[nodiscard]] auto
-  createDescriptorWrites(const std::vector<FullscreenPassInputDesc> &inputs)
+  createDescriptorWrites(const std::vector<RenderPassInputDesc> &inputs)
       -> std::vector<pipeline::DescriptorSetWriteDesc>;
 };
 

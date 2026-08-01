@@ -8,7 +8,7 @@ class PostProcessPass final : public FullscreenPass {
 public:
   PostProcessPass(Executor &executor, const core::Device &device,
                   const core::CommandPool &commandPool,
-                  FullscreenPassSource source);
+                  RenderPassSource source);
 };
 
 } // namespace vkr::exec

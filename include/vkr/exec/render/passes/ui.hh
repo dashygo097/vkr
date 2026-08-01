@@ -10,7 +10,7 @@
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
 #include "vkr/exec/render/graph.hh"
-#include "vkr/exec/render/pass.hh"
+#include "vkr/exec/pass.hh"
 #include "vkr/exec/render/passes/fullscreen.hh"
 #include "vkr/exec/render/targets/swapchain.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
@@ -32,7 +32,7 @@ public:
          const core::CommandBuffers &commandBuffers,
          const core::Swapchain &swapchain, scene::Scene &scene,
          const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-         FullscreenPassSource source, RenderGraph &graph, util::Timer &timer,
+         RenderPassSource source, RenderGraph &graph, util::Timer &timer,
          ui::UiDesc &uiDesc);
   ~UiPass() override;
 
@@ -82,7 +82,7 @@ private:
   scene::Scene &scene_;
   const util::AssetSystem &asset_system_;
   scene::CameraDesc &camera_;
-  FullscreenPassSource source_;
+  RenderPassSource source_;
   RenderGraph &graph_;
   util::Timer &timer_;
   ui::UiDesc &ui_desc_;

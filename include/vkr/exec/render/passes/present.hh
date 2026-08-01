@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vkr/exec/render/executor.hh"
-#include "vkr/exec/render/pass.hh"
+#include "vkr/exec/pass.hh"
 
 namespace vkr::exec {
 

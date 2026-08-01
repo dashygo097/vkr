@@ -2,6 +2,7 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/exec/compute/executor.hh"
+#include "vkr/exec/pass.hh"
 #include "vkr/pipeline/compute_pipeline.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
@@ -97,57 +98,18 @@ private:
   }
 };
 
-class ComputePass final {
+class ComputePass final : public Pass {
 public:
   explicit ComputePass(ComputeExecutor &executor, const core::Device &device);
-  ~ComputePass();
+  ~ComputePass() override;
 
   ComputePass(const ComputePass &) = delete;
   auto operator=(const ComputePass &) -> ComputePass & = delete;
 
-  [[nodiscard]] auto name() const noexcept -> const std::string & {
-    return name_;
-  }
-
-  [[nodiscard]] auto reads() const noexcept
-      -> const std::vector<std::string> & {
-    return reads_;
-  }
-
-  [[nodiscard]] auto writes() const noexcept
-      -> const std::vector<std::string> & {
-    return writes_;
-  }
-
-  auto setName(std::string name) -> ComputePass & {
-    name_ = std::move(name);
-    return *this;
-  }
-
-  auto setReads(std::vector<std::string> reads) -> ComputePass & {
-    reads_ = std::move(reads);
-    return *this;
-  }
-
-  auto setWrites(std::vector<std::string> writes) -> ComputePass & {
-    writes_ = std::move(writes);
-    return *this;
-  }
-
-  auto read(std::string resource) -> ComputePass & {
-    reads_.push_back(std::move(resource));
-    return *this;
-  }
-
-  auto write(std::string resource) -> ComputePass & {
-    writes_.push_back(std::move(resource));
-    return *this;
-  }
-
-  void create();
-  void destroy();
+  void create() override;
+  void destroy() override;
   void update(const ComputePassDesc &desc);
-  void record();
+  void record() override;
 
 private:
   // dependencies
@@ -160,9 +122,6 @@ private:
   std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
   std::unique_ptr<pipeline::ComputePipeline> pipeline_{};
-  std::string name_{};
-  std::vector<std::string> reads_{};
-  std::vector<std::string> writes_{};
 
   // helpers
   void createDescriptors();

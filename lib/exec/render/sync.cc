@@ -1,4 +1,4 @@
-#include "vkr/exec/render/sync/frame_sync.hh"
+#include "vkr/exec/render/sync.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::exec {

@@ -73,7 +73,7 @@ private:
 
     auto &postProcessPass = graph->addPass<vkr::exec::PostProcessPass>(
         *executor, *device, *commandPool,
-        vkr::exec::FullscreenPassSource{rasterPass});
+        vkr::exec::RenderPassSource{rasterPass});
     postProcessPass.setName("postprocess")
         .read("scene.raw")
         .write("scene.color");
@@ -82,7 +82,7 @@ private:
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
         *executor, *window, *instance, *surface, *device, *commandPool,
         *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::exec::FullscreenPassSource{postProcessPass}, *graph, *timer,
+        vkr::exec::RenderPassSource{postProcessPass}, *graph, *timer,
         ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
 

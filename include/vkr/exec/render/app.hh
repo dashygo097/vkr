@@ -9,7 +9,7 @@
 #include "vkr/core/window.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/graph.hh"
-#include "vkr/exec/render/sync/frame_sync.hh"
+#include "vkr/exec/render/sync.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/ui/ui.hh"

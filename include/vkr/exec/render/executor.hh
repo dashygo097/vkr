@@ -4,7 +4,7 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
-#include "vkr/exec/render/sync/frame_sync.hh"
+#include "vkr/exec/render/sync.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/ui/ui.hh"

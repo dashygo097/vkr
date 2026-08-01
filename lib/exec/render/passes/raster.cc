@@ -2,9 +2,77 @@
 #include "vkr/exec/render/executor.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
+#include <string_view>
 #include <unordered_set>
 
 namespace vkr::exec {
+namespace {
+
+auto imageLayoutForAttachment(const ColorAttachment &attachment)
+    -> VkImageLayout {
+  return attachment.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+             ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+             : attachment.desc().finalLayout;
+}
+
+auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
+                     const RenderPassSource &source,
+                     const RenderPassInputDesc &input) -> VkDescriptorImageInfo {
+  VkDescriptorImageInfo imageInfo{};
+
+  switch (input.kind) {
+  case RenderPassInputKind::Color: {
+    const auto &color = source.target().color();
+    if (!color.hasSampler()) {
+      VKR_EXEC_ERROR("RasterPass '{}' source {} color has no sampler",
+                     std::string(passName), sourceIndex);
+    }
+
+    imageInfo.imageLayout = imageLayoutForAttachment(color);
+    imageInfo.imageView = color.imageView();
+    imageInfo.sampler = color.sampler();
+    break;
+  }
+
+  case RenderPassInputKind::Depth: {
+    const auto *depth = source.target().depth();
+    if (depth == nullptr) {
+      VKR_EXEC_ERROR("RasterPass '{}' source {} has no depth attachment",
+                     std::string(passName), sourceIndex);
+    }
+
+    if (!depth->hasSampler()) {
+      VKR_EXEC_ERROR("RasterPass '{}' source {} depth has no sampler",
+                     std::string(passName), sourceIndex);
+    }
+
+    imageInfo.imageLayout =
+        depth->desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+            ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+            : depth->desc().finalLayout;
+    imageInfo.imageView = depth->imageView();
+    imageInfo.sampler = depth->sampler();
+    break;
+  }
+  }
+
+  return imageInfo;
+}
+
+void validateUniqueDescriptorBindings(
+    std::string_view passName,
+    const std::vector<pipeline::DescriptorBinding> &bindings) {
+  for (size_t i = 0; i < bindings.size(); ++i) {
+    for (size_t j = i + 1; j < bindings.size(); ++j) {
+      if (bindings[i].layout.binding == bindings[j].layout.binding) {
+        VKR_EXEC_ERROR("RasterPass '{}' has duplicate descriptor binding {}",
+                       std::string(passName), bindings[i].layout.binding);
+      }
+    }
+  }
+}
+
+} // namespace
 
 RasterPass::RasterPass(Executor &executor, const core::Device &device,
                        const core::CommandPool &commandPool,
@@ -38,6 +106,17 @@ void RasterPass::destroy() {
 }
 
 void RasterPass::update(const RasterPassDesc &desc) { desc_ = desc; }
+
+auto RasterPass::addSource(RenderPassSource source) -> RasterPass & {
+  sources_.push_back(source);
+  return *this;
+}
+
+auto RasterPass::setSources(std::vector<RenderPassSource> sources)
+    -> RasterPass & {
+  sources_ = std::move(sources);
+  return *this;
+}
 
 void RasterPass::record() {
   if (!target_ || !render_pass_ || !framebuffers_) {
@@ -109,10 +188,28 @@ void RasterPass::createTarget() {
 
 void RasterPass::createRenderPass() {
   render_pass_ = std::make_unique<pipeline::RenderPass>(device_);
-  render_pass_->update(pipeline::RenderPassDesc::makeOffscreen(
+  auto renderPassDesc = pipeline::RenderPassDesc::makeOffscreen(
       target_->color().desc().format, target_->depth()
                                           ? target_->depth()->desc().format
-                                          : VK_FORMAT_UNDEFINED));
+                                          : VK_FORMAT_UNDEFINED);
+
+  const auto colorFinalLayout = target_->color().desc().finalLayout;
+  if (colorFinalLayout != VK_IMAGE_LAYOUT_UNDEFINED) {
+    renderPassDesc.colors[0].finalLayout = colorFinalLayout;
+  }
+
+  if (target_->depth()) {
+    const auto &depthDesc = target_->depth()->desc();
+    if (depthDesc.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED) {
+      renderPassDesc.depth.finalLayout = depthDesc.finalLayout;
+    }
+
+    if ((depthDesc.usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0) {
+      renderPassDesc.depth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    }
+  }
+
+  render_pass_->update(renderPassDesc);
 }
 
 void RasterPass::createFramebuffers() {
@@ -126,16 +223,33 @@ void RasterPass::createFramebuffers() {
 }
 
 void RasterPass::createDescriptors() {
-  if (desc_.descriptorBindings.empty()) {
+  if (desc_.descriptorBindings.empty() && desc_.inputs.empty()) {
     return;
+  }
+
+  if (desc_.inputs.size() != sources_.size()) {
+    VKR_EXEC_ERROR("RasterPass '{}' input count mismatch: desc={} sources={}",
+                   name(), desc_.inputs.size(), sources_.size());
+  }
+
+  std::vector<pipeline::DescriptorBinding> bindings = desc_.descriptorBindings;
+  bindings.reserve(desc_.descriptorBindings.size() + desc_.inputs.size());
+
+  for (size_t index = 0; index < desc_.inputs.size(); ++index) {
+    const auto &input = desc_.inputs[index];
+    bindings.push_back(pipeline::DescriptorBinding{
+        .name = "source" + std::to_string(index),
+        .layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                   input.stageFlags}});
   }
 
   descriptor_pool_ = std::make_unique<pipeline::DescriptorPool>(device_);
   descriptor_pool_->update(descriptorPoolDesc());
 
   descriptor_layout_ = std::make_unique<pipeline::DescriptorSetLayout>(device_);
+  validateUniqueDescriptorBindings(name(), bindings);
   descriptor_layout_->update(
-      pipeline::DescriptorSetLayoutDesc{.bindings = desc_.descriptorBindings});
+      pipeline::DescriptorSetLayoutDesc{.bindings = bindings});
 
   descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
   descriptor_sets_->update(pipeline::DescriptorSetsDesc{
@@ -271,6 +385,19 @@ auto RasterPass::createDescriptorWrites() const
     }
   }
 
+  for (size_t sourceIndex = 0; sourceIndex < sources_.size(); ++sourceIndex) {
+    const auto &input = desc_.inputs[sourceIndex];
+    const VkDescriptorImageInfo imageInfo =
+        sourceImageInfo(name(), sourceIndex, sources_[sourceIndex], input);
+
+    for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
+      writes[frameIndex].images.push_back(
+          pipeline::DescriptorImageWriteDesc::one(
+              input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+              imageInfo));
+    }
+  }
+
   return writes;
 }
 
@@ -299,6 +426,23 @@ auto RasterPass::descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc {
     }
 
     poolDesc.poolSizes.push_back({binding.layout.descriptorType, totalCount});
+  }
+
+  if (!desc_.inputs.empty()) {
+    const uint32_t totalCount =
+        frameCount * static_cast<uint32_t>(desc_.inputs.size());
+    auto existing = std::find_if(
+        poolDesc.poolSizes.begin(), poolDesc.poolSizes.end(),
+        [](const VkDescriptorPoolSize &poolSize) {
+          return poolSize.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        });
+
+    if (existing != poolDesc.poolSizes.end()) {
+      existing->descriptorCount += totalCount;
+    } else {
+      poolDesc.poolSizes.push_back(
+          {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, totalCount});
+    }
   }
 
   poolDesc.maxSets = frameCount;

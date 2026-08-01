@@ -1,4 +1,4 @@
-#include "vkr/exec/compute/pass.hh"
+#include "vkr/exec/compute/passes/compute.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
 #include <string_view>

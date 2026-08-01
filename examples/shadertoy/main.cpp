@@ -80,8 +80,8 @@ private:
   }
 
   [[nodiscard]] static auto channelInput(uint32_t channel)
-      -> vkr::exec::FullscreenPassInputDesc {
-    return vkr::exec::FullscreenPassInputDesc::image(1U + channel);
+      -> vkr::exec::RenderPassInputDesc {
+    return vkr::exec::RenderPassInputDesc::color(1U + channel);
   }
 
   [[nodiscard]] static auto hasChannel(const std::vector<uint32_t> &channels,
@@ -287,8 +287,8 @@ private:
 
     auto &bufferB = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
         *executor, *device, *commandPool, *scene,
-        std::vector<vkr::exec::FullscreenPassSource>{
-            vkr::exec::FullscreenPassSource{bufferA}});
+        std::vector<vkr::exec::RenderPassSource>{
+            vkr::exec::RenderPassSource{bufferA}});
     bufferB.setName("buffer.b")
         .read("buffer.b.history")
         .read("buffer.a")
@@ -297,9 +297,9 @@ private:
 
     auto &bufferC = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
         *executor, *device, *commandPool, *scene,
-        std::vector<vkr::exec::FullscreenPassSource>{
-            vkr::exec::FullscreenPassSource{bufferA},
-            vkr::exec::FullscreenPassSource{bufferB}});
+        std::vector<vkr::exec::RenderPassSource>{
+            vkr::exec::RenderPassSource{bufferA},
+            vkr::exec::RenderPassSource{bufferB}});
     bufferC.setName("buffer.c")
         .read("buffer.c.history")
         .read("buffer.a")
@@ -310,10 +310,10 @@ private:
 
     auto &bufferD = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
         *executor, *device, *commandPool, *scene,
-        std::vector<vkr::exec::FullscreenPassSource>{
-            vkr::exec::FullscreenPassSource{bufferA},
-            vkr::exec::FullscreenPassSource{bufferB},
-            vkr::exec::FullscreenPassSource{bufferC}});
+        std::vector<vkr::exec::RenderPassSource>{
+            vkr::exec::RenderPassSource{bufferA},
+            vkr::exec::RenderPassSource{bufferB},
+            vkr::exec::RenderPassSource{bufferC}});
     bufferD.setName("buffer.d")
         .read("buffer.d.history")
         .read("buffer.a")
@@ -325,11 +325,11 @@ private:
 
     auto &imagePass = graph->addPass<vkr::exec::FullscreenPass>(
         *executor, *device, *commandPool, *scene,
-        std::vector<vkr::exec::FullscreenPassSource>{
-            vkr::exec::FullscreenPassSource{bufferA},
-            vkr::exec::FullscreenPassSource{bufferB},
-            vkr::exec::FullscreenPassSource{bufferC},
-            vkr::exec::FullscreenPassSource{bufferD}});
+        std::vector<vkr::exec::RenderPassSource>{
+            vkr::exec::RenderPassSource{bufferA},
+            vkr::exec::RenderPassSource{bufferB},
+            vkr::exec::RenderPassSource{bufferC},
+            vkr::exec::RenderPassSource{bufferD}});
     imagePass.setName("image")
         .read("buffer.a")
         .read("buffer.b")
@@ -341,7 +341,7 @@ private:
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
         *executor, *window, *instance, *surface, *device, *commandPool,
         *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::exec::FullscreenPassSource{imagePass}, *graph, *timer, ctx.ui);
+        vkr::exec::RenderPassSource{imagePass}, *graph, *timer, ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
 
     auto &presentPass = graph->addPass<vkr::exec::PresentPass>(*executor);

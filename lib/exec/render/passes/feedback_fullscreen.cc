@@ -1,6 +1,7 @@
 #include "vkr/exec/render/passes/feedback_fullscreen.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
+#include <string_view>
 
 namespace vkr::exec {
 namespace {
@@ -9,6 +10,53 @@ auto imageLayoutForColor(const ColorAttachment &color) -> VkImageLayout {
   return color.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
              ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
              : color.desc().finalLayout;
+}
+
+auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
+                     const OffscreenTarget &source,
+                     const RenderPassInputDesc &input) -> VkDescriptorImageInfo {
+  VkDescriptorImageInfo imageInfo{};
+
+  switch (input.kind) {
+  case RenderPassInputKind::Color: {
+    const auto &color = source.color();
+    if (!color.hasSampler()) {
+      VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' source {} color has no "
+                     "sampler",
+                     std::string(passName), sourceIndex);
+    }
+
+    imageInfo.imageLayout = imageLayoutForColor(color);
+    imageInfo.imageView = color.imageView();
+    imageInfo.sampler = color.sampler();
+    break;
+  }
+
+  case RenderPassInputKind::Depth: {
+    const auto *depth = source.depth();
+    if (depth == nullptr) {
+      VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' source {} has no depth "
+                     "attachment",
+                     std::string(passName), sourceIndex);
+    }
+
+    if (!depth->hasSampler()) {
+      VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' source {} depth has no "
+                     "sampler",
+                     std::string(passName), sourceIndex);
+    }
+
+    imageInfo.imageLayout =
+        depth->desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+            ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+            : depth->desc().finalLayout;
+    imageInfo.imageView = depth->imageView();
+    imageInfo.sampler = depth->sampler();
+    break;
+  }
+  }
+
+  return imageInfo;
 }
 
 void appendResourceDescriptorWrites(
@@ -117,14 +165,14 @@ void validateUniqueDescriptorBindings(
 FeedbackFullscreenPass::FeedbackFullscreenPass(
     Executor &executor, const core::Device &device,
     const core::CommandPool &commandPool,
-    std::vector<FullscreenPassSource> sources)
+    std::vector<RenderPassSource> sources)
     : executor_(executor), device_(device), command_pool_(commandPool),
       sources_(std::move(sources)) {}
 
 FeedbackFullscreenPass::FeedbackFullscreenPass(
     Executor &executor, const core::Device &device,
     const core::CommandPool &commandPool, scene::Scene &scene,
-    std::vector<FullscreenPassSource> sources)
+    std::vector<RenderPassSource> sources)
     : executor_(executor), device_(device), command_pool_(commandPool),
       scene_(&scene), sources_(std::move(sources)) {}
 
@@ -191,14 +239,14 @@ void FeedbackFullscreenPass::record() {
   executor_.endPass();
 }
 
-auto FeedbackFullscreenPass::addSource(FullscreenPassSource source)
+auto FeedbackFullscreenPass::addSource(RenderPassSource source)
     -> FeedbackFullscreenPass & {
   sources_.push_back(source);
   return *this;
 }
 
 auto FeedbackFullscreenPass::setSources(
-    std::vector<FullscreenPassSource> sources) -> FeedbackFullscreenPass & {
+    std::vector<RenderPassSource> sources) -> FeedbackFullscreenPass & {
   sources_ = std::move(sources);
   return *this;
 }
@@ -394,9 +442,9 @@ void FeedbackFullscreenPass::createPipeline() {
 }
 
 auto FeedbackFullscreenPass::resolvedInputs() const
-    -> std::vector<FullscreenPassInputDesc> {
+    -> std::vector<RenderPassInputDesc> {
   if (desc_.inputs.empty()) {
-    std::vector<FullscreenPassInputDesc> inputs{};
+    std::vector<RenderPassInputDesc> inputs{};
     inputs.reserve(sources_.size());
 
     uint32_t firstBinding = 0;
@@ -414,7 +462,7 @@ auto FeedbackFullscreenPass::resolvedInputs() const
 
     for (uint32_t index = 0; index < sources_.size(); ++index) {
       inputs.push_back(
-          FullscreenPassInputDesc{.binding = firstBinding + index});
+          RenderPassInputDesc{.binding = firstBinding + index});
     }
 
     return inputs;
@@ -430,7 +478,7 @@ auto FeedbackFullscreenPass::resolvedInputs() const
 }
 
 auto FeedbackFullscreenPass::descriptorPoolDesc(
-    const std::vector<FullscreenPassInputDesc> &inputs) const
+    const std::vector<RenderPassInputDesc> &inputs) const
     -> pipeline::DescriptorPoolDesc {
   auto poolDesc = desc_.descriptorPool;
   if (poolDesc.maxSets != 0) {
@@ -470,7 +518,7 @@ auto FeedbackFullscreenPass::descriptorPoolDesc(
 }
 
 auto FeedbackFullscreenPass::createDescriptorWrites(
-    const std::vector<FullscreenPassInputDesc> &inputs)
+    const std::vector<RenderPassInputDesc> &inputs)
     -> std::vector<pipeline::DescriptorSetWriteDesc> {
   std::vector<pipeline::DescriptorSetWriteDesc> writes{};
   const uint32_t frameCount = executor_.framesInFlight();
@@ -485,17 +533,8 @@ auto FeedbackFullscreenPass::createDescriptorWrites(
 
   if (desc_.historyInput) {
     for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-      const auto &color = historyTarget(frameIndex).color();
-      if (!color.hasSampler()) {
-        VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' history target has no "
-                       "sampler",
-                       name());
-      }
-
-      VkDescriptorImageInfo imageInfo{};
-      imageInfo.imageLayout = imageLayoutForColor(color);
-      imageInfo.imageView = color.imageView();
-      imageInfo.sampler = color.sampler();
+      const VkDescriptorImageInfo imageInfo = sourceImageInfo(
+          name(), 0, historyTarget(frameIndex), *desc_.historyInput);
 
       writes[frameIndex].images.push_back(
           pipeline::DescriptorImageWriteDesc::one(
@@ -506,17 +545,8 @@ auto FeedbackFullscreenPass::createDescriptorWrites(
 
   for (size_t index = 0; index < sources_.size(); ++index) {
     for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-      const auto &color = sources_[index].target(frameIndex).color();
-      if (!color.hasSampler()) {
-        VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' source {} has no "
-                       "sampler",
-                       name(), index);
-      }
-
-      VkDescriptorImageInfo imageInfo{};
-      imageInfo.imageLayout = imageLayoutForColor(color);
-      imageInfo.imageView = color.imageView();
-      imageInfo.sampler = color.sampler();
+      const VkDescriptorImageInfo imageInfo = sourceImageInfo(
+          name(), index, sources_[index].target(frameIndex), inputs[index]);
 
       writes[frameIndex].images.push_back(
           pipeline::DescriptorImageWriteDesc::one(

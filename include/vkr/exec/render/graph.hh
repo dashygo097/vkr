@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/exec/render/pass.hh"
+#include "vkr/exec/pass.hh"
 #include <functional>
 #include <memory>
 #include <optional>

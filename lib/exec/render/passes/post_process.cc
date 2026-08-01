@@ -4,7 +4,7 @@ namespace vkr::exec {
 
 PostProcessPass::PostProcessPass(Executor &executor, const core::Device &device,
                                  const core::CommandPool &commandPool,
-                                 FullscreenPassSource source)
+                                 RenderPassSource source)
     : FullscreenPass(executor, device, commandPool, {source}) {}
 
 } // namespace vkr::exec

@@ -4,7 +4,9 @@
 #include "vkr/core/device.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
-#include "vkr/exec/render/pass.hh"
+#include "vkr/exec/pass.hh"
+#include "vkr/exec/render/passes/input.hh"
+#include "vkr/exec/render/passes/source.hh"
 #include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
@@ -26,6 +28,7 @@ struct RasterPassDesc {
   std::vector<VkClearValue> clearValues{};
   pipeline::GraphicsPipelineDesc graphicsPipeline{};
   std::vector<std::string> meshNames{};
+  std::vector<RenderPassInputDesc> inputs{};
 
   auto targetDesc(OffscreenTargetDesc desc) -> RasterPassDesc & {
     target = std::move(desc);
@@ -100,6 +103,43 @@ struct RasterPassDesc {
     return *this;
   }
 
+  auto sampledDepth(bool enabled = true) -> RasterPassDesc & {
+    if (!target.depth) {
+      target.depth = DepthAttachmentDesc{
+          .width = target.color.width,
+          .height = target.color.height,
+          .format = VK_FORMAT_D32_SFLOAT,
+      };
+    }
+
+    if (enabled) {
+      target.depth->usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+      target.depth->finalLayout =
+          VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+      target.depth->createSampler = true;
+      return *this;
+    }
+
+    target.depth->usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;
+    target.depth->finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    target.depth->createSampler = false;
+    return *this;
+  }
+
+  auto depthSampler(resource::SamplerDesc desc) -> RasterPassDesc & {
+    if (!target.depth) {
+      target.depth = DepthAttachmentDesc{
+          .width = target.color.width,
+          .height = target.color.height,
+          .format = VK_FORMAT_D32_SFLOAT,
+      };
+    }
+
+    target.depth->sampler = std::move(desc);
+    target.depth->createSampler = true;
+    return *this;
+  }
+
   auto descriptor(pipeline::DescriptorBinding binding) -> RasterPassDesc & {
     descriptorBindings.push_back(std::move(binding));
     return *this;
@@ -126,6 +166,25 @@ struct RasterPassDesc {
                VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
                uint32_t descriptorCount = 1) -> RasterPassDesc & {
     return texture(binding, std::move(name), stageFlags, descriptorCount);
+  }
+
+  auto input(uint32_t binding,
+             VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
+      -> RasterPassDesc & {
+    inputs.push_back(RenderPassInputDesc::color(binding, stageFlags));
+    return *this;
+  }
+
+  auto inputDepth(uint32_t binding,
+                  VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
+      -> RasterPassDesc & {
+    inputs.push_back(RenderPassInputDesc::depth(binding, stageFlags));
+    return *this;
+  }
+
+  auto input(RenderPassInputDesc desc) -> RasterPassDesc & {
+    inputs.push_back(desc);
+    return *this;
   }
 
   auto mesh(std::string name) -> RasterPassDesc & {
@@ -234,6 +293,8 @@ public:
   void destroy() override;
   void update(const RasterPassDesc &desc);
   void record() override;
+  auto addSource(RenderPassSource source) -> RasterPass &;
+  auto setSources(std::vector<RenderPassSource> sources) -> RasterPass &;
 
   [[nodiscard]] auto target() -> OffscreenTarget &;
   [[nodiscard]] auto target() const -> const OffscreenTarget &;
@@ -279,6 +340,7 @@ private:
   std::unique_ptr<pipeline::GraphicsPipeline> mesh_grid_pipeline_{};
   std::unique_ptr<scene::IndexBuffer> mesh_grid_index_buffer_{};
   std::string mesh_grid_name_{};
+  std::vector<RenderPassSource> sources_{};
 
   // helpers
   void createTarget();

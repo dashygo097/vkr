@@ -8,7 +8,7 @@ class CompositePass final : public FullscreenPass {
 public:
   CompositePass(Executor &executor, const core::Device &device,
                 const core::CommandPool &commandPool,
-                std::vector<FullscreenPassSource> sources);
+                std::vector<RenderPassSource> sources);
 };
 
 } // namespace vkr::exec

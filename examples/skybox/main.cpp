@@ -119,9 +119,9 @@ private:
 
     auto &compositePass = graph->addPass<vkr::exec::CompositePass>(
         *executor, *device, *commandPool,
-        std::vector<vkr::exec::FullscreenPassSource>{
-            vkr::exec::FullscreenPassSource{skyboxPass},
-            vkr::exec::FullscreenPassSource{cornellPass}});
+        std::vector<vkr::exec::RenderPassSource>{
+            vkr::exec::RenderPassSource{skyboxPass},
+            vkr::exec::RenderPassSource{cornellPass}});
     compositePass.setName("composite")
         .read("scene.skybox")
         .read("scene.cornell")
@@ -131,7 +131,7 @@ private:
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
         *executor, *window, *instance, *surface, *device, *commandPool,
         *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::exec::FullscreenPassSource{compositePass}, *graph, *timer, ctx.ui);
+        vkr::exec::RenderPassSource{compositePass}, *graph, *timer, ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
 
     auto &presentPass = graph->addPass<vkr::exec::PresentPass>(*executor);
