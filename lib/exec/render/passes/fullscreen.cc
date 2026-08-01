@@ -208,6 +208,7 @@ void FullscreenPass::record() {
                      .extent = {target_->width(), target_->height()}},
       .clearValues = desc_.clearValues};
 
+  executor_.beginProfileScope(name());
   executor_.beginPass(*framebuffers_, *render_pass_, beginDesc);
   executor_.setViewportAndScissor({target_->width(), target_->height()});
 
@@ -220,6 +221,7 @@ void FullscreenPass::record() {
   }
 
   executor_.endPass();
+  executor_.endProfileScope();
 }
 
 auto FullscreenPass::addSource(RenderPassSource source)

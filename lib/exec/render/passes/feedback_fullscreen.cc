@@ -225,6 +225,7 @@ void FeedbackFullscreenPass::record() {
                      .extent = {writeTarget.width(), writeTarget.height()}},
       .clearValues = desc_.clearValues};
 
+  executor_.beginProfileScope(name());
   executor_.beginPass(*framebuffer, *render_pass_, beginDesc);
   executor_.setViewportAndScissor({writeTarget.width(), writeTarget.height()});
 
@@ -237,6 +238,7 @@ void FeedbackFullscreenPass::record() {
   }
 
   executor_.endPass();
+  executor_.endProfileScope();
 }
 
 auto FeedbackFullscreenPass::addSource(RenderPassSource source)

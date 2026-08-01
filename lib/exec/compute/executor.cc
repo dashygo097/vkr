@@ -123,8 +123,8 @@ void ComputeExecutor::dispatch(uint32_t groupCountX, uint32_t groupCountY,
   ensureActive("dispatch");
 
   if (groupCountX == 0 || groupCountY == 0 || groupCountZ == 0) {
-    VKR_EXEC_ERROR("dispatch has invalid group count: {}x{}x{}",
-                   groupCountX, groupCountY, groupCountZ);
+    VKR_EXEC_ERROR("dispatch has invalid group count: {}x{}x{}", groupCountX,
+                   groupCountY, groupCountZ);
   }
 
   vkCmdDispatch(command_buffer_, groupCountX, groupCountY, groupCountZ);

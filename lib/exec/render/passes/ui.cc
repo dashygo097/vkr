@@ -71,10 +71,12 @@ void UiPass::record() {
                      .extent = {target_->width(), target_->height()}},
       .clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}}};
 
+  executor_.beginProfileScope(name());
   executor_.beginPass(*framebuffers_, *render_pass_, beginDesc);
   executor_.setViewportAndScissor({target_->width(), target_->height()});
   executor_.drawUI(*ui_);
   executor_.endPass();
+  executor_.endProfileScope();
 }
 
 } // namespace vkr::exec
