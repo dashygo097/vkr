@@ -4,6 +4,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/resource/image/image.hh"
 #include "vkr/resource/image/image_view.hh"
+#include "vkr/resource/image/sampler.hh"
 
 namespace vkr::exec {
 
@@ -11,6 +12,10 @@ struct DepthAttachmentDesc {
   uint32_t width{};
   uint32_t height{};
   VkFormat format{VK_FORMAT_UNDEFINED};
+  VkImageUsageFlags usage{VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT};
+  VkImageLayout finalLayout{VK_IMAGE_LAYOUT_UNDEFINED};
+  bool createSampler{false};
+  resource::SamplerDesc sampler{resource::SamplerDesc::nearestClampToEdge()};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return width != 0 && height != 0 && format != VK_FORMAT_UNDEFINED;
@@ -42,6 +47,18 @@ public:
     return image_view_->imageView();
   }
 
+  [[nodiscard]] auto sampler() const noexcept -> VkSampler {
+    return sampler_ ? sampler_->sampler() : VK_NULL_HANDLE;
+  }
+
+  [[nodiscard]] auto samplerRef() const noexcept -> const resource::Sampler * {
+    return sampler_.get();
+  }
+
+  [[nodiscard]] auto hasSampler() const noexcept -> bool {
+    return sampler_ && sampler_->sampler() != VK_NULL_HANDLE;
+  }
+
 private:
   // dependencies
   const core::Device &device_;
@@ -51,6 +68,7 @@ private:
   DepthAttachmentDesc desc_{};
   std::unique_ptr<resource::Image> image_;
   std::unique_ptr<resource::ImageView> image_view_;
+  std::unique_ptr<resource::Sampler> sampler_;
 };
 
 } // namespace vkr::exec

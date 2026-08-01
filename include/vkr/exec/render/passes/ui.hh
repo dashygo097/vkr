@@ -7,7 +7,7 @@
 #include "vkr/core/surface.hh"
 #include "vkr/core/swapchain.hh"
 #include "vkr/core/window.hh"
-#include "vkr/exec/render/attachments/frame_buffer.hh"
+#include "vkr/exec/render/attachments/frame_buffer_set.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/graph.hh"
 #include "vkr/exec/render/pass.hh"

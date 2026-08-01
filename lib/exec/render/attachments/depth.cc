@@ -22,13 +22,32 @@ void DepthAttachment::create() {
                   desc_.height);
   }
 
-  image_->update(resource::ImageDesc::depthAttachment(desc_.width, desc_.height,
-                                                      desc_.format));
+  auto imageDesc = resource::ImageDesc::depthAttachment(
+      desc_.width, desc_.height, desc_.format);
+
+  imageDesc.usage = desc_.usage;
+
+  image_->update(imageDesc);
+  image_->setLayout(desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+                        ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+                        : desc_.finalLayout);
   image_view_->update(
       resource::ImageViewDesc::depth2D(image_->image(), desc_.format));
+
+  if (desc_.createSampler) {
+    if (!sampler_) {
+      sampler_ = std::make_unique<resource::Sampler>(device_);
+    }
+
+    sampler_->update(desc_.sampler);
+  } else {
+    sampler_.reset();
+  }
 }
 
 void DepthAttachment::destory() {
+  sampler_.reset();
+
   if (image_view_) {
     image_view_->destroy();
   }
