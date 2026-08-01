@@ -10,7 +10,7 @@
 #include "vkr/exec/compute/executor.hh"
 #include "vkr/exec/compute/graph.hh"
 #include "vkr/exec/compute/passes/compute.hh"
-#include "vkr/exec/profiler/profiler.hh"
+#include "vkr/exec/profiler.hh"
 #include "vkr/exec/render/app.hh"
 #include "vkr/exec/render/passes/input.hh"
 #include "vkr/exec/render/passes/source.hh"

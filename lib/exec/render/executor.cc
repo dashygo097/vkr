@@ -48,6 +48,11 @@ auto Executor::beginFrame() -> bool {
   frame_active_ = true;
   frame_submitted_ = false;
   frame_presented_ = false;
+
+  if (profiler_ != nullptr) {
+    profiler_->beginFrame(command_buffer_);
+  }
+
   return true;
 }
 
@@ -56,6 +61,10 @@ void Executor::submitFrame() {
 
   if (frame_submitted_) {
     VKR_EXEC_ERROR("Executor::submitFrame called twice for one frame");
+  }
+
+  if (profiler_ != nullptr) {
+    profiler_->endFrame(command_buffer_);
   }
 
   if (vkEndCommandBuffer(command_buffer_) != VK_SUCCESS) {
@@ -79,6 +88,10 @@ void Executor::presentFrame() {
 
   present(image_index_);
   frame_presented_ = true;
+}
+
+void Executor::setProfiler(Profiler *profiler) noexcept {
+  profiler_ = profiler;
 }
 
 void Executor::endFrame() {
@@ -237,6 +250,20 @@ void Executor::drawFullscreenTriangle() {
 void Executor::drawUI(ui::UI &ui) {
   ensureFrameActive("drawUI");
   ui.render(command_buffer_);
+}
+
+void Executor::beginProfileScope(std::string_view name) {
+  ensureFrameActive("beginProfileScope");
+  if (profiler_ != nullptr) {
+    profiler_->beginScope(command_buffer_, name);
+  }
+}
+
+void Executor::endProfileScope() {
+  ensureFrameActive("endProfileScope");
+  if (profiler_ != nullptr) {
+    profiler_->endScope(command_buffer_);
+  }
 }
 
 void Executor::ensureFrameActive(const char *op) const {

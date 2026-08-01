@@ -7,6 +7,7 @@
 #include "vkr/core/surface.hh"
 #include "vkr/core/swapchain.hh"
 #include "vkr/core/window.hh"
+#include "vkr/exec/profiler.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/graph.hh"
 #include "vkr/exec/render/sync.hh"
@@ -29,13 +30,15 @@ struct RenderAppDesc {
   core::SwapchainDesc swapchain{};
   core::CommandPoolDesc commandPool{};
   core::CommandBuffersDesc commandBuffers{};
+  ProfilerDesc profiler{};
   vkr::scene::CameraDesc camera{};
   ui::UiDesc ui{};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return asset.isValid() && window.isValid() && instance.isValid() &&
            device.isValid() && swapchain.isValid() && commandPool.isValid() &&
-           commandBuffers.isValid() && camera.isValid() && ui.isValid();
+           commandBuffers.isValid() && profiler.isValid() &&
+           camera.isValid() && ui.isValid();
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
@@ -46,6 +49,7 @@ struct RenderAppDesc {
     ar("swapchain", swapchain);
     ar("commandPool", commandPool);
     ar("commandBuffers", commandBuffers);
+    ar("profiler", profiler);
     ar("camera", camera);
     ar("ui", ui);
   }
@@ -84,6 +88,8 @@ public:
   // executor
   std::unique_ptr<Executor> executor;
   std::unique_ptr<RenderGraph> graph;
+  std::unique_ptr<Profiler> profiler;
+  ProfileReport profileReport;
 
   // components
   std::unique_ptr<vkr::scene::Camera> camera;

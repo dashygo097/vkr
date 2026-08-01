@@ -82,6 +82,9 @@ void RenderApplication::initVulkan() {
   // command pool
   commandPool = std::make_unique<core::CommandPool>(*device, ctx.commandPool);
 
+  // profiler
+  profiler = std::make_unique<Profiler>(*device, *commandPool, ctx.profiler);
+
   // command buffers
   commandBuffers =
       std::make_unique<core::CommandBuffers>(*device, *commandPool);
@@ -107,6 +110,7 @@ void RenderApplication::initVulkan() {
   // executor
   executor = std::make_unique<Executor>(*device, *swapchain, *commandPool,
                                         *frameSync, *scene, *commandBuffers);
+  executor->setProfiler(profiler.get());
 
   // render graph
   graph = std::make_unique<RenderGraph>();
@@ -152,9 +156,19 @@ void RenderApplication::drawFrame() {
   }
 
   onDraw();
+  executor->beginProfileScope("render_graph");
   graph->record();
+  executor->endProfileScope();
 
   executor->submitFrame();
+  profileReport = profiler ? profiler->collect() : ProfileReport{};
+  if (ctx.profiler.logReport && !profileReport.gpuSamples.empty()) {
+    VKR_EXEC_INFO("GPU profile report:");
+    for (const auto &sample : profileReport.gpuSamples) {
+      VKR_EXEC_INFO("  {}: {:.6f} ms", sample.name, sample.milliseconds);
+    }
+  }
+
   graph->present();
   graph->afterFrame();
   executor->endFrame();

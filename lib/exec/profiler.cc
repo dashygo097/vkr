@@ -1,4 +1,4 @@
-#include "vkr/exec/profiler/profiler.hh"
+#include "vkr/exec/profiler.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
 #include <limits>

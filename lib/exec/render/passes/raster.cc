@@ -193,9 +193,14 @@ void RasterPass::createRenderPass() {
                                           ? target_->depth()->desc().format
                                           : VK_FORMAT_UNDEFINED);
 
-  const auto colorFinalLayout = target_->color().desc().finalLayout;
+  const auto &colorDesc = target_->color().desc();
+  const auto colorFinalLayout = colorDesc.finalLayout;
   if (colorFinalLayout != VK_IMAGE_LAYOUT_UNDEFINED) {
     renderPassDesc.colors[0].finalLayout = colorFinalLayout;
+  } else if ((colorDesc.usage & (VK_IMAGE_USAGE_SAMPLED_BIT |
+                                 VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)) == 0) {
+    renderPassDesc.colors[0].finalLayout =
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
   }
 
   if (target_->depth()) {

@@ -3,11 +3,13 @@
 #include "vkr/core/command/buffers.hh"
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
+#include "vkr/exec/profiler.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
 #include "vkr/exec/render/sync.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/ui/ui.hh"
+#include <string_view>
 
 namespace vkr::exec {
 
@@ -33,6 +35,7 @@ public:
   void submitFrame();
   void presentFrame();
   void endFrame();
+  void setProfiler(Profiler *profiler) noexcept;
 
   [[nodiscard]] auto swapchainOutOfDate() const noexcept -> bool {
     return swapchain_out_of_date_;
@@ -77,6 +80,8 @@ public:
   void drawGeometry();
   void drawFullscreenTriangle();
   void drawUI(ui::UI &ui);
+  void beginProfileScope(std::string_view name);
+  void endProfileScope();
 
 private:
   // dependencies
@@ -86,6 +91,7 @@ private:
   FrameSync &frame_sync_;
   scene::Scene &scene_;
   core::CommandBuffers &command_buffers_;
+  Profiler *profiler_{nullptr};
 
   // state
   uint32_t current_frame_{0};

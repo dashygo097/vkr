@@ -5,7 +5,7 @@
 #include "vkr/core/instance.hh"
 #include "vkr/exec/compute/executor.hh"
 #include "vkr/exec/compute/graph.hh"
-#include "vkr/exec/profiler/profiler.hh"
+#include "vkr/exec/profiler.hh"
 #include "vkr/logger.hh"
 #include "vkr/util/asset.hh"
 #include "vkr/util/timer.hh"
