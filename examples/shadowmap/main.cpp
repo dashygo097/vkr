@@ -129,7 +129,7 @@ private:
     scene->getUniformBuffer("default")->updateRaw(frameIndex, &ubo,
                                                   sizeof(ubo));
 
-    const glm::vec3 lightPos{-4.5f, 5.0f, 5.5f};
+    const glm::vec3 lightPos{-2.5f, 5.0f, 2.5f};
     glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3{0.0f, 0.8f, 0.0f},
                                       glm::vec3{0.0f, 1.0f, 0.0f});
     glm::mat4 lightProj = glm::ortho(-5.5f, 5.5f, -5.5f, 5.5f, 0.1f, 12.0f);
