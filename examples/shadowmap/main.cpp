@@ -56,8 +56,7 @@ private:
     vkr::exec::RasterPassDesc shadowDesc{};
     shadowDesc
         .color(static_cast<uint32_t>(shadowMapWidth),
-               static_cast<uint32_t>(shadowMapHeight),
-               VK_FORMAT_R8G8B8A8_UNORM)
+               static_cast<uint32_t>(shadowMapHeight), VK_FORMAT_R8G8B8A8_UNORM)
         .colorUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
         .depth(static_cast<uint32_t>(shadowMapWidth),
                static_cast<uint32_t>(shadowMapHeight), VK_FORMAT_D32_SFLOAT)
@@ -68,10 +67,8 @@ private:
         .vertexInput(vkr::scene::VertexNormal3D::vertexInputDesc())
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/shadowmap/shadow.vert").string()))
-        .fragmentShader(
-            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolveApp("shaders/shadowmap/shadow.frag")
-                    .string()))
+        .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+            assetSystem->resolveApp("shaders/shadowmap/shadow.frag").string()))
         .depthTest()
         .noCull()
         .meshes(meshNames)
@@ -97,10 +94,8 @@ private:
         .vertexInput(vkr::scene::VertexNormal3D::vertexInputDesc())
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/shadowmap/camera.vert").string()))
-        .fragmentShader(
-            vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-                assetSystem->resolveApp("shaders/shadowmap/camera.frag")
-                    .string()))
+        .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+            assetSystem->resolveApp("shaders/shadowmap/camera.frag").string()))
         .depthTest()
         .noCull()
         .meshes(std::move(meshNames))
@@ -134,12 +129,10 @@ private:
     scene->getUniformBuffer("default")->updateRaw(frameIndex, &ubo,
                                                   sizeof(ubo));
 
-    const glm::vec3 lightPos{-2.5f, 5.0f, 2.5f};
-    glm::mat4 lightView =
-        glm::lookAt(lightPos, glm::vec3{0.0f, 0.8f, 0.0f},
-                    glm::vec3{0.0f, 1.0f, 0.0f});
-    glm::mat4 lightProj =
-        glm::ortho(-5.5f, 5.5f, -5.5f, 5.5f, 0.1f, 12.0f);
+    const glm::vec3 lightPos{-4.5f, 5.0f, 5.5f};
+    glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3{0.0f, 0.8f, 0.0f},
+                                      glm::vec3{0.0f, 1.0f, 0.0f});
+    glm::mat4 lightProj = glm::ortho(-5.5f, 5.5f, -5.5f, 5.5f, 0.1f, 12.0f);
     lightProj[1][1] *= -1.0f;
 
     LightSpaceObject light{};
