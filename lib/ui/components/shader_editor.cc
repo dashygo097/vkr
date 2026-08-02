@@ -901,15 +901,29 @@ void ShaderEditor::reloadFromPipeline() {
   vert_file_.valid_text = vert_file_.synced_text;
   frag_file_.valid_text = frag_file_.synced_text;
 
+  if (const auto cached = pipeline_files_.find(loaded_target_key_);
+      cached != pipeline_files_.end()) {
+    if (!vert_file_.file_backed && cached->second.vert.file_backed) {
+      vert_file_ = cached->second.vert;
+      vert_editor_.SetText(vert_file_.synced_text);
+    }
+
+    if (!frag_file_.file_backed && cached->second.frag.file_backed) {
+      frag_file_ = cached->second.frag;
+      frag_editor_.SetText(frag_file_.synced_text);
+    }
+  }
+
+  pipeline_files_[loaded_target_key_] = ShaderEditorPipelineState{
+      .vert = vert_file_,
+      .frag = frag_file_,
+  };
+
   setStatus("Loaded target: " + loaded_target_key_, false);
 }
 
-void ShaderEditor::refreshFileBackedShaders() {
-  auto pipeline = activePipeline();
-  if (!pipeline) {
-    return;
-  }
-
+void ShaderEditor::refreshFileBackedShaders(
+    const std::vector<PipelineTarget> &targets) {
   const double now = ImGui::GetTime();
   const bool probeContent = now - last_file_probe_time_ >= 0.25;
   if (probeContent) {
@@ -919,6 +933,32 @@ void ShaderEditor::refreshFileBackedShaders() {
   struct FileChange {
     std::filesystem::file_time_type writeTime{};
     std::string diskText{};
+  };
+
+  auto initFileState = [](ShaderEditorFileState &state,
+                          std::optional<std::reference_wrapper<
+                              const pipeline::GraphicsShaderStageDesc>>
+                              shader) -> void {
+    const std::string path = shaderPath(shader);
+    if (path.empty()) {
+      return;
+    }
+
+    if (state.file_backed && state.path == path) {
+      return;
+    }
+
+    const std::string diskText = readTextFile(path);
+    state = ShaderEditorFileState{
+        .path = path,
+        .write_time =
+            fileWriteTime(path).value_or(std::filesystem::file_time_type{}),
+        .disk_text = diskText,
+        .synced_text = diskText,
+        .valid_text = diskText,
+        .file_backed = true,
+        .conflict = false,
+    };
   };
 
   auto changedFile = [probeContent](const ShaderEditorFileState &state)
@@ -942,41 +982,158 @@ void ShaderEditor::refreshFileBackedShaders() {
                       .diskText = diskText};
   };
 
-  const auto vertChange = changedFile(vert_file_);
-  const auto fragChange = changedFile(frag_file_);
-  const bool vertChanged = vertChange.has_value();
-  const bool fragChanged = fragChange.has_value();
-  if (!vertChanged && !fragChanged) {
-    return;
+  auto applyFileBackedState =
+      [&](const PipelineTarget &target, ShaderEditorPipelineState &state,
+          bool active) -> bool {
+    auto &pipeline = target.pipeline.get();
+    const auto oldDesc = pipeline.desc();
+    auto nextDesc = oldDesc;
+
+    if (auto vert = findShader(nextDesc, VK_SHADER_STAGE_VERTEX_BIT)) {
+      auto &shader = vert->get();
+      if (state.vert.file_backed) {
+        shader.module =
+            makeShaderModule(VK_SHADER_STAGE_VERTEX_BIT,
+                             state.vert.synced_text, state.vert.path,
+                             shader.entryPoint, true);
+      }
+    }
+
+    if (auto frag = findShader(nextDesc, VK_SHADER_STAGE_FRAGMENT_BIT)) {
+      auto &shader = frag->get();
+      if (state.frag.file_backed) {
+        shader.module =
+            makeShaderModule(VK_SHADER_STAGE_FRAGMENT_BIT,
+                             state.frag.synced_text, state.frag.path,
+                             shader.entryPoint, true);
+      }
+    }
+
+    try {
+      if (pipeline.update(nextDesc)) {
+        state.vert.valid_text = state.vert.synced_text;
+        state.frag.valid_text = state.frag.synced_text;
+        state.vert.conflict = false;
+        state.frag.conflict = false;
+
+        if (active) {
+          vert_file_ = state.vert;
+          frag_file_ = state.frag;
+        }
+
+        setStatus("Hot reloaded: " + target.label(), false);
+        return true;
+      }
+    } catch (const std::exception &e) {
+      setStatus("Failed to hot reload: " + target.label() + ": " + e.what(),
+                true);
+    } catch (...) {
+      setStatus("Failed to hot reload: " + target.label(), true);
+    }
+
+    auto restoreDesc = oldDesc;
+
+    if (auto vert = findShader(restoreDesc, VK_SHADER_STAGE_VERTEX_BIT)) {
+      auto &shader = vert->get();
+      if (state.vert.file_backed && !state.vert.valid_text.empty()) {
+        shader.module =
+            makeShaderModule(VK_SHADER_STAGE_VERTEX_BIT,
+                             state.vert.valid_text,
+                             shaderLabel(shader, restoreDesc.name + ".vert"),
+                             shader.entryPoint, false);
+      }
+    }
+
+    if (auto frag = findShader(restoreDesc, VK_SHADER_STAGE_FRAGMENT_BIT)) {
+      auto &shader = frag->get();
+      if (state.frag.file_backed && !state.frag.valid_text.empty()) {
+        shader.module =
+            makeShaderModule(VK_SHADER_STAGE_FRAGMENT_BIT,
+                             state.frag.valid_text,
+                             shaderLabel(shader, restoreDesc.name + ".frag"),
+                             shader.entryPoint, false);
+      }
+    }
+
+    try {
+      pipeline.update(restoreDesc);
+    } catch (...) {
+    }
+
+    if (active) {
+      vert_file_ = state.vert;
+      frag_file_ = state.frag;
+    }
+
+    return false;
+  };
+
+  for (const auto &target : targets) {
+    const std::string key = target.label();
+    const bool active = key == loaded_target_key_;
+    auto &state = pipeline_files_[key];
+
+    if (active) {
+      state.vert = vert_file_;
+      state.frag = frag_file_;
+    } else {
+      const auto &desc = target.pipeline.get().desc();
+      initFileState(state.vert, findShader(desc, VK_SHADER_STAGE_VERTEX_BIT));
+      initFileState(state.frag,
+                    findShader(desc, VK_SHADER_STAGE_FRAGMENT_BIT));
+    }
+
+    const auto vertChange = changedFile(state.vert);
+    const auto fragChange = changedFile(state.frag);
+    const bool vertChanged = vertChange.has_value();
+    const bool fragChanged = fragChange.has_value();
+    if (!vertChanged && !fragChanged) {
+      continue;
+    }
+
+    const bool editorDirty =
+        active && (vert_editor_.GetText() != state.vert.synced_text ||
+                   frag_editor_.GetText() != state.frag.synced_text);
+
+    if (editorDirty) {
+      state.vert.conflict = state.vert.conflict || vertChanged;
+      state.frag.conflict = state.frag.conflict || fragChanged;
+      vert_file_ = state.vert;
+      frag_file_ = state.frag;
+      setStatus("Shader file changed on disk; save to resolve.", true);
+      continue;
+    }
+
+    if (vertChanged) {
+      state.vert.write_time = vertChange->writeTime;
+      state.vert.disk_text = vertChange->diskText;
+
+      if (active) {
+        vert_editor_.SetText(vertChange->diskText);
+        state.vert.synced_text = vert_editor_.GetText();
+      } else {
+        state.vert.synced_text = vertChange->diskText;
+      }
+
+      state.vert.conflict = false;
+    }
+
+    if (fragChanged) {
+      state.frag.write_time = fragChange->writeTime;
+      state.frag.disk_text = fragChange->diskText;
+
+      if (active) {
+        frag_editor_.SetText(fragChange->diskText);
+        state.frag.synced_text = frag_editor_.GetText();
+      } else {
+        state.frag.synced_text = fragChange->diskText;
+      }
+
+      state.frag.conflict = false;
+    }
+
+    (void)applyFileBackedState(target, state, active);
   }
-
-  const bool editorDirty = vert_editor_.GetText() != vert_file_.synced_text ||
-                           frag_editor_.GetText() != frag_file_.synced_text;
-
-  if (editorDirty) {
-    vert_file_.conflict = vert_file_.conflict || vertChanged;
-    frag_file_.conflict = frag_file_.conflict || fragChanged;
-    setStatus("Shader file changed on disk; reload or save to resolve.", true);
-    return;
-  }
-
-  if (vertChanged) {
-    vert_editor_.SetText(vertChange->diskText);
-    vert_file_.write_time = vertChange->writeTime;
-    vert_file_.disk_text = vertChange->diskText;
-    vert_file_.synced_text = vert_editor_.GetText();
-    vert_file_.conflict = false;
-  }
-
-  if (fragChanged) {
-    frag_editor_.SetText(fragChange->diskText);
-    frag_file_.write_time = fragChange->writeTime;
-    frag_file_.disk_text = fragChange->diskText;
-    frag_file_.synced_text = frag_editor_.GetText();
-    frag_file_.conflict = false;
-  }
-
-  (void)applyToPipeline(false);
 }
 
 auto ShaderEditor::applyToPipeline(bool saveFiles) -> bool {
@@ -1075,6 +1232,13 @@ auto ShaderEditor::applyToPipeline(bool saveFiles) -> bool {
         frag_file_.write_time = *time;
       }
 
+      if (!loaded_target_key_.empty()) {
+        pipeline_files_[loaded_target_key_] = ShaderEditorPipelineState{
+            .vert = vert_file_,
+            .frag = frag_file_,
+        };
+      }
+
       setStatus((saveVertFile || saveFragFile ? "Saved and applied: "
                                               : "Compiled and applied: ") +
                     loaded_target_key_,
@@ -1145,6 +1309,13 @@ auto ShaderEditor::applyToPipeline(bool saveFiles) -> bool {
               true);
   }
 
+  if (!loaded_target_key_.empty()) {
+    pipeline_files_[loaded_target_key_] = ShaderEditorPipelineState{
+        .vert = vert_file_,
+        .frag = frag_file_,
+    };
+  }
+
   return false;
 }
 
@@ -1205,8 +1376,8 @@ auto ShaderEditor::parseErrors(const std::string &log)
 
 auto ShaderEditor::render() -> void {
   reloadFromPipelineIfChanged();
-  refreshFileBackedShaders();
   const auto targets = collectTargets();
+  refreshFileBackedShaders(targets);
 
   const ImGuiStyle &style = ImGui::GetStyle();
   const ImVec4 bg = style.Colors[ImGuiCol_WindowBg];

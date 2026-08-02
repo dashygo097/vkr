@@ -16,6 +16,5 @@ layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec3 inNormal;
 
 void main() {
-  vec3 position = inPosition + (inColor + inNormal) * 0.0;
-  gl_Position = light.lightViewProj * camera.model * vec4(position, 1.0);
+  gl_Position = light.lightViewProj * camera.model * vec4(inPosition, 1.0);
 }

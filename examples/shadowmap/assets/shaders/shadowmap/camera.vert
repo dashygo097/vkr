@@ -20,7 +20,7 @@ layout(location = 1) out vec4 fragLightClip;
 
 void main() {
   vec4 worldPos = camera.model * vec4(inPosition, 1.0);
-  fragColor = inColor + inNormal * 0.0;
+  fragColor = inColor;
   fragLightClip = light.lightViewProj * worldPos;
   gl_Position = camera.proj * camera.view * worldPos;
 }

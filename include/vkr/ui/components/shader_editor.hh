@@ -8,6 +8,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace vkr::ui {
@@ -20,6 +21,11 @@ struct ShaderEditorFileState {
   std::string valid_text{};
   bool file_backed{false};
   bool conflict{false};
+};
+
+struct ShaderEditorPipelineState {
+  ShaderEditorFileState vert{};
+  ShaderEditorFileState frag{};
 };
 
 class ShaderEditor final : public UiComponent {
@@ -55,6 +61,7 @@ private:
   double last_file_probe_time_{0.0};
   ShaderEditorFileState vert_file_{};
   ShaderEditorFileState frag_file_{};
+  std::unordered_map<std::string, ShaderEditorPipelineState> pipeline_files_{};
 
   // pipeline control
   [[nodiscard]] auto collectTargets() -> std::vector<PipelineTarget>;
@@ -66,7 +73,7 @@ private:
 
   void reloadFromPipeline();
   void reloadFromPipelineIfChanged();
-  void refreshFileBackedShaders();
+  void refreshFileBackedShaders(const std::vector<PipelineTarget> &targets);
   [[nodiscard]] auto applyToPipeline(bool saveFiles = true) -> bool;
   void renderTargetSelector(const std::vector<PipelineTarget> &targets);
 

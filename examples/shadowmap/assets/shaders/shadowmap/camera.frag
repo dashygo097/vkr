@@ -16,6 +16,5 @@ void main() {
   vec3 ndc = fragLightClip.xyz / fragLightClip.w;
   vec2 uv = ndc.xy * 0.5 + 0.5;
   float shadowDepth = texture(shadowMap, uv).r;
-  vec3 color = max(fragColor, vec3(0.18));
-  outColor = vec4(color + vec3(shadowDepth + light.lightPosBias.w) * 0.0, 1.0);
+  outColor = vec4(fragColor, 1.0);
 }
