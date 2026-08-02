@@ -4,12 +4,23 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/exec/render/graph.hh"
 #include "vkr/ui/components/ui_component.hh"
+#include <filesystem>
 #include <functional>
 #include <optional>
 #include <string>
 #include <vector>
 
 namespace vkr::ui {
+
+struct ShaderEditorFileState {
+  std::string path{};
+  std::filesystem::file_time_type write_time{};
+  std::string disk_text{};
+  std::string synced_text{};
+  std::string valid_text{};
+  bool file_backed{false};
+  bool conflict{false};
+};
 
 class ShaderEditor final : public UiComponent {
 public:
@@ -41,6 +52,9 @@ private:
   std::string status_message_{};
   bool status_is_error_{false};
   int active_tab_{0};
+  double last_file_probe_time_{0.0};
+  ShaderEditorFileState vert_file_{};
+  ShaderEditorFileState frag_file_{};
 
   // pipeline control
   [[nodiscard]] auto collectTargets() -> std::vector<PipelineTarget>;
@@ -52,12 +66,16 @@ private:
 
   void reloadFromPipeline();
   void reloadFromPipelineIfChanged();
-  void applyToPipeline();
+  void refreshFileBackedShaders();
+  [[nodiscard]] auto applyToPipeline(bool saveFiles = true) -> bool;
   void renderTargetSelector(const std::vector<PipelineTarget> &targets);
 
   // editor state
   [[nodiscard]] auto currentEditor() noexcept -> TextEditor &;
   [[nodiscard]] auto currentEditor() const noexcept -> const TextEditor &;
+  [[nodiscard]] auto currentFileState() noexcept -> ShaderEditorFileState &;
+  [[nodiscard]] auto currentFileState() const noexcept
+      -> const ShaderEditorFileState &;
   void setStatus(std::string msg, bool isError = false);
 
   // shader desc helpers
@@ -82,12 +100,21 @@ private:
               const std::string &fallback) -> std::string;
 
   [[nodiscard]] static auto
+  shaderPath(std::optional<std::reference_wrapper<
+                 const pipeline::GraphicsShaderStageDesc>> shader)
+      -> std::string;
+
+  [[nodiscard]] static auto
   makeShaderModule(VkShaderStageFlagBits stage, std::string source,
-                   std::string label, std::string entryPoint)
+                   std::string label, std::string entryPoint, bool fileBacked)
       -> resource::ShaderModuleDesc;
 
   [[nodiscard]] static auto readTextFile(const std::string &path)
       -> std::string;
+  [[nodiscard]] static auto writeTextFile(const std::string &path,
+                                          const std::string &text) -> bool;
+  [[nodiscard]] static auto fileWriteTime(const std::string &path)
+      -> std::optional<std::filesystem::file_time_type>;
 
   // text editor helpers
   [[nodiscard]] static auto makeEditor() -> TextEditor;

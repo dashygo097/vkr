@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <imgui.h>
 #include <initializer_list>
@@ -651,6 +652,15 @@ auto ShaderEditor::currentEditor() const noexcept -> const TextEditor & {
   return active_tab_ == 0 ? vert_editor_ : frag_editor_;
 }
 
+auto ShaderEditor::currentFileState() noexcept -> ShaderEditorFileState & {
+  return active_tab_ == 0 ? vert_file_ : frag_file_;
+}
+
+auto ShaderEditor::currentFileState() const noexcept
+    -> const ShaderEditorFileState & {
+  return active_tab_ == 0 ? vert_file_ : frag_file_;
+}
+
 void ShaderEditor::setStatus(std::string msg, bool isError) {
   status_message_ = std::move(msg);
   status_is_error_ = isError;
@@ -697,6 +707,52 @@ auto ShaderEditor::readTextFile(const std::string &path) -> std::string {
   return ss.str();
 }
 
+auto ShaderEditor::writeTextFile(const std::string &path,
+                                 const std::string &text) -> bool {
+  if (path.empty()) {
+    return false;
+  }
+
+  std::ofstream file(path, std::ios::binary | std::ios::trunc);
+  if (!file.is_open()) {
+    return false;
+  }
+
+  file << text;
+  return file.good();
+}
+
+auto ShaderEditor::fileWriteTime(const std::string &path)
+    -> std::optional<std::filesystem::file_time_type> {
+  if (path.empty()) {
+    return std::nullopt;
+  }
+
+  std::error_code ec;
+  const auto time = std::filesystem::last_write_time(path, ec);
+  if (ec) {
+    return std::nullopt;
+  }
+
+  return time;
+}
+
+auto ShaderEditor::shaderPath(
+    std::optional<
+        std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>> shader)
+    -> std::string {
+  if (!shader) {
+    return {};
+  }
+
+  const auto &module = shader->get().module;
+  if (module.sourceKind != resource::ShaderModuleSourceKind::Glsl) {
+    return {};
+  }
+
+  return module.compile.path;
+}
+
 auto ShaderEditor::shaderSource(
     std::optional<
         std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>> shader)
@@ -715,7 +771,7 @@ auto ShaderEditor::shaderSource(
     return module.compile.source;
   }
 
-  return readTextFile(module.compile.label);
+  return readTextFile(module.compile.path);
 }
 
 auto ShaderEditor::shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
@@ -730,16 +786,20 @@ auto ShaderEditor::shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
 
 auto ShaderEditor::makeShaderModule(VkShaderStageFlagBits stage,
                                     std::string source, std::string label,
-                                    std::string entryPoint)
+                                    std::string entryPoint, bool fileBacked)
     -> resource::ShaderModuleDesc {
   resource::ShaderModuleDesc desc{};
 
   switch (stage) {
   case VK_SHADER_STAGE_VERTEX_BIT:
-    desc = resource::ShaderModuleDesc::vertexGlslSource(source, label);
+    desc = fileBacked ? resource::ShaderModuleDesc::vertexGlslFile(label)
+                      : resource::ShaderModuleDesc::vertexGlslSource(source,
+                                                                     label);
     break;
   case VK_SHADER_STAGE_FRAGMENT_BIT:
-    desc = resource::ShaderModuleDesc::fragmentGlslSource(source, label);
+    desc = fileBacked
+               ? resource::ShaderModuleDesc::fragmentGlslFile(label)
+               : resource::ShaderModuleDesc::fragmentGlslSource(source, label);
     break;
   default:
     return {};
@@ -773,8 +833,13 @@ void ShaderEditor::reloadFromPipeline() {
   if (!pipeline) {
     selected_pass_name_.clear();
     loaded_target_key_.clear();
-    vert_editor_.SetText("// No graphics pipeline available.\n");
-    frag_editor_.SetText("// No graphics pipeline available.\n");
+    const std::string message = "// No graphics pipeline available.\n";
+    vert_editor_.SetText(message);
+    frag_editor_.SetText(message);
+    vert_file_ = ShaderEditorFileState{.synced_text = message,
+                                       .valid_text = message};
+    frag_file_ = ShaderEditorFileState{.synced_text = message,
+                                       .valid_text = message};
     setStatus("No graphics pipeline available.", true);
     return;
   }
@@ -787,6 +852,10 @@ void ShaderEditor::reloadFromPipeline() {
 
   const std::string vertSource = shaderSource(vert);
   const std::string fragSource = shaderSource(frag);
+  const std::string vertPath = shaderPath(vert);
+  const std::string fragPath = shaderPath(frag);
+  const auto vertWriteTime = fileWriteTime(vertPath);
+  const auto fragWriteTime = fileWriteTime(fragPath);
 
   if (!vert) {
     vert_editor_.SetText("// Selected pipeline has no vertex shader stage.\n");
@@ -805,15 +874,117 @@ void ShaderEditor::reloadFromPipeline() {
     frag_editor_.SetText(fragSource);
   }
 
+  vert_file_ = ShaderEditorFileState{
+      .path = vertPath,
+      .write_time =
+          vertWriteTime.value_or(std::filesystem::file_time_type{}),
+      .disk_text = vertSource,
+      .synced_text = vertSource,
+      .valid_text = vertSource,
+      .file_backed = !vertPath.empty(),
+      .conflict = false,
+  };
+
+  frag_file_ = ShaderEditorFileState{
+      .path = fragPath,
+      .write_time =
+          fragWriteTime.value_or(std::filesystem::file_time_type{}),
+      .disk_text = fragSource,
+      .synced_text = fragSource,
+      .valid_text = fragSource,
+      .file_backed = !fragPath.empty(),
+      .conflict = false,
+  };
+
+  vert_file_.synced_text = vert_editor_.GetText();
+  frag_file_.synced_text = frag_editor_.GetText();
+  vert_file_.valid_text = vert_file_.synced_text;
+  frag_file_.valid_text = frag_file_.synced_text;
+
   setStatus("Loaded target: " + loaded_target_key_, false);
 }
 
-void ShaderEditor::applyToPipeline() {
+void ShaderEditor::refreshFileBackedShaders() {
+  auto pipeline = activePipeline();
+  if (!pipeline) {
+    return;
+  }
+
+  const double now = ImGui::GetTime();
+  const bool probeContent = now - last_file_probe_time_ >= 0.25;
+  if (probeContent) {
+    last_file_probe_time_ = now;
+  }
+
+  struct FileChange {
+    std::filesystem::file_time_type writeTime{};
+    std::string diskText{};
+  };
+
+  auto changedFile = [probeContent](const ShaderEditorFileState &state)
+      -> std::optional<FileChange> {
+    if (!state.file_backed) {
+      return std::nullopt;
+    }
+
+    const auto time = fileWriteTime(state.path);
+    const bool timeChanged = time && *time != state.write_time;
+    if (!timeChanged && !probeContent) {
+      return std::nullopt;
+    }
+
+    const std::string diskText = readTextFile(state.path);
+    if (diskText == state.disk_text) {
+      return std::nullopt;
+    }
+
+    return FileChange{.writeTime = time.value_or(state.write_time),
+                      .diskText = diskText};
+  };
+
+  const auto vertChange = changedFile(vert_file_);
+  const auto fragChange = changedFile(frag_file_);
+  const bool vertChanged = vertChange.has_value();
+  const bool fragChanged = fragChange.has_value();
+  if (!vertChanged && !fragChanged) {
+    return;
+  }
+
+  const bool editorDirty = vert_editor_.GetText() != vert_file_.synced_text ||
+                           frag_editor_.GetText() != frag_file_.synced_text;
+
+  if (editorDirty) {
+    vert_file_.conflict = vert_file_.conflict || vertChanged;
+    frag_file_.conflict = frag_file_.conflict || fragChanged;
+    setStatus("Shader file changed on disk; reload or save to resolve.", true);
+    return;
+  }
+
+  if (vertChanged) {
+    vert_editor_.SetText(vertChange->diskText);
+    vert_file_.write_time = vertChange->writeTime;
+    vert_file_.disk_text = vertChange->diskText;
+    vert_file_.synced_text = vert_editor_.GetText();
+    vert_file_.conflict = false;
+  }
+
+  if (fragChanged) {
+    frag_editor_.SetText(fragChange->diskText);
+    frag_file_.write_time = fragChange->writeTime;
+    frag_file_.disk_text = fragChange->diskText;
+    frag_file_.synced_text = frag_editor_.GetText();
+    frag_file_.conflict = false;
+  }
+
+  (void)applyToPipeline(false);
+}
+
+auto ShaderEditor::applyToPipeline(bool saveFiles) -> bool {
   auto pipeline = activePipeline();
 
   if (!pipeline) {
     setStatus("No graphics pipeline available.", true);
-    return;
+    return false;
   }
 
   const auto oldDesc = pipeline->get().desc();
@@ -823,6 +994,9 @@ void ShaderEditor::applyToPipeline() {
   const std::string oldFragSource =
       shaderSource(findShader(oldDesc, VK_SHADER_STAGE_FRAGMENT_BIT));
 
+  const std::string nextVertSource = vert_editor_.GetText();
+  const std::string nextFragSource = frag_editor_.GetText();
+
   auto nextDesc = oldDesc;
 
   auto vert = findShader(nextDesc, VK_SHADER_STAGE_VERTEX_BIT);
@@ -830,60 +1004,148 @@ void ShaderEditor::applyToPipeline() {
 
   if (!vert) {
     setStatus("Selected pipeline has no vertex shader stage.", true);
-    return;
+    return false;
   }
 
   if (!frag) {
     setStatus("Selected pipeline has no fragment shader stage.", true);
-    return;
+    return false;
   }
 
   auto &vertShader = vert->get();
   auto &fragShader = frag->get();
+  const bool vertFileBacked = vert_file_.file_backed && !vert_file_.path.empty();
+  const bool fragFileBacked = frag_file_.file_backed && !frag_file_.path.empty();
+  const bool saveVertFile = saveFiles && vertFileBacked;
+  const bool saveFragFile = saveFiles && fragFileBacked;
+
+  if (saveVertFile && !writeTextFile(vert_file_.path, nextVertSource)) {
+    setStatus("Failed to write vertex shader: " + vert_file_.path, true);
+    return false;
+  }
+
+  if (saveFragFile && !writeTextFile(frag_file_.path, nextFragSource)) {
+    if (saveVertFile) {
+      (void)writeTextFile(vert_file_.path, oldVertSource);
+      vert_file_.disk_text = oldVertSource;
+      if (const auto time = fileWriteTime(vert_file_.path)) {
+        vert_file_.write_time = *time;
+      }
+    }
+
+    setStatus("Failed to write fragment shader: " + frag_file_.path, true);
+    return false;
+  }
 
   vertShader.module = makeShaderModule(
-      VK_SHADER_STAGE_VERTEX_BIT, vert_editor_.GetText(),
-      shaderLabel(vertShader, nextDesc.name + ".vert"), vertShader.entryPoint);
+      VK_SHADER_STAGE_VERTEX_BIT, nextVertSource,
+      vertFileBacked ? vert_file_.path
+                     : shaderLabel(vertShader, nextDesc.name + ".vert"),
+      vertShader.entryPoint, vertFileBacked);
 
   fragShader.module = makeShaderModule(
-      VK_SHADER_STAGE_FRAGMENT_BIT, frag_editor_.GetText(),
-      shaderLabel(fragShader, nextDesc.name + ".frag"),
-      fragShader.entryPoint);
+      VK_SHADER_STAGE_FRAGMENT_BIT, nextFragSource,
+      fragFileBacked ? frag_file_.path
+                     : shaderLabel(fragShader, nextDesc.name + ".frag"),
+      fragShader.entryPoint, fragFileBacked);
 
   try {
     if (pipeline->get().update(nextDesc)) {
       loaded_target_key_ = activeTargetKey();
-      setStatus("Compiled and applied: " + loaded_target_key_, false);
-      return;
+      vert_file_.synced_text = nextVertSource;
+      frag_file_.synced_text = nextFragSource;
+      vert_file_.valid_text = nextVertSource;
+      frag_file_.valid_text = nextFragSource;
+      if (saveVertFile) {
+        vert_file_.disk_text = nextVertSource;
+      }
+
+      if (saveFragFile) {
+        frag_file_.disk_text = nextFragSource;
+      }
+
+      vert_file_.conflict = false;
+      frag_file_.conflict = false;
+
+      if (const auto time = fileWriteTime(vert_file_.path)) {
+        vert_file_.write_time = *time;
+      }
+
+      if (const auto time = fileWriteTime(frag_file_.path)) {
+        frag_file_.write_time = *time;
+      }
+
+      setStatus((saveVertFile || saveFragFile ? "Saved and applied: "
+                                              : "Compiled and applied: ") +
+                    loaded_target_key_,
+                false);
+      return true;
     }
   } catch (const std::exception &e) {
-    setStatus("Failed to compile pipeline. Falling back to previous shader: " +
+    setStatus("Failed to compile pipeline. Restored previous pipeline: " +
                   std::string(e.what()),
               true);
   } catch (...) {
-    setStatus("Failed to compile pipeline. Falling back to previous shader.",
+    setStatus("Failed to compile pipeline. Restored previous pipeline.",
               true);
   }
 
+  auto restoreDesc = oldDesc;
+
+  if (auto restoreVert = findShader(restoreDesc, VK_SHADER_STAGE_VERTEX_BIT)) {
+    auto &shader = restoreVert->get();
+    const std::string source =
+        vert_file_.valid_text.empty() ? oldVertSource : vert_file_.valid_text;
+    if (!source.empty()) {
+      shader.module =
+          makeShaderModule(VK_SHADER_STAGE_VERTEX_BIT, source,
+                           shaderLabel(shader, restoreDesc.name + ".vert"),
+                           shader.entryPoint, false);
+    }
+  }
+
+  if (auto restoreFrag =
+          findShader(restoreDesc, VK_SHADER_STAGE_FRAGMENT_BIT)) {
+    auto &shader = restoreFrag->get();
+    const std::string source =
+        frag_file_.valid_text.empty() ? oldFragSource : frag_file_.valid_text;
+    if (!source.empty()) {
+      shader.module =
+          makeShaderModule(VK_SHADER_STAGE_FRAGMENT_BIT, source,
+                           shaderLabel(shader, restoreDesc.name + ".frag"),
+                           shader.entryPoint, false);
+    }
+  }
+
   try {
-    pipeline->get().update(oldDesc);
+    pipeline->get().update(restoreDesc);
   } catch (...) {
   }
 
-  if (!oldVertSource.empty()) {
-    vert_editor_.SetText(oldVertSource);
+  if (saveVertFile) {
+    (void)writeTextFile(vert_file_.path, oldVertSource);
+    vert_file_.disk_text = oldVertSource;
+    if (const auto time = fileWriteTime(vert_file_.path)) {
+      vert_file_.write_time = *time;
+    }
   }
 
-  if (!oldFragSource.empty()) {
-    frag_editor_.SetText(oldFragSource);
+  if (saveFragFile) {
+    (void)writeTextFile(frag_file_.path, oldFragSource);
+    frag_file_.disk_text = oldFragSource;
+    if (const auto time = fileWriteTime(frag_file_.path)) {
+      frag_file_.write_time = *time;
+    }
   }
 
   loaded_target_key_ = activeTargetKey();
 
   if (status_message_.empty() || !status_is_error_) {
-    setStatus("Failed to compile pipeline. Previous shader was restored.",
+    setStatus("Failed to compile pipeline. Previous pipeline was restored.",
               true);
   }
+
+  return false;
 }
 
 void ShaderEditor::renderTargetSelector(
@@ -943,6 +1205,7 @@ auto ShaderEditor::parseErrors(const std::string &log)
 
 auto ShaderEditor::render() -> void {
   reloadFromPipelineIfChanged();
+  refreshFileBackedShaders();
   const auto targets = collectTargets();
 
   const ImGuiStyle &style = ImGui::GetStyle();
@@ -1053,6 +1316,7 @@ auto ShaderEditor::render() -> void {
   }
 
   TextEditor &editor = currentEditor();
+  ShaderEditorFileState &fileState = currentFileState();
 
   if (status_is_error_ && !status_message_.empty()) {
     editor.SetErrorMarkers(parseErrors(status_message_));
@@ -1097,15 +1361,11 @@ auto ShaderEditor::render() -> void {
     ImGui::BeginDisabled();
   }
 
-  if (ImGui::Button("Compile & Apply", ImVec2(150.0f, 0.0f))) {
-    setStatus("Compiling...", false);
-    applyToPipeline();
-  }
-
-  ImGui::SameLine(0.0f, 8.0f);
-
-  if (ImGui::Button("Reload", ImVec2(70.0f, 0.0f))) {
-    reloadFromPipeline();
+  const bool fileBacked = fileState.file_backed;
+  if (ImGui::Button(fileBacked ? "Save & Apply" : "Compile & Apply",
+                    ImVec2(150.0f, 0.0f))) {
+    setStatus(fileBacked ? "Saving..." : "Compiling...", false);
+    (void)applyToPipeline();
   }
 
   if (!canEdit) {
@@ -1125,9 +1385,12 @@ auto ShaderEditor::render() -> void {
   }
 
   auto coords = editor.GetCursorPosition();
-  std::array<char, 40> info{};
+  const bool dirty = editor.GetText() != fileState.synced_text;
+  std::array<char, 80> info{};
 
-  std::snprintf(info.data(), info.size(), "Ln %d   Col %d", coords.mLine + 1,
+  std::snprintf(info.data(), info.size(), "%s%sLn %d   Col %d",
+                dirty ? "modified   " : "",
+                fileState.conflict ? "conflict   " : "", coords.mLine + 1,
                 coords.mColumn + 1);
 
   const float infoW = ImGui::CalcTextSize(info.data()).x;
