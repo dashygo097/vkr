@@ -132,7 +132,7 @@ private:
     const glm::vec3 lightPos{-2.5f, 5.0f, 2.5f};
     glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3{0.0f, 0.8f, 0.0f},
                                       glm::vec3{0.0f, 1.0f, 0.0f});
-    glm::mat4 lightProj = glm::ortho(-5.5f, 5.5f, -5.5f, 5.5f, 0.1f, 12.0f);
+    glm::mat4 lightProj = glm::ortho(-9.0f, 9.0f, -9.0f, 9.0f, 0.1f, 12.0f);
     lightProj[1][1] *= -1.0f;
 
     LightSpaceObject light{};
