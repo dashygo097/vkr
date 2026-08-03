@@ -137,7 +137,7 @@ private:
 
     LightSpaceObject light{};
     light.lightViewProj = lightProj * lightView;
-    light.lightPosBias = glm::vec4(lightPos, 0.01f);
+    light.lightPosBias = glm::vec4(lightPos, 0.015f);
 
     scene->getUniformBuffer("light")->updateRaw(frameIndex, &light,
                                                 sizeof(light));
