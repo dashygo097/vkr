@@ -1,10 +1,12 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/logger.hh"
+#include "vkr/pipeline/render_pass.hh"
 
 namespace vkr::pipeline {
 
-GraphicsPipeline::GraphicsPipeline(const core::Device &device)
-    : device_(device) {}
+GraphicsPipeline::GraphicsPipeline(const core::Device &device,
+                                   const RenderPass &renderPass)
+    : device_(device), render_pass_(renderPass) {}
 
 GraphicsPipeline::~GraphicsPipeline() { destroy(); }
 
@@ -40,6 +42,11 @@ void GraphicsPipeline::destroy() {
 
 auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
   desc_ = desc;
+
+  if (render_pass_.renderPass() == VK_NULL_HANDLE) {
+    VKR_PIPE_ERROR("Graphics pipeline '{}' requires a valid render pass",
+                   desc_.name);
+  }
 
   std::vector<std::unique_ptr<resource::ShaderModule>> nextShaderModules{};
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
@@ -108,10 +115,10 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
   pipelineInfo.pColorBlendState = &colorBlend;
   pipelineInfo.pDynamicState = &dynamicState;
   pipelineInfo.layout = nextLayout;
-  pipelineInfo.renderPass = desc_.renderPass;
-  pipelineInfo.subpass = desc_.subpass;
-  pipelineInfo.basePipelineHandle = desc_.basePipeline;
-  pipelineInfo.basePipelineIndex = desc_.basePipelineIndex;
+  pipelineInfo.renderPass = render_pass_.renderPass();
+  pipelineInfo.subpass = 0;
+  pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+  pipelineInfo.basePipelineIndex = -1;
 
   VkPipeline nextPipeline = VK_NULL_HANDLE;
   if (vkCreateGraphicsPipelines(device_.device(), VK_NULL_HANDLE, 1,

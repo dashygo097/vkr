@@ -20,7 +20,7 @@ struct LightSpaceObject {
 constexpr std::array<const char *, 4> ShadowSceneParts{
     "floor", "back_wall", "tall_block", "short_block"};
 
-constexpr size_t shadowMapWidth = 1600, shadowMapHeight = 1200;
+constexpr size_t shadowMapWidth = 1024, shadowMapHeight = 1024;
 
 }; // namespace
 

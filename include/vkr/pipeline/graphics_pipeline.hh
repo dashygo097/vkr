@@ -10,6 +10,8 @@
 
 namespace vkr::pipeline {
 
+class RenderPass;
+
 struct GraphicsShaderStageDesc {
   VkShaderStageFlagBits stage{VK_SHADER_STAGE_VERTEX_BIT};
   resource::ShaderModuleDesc module{};
@@ -94,6 +96,21 @@ struct GraphicsRasterizationDesc {
     GraphicsRasterizationDesc desc{};
     desc.cullMode = VK_CULL_MODE_NONE;
     return desc;
+  }
+
+  [[nodiscard]] static auto cull(VkCullModeFlags mode)
+      -> GraphicsRasterizationDesc {
+    GraphicsRasterizationDesc desc{};
+    desc.cullMode = mode;
+    return desc;
+  }
+
+  [[nodiscard]] static auto cullBack() -> GraphicsRasterizationDesc {
+    return cull(VK_CULL_MODE_BACK_BIT);
+  }
+
+  [[nodiscard]] static auto cullFront() -> GraphicsRasterizationDesc {
+    return cull(VK_CULL_MODE_FRONT_BIT);
   }
 
   [[nodiscard]] auto createInfo() const noexcept
@@ -270,12 +287,6 @@ struct GraphicsPipelineDesc {
   GraphicsColorBlendDesc colorBlend{};
   GraphicsDynamicStateDesc dynamicState{};
 
-  VkRenderPass renderPass{VK_NULL_HANDLE};
-  uint32_t subpass{0};
-
-  VkPipeline basePipeline{VK_NULL_HANDLE};
-  int32_t basePipelineIndex{-1};
-
   auto setName(std::string pipelineName) -> GraphicsPipelineDesc & {
     name = std::move(pipelineName);
     return *this;
@@ -335,6 +346,24 @@ struct GraphicsPipelineDesc {
     return *this;
   }
 
+  auto cull(VkCullModeFlags mode) -> GraphicsPipelineDesc & {
+    rasterization.cullMode = mode;
+    return *this;
+  }
+
+  auto cullBack() -> GraphicsPipelineDesc & {
+    return cull(VK_CULL_MODE_BACK_BIT);
+  }
+
+  auto cullFront() -> GraphicsPipelineDesc & {
+    return cull(VK_CULL_MODE_FRONT_BIT);
+  }
+
+  auto frontFace(VkFrontFace face) -> GraphicsPipelineDesc & {
+    rasterization.frontFace = face;
+    return *this;
+  }
+
   auto blend(GraphicsColorBlendDesc desc) -> GraphicsPipelineDesc & {
     colorBlend = std::move(desc);
     return *this;
@@ -346,7 +375,7 @@ struct GraphicsPipelineDesc {
   }
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
-    if (renderPass == VK_NULL_HANDLE || shaders.empty() || name.empty()) {
+    if (shaders.empty() || name.empty()) {
       return false;
     }
 
@@ -362,7 +391,7 @@ struct GraphicsPipelineDesc {
 
 class GraphicsPipeline {
 public:
-  explicit GraphicsPipeline(const core::Device &device);
+  GraphicsPipeline(const core::Device &device, const RenderPass &renderPass);
   ~GraphicsPipeline();
 
   GraphicsPipeline(const GraphicsPipeline &) = delete;
@@ -407,6 +436,7 @@ private:
 
   // dependencies
   const core::Device &device_;
+  const RenderPass &render_pass_;
 
   // components
   GraphicsPipelineDesc desc_{};

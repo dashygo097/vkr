@@ -269,6 +269,26 @@ struct RasterPassDesc {
     return *this;
   }
 
+  auto cull(VkCullModeFlags mode) -> RasterPassDesc & {
+    graphicsPipeline.cull(mode);
+    return *this;
+  }
+
+  auto cullBack() -> RasterPassDesc & {
+    graphicsPipeline.cullBack();
+    return *this;
+  }
+
+  auto cullFront() -> RasterPassDesc & {
+    graphicsPipeline.cullFront();
+    return *this;
+  }
+
+  auto frontFace(VkFrontFace face) -> RasterPassDesc & {
+    graphicsPipeline.frontFace(face);
+    return *this;
+  }
+
   auto blend(pipeline::GraphicsColorBlendDesc desc) -> RasterPassDesc & {
     graphicsPipeline.blend(std::move(desc));
     return *this;

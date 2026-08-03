@@ -313,7 +313,6 @@ void FullscreenPass::createDescriptors() {
 
 void FullscreenPass::createPipeline() {
   auto pipelineDesc = desc_.graphicsPipeline;
-  pipelineDesc.renderPass = render_pass_->renderPass();
 
   const VkDescriptorSetLayout descriptorSetLayout =
       descriptor_layout_ ? descriptor_layout_->layout() : VK_NULL_HANDLE;
@@ -328,7 +327,8 @@ void FullscreenPass::createPipeline() {
     return;
   }
 
-  pipeline_ = std::make_unique<pipeline::GraphicsPipeline>(device_);
+  pipeline_ = std::make_unique<pipeline::GraphicsPipeline>(device_,
+                                                           *render_pass_);
   pipeline_->update(pipelineDesc);
 
   if (!pipeline_->valid()) {

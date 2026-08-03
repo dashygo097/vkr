@@ -86,8 +86,8 @@ auto ComputePipeline::update(const ComputePipelineDesc &desc) -> bool {
   pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
   pipelineInfo.stage = shaderStage;
   pipelineInfo.layout = nextLayout;
-  pipelineInfo.basePipelineHandle = desc_.basePipeline;
-  pipelineInfo.basePipelineIndex = desc_.basePipelineIndex;
+  pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+  pipelineInfo.basePipelineIndex = -1;
 
   VkPipeline nextPipeline{VK_NULL_HANDLE};
   if (vkCreateComputePipelines(device_.device(), VK_NULL_HANDLE, 1,

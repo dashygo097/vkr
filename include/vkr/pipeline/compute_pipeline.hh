@@ -20,9 +20,6 @@ struct ComputePipelineDesc {
   std::string entryPoint{"main"};
   ComputePipelineLayoutDesc layout{};
 
-  VkPipeline basePipeline{VK_NULL_HANDLE};
-  int32_t basePipelineIndex{-1};
-
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return !name.empty() && !entryPoint.empty() && shader.isValid();
   }
