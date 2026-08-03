@@ -20,7 +20,7 @@ struct LightSpaceObject {
 constexpr std::array<const char *, 4> ShadowSceneParts{
     "floor", "back_wall", "tall_block", "short_block"};
 
-constexpr size_t shadowMapWidth = 480, shadowMapHeight = 640;
+constexpr size_t shadowMapWidth = 1600, shadowMapHeight = 1200;
 
 }; // namespace
 
@@ -137,7 +137,7 @@ private:
 
     LightSpaceObject light{};
     light.lightViewProj = lightProj * lightView;
-    light.lightPosBias = glm::vec4(lightPos, 0.003f);
+    light.lightPosBias = glm::vec4(lightPos, 0.01f);
 
     scene->getUniformBuffer("light")->updateRaw(frameIndex, &light,
                                                 sizeof(light));
