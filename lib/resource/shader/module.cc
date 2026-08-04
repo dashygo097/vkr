@@ -66,11 +66,11 @@ auto ShaderModule::loadSpirv() const -> std::vector<uint32_t> {
     }
 
   case ShaderModuleSourceKind::Glsl: {
-    auto result = util::ShaderCompiler::compileGlsl(desc_.compile);
+    auto result = util::ShaderCompiler::compileGlsl(desc_.glslCompile);
 
     if (!result) {
-      VKR_RES_ERROR("Shader compilation failed '{}': {}", desc_.compile.label,
-                    result.error);
+      VKR_RES_ERROR("Shader compilation failed '{}': {}",
+                    desc_.glslCompile.label, result.error);
       return {};
     }
 

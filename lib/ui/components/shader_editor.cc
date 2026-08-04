@@ -750,7 +750,7 @@ auto ShaderEditor::shaderPath(
     return {};
   }
 
-  return module.compile.path;
+  return module.glslCompile.path;
 }
 
 auto ShaderEditor::shaderSource(
@@ -767,18 +767,18 @@ auto ShaderEditor::shaderSource(
     return {};
   }
 
-  if (!module.compile.source.empty()) {
-    return module.compile.source;
+  if (!module.glslCompile.source.empty()) {
+    return module.glslCompile.source;
   }
 
-  return readTextFile(module.compile.path);
+  return readTextFile(module.glslCompile.path);
 }
 
 auto ShaderEditor::shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
                                const std::string &fallback) -> std::string {
   if (shader.module.sourceKind == resource::ShaderModuleSourceKind::Glsl &&
-      !shader.module.compile.label.empty()) {
-    return shader.module.compile.label;
+      !shader.module.glslCompile.label.empty()) {
+    return shader.module.glslCompile.label;
   }
 
   return fallback;

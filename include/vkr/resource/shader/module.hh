@@ -17,7 +17,7 @@ struct ShaderModuleDesc {
 
   std::vector<uint32_t> spirv{};
   std::string spirvPath{};
-  util::ShaderCompileDesc compile{};
+  util::GlslCompileDesc glslCompile{};
   util::SlangCompileDesc slangCompile{};
 
   [[nodiscard]] static auto spirvCode(std::vector<uint32_t> spirv)
@@ -36,19 +36,19 @@ struct ShaderModuleDesc {
     return desc;
   }
 
-  [[nodiscard]] static auto glsl(const util::ShaderCompileDesc &compile)
+  [[nodiscard]] static auto glsl(const util::GlslCompileDesc &compileDesc)
       -> ShaderModuleDesc {
     ShaderModuleDesc desc{};
     desc.sourceKind = ShaderModuleSourceKind::Glsl;
-    desc.compile = compile;
+    desc.glslCompile = compileDesc;
     return desc;
   }
 
-  [[nodiscard]] static auto glsl(util::ShaderCompileDesc &&compile)
+  [[nodiscard]] static auto glsl(util::GlslCompileDesc &&compileDesc)
       -> ShaderModuleDesc {
     ShaderModuleDesc desc{};
     desc.sourceKind = ShaderModuleSourceKind::Glsl;
-    desc.compile = std::move(compile);
+    desc.glslCompile = std::move(compileDesc);
     return desc;
   }
 
@@ -71,19 +71,19 @@ struct ShaderModuleDesc {
   [[nodiscard]] static auto vertexGlslFile(const std::string &path)
       -> ShaderModuleDesc {
     return glsl(
-        util::ShaderCompileDesc::glslFile(shaderc_glsl_vertex_shader, path));
+        util::GlslCompileDesc::glslFile(shaderc_glsl_vertex_shader, path));
   }
 
   [[nodiscard]] static auto fragmentGlslFile(const std::string &path)
       -> ShaderModuleDesc {
     return glsl(
-        util::ShaderCompileDesc::glslFile(shaderc_glsl_fragment_shader, path));
+        util::GlslCompileDesc::glslFile(shaderc_glsl_fragment_shader, path));
   }
 
   [[nodiscard]] static auto computeGlslFile(const std::string &path)
       -> ShaderModuleDesc {
     return glsl(
-        util::ShaderCompileDesc::glslFile(shaderc_glsl_compute_shader, path));
+        util::GlslCompileDesc::glslFile(shaderc_glsl_compute_shader, path));
   }
 
   [[nodiscard]] static auto computeSlangFile(const std::string &path)
@@ -94,23 +94,23 @@ struct ShaderModuleDesc {
   [[nodiscard]] static auto
   vertexGlslSource(const std::string &source,
                    const std::string &label = "vertex") -> ShaderModuleDesc {
-    return glsl(util::ShaderCompileDesc::glslSource(shaderc_glsl_vertex_shader,
-                                                    source, label));
+    return glsl(util::GlslCompileDesc::glslSource(shaderc_glsl_vertex_shader,
+                                                  source, label));
   }
 
   [[nodiscard]] static auto
   fragmentGlslSource(const std::string &source,
                      const std::string &label = "fragment")
       -> ShaderModuleDesc {
-    return glsl(util::ShaderCompileDesc::glslSource(
+    return glsl(util::GlslCompileDesc::glslSource(
         shaderc_glsl_fragment_shader, source, label));
   }
 
   [[nodiscard]] static auto
   computeGlslSource(const std::string &source,
                     const std::string &label = "compute") -> ShaderModuleDesc {
-    return glsl(util::ShaderCompileDesc::glslSource(shaderc_glsl_compute_shader,
-                                                    source, label));
+    return glsl(util::GlslCompileDesc::glslSource(shaderc_glsl_compute_shader,
+                                                  source, label));
   }
 
   [[nodiscard]] static auto
@@ -121,7 +121,7 @@ struct ShaderModuleDesc {
 
   void setEntryPoint(const std::string &entryPoint) {
     if (sourceKind == ShaderModuleSourceKind::Glsl) {
-      compile.entryPoint = entryPoint;
+      glslCompile.entryPoint = entryPoint;
     } else if (sourceKind == ShaderModuleSourceKind::Slang) {
       slangCompile.entryPoint = entryPoint;
     }
@@ -129,7 +129,7 @@ struct ShaderModuleDesc {
 
   [[nodiscard]] auto label() const noexcept -> const std::string & {
     if (sourceKind == ShaderModuleSourceKind::Glsl) {
-      return compile.label;
+      return glslCompile.label;
     }
 
     if (sourceKind == ShaderModuleSourceKind::Slang) {
@@ -146,7 +146,7 @@ struct ShaderModuleDesc {
     case ShaderModuleSourceKind::SpirvFile:
       return !spirvPath.empty();
     case ShaderModuleSourceKind::Glsl:
-      return compile.isValid();
+      return glslCompile.isValid();
     case ShaderModuleSourceKind::Slang:
       return slangCompile.isValid();
     }

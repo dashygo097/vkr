@@ -4,7 +4,7 @@
 
 namespace vkr::util {
 
-auto ShaderCompiler::compileGlsl(const ShaderCompileDesc &desc)
+auto ShaderCompiler::compileGlsl(const GlslCompileDesc &desc)
     -> ShaderCompileResult {
   ShaderCompileResult result{};
 
@@ -51,7 +51,7 @@ auto ShaderCompiler::compileGlsl(const ShaderCompileDesc &desc)
   return result;
 }
 
-auto ShaderCompiler::loadSource(const ShaderCompileDesc &desc) -> std::string {
+auto ShaderCompiler::loadSource(const GlslCompileDesc &desc) -> std::string {
   if (!desc.source.empty()) {
     return desc.source;
   }

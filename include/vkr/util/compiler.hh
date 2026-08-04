@@ -8,7 +8,7 @@
 
 namespace vkr::util {
 
-struct ShaderCompileDesc {
+struct GlslCompileDesc {
   shaderc_shader_kind stage{shaderc_glsl_vertex_shader};
 
   std::string path{};
@@ -25,8 +25,8 @@ struct ShaderCompileDesc {
 
   [[nodiscard]] static auto glslFile(shaderc_shader_kind stage,
                                      const std::string &path)
-      -> ShaderCompileDesc {
-    ShaderCompileDesc desc{};
+      -> GlslCompileDesc {
+    GlslCompileDesc desc{};
     desc.stage = stage;
     desc.path = path;
     desc.label = path;
@@ -36,8 +36,8 @@ struct ShaderCompileDesc {
   [[nodiscard]] static auto glslSource(shaderc_shader_kind stage,
                                        const std::string &source,
                                        const std::string &label = "shader")
-      -> ShaderCompileDesc {
-    ShaderCompileDesc desc{};
+      -> GlslCompileDesc {
+    GlslCompileDesc desc{};
     desc.stage = stage;
     desc.source = source;
     desc.label = label;
@@ -108,13 +108,13 @@ class ShaderCompiler {
 public:
   ShaderCompiler() = delete;
 
-  [[nodiscard]] static auto compileGlsl(const ShaderCompileDesc &desc)
+  [[nodiscard]] static auto compileGlsl(const GlslCompileDesc &desc)
       -> ShaderCompileResult;
   [[nodiscard]] static auto compileSlang(const SlangCompileDesc &desc)
       -> ShaderCompileResult;
 
 private:
-  [[nodiscard]] static auto loadSource(const ShaderCompileDesc &desc)
+  [[nodiscard]] static auto loadSource(const GlslCompileDesc &desc)
       -> std::string;
 };
 
