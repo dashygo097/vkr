@@ -29,6 +29,43 @@ elseif(WIN32)
 
 endif()
 
+if(VKR_ENABLE_SLANG)
+  get_filename_component(VKR_VULKAN_LIBRARY_DIR "${Vulkan_LIBRARY}" DIRECTORY)
+
+  find_path(VKR_SLANG_INCLUDE_DIR
+    NAMES slang/slang.h
+    HINTS "${Vulkan_INCLUDE_DIR}"
+    NO_DEFAULT_PATH
+  )
+  find_library(VKR_SLANG_LIBRARY
+    NAMES slang libslang
+    HINTS "${VKR_VULKAN_LIBRARY_DIR}"
+    NO_DEFAULT_PATH
+  )
+
+  if(VKR_SLANG_INCLUDE_DIR AND VKR_SLANG_LIBRARY)
+    set(SLANG_INCLUDE_DIR "${VKR_SLANG_INCLUDE_DIR}" CACHE PATH
+      "Slang include directory" FORCE)
+    set(SLANG_LIBRARY "${VKR_SLANG_LIBRARY}" CACHE FILEPATH
+      "Slang library" FORCE)
+  else()
+    find_path(SLANG_INCLUDE_DIR
+      NAMES slang/slang.h
+    )
+    find_library(SLANG_LIBRARY
+      NAMES slang libslang
+    )
+  endif()
+
+  if(SLANG_INCLUDE_DIR AND SLANG_LIBRARY)
+    set(HAS_SLANG TRUE)
+    message(STATUS "Slang support enabled: ${SLANG_LIBRARY}")
+  else()
+    set(HAS_SLANG FALSE)
+    message(STATUS "Slang support disabled: Slang headers/library not found")
+  endif()
+endif()
+
 # 3rdparty
 set(GLFW_BUILD_DOCS     OFF CACHE BOOL "Disable GLFW docs" FORCE)
 set(GLFW_BUILD_TESTS    OFF CACHE BOOL "Disable GLFW tests" FORCE)

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <shaderc/shaderc.hpp>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace vkr::util {
@@ -56,11 +57,60 @@ struct ShaderCompileResult {
   [[nodiscard]] explicit operator bool() const noexcept { return success; }
 };
 
+enum class SlangShaderStage {
+  Vertex,
+  Fragment,
+  Compute,
+};
+
+struct SlangCompileDesc {
+  SlangShaderStage stage{SlangShaderStage::Compute};
+
+  std::string path{};
+  std::string source{};
+  std::string label{"shader"};
+  std::string moduleName{"shader"};
+  std::string entryPoint{"main"};
+
+  std::vector<std::string> searchPaths{};
+  std::vector<std::pair<std::string, std::string>> macros{};
+
+  bool generateDebugInfo{false};
+  bool warningsAsErrors{false};
+  bool skipSpirvValidation{false};
+
+  [[nodiscard]] static auto computeFile(const std::string &path)
+      -> SlangCompileDesc {
+    SlangCompileDesc desc{};
+    desc.stage = SlangShaderStage::Compute;
+    desc.path = path;
+    desc.label = path;
+    return desc;
+  }
+
+  [[nodiscard]] static auto computeSource(const std::string &source,
+                                          const std::string &label = "compute")
+      -> SlangCompileDesc {
+    SlangCompileDesc desc{};
+    desc.stage = SlangShaderStage::Compute;
+    desc.source = source;
+    desc.label = label;
+    return desc;
+  }
+
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    return (!path.empty() || !source.empty()) && !entryPoint.empty() &&
+           !moduleName.empty();
+  }
+};
+
 class ShaderCompiler {
 public:
   ShaderCompiler() = delete;
 
   [[nodiscard]] static auto compileGlsl(const ShaderCompileDesc &desc)
+      -> ShaderCompileResult;
+  [[nodiscard]] static auto compileSlang(const SlangCompileDesc &desc)
       -> ShaderCompileResult;
 
 private:

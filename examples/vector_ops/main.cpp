@@ -109,8 +109,13 @@ private:
         .uniform(3, *params_)
         .shader(
             "vector_ops",
+#ifdef VKR_HAS_SLANG
+            vkr::resource::ShaderModuleDesc::computeSlangFile(
+                assetSystem->resolveApp("shaders/vector_ops.slang").string()))
+#else
             vkr::resource::ShaderModuleDesc::computeGlslFile(
                 assetSystem->resolveApp("shaders/vector_ops.comp").string()))
+#endif
         .dispatch1D(LocalSize, ElementCount);
 
     auto &pass = graph->addPass(*executor, *device);

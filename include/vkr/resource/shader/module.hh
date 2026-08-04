@@ -9,6 +9,7 @@ enum class ShaderModuleSourceKind {
   SpirvCode,
   SpirvFile,
   Glsl,
+  Slang,
 };
 
 struct ShaderModuleDesc {
@@ -17,6 +18,7 @@ struct ShaderModuleDesc {
   std::vector<uint32_t> spirv{};
   std::string spirvPath{};
   util::ShaderCompileDesc compile{};
+  util::SlangCompileDesc slangCompile{};
 
   [[nodiscard]] static auto spirvCode(std::vector<uint32_t> spirv)
       -> ShaderModuleDesc {
@@ -50,6 +52,22 @@ struct ShaderModuleDesc {
     return desc;
   }
 
+  [[nodiscard]] static auto slang(const util::SlangCompileDesc &compile)
+      -> ShaderModuleDesc {
+    ShaderModuleDesc desc{};
+    desc.sourceKind = ShaderModuleSourceKind::Slang;
+    desc.slangCompile = compile;
+    return desc;
+  }
+
+  [[nodiscard]] static auto slang(util::SlangCompileDesc &&compile)
+      -> ShaderModuleDesc {
+    ShaderModuleDesc desc{};
+    desc.sourceKind = ShaderModuleSourceKind::Slang;
+    desc.slangCompile = std::move(compile);
+    return desc;
+  }
+
   [[nodiscard]] static auto vertexGlslFile(const std::string &path)
       -> ShaderModuleDesc {
     return glsl(
@@ -66,6 +84,11 @@ struct ShaderModuleDesc {
       -> ShaderModuleDesc {
     return glsl(
         util::ShaderCompileDesc::glslFile(shaderc_glsl_compute_shader, path));
+  }
+
+  [[nodiscard]] static auto computeSlangFile(const std::string &path)
+      -> ShaderModuleDesc {
+    return slang(util::SlangCompileDesc::computeFile(path));
   }
 
   [[nodiscard]] static auto
@@ -90,15 +113,27 @@ struct ShaderModuleDesc {
                                                     source, label));
   }
 
+  [[nodiscard]] static auto
+  computeSlangSource(const std::string &source,
+                     const std::string &label = "compute") -> ShaderModuleDesc {
+    return slang(util::SlangCompileDesc::computeSource(source, label));
+  }
+
   void setEntryPoint(const std::string &entryPoint) {
     if (sourceKind == ShaderModuleSourceKind::Glsl) {
       compile.entryPoint = entryPoint;
+    } else if (sourceKind == ShaderModuleSourceKind::Slang) {
+      slangCompile.entryPoint = entryPoint;
     }
   }
 
   [[nodiscard]] auto label() const noexcept -> const std::string & {
     if (sourceKind == ShaderModuleSourceKind::Glsl) {
       return compile.label;
+    }
+
+    if (sourceKind == ShaderModuleSourceKind::Slang) {
+      return slangCompile.label;
     }
 
     return spirvPath;
@@ -112,6 +147,8 @@ struct ShaderModuleDesc {
       return !spirvPath.empty();
     case ShaderModuleSourceKind::Glsl:
       return compile.isValid();
+    case ShaderModuleSourceKind::Slang:
+      return slangCompile.isValid();
     }
 
     return false;

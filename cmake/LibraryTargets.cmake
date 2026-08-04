@@ -14,6 +14,12 @@ target_include_directories(vkr PUBLIC
 target_include_directories(vkr PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(vkr PUBLIC Vulkan::Vulkan Vulkan::shaderc_combined)
 
+if(HAS_SLANG)
+  target_include_directories(vkr PRIVATE ${SLANG_INCLUDE_DIR})
+  target_link_libraries(vkr PUBLIC ${SLANG_LIBRARY})
+  target_compile_definitions(vkr PUBLIC VKR_HAS_SLANG=1)
+endif()
+
 if (APPLE)
 
 elseif(UNIX)

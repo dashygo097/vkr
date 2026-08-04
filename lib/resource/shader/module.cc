@@ -76,6 +76,18 @@ auto ShaderModule::loadSpirv() const -> std::vector<uint32_t> {
 
     return std::move(result.spv);
   }
+
+  case ShaderModuleSourceKind::Slang: {
+    auto result = util::ShaderCompiler::compileSlang(desc_.slangCompile);
+
+    if (!result) {
+      VKR_RES_ERROR("Slang compilation failed '{}': {}",
+                    desc_.slangCompile.label, result.error);
+      return {};
+    }
+
+    return std::move(result.spv);
+  }
   }
 
   return {};
