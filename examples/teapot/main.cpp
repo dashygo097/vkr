@@ -82,8 +82,7 @@ private:
     auto &uiPass = graph->addPass<vkr::exec::UiPass>(
         *executor, *window, *instance, *surface, *device, *commandPool,
         *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::exec::RenderPassSource{postProcessPass}, *graph, *timer,
-        ctx.ui);
+        vkr::exec::RenderPassSource{postProcessPass}, *graph, *timer, ctx.ui);
     uiPass.setName("ui").read("scene.color").write("swapchain");
 
     auto &presentPass = graph->addPass<vkr::exec::PresentPass>(*executor);
