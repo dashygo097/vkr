@@ -10,39 +10,186 @@
 
 namespace vkr::resource {
 
+enum class StorageBufferAccess {
+  ReadOnly,
+  WriteOnly,
+  ReadWrite,
+};
+
 struct StorageBufferDesc {
-  size_t elementCount{0};
-  VkBufferUsageFlags usage{VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                           VK_BUFFER_USAGE_TRANSFER_DST_BIT};
+  size_t capacity{0};
+  VkBufferUsageFlags usage{VK_BUFFER_USAGE_STORAGE_BUFFER_BIT};
   VkMemoryPropertyFlags memoryProperties{VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+  StorageBufferAccess access{StorageBufferAccess::ReadWrite};
   bool mapOnCreate{false};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
-    return elementCount != 0 &&
-           (usage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) != 0 &&
+    return capacity != 0 && (usage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) != 0 &&
            (!mapOnCreate ||
             (memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0);
   }
 
-  [[nodiscard]] static auto hostVisible(size_t elementCount)
-      -> StorageBufferDesc {
-    StorageBufferDesc desc{};
-    desc.elementCount = elementCount;
-    desc.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    desc.mapOnCreate = true;
-    return desc;
+  auto reserve(size_t elementCapacity) noexcept -> StorageBufferDesc & {
+    capacity = elementCapacity;
+    return *this;
   }
 
-  [[nodiscard]] static auto deviceLocal(size_t elementCount)
-      -> StorageBufferDesc {
+  auto elements(size_t elementCapacity) noexcept -> StorageBufferDesc & {
+    capacity = elementCapacity;
+    return *this;
+  }
+
+  auto capacityElements(size_t elementCapacity) noexcept
+      -> StorageBufferDesc & {
+    capacity = elementCapacity;
+    return *this;
+  }
+
+  auto storage(bool enabled = true) noexcept -> StorageBufferDesc & {
+    setUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, enabled);
+    return *this;
+  }
+
+  auto transferSrc(bool enabled = true) noexcept -> StorageBufferDesc & {
+    setUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, enabled);
+    return *this;
+  }
+
+  auto transferDst(bool enabled = true) noexcept -> StorageBufferDesc & {
+    setUsage(VK_BUFFER_USAGE_TRANSFER_DST_BIT, enabled);
+    return *this;
+  }
+
+  auto transfer(bool enabled = true) noexcept -> StorageBufferDesc & {
+    transferSrc(enabled);
+    transferDst(enabled);
+    return *this;
+  }
+
+  auto usageFlags(VkBufferUsageFlags flags) noexcept -> StorageBufferDesc & {
+    usage = flags;
+    return *this;
+  }
+
+  auto addUsage(VkBufferUsageFlags flags) noexcept -> StorageBufferDesc & {
+    usage |= flags;
+    return *this;
+  }
+
+  auto readonly() noexcept -> StorageBufferDesc & {
+    access = StorageBufferAccess::ReadOnly;
+    return *this;
+  }
+
+  auto writeonly() noexcept -> StorageBufferDesc & {
+    access = StorageBufferAccess::WriteOnly;
+    return *this;
+  }
+
+  auto readwrite() noexcept -> StorageBufferDesc & {
+    access = StorageBufferAccess::ReadWrite;
+    return *this;
+  }
+
+  auto hostVisible(bool coherent = true) noexcept -> StorageBufferDesc & {
+    memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    if (coherent) {
+      memoryProperties |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    }
+    return *this;
+  }
+
+  auto hostCoherent(bool enabled = true) noexcept -> StorageBufferDesc & {
+    setMemoryProperty(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, enabled);
+    return *this;
+  }
+
+  auto hostCached(bool enabled = true) noexcept -> StorageBufferDesc & {
+    setMemoryProperty(VK_MEMORY_PROPERTY_HOST_CACHED_BIT, enabled);
+    return *this;
+  }
+
+  auto deviceLocal() noexcept -> StorageBufferDesc & {
+    memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    mapOnCreate = false;
+    return *this;
+  }
+
+  auto memory(VkMemoryPropertyFlags flags) noexcept -> StorageBufferDesc & {
+    memoryProperties = flags;
+    if ((memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
+      mapOnCreate = false;
+    }
+    return *this;
+  }
+
+  auto addMemory(VkMemoryPropertyFlags flags) noexcept -> StorageBufferDesc & {
+    memoryProperties |= flags;
+    return *this;
+  }
+
+  auto mapped(bool enabled = true) noexcept -> StorageBufferDesc & {
+    mapOnCreate = enabled;
+    if (enabled) {
+      memoryProperties |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    }
+    return *this;
+  }
+
+  auto unmapped() noexcept -> StorageBufferDesc & {
+    mapOnCreate = false;
+    return *this;
+  }
+
+  [[nodiscard]] static auto hostVisible(size_t capacity) -> StorageBufferDesc {
     StorageBufferDesc desc{};
-    desc.elementCount = elementCount;
-    desc.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    desc.mapOnCreate = false;
-    return desc;
+    return desc.reserve(capacity).storage().transfer().hostVisible().mapped();
+  }
+
+  [[nodiscard]] static auto deviceLocal(size_t capacity) -> StorageBufferDesc {
+    StorageBufferDesc desc{};
+    return desc.reserve(capacity).storage().transfer().deviceLocal();
+  }
+
+  [[nodiscard]] static auto input(size_t capacity) -> StorageBufferDesc {
+    StorageBufferDesc desc{};
+    return desc.reserve(capacity)
+        .usageFlags(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+        .readonly()
+        .transfer()
+        .hostVisible()
+        .mapped();
+  }
+
+  [[nodiscard]] static auto output(size_t capacity) -> StorageBufferDesc {
+    StorageBufferDesc desc{};
+    return desc.reserve(capacity)
+        .usageFlags(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+        .writeonly()
+        .transfer()
+        .hostVisible()
+        .mapped();
+  }
+
+private:
+  void setUsage(VkBufferUsageFlags flag, bool enabled) noexcept {
+    if (enabled) {
+      usage |= flag;
+    } else {
+      usage &= ~flag;
+    }
+  }
+
+  void setMemoryProperty(VkMemoryPropertyFlags flag, bool enabled) noexcept {
+    if (enabled) {
+      memoryProperties |= flag;
+    } else {
+      memoryProperties &= ~flag;
+      if (flag == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
+        mapOnCreate = false;
+      }
+    }
   }
 };
 
@@ -82,7 +229,7 @@ public:
       VKR_RES_ERROR("Cannot write empty storage buffer data");
     }
 
-    if (elementOffset + elementCount > desc_.elementCount) {
+    if (elementOffset + elementCount > desc_.capacity) {
       VKR_RES_ERROR("Storage buffer write exceeds buffer bounds");
     }
 
@@ -102,7 +249,7 @@ public:
       VKR_RES_ERROR("Cannot read empty storage buffer data");
     }
 
-    if (elementOffset + elements.size() > desc_.elementCount) {
+    if (elementOffset + elements.size() > desc_.capacity) {
       VKR_RES_ERROR("Storage buffer read exceeds buffer bounds");
     }
 
@@ -142,12 +289,12 @@ public:
     return target_->memory();
   }
 
-  [[nodiscard]] auto elementCount() const noexcept -> size_t {
-    return desc_.elementCount;
+  [[nodiscard]] auto capacity() const noexcept -> size_t {
+    return desc_.capacity;
   }
 
   [[nodiscard]] auto bufferSize() const noexcept -> VkDeviceSize {
-    return static_cast<VkDeviceSize>(sizeof(ElementType) * desc_.elementCount);
+    return static_cast<VkDeviceSize>(sizeof(ElementType) * desc_.capacity);
   }
 
   [[nodiscard]] auto

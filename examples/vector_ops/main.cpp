@@ -84,14 +84,28 @@ private:
       b_[i] = static_cast<float>(ElementCount - i);
     }
 
-    const auto storageDesc =
-        vkr::resource::StorageBufferDesc::hostVisible(ElementCount);
-    input_a_ = std::make_unique<vkr::resource::StorageBuffer<float>>(
-        *device, storageDesc);
-    input_b_ = std::make_unique<vkr::resource::StorageBuffer<float>>(
-        *device, storageDesc);
+    auto inputDesc = vkr::resource::StorageBufferDesc{};
+    inputDesc.reserve(ElementCount)
+        .readonly()
+        .storage()
+        .transfer()
+        .hostVisible()
+        .mapped();
+
+    auto outputDesc = vkr::resource::StorageBufferDesc{};
+    outputDesc.reserve(ElementCount)
+        .writeonly()
+        .storage()
+        .transfer()
+        .hostVisible()
+        .mapped();
+
+    input_a_ = std::make_unique<vkr::resource::StorageBuffer<float>>(*device,
+                                                                     inputDesc);
+    input_b_ = std::make_unique<vkr::resource::StorageBuffer<float>>(*device,
+                                                                     inputDesc);
     output_c_ = std::make_unique<vkr::resource::StorageBuffer<float>>(
-        *device, storageDesc);
+        *device, outputDesc);
     params_ = std::make_unique<vkr::resource::UniformBuffer<VectorOpsParams>>(
         *device);
 
