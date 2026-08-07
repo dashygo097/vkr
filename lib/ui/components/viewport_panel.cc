@@ -14,8 +14,7 @@ void drawViewportImage(VkDescriptorSet texture, const ImVec2 &size,
 
 } // namespace
 
-ViewportPanel::ViewportPanel(VkViewport &viewport, bool &focused,
-                             bool &hovered)
+ViewportPanel::ViewportPanel(VkViewport &viewport, bool &focused, bool &hovered)
     : UiComponent("Viewport"), viewport_(viewport), focused_(focused),
       hovered_(hovered) {}
 
@@ -56,8 +55,7 @@ void ViewportPanel::render() {
   viewport_.height = contentMax.y - contentMin.y;
   viewport_.minDepth = 0.0f;
   viewport_.maxDepth = 1.0f;
-  focused_ =
-      ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+  focused_ = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
   hovered_ = ImGui::IsWindowHovered();
 }
 

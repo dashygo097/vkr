@@ -5,6 +5,7 @@
 #include "vkr/resource/image/image.hh"
 #include "vkr/resource/image/image_view.hh"
 #include "vkr/resource/image/sampler.hh"
+#include <utility>
 
 namespace vkr::exec {
 
@@ -17,8 +18,85 @@ struct DepthAttachmentDesc {
   bool createSampler{false};
   resource::SamplerDesc sampler{resource::SamplerDesc::nearestClampToEdge()};
 
+  auto extent(uint32_t attachmentWidth, uint32_t attachmentHeight) noexcept
+      -> DepthAttachmentDesc & {
+    width = attachmentWidth;
+    height = attachmentHeight;
+    return *this;
+  }
+
+  auto imageFormat(VkFormat attachmentFormat) noexcept
+      -> DepthAttachmentDesc & {
+    format = attachmentFormat;
+    return *this;
+  }
+
+  auto usageFlags(VkImageUsageFlags flags) noexcept -> DepthAttachmentDesc & {
+    usage = flags;
+    return *this;
+  }
+
+  auto addUsage(VkImageUsageFlags flags) noexcept -> DepthAttachmentDesc & {
+    usage |= flags;
+    return *this;
+  }
+
+  auto sampled(bool enabled = true) noexcept -> DepthAttachmentDesc & {
+    if (enabled) {
+      usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+      finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+      createSampler = true;
+      return *this;
+    }
+
+    usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;
+    finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    createSampler = false;
+    return *this;
+  }
+
+  auto finalImageLayout(VkImageLayout layout) noexcept
+      -> DepthAttachmentDesc & {
+    finalLayout = layout;
+    return *this;
+  }
+
+  auto withSampler(resource::SamplerDesc desc) -> DepthAttachmentDesc & {
+    sampler = std::move(desc);
+    createSampler = true;
+    return *this;
+  }
+
+  auto samplerEnabled(bool enabled = true) noexcept -> DepthAttachmentDesc & {
+    createSampler = enabled;
+    return *this;
+  }
+
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return width != 0 && height != 0 && format != VK_FORMAT_UNDEFINED;
+  }
+
+  [[nodiscard]] static auto attachment(uint32_t width, uint32_t height,
+                                       VkFormat format) -> DepthAttachmentDesc {
+    DepthAttachmentDesc desc{};
+    return desc.extent(width, height)
+        .imageFormat(format)
+        .usageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+  }
+
+  [[nodiscard]] static auto sampled2D(uint32_t width, uint32_t height,
+                                      VkFormat format) -> DepthAttachmentDesc {
+    DepthAttachmentDesc desc{};
+    return desc.extent(width, height)
+        .imageFormat(format)
+        .usageFlags(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        .sampled();
+  }
+
+  [[nodiscard]] static auto shadowMap(uint32_t width, uint32_t height,
+                                      VkFormat format = VK_FORMAT_D32_SFLOAT)
+      -> DepthAttachmentDesc {
+    return sampled2D(width, height, format);
   }
 };
 

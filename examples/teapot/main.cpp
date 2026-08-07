@@ -31,20 +31,16 @@ private:
   }
 
   void buildGraph() override {
-    vkr::exec::RasterPassDesc desc{};
-    desc.color(swapchain->width(), swapchain->height(),
-               VK_FORMAT_R8G8B8A8_UNORM)
-        .sampledColor()
-        .depth(VK_FORMAT_D32_SFLOAT)
-        .uniform(0, "default", VK_SHADER_STAGE_VERTEX_BIT)
+    auto desc = vkr::exec::RasterPassDesc::offscreen(
+        swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
+        VK_FORMAT_D32_SFLOAT, "teapot-local",
+        vkr::scene::VertexNormalTexture3D::vertexInputDesc());
+    desc.uniform(0, "default", VK_SHADER_STAGE_VERTEX_BIT)
         .texture(1, "teapot_texture", VK_SHADER_STAGE_FRAGMENT_BIT)
-        .pipeline("teapot-local")
-        .vertexInput(vkr::scene::VertexNormalTexture3D::vertexInputDesc())
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolve("shaders/teapot/teapot.vert").string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
             assetSystem->resolve("shaders/teapot/teapot.frag").string()))
-        .depthTest()
         .noCull()
         .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
         .clearDepth();
@@ -54,22 +50,16 @@ private:
     rasterPass.setName("raster").write("scene.raw");
     rasterPass.update(desc);
 
-    vkr::exec::FullscreenPassDesc postDesc{};
+    auto postDesc = vkr::exec::FullscreenPassDesc::postProcess(
+        swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
+        "postprocess");
     postDesc
-        .color(swapchain->width(), swapchain->height(),
-               VK_FORMAT_R8G8B8A8_UNORM)
-        .sampledColor()
-        .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
-        .pipeline("postprocess")
-        .vertexInput(vkr::scene::VertexInputDesc::none())
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolve("shaders/postprocess/postprocess.vert")
                 .string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
             assetSystem->resolve("shaders/postprocess/postprocess.frag")
-                .string()))
-        .disableDepthTest()
-        .noCull();
+                .string()));
 
     auto &postProcessPass = graph->addPass<vkr::exec::PostProcessPass>(
         *executor, *device, *commandPool,

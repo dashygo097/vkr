@@ -14,11 +14,18 @@ auto imageLayoutForColor(const ColorAttachment &color) -> VkImageLayout {
 
 auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
                      const OffscreenTarget &source,
-                     const RenderPassInputDesc &input) -> VkDescriptorImageInfo {
+                     const RenderPassInputDesc &input)
+    -> VkDescriptorImageInfo {
   VkDescriptorImageInfo imageInfo{};
 
   switch (input.kind) {
   case RenderPassInputKind::Color: {
+    if (!source.hasColor()) {
+      VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' source {} has no color "
+                     "attachment",
+                     std::string(passName), sourceIndex);
+    }
+
     const auto &color = source.color();
     if (!color.hasSampler()) {
       VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' source {} color has no "
@@ -164,8 +171,7 @@ void validateUniqueDescriptorBindings(
 
 FeedbackFullscreenPass::FeedbackFullscreenPass(
     Executor &executor, const core::Device &device,
-    const core::CommandPool &commandPool,
-    std::vector<RenderPassSource> sources)
+    const core::CommandPool &commandPool, std::vector<RenderPassSource> sources)
     : executor_(executor), device_(device), command_pool_(commandPool),
       sources_(std::move(sources)) {}
 
@@ -247,8 +253,8 @@ auto FeedbackFullscreenPass::addSource(RenderPassSource source)
   return *this;
 }
 
-auto FeedbackFullscreenPass::setSources(
-    std::vector<RenderPassSource> sources) -> FeedbackFullscreenPass & {
+auto FeedbackFullscreenPass::setSources(std::vector<RenderPassSource> sources)
+    -> FeedbackFullscreenPass & {
   sources_ = std::move(sources);
   return *this;
 }
@@ -347,10 +353,42 @@ void FeedbackFullscreenPass::createTarget() {
 void FeedbackFullscreenPass::createRenderPass() {
   render_pass_ = std::make_unique<pipeline::RenderPass>(device_);
   const auto &writeTarget = target_->writeForFrame(0);
-  render_pass_->update(pipeline::RenderPassDesc::makeOffscreen(
-      writeTarget.color().desc().format,
-      writeTarget.depth() ? writeTarget.depth()->desc().format
-                          : VK_FORMAT_UNDEFINED));
+  pipeline::RenderPassDesc renderPassDesc{};
+
+  if (writeTarget.hasColor()) {
+    renderPassDesc = pipeline::RenderPassDesc::makeOffscreen(
+        writeTarget.color().desc().format,
+        writeTarget.depth() ? writeTarget.depth()->desc().format
+                            : VK_FORMAT_UNDEFINED);
+
+    const auto &colorDesc = writeTarget.color().desc();
+    if (colorDesc.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED) {
+      renderPassDesc.colors[0].finalLayout = colorDesc.finalLayout;
+    } else if ((colorDesc.usage & (VK_IMAGE_USAGE_SAMPLED_BIT |
+                                   VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)) == 0) {
+      renderPassDesc.colors[0].finalLayout =
+          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+  } else if (writeTarget.depth()) {
+    renderPassDesc = pipeline::RenderPassDesc::makeDepthOnly(
+        writeTarget.depth()->desc().format);
+  } else {
+    VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target has no attachments",
+                   name());
+  }
+
+  if (writeTarget.depth()) {
+    const auto &depthDesc = writeTarget.depth()->desc();
+    if (depthDesc.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED) {
+      renderPassDesc.depth.finalLayout = depthDesc.finalLayout;
+    }
+
+    if ((depthDesc.usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0) {
+      renderPassDesc.depth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    }
+  }
+
+  render_pass_->update(renderPassDesc);
 }
 
 void FeedbackFullscreenPass::createFramebuffers() {
@@ -359,11 +397,8 @@ void FeedbackFullscreenPass::createFramebuffers() {
 
   for (uint32_t index = 0; index < framebuffers_.size(); ++index) {
     auto &offscreen = target_->target(index);
-    FramebufferDesc framebufferDesc{
-        .width = offscreen.width(),
-        .height = offscreen.height(),
-        .layers = 1,
-        .attachments = {offscreen.attachmentViews()}};
+    auto framebufferDesc = FramebufferDesc::single(
+        offscreen.width(), offscreen.height(), offscreen.attachmentViews());
 
     framebuffers_[index] =
         std::make_unique<FramebufferSet>(device_, *render_pass_);
@@ -432,8 +467,8 @@ void FeedbackFullscreenPass::createPipeline() {
     return;
   }
 
-  pipeline_ = std::make_unique<pipeline::GraphicsPipeline>(device_,
-                                                           *render_pass_);
+  pipeline_ =
+      std::make_unique<pipeline::GraphicsPipeline>(device_, *render_pass_);
   pipeline_->update(pipelineDesc);
 
   if (!pipeline_->valid()) {
@@ -463,8 +498,7 @@ auto FeedbackFullscreenPass::resolvedInputs() const
     }
 
     for (uint32_t index = 0; index < sources_.size(); ++index) {
-      inputs.push_back(
-          RenderPassInputDesc{.binding = firstBinding + index});
+      inputs.push_back(RenderPassInputDesc{.binding = firstBinding + index});
     }
 
     return inputs;

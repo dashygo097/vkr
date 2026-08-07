@@ -60,12 +60,12 @@ public:
 
   void beginFrame(VkCommandBuffer commandBuffer);
   void endFrame(VkCommandBuffer commandBuffer);
-  void beginScope(VkCommandBuffer commandBuffer, std::string_view name,
-                  VkPipelineStageFlagBits stage =
-                      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-  void endScope(VkCommandBuffer commandBuffer,
-                VkPipelineStageFlagBits stage =
-                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+  void
+  beginScope(VkCommandBuffer commandBuffer, std::string_view name,
+             VkPipelineStageFlagBits stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+  void endScope(
+      VkCommandBuffer commandBuffer,
+      VkPipelineStageFlagBits stage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
   [[nodiscard]] auto collect() -> ProfileReport;
   [[nodiscard]] auto enabled() const noexcept -> bool { return enabled_; }

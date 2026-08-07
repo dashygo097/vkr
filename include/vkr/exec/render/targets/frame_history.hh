@@ -5,6 +5,7 @@
 #include "vkr/exec/render/targets/offscreen.hh"
 #include <cstdint>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace vkr::exec {
@@ -12,6 +13,23 @@ namespace vkr::exec {
 struct FrameHistoryTargetDesc {
   OffscreenTargetDesc target{};
   uint32_t frameCount{0};
+
+  auto targetDesc(OffscreenTargetDesc desc) -> FrameHistoryTargetDesc & {
+    target = std::move(desc);
+    return *this;
+  }
+
+  auto frames(uint32_t count) noexcept -> FrameHistoryTargetDesc & {
+    frameCount = count;
+    return *this;
+  }
+
+  [[nodiscard]] static auto history(OffscreenTargetDesc desc,
+                                    uint32_t frameCount = 0)
+      -> FrameHistoryTargetDesc {
+    FrameHistoryTargetDesc result{};
+    return result.targetDesc(std::move(desc)).frames(frameCount);
+  }
 };
 
 class FrameHistoryTarget {

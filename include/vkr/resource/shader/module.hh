@@ -102,8 +102,8 @@ struct ShaderModuleDesc {
   fragmentGlslSource(const std::string &source,
                      const std::string &label = "fragment")
       -> ShaderModuleDesc {
-    return glsl(util::GlslCompileDesc::glslSource(
-        shaderc_glsl_fragment_shader, source, label));
+    return glsl(util::GlslCompileDesc::glslSource(shaderc_glsl_fragment_shader,
+                                                  source, label));
   }
 
   [[nodiscard]] static auto

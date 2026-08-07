@@ -46,17 +46,6 @@ private:
             mouseDown ? mousePosition.y : 0.0f};
   }
 
-  [[nodiscard]] auto shadertoyTargetDesc() const
-      -> vkr::exec::OffscreenTargetDesc {
-    return {.color = {.width = swapchain->width(),
-                      .height = swapchain->height(),
-                      .format = VK_FORMAT_R16G16B16A16_SFLOAT,
-                      .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                               VK_IMAGE_USAGE_SAMPLED_BIT,
-                      .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                      .createSampler = true}};
-  }
-
   [[nodiscard]] auto shadertoyDescriptorBindings() const
       -> std::vector<vkr::pipeline::DescriptorBinding> {
     return {{.name = std::string(kShaderToyUniformName),
@@ -163,15 +152,13 @@ private:
   [[nodiscard]] auto shadertoyPipeline(const std::string &name,
                                        const std::string &fragmentShader) const
       -> vkr::pipeline::GraphicsPipelineDesc {
-    vkr::pipeline::GraphicsPipelineDesc pipeline{};
-    pipeline.setName(name)
-        .vertexInputDesc(vkr::scene::VertexInputDesc::none())
+    auto pipeline = vkr::pipeline::GraphicsPipelineDesc::fullscreen(name);
+    pipeline
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/shadertoy/shadertoy.vert")
                 .string()))
-        .fragmentShader(shadertoyFragmentSource(fragmentShader, name + ".frag"))
-        .disableDepth()
-        .noCull();
+        .fragmentShader(
+            shadertoyFragmentSource(fragmentShader, name + ".frag"));
     return pipeline;
   }
 
@@ -182,8 +169,9 @@ private:
       -> vkr::exec::FeedbackFullscreenPassDesc {
     const auto fallback = fallbackChannels(historyChannel, sourceChannels);
 
-    vkr::exec::FeedbackFullscreenPassDesc desc{};
-    desc.targetDesc(shadertoyTargetDesc()).clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    auto desc = vkr::exec::FeedbackFullscreenPassDesc::feedback(
+        swapchain->width(), swapchain->height(), VK_FORMAT_R16G16B16A16_SFLOAT,
+        name);
 
     for (auto binding : shadertoyDescriptorBindings(fallback)) {
       desc.descriptor(std::move(binding));
@@ -205,8 +193,9 @@ private:
       -> vkr::exec::FullscreenPassDesc {
     const auto fallback = fallbackChannels(std::nullopt, sourceChannels);
 
-    vkr::exec::FullscreenPassDesc desc{};
-    desc.targetDesc(shadertoyTargetDesc()).clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    auto desc = vkr::exec::FullscreenPassDesc::postProcess(
+        swapchain->width(), swapchain->height(), VK_FORMAT_R16G16B16A16_SFLOAT,
+        "shadertoy.image");
 
     for (auto binding : shadertoyDescriptorBindings(fallback)) {
       desc.descriptor(std::move(binding));

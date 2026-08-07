@@ -2,9 +2,9 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
+#include "vkr/exec/pass.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
-#include "vkr/exec/pass.hh"
 #include "vkr/exec/render/passes/input.hh"
 #include "vkr/exec/render/passes/source.hh"
 #include "vkr/exec/render/targets/offscreen.hh"
@@ -37,14 +37,12 @@ struct RasterPassDesc {
 
   auto color(uint32_t width, uint32_t height, VkFormat format)
       -> RasterPassDesc & {
-    target.color.width = width;
-    target.color.height = height;
-    target.color.format = format;
+    target.colorAttachment(width, height, format);
     return *this;
   }
 
   auto color(ColorAttachmentDesc desc) -> RasterPassDesc & {
-    target.color = std::move(desc);
+    target.colorAttachment(std::move(desc));
     return *this;
   }
 
@@ -54,17 +52,7 @@ struct RasterPassDesc {
   }
 
   auto sampledColor(bool enabled = true) -> RasterPassDesc & {
-    if (enabled) {
-      target.color.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-      target.color.createSampler = true;
-      if (target.color.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
-        target.color.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      }
-      return *this;
-    }
-
-    target.color.usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;
-    target.color.createSampler = false;
+    target.sampledColor(enabled);
     return *this;
   }
 
@@ -74,69 +62,58 @@ struct RasterPassDesc {
   }
 
   auto colorSampler(resource::SamplerDesc desc) -> RasterPassDesc & {
-    target.color.sampler = std::move(desc);
-    target.color.createSampler = true;
+    target.color.withSampler(std::move(desc));
     return *this;
   }
 
   auto depth(VkFormat format) -> RasterPassDesc & {
-    target.depth = DepthAttachmentDesc{
-        .width = target.color.width,
-        .height = target.color.height,
-        .format = format,
-    };
+    target.depthAttachment(target.width(), target.height(), format);
     return *this;
   }
 
   auto depth(uint32_t width, uint32_t height, VkFormat format)
       -> RasterPassDesc & {
-    target.depth = DepthAttachmentDesc{
-        .width = width,
-        .height = height,
-        .format = format,
-    };
+    target.depthAttachment(width, height, format);
     return *this;
   }
 
   auto disableDepthAttachment() -> RasterPassDesc & {
-    target.depth.reset();
+    target.disableDepth();
     return *this;
   }
 
   auto sampledDepth(bool enabled = true) -> RasterPassDesc & {
-    if (!target.depth) {
-      target.depth = DepthAttachmentDesc{
-          .width = target.color.width,
-          .height = target.color.height,
-          .format = VK_FORMAT_D32_SFLOAT,
-      };
-    }
-
-    if (enabled) {
-      target.depth->usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-      target.depth->finalLayout =
-          VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-      target.depth->createSampler = true;
-      return *this;
-    }
-
-    target.depth->usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;
-    target.depth->finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    target.depth->createSampler = false;
+    target.sampledDepth(enabled);
     return *this;
   }
 
   auto depthSampler(resource::SamplerDesc desc) -> RasterPassDesc & {
-    if (!target.depth) {
-      target.depth = DepthAttachmentDesc{
-          .width = target.color.width,
-          .height = target.color.height,
-          .format = VK_FORMAT_D32_SFLOAT,
-      };
-    }
+    target.ensureDepth();
+    target.depth->withSampler(std::move(desc));
+    return *this;
+  }
 
-    target.depth->sampler = std::move(desc);
-    target.depth->createSampler = true;
+  auto shadowMapTarget(uint32_t width, uint32_t height,
+                       VkFormat depthFormat = VK_FORMAT_D32_SFLOAT)
+      -> RasterPassDesc & {
+    target = OffscreenTargetDesc::shadowMap(width, height, depthFormat);
+    return *this;
+  }
+
+  auto descriptorPoolDesc(pipeline::DescriptorPoolDesc desc)
+      -> RasterPassDesc & {
+    descriptorPool = std::move(desc);
+    return *this;
+  }
+
+  auto descriptors(std::vector<pipeline::DescriptorBinding> bindings)
+      -> RasterPassDesc & {
+    descriptorBindings = std::move(bindings);
+    return *this;
+  }
+
+  auto clearDescriptors() noexcept -> RasterPassDesc & {
+    descriptorBindings.clear();
     return *this;
   }
 
@@ -187,6 +164,16 @@ struct RasterPassDesc {
     return *this;
   }
 
+  auto inputsList(std::vector<RenderPassInputDesc> descs) -> RasterPassDesc & {
+    inputs = std::move(descs);
+    return *this;
+  }
+
+  auto clearInputs() noexcept -> RasterPassDesc & {
+    inputs.clear();
+    return *this;
+  }
+
   auto mesh(std::string name) -> RasterPassDesc & {
     meshNames.push_back(std::move(name));
     return *this;
@@ -194,6 +181,11 @@ struct RasterPassDesc {
 
   auto meshes(std::vector<std::string> names) -> RasterPassDesc & {
     meshNames = std::move(names);
+    return *this;
+  }
+
+  auto clearMeshes() noexcept -> RasterPassDesc & {
+    meshNames.clear();
     return *this;
   }
 
@@ -205,6 +197,16 @@ struct RasterPassDesc {
   auto clearDepth(float depthValue = 1.0f, uint32_t stencil = 0)
       -> RasterPassDesc & {
     clearValues.push_back(VkClearValue{.depthStencil = {depthValue, stencil}});
+    return *this;
+  }
+
+  auto clearValuesList(std::vector<VkClearValue> values) -> RasterPassDesc & {
+    clearValues = std::move(values);
+    return *this;
+  }
+
+  auto clearClearValues() noexcept -> RasterPassDesc & {
+    clearValues.clear();
     return *this;
   }
 
@@ -297,6 +299,51 @@ struct RasterPassDesc {
   auto alphaBlend() -> RasterPassDesc & {
     graphicsPipeline.alphaBlend();
     return *this;
+  }
+
+  auto meshPipeline(std::string name, scene::VertexInputDesc vertexInputDesc)
+      -> RasterPassDesc & {
+    graphicsPipeline = pipeline::GraphicsPipelineDesc::mesh(
+        std::move(name), std::move(vertexInputDesc));
+    return *this;
+  }
+
+  auto shadowMapPipeline(std::string name,
+                         scene::VertexInputDesc vertexInputDesc,
+                         float depthBiasConstant = 1.25F,
+                         float depthBiasSlope = 1.75F,
+                         VkCullModeFlags shadowCullMode = VK_CULL_MODE_BACK_BIT,
+                         VkCompareOp compareOp = VK_COMPARE_OP_LESS)
+      -> RasterPassDesc & {
+    graphicsPipeline = pipeline::GraphicsPipelineDesc::shadowMap(
+        std::move(name), std::move(vertexInputDesc), depthBiasConstant,
+        depthBiasSlope, shadowCullMode, compareOp);
+    return *this;
+  }
+
+  [[nodiscard]] static auto
+  offscreen(uint32_t width, uint32_t height, VkFormat colorFormat,
+            VkFormat depthFormat, std::string pipelineName,
+            scene::VertexInputDesc vertexInputDesc) -> RasterPassDesc {
+    RasterPassDesc desc{};
+    return desc
+        .targetDesc(OffscreenTargetDesc::sampledColorDepth(
+            width, height, colorFormat, depthFormat))
+        .meshPipeline(std::move(pipelineName), std::move(vertexInputDesc));
+  }
+
+  [[nodiscard]] static auto
+  shadowMap(uint32_t width, uint32_t height, VkFormat depthFormat,
+            std::string pipelineName, scene::VertexInputDesc vertexInputDesc,
+            float depthBiasConstant = 1.25F, float depthBiasSlope = 1.75F,
+            VkCullModeFlags shadowCullMode = VK_CULL_MODE_BACK_BIT,
+            VkCompareOp compareOp = VK_COMPARE_OP_LESS) -> RasterPassDesc {
+    RasterPassDesc desc{};
+    return desc.shadowMapTarget(width, height, depthFormat)
+        .shadowMapPipeline(std::move(pipelineName), std::move(vertexInputDesc),
+                           depthBiasConstant, depthBiasSlope, shadowCullMode,
+                           compareOp)
+        .clearDepth();
   }
 };
 

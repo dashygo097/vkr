@@ -18,7 +18,7 @@ struct FeedbackFullscreenPassDesc {
   pipeline::GraphicsPipelineDesc graphicsPipeline{};
 
   auto targetDesc(OffscreenTargetDesc desc) -> FeedbackFullscreenPassDesc & {
-    target.target = std::move(desc);
+    target.targetDesc(std::move(desc));
     return *this;
   }
 
@@ -29,14 +29,12 @@ struct FeedbackFullscreenPassDesc {
 
   auto color(uint32_t width, uint32_t height, VkFormat format)
       -> FeedbackFullscreenPassDesc & {
-    target.target.color.width = width;
-    target.target.color.height = height;
-    target.target.color.format = format;
+    target.target.colorAttachment(width, height, format);
     return *this;
   }
 
   auto color(ColorAttachmentDesc desc) -> FeedbackFullscreenPassDesc & {
-    target.target.color = std::move(desc);
+    target.target.colorAttachment(std::move(desc));
     return *this;
   }
 
@@ -46,18 +44,7 @@ struct FeedbackFullscreenPassDesc {
   }
 
   auto sampledColor(bool enabled = true) -> FeedbackFullscreenPassDesc & {
-    if (enabled) {
-      target.target.color.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-      target.target.color.createSampler = true;
-      if (target.target.color.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
-        target.target.color.finalLayout =
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      }
-      return *this;
-    }
-
-    target.target.color.usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;
-    target.target.color.createSampler = false;
+    target.target.sampledColor(enabled);
     return *this;
   }
 
@@ -68,37 +55,46 @@ struct FeedbackFullscreenPassDesc {
 
   auto colorSampler(resource::SamplerDesc desc)
       -> FeedbackFullscreenPassDesc & {
-    target.target.color.sampler = std::move(desc);
-    target.target.color.createSampler = true;
+    target.target.color.withSampler(std::move(desc));
     return *this;
   }
 
   auto depth(VkFormat format) -> FeedbackFullscreenPassDesc & {
-    target.target.depth = DepthAttachmentDesc{
-        .width = target.target.color.width,
-        .height = target.target.color.height,
-        .format = format,
-    };
+    target.target.depthAttachment(target.target.width(), target.target.height(),
+                                  format);
     return *this;
   }
 
   auto depth(uint32_t width, uint32_t height, VkFormat format)
       -> FeedbackFullscreenPassDesc & {
-    target.target.depth = DepthAttachmentDesc{
-        .width = width,
-        .height = height,
-        .format = format,
-    };
+    target.target.depthAttachment(width, height, format);
     return *this;
   }
 
   auto disableDepthAttachment() -> FeedbackFullscreenPassDesc & {
-    target.target.depth.reset();
+    target.target.disableDepth();
     return *this;
   }
 
   auto frameCount(uint32_t count) -> FeedbackFullscreenPassDesc & {
-    target.frameCount = count;
+    target.frames(count);
+    return *this;
+  }
+
+  auto descriptorPoolDesc(pipeline::DescriptorPoolDesc desc)
+      -> FeedbackFullscreenPassDesc & {
+    descriptorPool = std::move(desc);
+    return *this;
+  }
+
+  auto descriptors(std::vector<pipeline::DescriptorBinding> bindings)
+      -> FeedbackFullscreenPassDesc & {
+    descriptorBindings = std::move(bindings);
+    return *this;
+  }
+
+  auto clearDescriptors() noexcept -> FeedbackFullscreenPassDesc & {
+    descriptorBindings.clear();
     return *this;
   }
 
@@ -132,9 +128,9 @@ struct FeedbackFullscreenPassDesc {
     return *this;
   }
 
-  auto historyDepth(
-      uint32_t binding,
-      VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
+  auto
+  historyDepth(uint32_t binding,
+               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FeedbackFullscreenPassDesc & {
     historyInput = RenderPassInputDesc::depth(binding, stageFlags);
     return *this;
@@ -142,6 +138,11 @@ struct FeedbackFullscreenPassDesc {
 
   auto history(RenderPassInputDesc desc) -> FeedbackFullscreenPassDesc & {
     historyInput = desc;
+    return *this;
+  }
+
+  auto disableHistory() noexcept -> FeedbackFullscreenPassDesc & {
+    historyInput.reset();
     return *this;
   }
 
@@ -164,6 +165,17 @@ struct FeedbackFullscreenPassDesc {
     return *this;
   }
 
+  auto inputsList(std::vector<RenderPassInputDesc> descs)
+      -> FeedbackFullscreenPassDesc & {
+    inputs = std::move(descs);
+    return *this;
+  }
+
+  auto clearInputs() noexcept -> FeedbackFullscreenPassDesc & {
+    inputs.clear();
+    return *this;
+  }
+
   auto clearColor(float r, float g, float b, float a)
       -> FeedbackFullscreenPassDesc & {
     clearValues.push_back(VkClearValue{.color = {{r, g, b, a}}});
@@ -173,6 +185,17 @@ struct FeedbackFullscreenPassDesc {
   auto clearDepth(float depthValue = 1.0f, uint32_t stencil = 0)
       -> FeedbackFullscreenPassDesc & {
     clearValues.push_back(VkClearValue{.depthStencil = {depthValue, stencil}});
+    return *this;
+  }
+
+  auto clearValuesList(std::vector<VkClearValue> values)
+      -> FeedbackFullscreenPassDesc & {
+    clearValues = std::move(values);
+    return *this;
+  }
+
+  auto clearClearValues() noexcept -> FeedbackFullscreenPassDesc & {
+    clearValues.clear();
     return *this;
   }
 
@@ -251,6 +274,23 @@ struct FeedbackFullscreenPassDesc {
   auto alphaBlend() -> FeedbackFullscreenPassDesc & {
     graphicsPipeline.alphaBlend();
     return *this;
+  }
+
+  auto fullscreenPipeline(std::string name) -> FeedbackFullscreenPassDesc & {
+    graphicsPipeline =
+        pipeline::GraphicsPipelineDesc::fullscreen(std::move(name));
+    return *this;
+  }
+
+  [[nodiscard]] static auto feedback(uint32_t width, uint32_t height,
+                                     VkFormat format, std::string pipelineName)
+      -> FeedbackFullscreenPassDesc {
+    FeedbackFullscreenPassDesc desc{};
+    return desc
+        .targetDesc(
+            OffscreenTargetDesc::sampledColorOnly(width, height, format))
+        .clearColor(0.0F, 0.0F, 0.0F, 1.0F)
+        .fullscreenPipeline(std::move(pipelineName));
   }
 };
 
@@ -333,8 +373,7 @@ private:
   void createDescriptors();
   void createPipeline();
 
-  [[nodiscard]] auto resolvedInputs() const
-      -> std::vector<RenderPassInputDesc>;
+  [[nodiscard]] auto resolvedInputs() const -> std::vector<RenderPassInputDesc>;
   [[nodiscard]] auto
   descriptorPoolDesc(const std::vector<RenderPassInputDesc> &inputs) const
       -> pipeline::DescriptorPoolDesc;

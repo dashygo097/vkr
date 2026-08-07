@@ -46,17 +46,13 @@ private:
   }
 
   void buildGraph() override {
-    vkr::exec::RasterPassDesc skyboxDesc{};
-    skyboxDesc
-        .color(swapchain->width(), swapchain->height(),
-               VK_FORMAT_R8G8B8A8_UNORM)
-        .sampledColor()
-        .depth(VK_FORMAT_D32_SFLOAT)
-        .uniform(0, "skybox", VK_SHADER_STAGE_VERTEX_BIT)
+    auto skyboxDesc = vkr::exec::RasterPassDesc::offscreen(
+        swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
+        VK_FORMAT_D32_SFLOAT, "skybox",
+        vkr::scene::VertexSkybox3D::vertexInputDesc());
+    skyboxDesc.uniform(0, "skybox", VK_SHADER_STAGE_VERTEX_BIT)
         .cubemap(1, "skybox", VK_SHADER_STAGE_FRAGMENT_BIT)
         .mesh("skybox")
-        .pipeline("skybox")
-        .vertexInput(vkr::scene::VertexSkybox3D::vertexInputDesc())
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/skybox/skybox.vert").string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
@@ -71,20 +67,15 @@ private:
     skyboxPass.setName("skybox").write("scene.skybox");
     skyboxPass.update(skyboxDesc);
 
-    vkr::exec::RasterPassDesc cornellDesc{};
-    cornellDesc
-        .color(swapchain->width(), swapchain->height(),
-               VK_FORMAT_R8G8B8A8_UNORM)
-        .sampledColor()
-        .depth(VK_FORMAT_D32_SFLOAT)
-        .uniform(0, "cornellbox", VK_SHADER_STAGE_VERTEX_BIT)
-        .pipeline("cornellbox")
-        .vertexInput(vkr::scene::Vertex3D::vertexInputDesc())
+    auto cornellDesc = vkr::exec::RasterPassDesc::offscreen(
+        swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
+        VK_FORMAT_D32_SFLOAT, "cornellbox",
+        vkr::scene::Vertex3D::vertexInputDesc());
+    cornellDesc.uniform(0, "cornellbox", VK_SHADER_STAGE_VERTEX_BIT)
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/cornell/cornell.vert").string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
             assetSystem->resolveApp("shaders/cornell/cornell.frag").string()))
-        .depthTest()
         .noCull()
         .clearColor(0.0f, 0.0f, 0.0f, 0.0f)
         .clearDepth();
@@ -100,22 +91,16 @@ private:
     cornellPass.setName("cornellbox").write("scene.cornell");
     cornellPass.update(cornellDesc);
 
-    vkr::exec::FullscreenPassDesc compositeDesc{};
+    auto compositeDesc = vkr::exec::FullscreenPassDesc::postProcess(
+        swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
+        "skybox-cornell-composite");
     compositeDesc
-        .color(swapchain->width(), swapchain->height(),
-               VK_FORMAT_R8G8B8A8_UNORM)
-        .sampledColor()
-        .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
-        .pipeline("skybox-cornell-composite")
-        .vertexInput(vkr::scene::VertexInputDesc::none())
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/composite/composite.vert")
                 .string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
             assetSystem->resolveApp("shaders/composite/composite.frag")
-                .string()))
-        .disableDepthTest()
-        .noCull();
+                .string()));
 
     auto &compositePass = graph->addPass<vkr::exec::CompositePass>(
         *executor, *device, *commandPool,

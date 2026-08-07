@@ -6,8 +6,8 @@
 namespace vkr::exec {
 namespace {
 
-void addPoolSize(pipeline::DescriptorPoolDesc &poolDesc,
-                 VkDescriptorType type, uint32_t count) {
+void addPoolSize(pipeline::DescriptorPoolDesc &poolDesc, VkDescriptorType type,
+                 uint32_t count) {
   if (count == 0) {
     return;
   }
@@ -69,8 +69,7 @@ void ComputePass::record() {
   }
 
   if (!desc_.dispatch.isValid()) {
-    VKR_EXEC_ERROR("ComputePass '{}' has invalid dispatch group count",
-                   name());
+    VKR_EXEC_ERROR("ComputePass '{}' has invalid dispatch group count", name());
   }
 
   const std::vector<VkDescriptorSet> emptySets{};

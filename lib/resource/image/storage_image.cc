@@ -3,8 +3,7 @@
 
 namespace vkr::resource {
 StorageImage::StorageImage(const core::Device &device)
-    : device_(device),
-      image_(std::make_unique<Image>(device_)),
+    : device_(device), image_(std::make_unique<Image>(device_)),
       image_view_(std::make_unique<ImageView>(device_)) {}
 
 StorageImage::~StorageImage() { destroy(); }
@@ -21,8 +20,8 @@ void StorageImage::create() {
     VKR_RES_ERROR("StorageImageDesc is invalid");
   }
 
-  ImageDesc imageDesc = ImageDesc::storage2D(desc_.width, desc_.height,
-                                             desc_.format);
+  ImageDesc imageDesc =
+      ImageDesc::storage2D(desc_.width, desc_.height, desc_.format);
   imageDesc.usage = desc_.usage;
   imageDesc.aspectMask = desc_.aspectMask;
   imageDesc.defaultViewType = desc_.viewType;

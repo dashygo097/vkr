@@ -37,8 +37,8 @@ struct RenderAppDesc {
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return asset.isValid() && window.isValid() && instance.isValid() &&
            device.isValid() && swapchain.isValid() && commandPool.isValid() &&
-           commandBuffers.isValid() && profiler.isValid() &&
-           camera.isValid() && ui.isValid();
+           commandBuffers.isValid() && profiler.isValid() && camera.isValid() &&
+           ui.isValid();
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {

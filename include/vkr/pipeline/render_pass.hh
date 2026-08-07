@@ -1,6 +1,8 @@
 #pragma once
 
 #include "vkr/core/device.hh"
+#include <utility>
+#include <vector>
 
 namespace vkr::pipeline {
 
@@ -16,6 +18,71 @@ struct RenderPassColorAttachmentDesc {
   VkImageLayout initialLayout{VK_IMAGE_LAYOUT_UNDEFINED};
   VkImageLayout finalLayout{VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
   VkImageLayout subpassLayout{VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+
+  auto imageFormat(VkFormat attachmentFormat) noexcept
+      -> RenderPassColorAttachmentDesc & {
+    format = attachmentFormat;
+    return *this;
+  }
+
+  auto sampleCount(VkSampleCountFlagBits count) noexcept
+      -> RenderPassColorAttachmentDesc & {
+    samples = count;
+    return *this;
+  }
+
+  auto load(VkAttachmentLoadOp op) noexcept -> RenderPassColorAttachmentDesc & {
+    loadOp = op;
+    return *this;
+  }
+
+  auto store(VkAttachmentStoreOp op) noexcept
+      -> RenderPassColorAttachmentDesc & {
+    storeOp = op;
+    return *this;
+  }
+
+  auto stencilLoad(VkAttachmentLoadOp op) noexcept
+      -> RenderPassColorAttachmentDesc & {
+    stencilLoadOp = op;
+    return *this;
+  }
+
+  auto stencilStore(VkAttachmentStoreOp op) noexcept
+      -> RenderPassColorAttachmentDesc & {
+    stencilStoreOp = op;
+    return *this;
+  }
+
+  auto layouts(
+      VkImageLayout initial, VkImageLayout final,
+      VkImageLayout subpass = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) noexcept
+      -> RenderPassColorAttachmentDesc & {
+    initialLayout = initial;
+    finalLayout = final;
+    subpassLayout = subpass;
+    return *this;
+  }
+
+  [[nodiscard]] static auto color(VkFormat format)
+      -> RenderPassColorAttachmentDesc {
+    RenderPassColorAttachmentDesc desc{};
+    return desc.imageFormat(format);
+  }
+
+  [[nodiscard]] static auto sampledOffscreen(VkFormat format)
+      -> RenderPassColorAttachmentDesc {
+    RenderPassColorAttachmentDesc desc{};
+    return desc.imageFormat(format).layouts(
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  }
+
+  [[nodiscard]] static auto swapchain(VkFormat format)
+      -> RenderPassColorAttachmentDesc {
+    RenderPassColorAttachmentDesc desc{};
+    return desc.imageFormat(format).layouts(VK_IMAGE_LAYOUT_UNDEFINED,
+                                            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+  }
 };
 
 struct RenderPassDepthAttachmentDesc {
@@ -32,12 +99,136 @@ struct RenderPassDepthAttachmentDesc {
   VkImageLayout initialLayout{VK_IMAGE_LAYOUT_UNDEFINED};
   VkImageLayout finalLayout{VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
   VkImageLayout subpassLayout{VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+
+  auto enable(bool value = true) noexcept -> RenderPassDepthAttachmentDesc & {
+    enabled = value;
+    return *this;
+  }
+
+  auto imageFormat(VkFormat attachmentFormat) noexcept
+      -> RenderPassDepthAttachmentDesc & {
+    format = attachmentFormat;
+    enabled = attachmentFormat != VK_FORMAT_UNDEFINED;
+    return *this;
+  }
+
+  auto sampleCount(VkSampleCountFlagBits count) noexcept
+      -> RenderPassDepthAttachmentDesc & {
+    samples = count;
+    return *this;
+  }
+
+  auto load(VkAttachmentLoadOp op) noexcept -> RenderPassDepthAttachmentDesc & {
+    loadOp = op;
+    return *this;
+  }
+
+  auto store(VkAttachmentStoreOp op) noexcept
+      -> RenderPassDepthAttachmentDesc & {
+    storeOp = op;
+    return *this;
+  }
+
+  auto stencilLoad(VkAttachmentLoadOp op) noexcept
+      -> RenderPassDepthAttachmentDesc & {
+    stencilLoadOp = op;
+    return *this;
+  }
+
+  auto stencilStore(VkAttachmentStoreOp op) noexcept
+      -> RenderPassDepthAttachmentDesc & {
+    stencilStoreOp = op;
+    return *this;
+  }
+
+  auto layouts(VkImageLayout initial, VkImageLayout final,
+               VkImageLayout subpass =
+                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) noexcept
+      -> RenderPassDepthAttachmentDesc & {
+    initialLayout = initial;
+    finalLayout = final;
+    subpassLayout = subpass;
+    return *this;
+  }
+
+  auto sampledFinalLayout() noexcept -> RenderPassDepthAttachmentDesc & {
+    finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    return *this;
+  }
+
+  [[nodiscard]] static auto disabled() -> RenderPassDepthAttachmentDesc {
+    return {};
+  }
+
+  [[nodiscard]] static auto attachment(VkFormat format)
+      -> RenderPassDepthAttachmentDesc {
+    RenderPassDepthAttachmentDesc desc{};
+    return desc.imageFormat(format).enable();
+  }
+
+  [[nodiscard]] static auto sampled(VkFormat format)
+      -> RenderPassDepthAttachmentDesc {
+    RenderPassDepthAttachmentDesc desc{};
+    return desc.imageFormat(format)
+        .enable()
+        .store(VK_ATTACHMENT_STORE_OP_STORE)
+        .sampledFinalLayout();
+  }
+
+  [[nodiscard]] static auto shadowMap(VkFormat format)
+      -> RenderPassDepthAttachmentDesc {
+    return sampled(format);
+  }
 };
 
 struct RenderPassDesc {
   std::vector<RenderPassColorAttachmentDesc> colors{};
   RenderPassDepthAttachmentDesc depth{};
   std::vector<VkSubpassDependency> dependencies{};
+
+  auto color(RenderPassColorAttachmentDesc desc) -> RenderPassDesc & {
+    colors.push_back(desc);
+    return *this;
+  }
+
+  auto color(VkFormat format) -> RenderPassDesc & {
+    return color(RenderPassColorAttachmentDesc::color(format));
+  }
+
+  auto clearColors() noexcept -> RenderPassDesc & {
+    colors.clear();
+    return *this;
+  }
+
+  auto depthAttachment(RenderPassDepthAttachmentDesc desc) -> RenderPassDesc & {
+    depth = desc;
+    return *this;
+  }
+
+  auto depthAttachment(VkFormat format) -> RenderPassDesc & {
+    return depthAttachment(RenderPassDepthAttachmentDesc::attachment(format));
+  }
+
+  auto disableDepth() noexcept -> RenderPassDesc & {
+    depth = RenderPassDepthAttachmentDesc::disabled();
+    return *this;
+  }
+
+  auto dependency(VkSubpassDependency desc) -> RenderPassDesc & {
+    dependencies.push_back(desc);
+    return *this;
+  }
+
+  auto dependencyList(std::vector<VkSubpassDependency> descs)
+      -> RenderPassDesc & {
+    dependencies = std::move(descs);
+    return *this;
+  }
+
+  auto clearDependencies() noexcept -> RenderPassDesc & {
+    dependencies.clear();
+    return *this;
+  }
 
   [[nodiscard]] auto hasColor() const noexcept -> bool {
     return !colors.empty();
@@ -50,6 +241,8 @@ struct RenderPassDesc {
   }
 
   // factories
+  [[nodiscard]] static auto empty() -> RenderPassDesc { return {}; }
+
   [[nodiscard]] static auto
   makeSwapchain(VkFormat colorFormat,
                 VkFormat depthFormat = VK_FORMAT_UNDEFINED) -> RenderPassDesc {
@@ -146,6 +339,34 @@ struct RenderPassDesc {
     after.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     after.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     after.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    after.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    desc.dependencies.push_back(after);
+
+    return desc;
+  }
+
+  [[nodiscard]] static auto makeDepthOnly(VkFormat depthFormat)
+      -> RenderPassDesc {
+    RenderPassDesc desc{};
+    desc.depth = RenderPassDepthAttachmentDesc::shadowMap(depthFormat);
+
+    VkSubpassDependency before{};
+    before.srcSubpass = VK_SUBPASS_EXTERNAL;
+    before.dstSubpass = 0;
+    before.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    before.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                          VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    before.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    before.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    desc.dependencies.push_back(before);
+
+    VkSubpassDependency after{};
+    after.srcSubpass = 0;
+    after.dstSubpass = VK_SUBPASS_EXTERNAL;
+    after.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                         VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    after.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    after.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     after.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
     desc.dependencies.push_back(after);
 

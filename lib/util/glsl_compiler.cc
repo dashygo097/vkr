@@ -1,5 +1,5 @@
-#include "vkr/util/compiler.hh"
 #include "vkr/logger.hh"
+#include "vkr/util/compiler.hh"
 #include "vkr/util/io.hh"
 
 namespace vkr::util {

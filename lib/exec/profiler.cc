@@ -181,8 +181,8 @@ auto Profiler::collect() -> ProfileReport {
   std::vector<uint64_t> timestamps(next_query_, 0);
   const VkResult result = vkGetQueryPoolResults(
       device_.device(), query_pool_, 0, next_query_,
-      sizeof(uint64_t) * timestamps.size(), timestamps.data(),
-      sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+      sizeof(uint64_t) * timestamps.size(), timestamps.data(), sizeof(uint64_t),
+      VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 
   if (result != VK_SUCCESS) {
     VKR_EXEC_WARN("Failed to collect GPU profiler timestamp results");
@@ -191,8 +191,8 @@ auto Profiler::collect() -> ProfileReport {
 
   report.gpuSamples.reserve(scopes_.size());
   for (const auto &scope : scopes_) {
-    const uint64_t delta =
-        timestampDelta(timestamps[scope.beginQuery], timestamps[scope.endQuery]);
+    const uint64_t delta = timestampDelta(timestamps[scope.beginQuery],
+                                          timestamps[scope.endQuery]);
     const double nanoseconds = static_cast<double>(delta) * timestamp_period_;
     const double milliseconds = nanoseconds / 1'000'000.0;
     report.gpuSamples.push_back(ProfileSample{
@@ -212,8 +212,7 @@ auto Profiler::queryCount() const noexcept -> uint32_t {
   return desc_.maxScopes * 2;
 }
 
-auto Profiler::timestampDelta(uint64_t begin, uint64_t end) const
-    -> uint64_t {
+auto Profiler::timestampDelta(uint64_t begin, uint64_t end) const -> uint64_t {
   if (timestamp_valid_bits_ >= 64) {
     return end >= begin ? end - begin : 0;
   }

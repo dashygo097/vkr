@@ -2,9 +2,9 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
+#include "vkr/exec/pass.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
-#include "vkr/exec/pass.hh"
 #include "vkr/exec/render/passes/input.hh"
 #include "vkr/exec/render/passes/source.hh"
 #include "vkr/exec/render/targets/offscreen.hh"
@@ -36,14 +36,12 @@ struct FullscreenPassDesc {
 
   auto color(uint32_t width, uint32_t height, VkFormat format)
       -> FullscreenPassDesc & {
-    target.color.width = width;
-    target.color.height = height;
-    target.color.format = format;
+    target.colorAttachment(width, height, format);
     return *this;
   }
 
   auto color(ColorAttachmentDesc desc) -> FullscreenPassDesc & {
-    target.color = std::move(desc);
+    target.colorAttachment(std::move(desc));
     return *this;
   }
 
@@ -53,17 +51,7 @@ struct FullscreenPassDesc {
   }
 
   auto sampledColor(bool enabled = true) -> FullscreenPassDesc & {
-    if (enabled) {
-      target.color.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-      target.color.createSampler = true;
-      if (target.color.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
-        target.color.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      }
-      return *this;
-    }
-
-    target.color.usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;
-    target.color.createSampler = false;
+    target.sampledColor(enabled);
     return *this;
   }
 
@@ -73,32 +61,62 @@ struct FullscreenPassDesc {
   }
 
   auto colorSampler(resource::SamplerDesc desc) -> FullscreenPassDesc & {
-    target.color.sampler = std::move(desc);
-    target.color.createSampler = true;
+    target.color.withSampler(std::move(desc));
     return *this;
   }
 
   auto depth(VkFormat format) -> FullscreenPassDesc & {
-    target.depth = DepthAttachmentDesc{
-        .width = target.color.width,
-        .height = target.color.height,
-        .format = format,
-    };
+    target.depthAttachment(target.width(), target.height(), format);
     return *this;
   }
 
   auto depth(uint32_t width, uint32_t height, VkFormat format)
       -> FullscreenPassDesc & {
-    target.depth = DepthAttachmentDesc{
-        .width = width,
-        .height = height,
-        .format = format,
-    };
+    target.depthAttachment(width, height, format);
     return *this;
   }
 
   auto disableDepthAttachment() -> FullscreenPassDesc & {
-    target.depth.reset();
+    target.disableDepth();
+    return *this;
+  }
+
+  auto descriptorPoolDesc(pipeline::DescriptorPoolDesc desc)
+      -> FullscreenPassDesc & {
+    descriptorPool = std::move(desc);
+    return *this;
+  }
+
+  auto descriptors(std::vector<pipeline::DescriptorBinding> bindings)
+      -> FullscreenPassDesc & {
+    descriptorBindings = std::move(bindings);
+    return *this;
+  }
+
+  auto clearDescriptors() noexcept -> FullscreenPassDesc & {
+    descriptorBindings.clear();
+    return *this;
+  }
+
+  auto inputsList(std::vector<RenderPassInputDesc> descs)
+      -> FullscreenPassDesc & {
+    inputs = std::move(descs);
+    return *this;
+  }
+
+  auto clearInputs() noexcept -> FullscreenPassDesc & {
+    inputs.clear();
+    return *this;
+  }
+
+  auto clearValuesList(std::vector<VkClearValue> values)
+      -> FullscreenPassDesc & {
+    clearValues = std::move(values);
+    return *this;
+  }
+
+  auto clearClearValues() noexcept -> FullscreenPassDesc & {
+    clearValues.clear();
     return *this;
   }
 
@@ -226,6 +244,39 @@ struct FullscreenPassDesc {
     graphicsPipeline.alphaBlend();
     return *this;
   }
+
+  auto fullscreenPipeline(std::string name) -> FullscreenPassDesc & {
+    graphicsPipeline =
+        pipeline::GraphicsPipelineDesc::fullscreen(std::move(name));
+    return *this;
+  }
+
+  [[nodiscard]] static auto offscreen(uint32_t width, uint32_t height,
+                                      VkFormat format) -> FullscreenPassDesc {
+    FullscreenPassDesc desc{};
+    return desc.color(width, height, format)
+        .disableDepthAttachment()
+        .fullscreenPipeline("fullscreen");
+  }
+
+  [[nodiscard]] static auto sampledOffscreen(uint32_t width, uint32_t height,
+                                             VkFormat format)
+      -> FullscreenPassDesc {
+    FullscreenPassDesc desc{};
+    return desc.color(ColorAttachmentDesc::sampled2D(width, height, format))
+        .disableDepthAttachment()
+        .fullscreenPipeline("fullscreen");
+  }
+
+  [[nodiscard]] static auto postProcess(uint32_t width, uint32_t height,
+                                        VkFormat format,
+                                        std::string pipelineName)
+      -> FullscreenPassDesc {
+    FullscreenPassDesc desc{};
+    return desc.color(ColorAttachmentDesc::sampled2D(width, height, format))
+        .clearColor(0.0F, 0.0F, 0.0F, 1.0F)
+        .fullscreenPipeline(std::move(pipelineName));
+  }
 };
 
 class FullscreenPass : public Pass {
@@ -247,8 +298,7 @@ public:
   void record() override;
 
   auto addSource(RenderPassSource source) -> FullscreenPass &;
-  auto setSources(std::vector<RenderPassSource> sources)
-      -> FullscreenPass &;
+  auto setSources(std::vector<RenderPassSource> sources) -> FullscreenPass &;
 
   [[nodiscard]] auto target() -> OffscreenTarget &;
   [[nodiscard]] auto target() const -> const OffscreenTarget &;
@@ -300,8 +350,7 @@ private:
   void createDescriptors();
   void createPipeline();
 
-  [[nodiscard]] auto resolvedInputs() const
-      -> std::vector<RenderPassInputDesc>;
+  [[nodiscard]] auto resolvedInputs() const -> std::vector<RenderPassInputDesc>;
   [[nodiscard]] auto
   descriptorPoolDesc(const std::vector<RenderPassInputDesc> &inputs) const
       -> pipeline::DescriptorPoolDesc;

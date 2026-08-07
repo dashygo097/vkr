@@ -6,11 +6,37 @@
 #include "vkr/exec/render/attachments/depth.hh"
 #include "vkr/resource/image/image_view.hh"
 #include <optional>
+#include <utility>
 
 namespace vkr::exec {
 
 struct SwapchainTargetDesc {
   std::optional<DepthAttachmentDesc> depth{};
+
+  auto depthAttachment(DepthAttachmentDesc desc) -> SwapchainTargetDesc & {
+    depth = std::move(desc);
+    return *this;
+  }
+
+  auto depthAttachment(uint32_t width, uint32_t height, VkFormat format)
+      -> SwapchainTargetDesc & {
+    return depthAttachment(
+        DepthAttachmentDesc::attachment(width, height, format));
+  }
+
+  auto disableDepth() noexcept -> SwapchainTargetDesc & {
+    depth.reset();
+    return *this;
+  }
+
+  [[nodiscard]] static auto colorOnly() -> SwapchainTargetDesc { return {}; }
+
+  [[nodiscard]] static auto colorDepth(uint32_t width, uint32_t height,
+                                       VkFormat depthFormat)
+      -> SwapchainTargetDesc {
+    SwapchainTargetDesc desc{};
+    return desc.depthAttachment(width, height, depthFormat);
+  }
 };
 
 class SwapchainTarget {

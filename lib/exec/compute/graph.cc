@@ -35,8 +35,7 @@ void ComputeGraph::addDependency(std::string producer, std::string consumer) {
   }
 
   if (producer == consumer) {
-    VKR_EXEC_ERROR("Compute graph pass '{}' cannot depend on itself",
-                   producer);
+    VKR_EXEC_ERROR("Compute graph pass '{}' cannot depend on itself", producer);
   }
 
   manual_dependencies_[std::move(producer)].push_back(std::move(consumer));
@@ -279,8 +278,7 @@ auto ComputeGraph::passIndex(std::string_view name) const -> size_t {
   auto it = pass_indices_.find(std::string(name));
 
   if (it == pass_indices_.end()) {
-    VKR_EXEC_ERROR("Compute graph pass '{}' does not exist",
-                   std::string(name));
+    VKR_EXEC_ERROR("Compute graph pass '{}' does not exist", std::string(name));
   }
 
   return it->second;

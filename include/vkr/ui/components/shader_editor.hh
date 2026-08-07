@@ -1,8 +1,8 @@
 #pragma once
 
 #include "TextEditor.h"
-#include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/exec/render/graph.hh"
+#include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/ui/components/ui_component.hh"
 #include <filesystem>
 #include <functional>
@@ -98,18 +98,18 @@ private:
           std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>;
 
   [[nodiscard]] static auto
-  shaderSource(std::optional<std::reference_wrapper<
-                   const pipeline::GraphicsShaderStageDesc>> shader)
-      -> std::string;
+  shaderSource(std::optional<
+               std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>
+                   shader) -> std::string;
 
   [[nodiscard]] static auto
   shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
               const std::string &fallback) -> std::string;
 
   [[nodiscard]] static auto
-  shaderPath(std::optional<std::reference_wrapper<
-                 const pipeline::GraphicsShaderStageDesc>> shader)
-      -> std::string;
+  shaderPath(std::optional<
+             std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>
+                 shader) -> std::string;
 
   [[nodiscard]] static auto
   makeShaderModule(VkShaderStageFlagBits stage, std::string source,

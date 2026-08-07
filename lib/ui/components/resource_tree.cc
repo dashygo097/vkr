@@ -17,11 +17,9 @@ void ResourceTree::render() {
   if (ImGui::BeginChild("ResourceTreeScrollRegion",
                         ImVec2(0.0f, -detailsHeight), true,
                         ImGuiWindowFlags_HorizontalScrollbar)) {
-    renderCategory("Meshes", scene_.listMeshNames(),
-                   scene_.meshCount());
+    renderCategory("Meshes", scene_.listMeshNames(), scene_.meshCount());
 
-    renderCategory("Uniform Buffers",
-                   scene_.listUniformBufferNames(),
+    renderCategory("Uniform Buffers", scene_.listUniformBufferNames(),
                    scene_.uniformBufferCount());
 
     renderCategory("Textures", scene_.listTextureImageNames(),

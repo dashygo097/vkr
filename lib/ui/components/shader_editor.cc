@@ -739,8 +739,8 @@ auto ShaderEditor::fileWriteTime(const std::string &path)
 
 auto ShaderEditor::shaderPath(
     std::optional<
-        std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>> shader)
-    -> std::string {
+        std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>
+        shader) -> std::string {
   if (!shader) {
     return {};
   }
@@ -755,8 +755,8 @@ auto ShaderEditor::shaderPath(
 
 auto ShaderEditor::shaderSource(
     std::optional<
-        std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>> shader)
-    -> std::string {
+        std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>
+        shader) -> std::string {
   if (!shader) {
     return {};
   }
@@ -792,9 +792,9 @@ auto ShaderEditor::makeShaderModule(VkShaderStageFlagBits stage,
 
   switch (stage) {
   case VK_SHADER_STAGE_VERTEX_BIT:
-    desc = fileBacked ? resource::ShaderModuleDesc::vertexGlslFile(label)
-                      : resource::ShaderModuleDesc::vertexGlslSource(source,
-                                                                     label);
+    desc = fileBacked
+               ? resource::ShaderModuleDesc::vertexGlslFile(label)
+               : resource::ShaderModuleDesc::vertexGlslSource(source, label);
     break;
   case VK_SHADER_STAGE_FRAGMENT_BIT:
     desc = fileBacked
@@ -836,10 +836,10 @@ void ShaderEditor::reloadFromPipeline() {
     const std::string message = "// No graphics pipeline available.\n";
     vert_editor_.SetText(message);
     frag_editor_.SetText(message);
-    vert_file_ = ShaderEditorFileState{.synced_text = message,
-                                       .valid_text = message};
-    frag_file_ = ShaderEditorFileState{.synced_text = message,
-                                       .valid_text = message};
+    vert_file_ =
+        ShaderEditorFileState{.synced_text = message, .valid_text = message};
+    frag_file_ =
+        ShaderEditorFileState{.synced_text = message, .valid_text = message};
     setStatus("No graphics pipeline available.", true);
     return;
   }
@@ -876,8 +876,7 @@ void ShaderEditor::reloadFromPipeline() {
 
   vert_file_ = ShaderEditorFileState{
       .path = vertPath,
-      .write_time =
-          vertWriteTime.value_or(std::filesystem::file_time_type{}),
+      .write_time = vertWriteTime.value_or(std::filesystem::file_time_type{}),
       .disk_text = vertSource,
       .synced_text = vertSource,
       .valid_text = vertSource,
@@ -887,8 +886,7 @@ void ShaderEditor::reloadFromPipeline() {
 
   frag_file_ = ShaderEditorFileState{
       .path = fragPath,
-      .write_time =
-          fragWriteTime.value_or(std::filesystem::file_time_type{}),
+      .write_time = fragWriteTime.value_or(std::filesystem::file_time_type{}),
       .disk_text = fragSource,
       .synced_text = fragSource,
       .valid_text = fragSource,
@@ -935,10 +933,11 @@ void ShaderEditor::refreshFileBackedShaders(
     std::string diskText{};
   };
 
-  auto initFileState = [](ShaderEditorFileState &state,
-                          std::optional<std::reference_wrapper<
-                              const pipeline::GraphicsShaderStageDesc>>
-                              shader) -> void {
+  auto initFileState =
+      [](ShaderEditorFileState &state,
+         std::optional<
+             std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>
+             shader) -> void {
     const std::string path = shaderPath(shader);
     if (path.empty()) {
       return;
@@ -961,8 +960,9 @@ void ShaderEditor::refreshFileBackedShaders(
     };
   };
 
-  auto changedFile = [probeContent](const ShaderEditorFileState &state)
-      -> std::optional<FileChange> {
+  auto changedFile =
+      [probeContent](
+          const ShaderEditorFileState &state) -> std::optional<FileChange> {
     if (!state.file_backed) {
       return std::nullopt;
     }
@@ -982,9 +982,9 @@ void ShaderEditor::refreshFileBackedShaders(
                       .diskText = diskText};
   };
 
-  auto applyFileBackedState =
-      [&](const PipelineTarget &target, ShaderEditorPipelineState &state,
-          bool active) -> bool {
+  auto applyFileBackedState = [&](const PipelineTarget &target,
+                                  ShaderEditorPipelineState &state,
+                                  bool active) -> bool {
     auto &pipeline = target.pipeline.get();
     const auto oldDesc = pipeline.desc();
     auto nextDesc = oldDesc;
@@ -993,19 +993,17 @@ void ShaderEditor::refreshFileBackedShaders(
       auto &shader = vert->get();
       if (state.vert.file_backed) {
         shader.module =
-            makeShaderModule(VK_SHADER_STAGE_VERTEX_BIT,
-                             state.vert.synced_text, state.vert.path,
-                             shader.entryPoint, true);
+            makeShaderModule(VK_SHADER_STAGE_VERTEX_BIT, state.vert.synced_text,
+                             state.vert.path, shader.entryPoint, true);
       }
     }
 
     if (auto frag = findShader(nextDesc, VK_SHADER_STAGE_FRAGMENT_BIT)) {
       auto &shader = frag->get();
       if (state.frag.file_backed) {
-        shader.module =
-            makeShaderModule(VK_SHADER_STAGE_FRAGMENT_BIT,
-                             state.frag.synced_text, state.frag.path,
-                             shader.entryPoint, true);
+        shader.module = makeShaderModule(
+            VK_SHADER_STAGE_FRAGMENT_BIT, state.frag.synced_text,
+            state.frag.path, shader.entryPoint, true);
       }
     }
 
@@ -1037,8 +1035,7 @@ void ShaderEditor::refreshFileBackedShaders(
       auto &shader = vert->get();
       if (state.vert.file_backed && !state.vert.valid_text.empty()) {
         shader.module =
-            makeShaderModule(VK_SHADER_STAGE_VERTEX_BIT,
-                             state.vert.valid_text,
+            makeShaderModule(VK_SHADER_STAGE_VERTEX_BIT, state.vert.valid_text,
                              shaderLabel(shader, restoreDesc.name + ".vert"),
                              shader.entryPoint, false);
       }
@@ -1047,11 +1044,10 @@ void ShaderEditor::refreshFileBackedShaders(
     if (auto frag = findShader(restoreDesc, VK_SHADER_STAGE_FRAGMENT_BIT)) {
       auto &shader = frag->get();
       if (state.frag.file_backed && !state.frag.valid_text.empty()) {
-        shader.module =
-            makeShaderModule(VK_SHADER_STAGE_FRAGMENT_BIT,
-                             state.frag.valid_text,
-                             shaderLabel(shader, restoreDesc.name + ".frag"),
-                             shader.entryPoint, false);
+        shader.module = makeShaderModule(
+            VK_SHADER_STAGE_FRAGMENT_BIT, state.frag.valid_text,
+            shaderLabel(shader, restoreDesc.name + ".frag"), shader.entryPoint,
+            false);
       }
     }
 
@@ -1079,8 +1075,7 @@ void ShaderEditor::refreshFileBackedShaders(
     } else {
       const auto &desc = target.pipeline.get().desc();
       initFileState(state.vert, findShader(desc, VK_SHADER_STAGE_VERTEX_BIT));
-      initFileState(state.frag,
-                    findShader(desc, VK_SHADER_STAGE_FRAGMENT_BIT));
+      initFileState(state.frag, findShader(desc, VK_SHADER_STAGE_FRAGMENT_BIT));
     }
 
     const auto vertChange = changedFile(state.vert);
@@ -1171,8 +1166,10 @@ auto ShaderEditor::applyToPipeline(bool saveFiles) -> bool {
 
   auto &vertShader = vert->get();
   auto &fragShader = frag->get();
-  const bool vertFileBacked = vert_file_.file_backed && !vert_file_.path.empty();
-  const bool fragFileBacked = frag_file_.file_backed && !frag_file_.path.empty();
+  const bool vertFileBacked =
+      vert_file_.file_backed && !vert_file_.path.empty();
+  const bool fragFileBacked =
+      frag_file_.file_backed && !frag_file_.path.empty();
   const bool saveVertFile = saveFiles && vertFileBacked;
   const bool saveFragFile = saveFiles && fragFileBacked;
 
@@ -1250,8 +1247,7 @@ auto ShaderEditor::applyToPipeline(bool saveFiles) -> bool {
                   std::string(e.what()),
               true);
   } catch (...) {
-    setStatus("Failed to compile pipeline. Restored previous pipeline.",
-              true);
+    setStatus("Failed to compile pipeline. Restored previous pipeline.", true);
   }
 
   auto restoreDesc = oldDesc;

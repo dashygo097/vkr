@@ -22,6 +22,11 @@ auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
 
   switch (input.kind) {
   case RenderPassInputKind::Color: {
+    if (!source.target(frameIndex).hasColor()) {
+      VKR_EXEC_ERROR("FullscreenPass '{}' source {} has no color attachment",
+                     std::string(passName), sourceIndex);
+    }
+
     const auto &color = source.target(frameIndex).color();
     if (!color.hasSampler()) {
       VKR_EXEC_ERROR("FullscreenPass '{}' source {} color has no sampler",
@@ -224,8 +229,7 @@ void FullscreenPass::record() {
   executor_.endProfileScope();
 }
 
-auto FullscreenPass::addSource(RenderPassSource source)
-    -> FullscreenPass & {
+auto FullscreenPass::addSource(RenderPassSource source) -> FullscreenPass & {
   sources_.push_back(source);
   return *this;
 }
@@ -261,17 +265,46 @@ void FullscreenPass::createTarget() {
 
 void FullscreenPass::createRenderPass() {
   render_pass_ = std::make_unique<pipeline::RenderPass>(device_);
-  render_pass_->update(pipeline::RenderPassDesc::makeOffscreen(
-      target_->color().desc().format, target_->depth()
-                                          ? target_->depth()->desc().format
-                                          : VK_FORMAT_UNDEFINED));
+  pipeline::RenderPassDesc renderPassDesc{};
+
+  if (target_->hasColor()) {
+    renderPassDesc = pipeline::RenderPassDesc::makeOffscreen(
+        target_->color().desc().format, target_->depth()
+                                            ? target_->depth()->desc().format
+                                            : VK_FORMAT_UNDEFINED);
+
+    const auto &colorDesc = target_->color().desc();
+    if (colorDesc.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED) {
+      renderPassDesc.colors[0].finalLayout = colorDesc.finalLayout;
+    } else if ((colorDesc.usage & (VK_IMAGE_USAGE_SAMPLED_BIT |
+                                   VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)) == 0) {
+      renderPassDesc.colors[0].finalLayout =
+          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+  } else if (target_->depth()) {
+    renderPassDesc = pipeline::RenderPassDesc::makeDepthOnly(
+        target_->depth()->desc().format);
+  } else {
+    VKR_EXEC_ERROR("FullscreenPass '{}' target has no attachments", name());
+  }
+
+  if (target_->depth()) {
+    const auto &depthDesc = target_->depth()->desc();
+    if (depthDesc.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED) {
+      renderPassDesc.depth.finalLayout = depthDesc.finalLayout;
+    }
+
+    if ((depthDesc.usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0) {
+      renderPassDesc.depth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    }
+  }
+
+  render_pass_->update(renderPassDesc);
 }
 
 void FullscreenPass::createFramebuffers() {
-  FramebufferDesc framebufferDesc{.width = target_->width(),
-                                  .height = target_->height(),
-                                  .layers = 1,
-                                  .attachments = {target_->attachmentViews()}};
+  auto framebufferDesc = FramebufferDesc::single(
+      target_->width(), target_->height(), target_->attachmentViews());
 
   framebuffers_ = std::make_unique<FramebufferSet>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
@@ -327,8 +360,8 @@ void FullscreenPass::createPipeline() {
     return;
   }
 
-  pipeline_ = std::make_unique<pipeline::GraphicsPipeline>(device_,
-                                                           *render_pass_);
+  pipeline_ =
+      std::make_unique<pipeline::GraphicsPipeline>(device_, *render_pass_);
   pipeline_->update(pipelineDesc);
 
   if (!pipeline_->valid()) {
@@ -354,8 +387,7 @@ auto FullscreenPass::resolvedInputs() const
     }
 
     for (uint32_t index = 0; index < sources_.size(); ++index) {
-      inputs.push_back(
-          RenderPassInputDesc{.binding = firstBinding + index});
+      inputs.push_back(RenderPassInputDesc{.binding = firstBinding + index});
     }
 
     return inputs;
@@ -425,9 +457,8 @@ auto FullscreenPass::createDescriptorWrites(
 
   for (size_t index = 0; index < sources_.size(); ++index) {
     for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-      const VkDescriptorImageInfo imageInfo =
-          sourceImageInfo(name(), index, sources_[index], inputs[index],
-                          frameIndex);
+      const VkDescriptorImageInfo imageInfo = sourceImageInfo(
+          name(), index, sources_[index], inputs[index], frameIndex);
 
       auto &write = writes[frameIndex];
       write.images.push_back(pipeline::DescriptorImageWriteDesc::one(

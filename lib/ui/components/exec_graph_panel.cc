@@ -19,9 +19,8 @@ void ExecGraphPanel::render() {
     ImGuiTreeNodeFlags flags =
         ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
 
-    const bool open =
-        ImGui::TreeNodeEx(pass.name().c_str(), flags, "%s",
-                          pass.name().c_str());
+    const bool open = ImGui::TreeNodeEx(pass.name().c_str(), flags, "%s",
+                                        pass.name().c_str());
 
     if (!open) {
       continue;

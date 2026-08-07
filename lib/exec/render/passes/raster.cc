@@ -17,11 +17,17 @@ auto imageLayoutForAttachment(const ColorAttachment &attachment)
 
 auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
                      const RenderPassSource &source,
-                     const RenderPassInputDesc &input) -> VkDescriptorImageInfo {
+                     const RenderPassInputDesc &input)
+    -> VkDescriptorImageInfo {
   VkDescriptorImageInfo imageInfo{};
 
   switch (input.kind) {
   case RenderPassInputKind::Color: {
+    if (!source.target().hasColor()) {
+      VKR_EXEC_ERROR("RasterPass '{}' source {} has no color attachment",
+                     std::string(passName), sourceIndex);
+    }
+
     const auto &color = source.target().color();
     if (!color.hasSampler()) {
       VKR_EXEC_ERROR("RasterPass '{}' source {} color has no sampler",
@@ -190,19 +196,28 @@ void RasterPass::createTarget() {
 
 void RasterPass::createRenderPass() {
   render_pass_ = std::make_unique<pipeline::RenderPass>(device_);
-  auto renderPassDesc = pipeline::RenderPassDesc::makeOffscreen(
-      target_->color().desc().format, target_->depth()
-                                          ? target_->depth()->desc().format
-                                          : VK_FORMAT_UNDEFINED);
+  pipeline::RenderPassDesc renderPassDesc{};
 
-  const auto &colorDesc = target_->color().desc();
-  const auto colorFinalLayout = colorDesc.finalLayout;
-  if (colorFinalLayout != VK_IMAGE_LAYOUT_UNDEFINED) {
-    renderPassDesc.colors[0].finalLayout = colorFinalLayout;
-  } else if ((colorDesc.usage & (VK_IMAGE_USAGE_SAMPLED_BIT |
-                                 VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)) == 0) {
-    renderPassDesc.colors[0].finalLayout =
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  if (target_->hasColor()) {
+    renderPassDesc = pipeline::RenderPassDesc::makeOffscreen(
+        target_->color().desc().format, target_->depth()
+                                            ? target_->depth()->desc().format
+                                            : VK_FORMAT_UNDEFINED);
+
+    const auto &colorDesc = target_->color().desc();
+    const auto colorFinalLayout = colorDesc.finalLayout;
+    if (colorFinalLayout != VK_IMAGE_LAYOUT_UNDEFINED) {
+      renderPassDesc.colors[0].finalLayout = colorFinalLayout;
+    } else if ((colorDesc.usage & (VK_IMAGE_USAGE_SAMPLED_BIT |
+                                   VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)) == 0) {
+      renderPassDesc.colors[0].finalLayout =
+          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+  } else if (target_->depth()) {
+    renderPassDesc = pipeline::RenderPassDesc::makeDepthOnly(
+        target_->depth()->desc().format);
+  } else {
+    VKR_EXEC_ERROR("RasterPass '{}' target has no attachments", name());
   }
 
   if (target_->depth()) {
@@ -220,10 +235,8 @@ void RasterPass::createRenderPass() {
 }
 
 void RasterPass::createFramebuffers() {
-  FramebufferDesc framebufferDesc{.width = target_->width(),
-                                  .height = target_->height(),
-                                  .layers = 1,
-                                  .attachments = {target_->attachmentViews()}};
+  auto framebufferDesc = FramebufferDesc::single(
+      target_->width(), target_->height(), target_->attachmentViews());
 
   framebuffers_ = std::make_unique<FramebufferSet>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
@@ -283,8 +296,8 @@ void RasterPass::createPipeline() {
     return;
   }
 
-  pipeline_ = std::make_unique<pipeline::GraphicsPipeline>(device_,
-                                                           *render_pass_);
+  pipeline_ =
+      std::make_unique<pipeline::GraphicsPipeline>(device_, *render_pass_);
   pipeline_->update(pipelineDesc);
 
   if (!pipeline_->valid()) {
@@ -300,8 +313,8 @@ void RasterPass::createPipeline() {
   gridPipelineDesc.depthStencil =
       pipeline::GraphicsDepthStencilDesc::readOnly();
 
-  mesh_grid_pipeline_ = std::make_unique<pipeline::GraphicsPipeline>(
-      device_, *render_pass_);
+  mesh_grid_pipeline_ =
+      std::make_unique<pipeline::GraphicsPipeline>(device_, *render_pass_);
   mesh_grid_pipeline_->update(gridPipelineDesc);
 
   if (!mesh_grid_pipeline_->valid()) {

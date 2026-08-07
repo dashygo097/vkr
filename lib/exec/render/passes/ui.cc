@@ -10,8 +10,8 @@ UiPass::UiPass(Executor &executor, const core::Window &window,
                const core::CommandBuffers &commandBuffers,
                const core::Swapchain &swapchain, scene::Scene &scene,
                const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-               RenderPassSource source, RenderGraph &graph,
-               util::Timer &timer, ui::UiDesc &uiDesc)
+               RenderPassSource source, RenderGraph &graph, util::Timer &timer,
+               ui::UiDesc &uiDesc)
     : executor_(executor), window_(window), instance_(instance),
       surface_(surface), device_(device), command_pool_(commandPool),
       command_buffers_(commandBuffers), swapchain_(swapchain), scene_(scene),

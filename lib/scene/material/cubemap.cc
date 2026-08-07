@@ -96,8 +96,7 @@ void transitionImageLayout(const core::Device &device,
     return;
   }
 
-  VkCommandBuffer commandBuffer =
-      beginSingleTimeCommands(device, commandPool);
+  VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
 
   VkImageMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -143,8 +142,7 @@ void copyBufferToImage(const core::Device &device,
                        const core::CommandPool &commandPool,
                        const resource::Buffer &buffer, resource::Image &image,
                        uint32_t layers, uint32_t channels) {
-  VkCommandBuffer commandBuffer =
-      beginSingleTimeCommands(device, commandPool);
+  VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
 
   const VkDeviceSize layerSize = static_cast<VkDeviceSize>(image.width()) *
                                  static_cast<VkDeviceSize>(image.height()) *
@@ -207,8 +205,8 @@ void Cubemap::create() {
     int faceHeight{0};
     int faceChannels{0};
 
-    facePixels[face].reset(stbi_load(desc_.facePaths[face].c_str(),
-                                     &faceWidth, &faceHeight, &faceChannels,
+    facePixels[face].reset(stbi_load(desc_.facePaths[face].c_str(), &faceWidth,
+                                     &faceHeight, &faceChannels,
                                      desiredChannels));
 
     if (!facePixels[face]) {
@@ -252,8 +250,7 @@ void Cubemap::create() {
                                 static_cast<VkDeviceSize>(channels);
   const VkDeviceSize imageSize = faceSize * FaceCount;
 
-  resource::Buffer staging{device_, imageSize,
-                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+  resource::Buffer staging{device_, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 

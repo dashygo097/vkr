@@ -6,18 +6,21 @@ namespace vkr::exec {
 
 OffscreenTarget::OffscreenTarget(const core::Device &device,
                                  const core::CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {
-  color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
-}
+    : device_(device), command_pool_(commandPool) {}
 
 OffscreenTarget::~OffscreenTarget() { destory(); }
 
 void OffscreenTarget::validate() const {
-  if (desc_.color.format == VK_FORMAT_UNDEFINED) {
+  if (!desc_.colorEnabled && !desc_.depth) {
+    VKR_RES_ERROR("OffscreenTarget has no attachments");
+  }
+
+  if (desc_.colorEnabled && desc_.color.format == VK_FORMAT_UNDEFINED) {
     VKR_RES_ERROR("OffscreenTarget color attachment has undefined format");
   }
 
-  if (desc_.color.width == 0 || desc_.color.height == 0) {
+  if (desc_.colorEnabled &&
+      (desc_.color.width == 0 || desc_.color.height == 0)) {
     VKR_RES_ERROR("OffscreenTarget color attachment has invalid size: {}x{}",
                   desc_.color.width, desc_.color.height);
   }
@@ -35,8 +38,8 @@ void OffscreenTarget::validate() const {
                   desc_.depth->width, desc_.depth->height);
   }
 
-  if (desc_.depth->width != desc_.color.width ||
-      desc_.depth->height != desc_.color.height) {
+  if (desc_.colorEnabled && (desc_.depth->width != desc_.color.width ||
+                             desc_.depth->height != desc_.color.height)) {
     VKR_RES_ERROR(
         "OffscreenTarget color/depth size mismatch: color={}x{}, depth={}x{}",
         desc_.color.width, desc_.color.height, desc_.depth->width,
@@ -47,12 +50,16 @@ void OffscreenTarget::validate() const {
 void OffscreenTarget::create() {
   validate();
 
-  if (!color_) {
-    color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
-    color_->update(desc_.color);
-  }
+  if (desc_.colorEnabled) {
+    if (!color_) {
+      color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
+      color_->update(desc_.color);
+    }
 
-  color_->create();
+    color_->create();
+  } else {
+    color_.reset();
+  }
 
   if (desc_.depth) {
     if (!depth_) {
@@ -61,10 +68,12 @@ void OffscreenTarget::create() {
     }
 
     depth_->create();
+  } else {
+    depth_.reset();
   }
 
-  VKR_RES_INFO("OffscreenTarget created: {}x{}, depth={}", desc_.color.width,
-               desc_.color.height, depth_ ? "yes" : "no");
+  VKR_RES_INFO("OffscreenTarget created: {}x{}, color={}, depth={}", width(),
+               height(), color_ ? "yes" : "no", depth_ ? "yes" : "no");
 }
 
 void OffscreenTarget::destory() {
@@ -76,11 +85,15 @@ void OffscreenTarget::update(const OffscreenTargetDesc &desc) {
   desc_ = desc;
   validate();
 
-  if (!color_) {
-    color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
-  }
+  if (desc_.colorEnabled) {
+    if (!color_) {
+      color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
+    }
 
-  color_->update(desc_.color);
+    color_->update(desc_.color);
+  } else {
+    color_.reset();
+  }
 
   if (desc_.depth) {
     if (!depth_) {
@@ -95,9 +108,11 @@ void OffscreenTarget::update(const OffscreenTargetDesc &desc) {
 
 auto OffscreenTarget::attachmentViews() const -> std::vector<VkImageView> {
   std::vector<VkImageView> views{};
-  views.reserve(depth_ ? 2 : 1);
+  views.reserve((color_ ? 1U : 0U) + (depth_ ? 1U : 0U));
 
-  views.push_back(color_->imageView());
+  if (color_) {
+    views.push_back(color_->imageView());
+  }
 
   if (depth_) {
     views.push_back(depth_->imageView());

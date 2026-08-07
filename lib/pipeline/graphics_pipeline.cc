@@ -75,6 +75,7 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
 
   auto vertexInput = desc_.vertexInput.createInfo();
   auto inputAssembly = desc_.inputAssembly.createInfo();
+  auto tessellation = desc_.tessellation.createInfo();
   auto viewport = desc_.viewport.createInfo();
   auto rasterization = desc_.rasterization.createInfo();
   auto multisample = desc_.multisample.createInfo();
@@ -104,10 +105,13 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
 
   VkGraphicsPipelineCreateInfo pipelineInfo{};
   pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+  pipelineInfo.flags = desc_.flags;
   pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
   pipelineInfo.pStages = shaderStages.data();
   pipelineInfo.pVertexInputState = &vertexInput;
   pipelineInfo.pInputAssemblyState = &inputAssembly;
+  pipelineInfo.pTessellationState =
+      desc_.tessellation.enabled() ? &tessellation : nullptr;
   pipelineInfo.pViewportState = &viewport;
   pipelineInfo.pRasterizationState = &rasterization;
   pipelineInfo.pMultisampleState = &multisample;
@@ -116,9 +120,9 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
   pipelineInfo.pDynamicState = &dynamicState;
   pipelineInfo.layout = nextLayout;
   pipelineInfo.renderPass = render_pass_.renderPass();
-  pipelineInfo.subpass = 0;
-  pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-  pipelineInfo.basePipelineIndex = -1;
+  pipelineInfo.subpass = desc_.subpass;
+  pipelineInfo.basePipelineHandle = desc_.basePipeline;
+  pipelineInfo.basePipelineIndex = desc_.basePipelineIndex;
 
   VkPipeline nextPipeline = VK_NULL_HANDLE;
   if (vkCreateGraphicsPipelines(device_.device(), VK_NULL_HANDLE, 1,

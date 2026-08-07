@@ -6,8 +6,7 @@
 
 namespace vkr::ui {
 
-CameraPanel::CameraPanel(scene::CameraDesc &camera,
-                         const VkViewport &viewport,
+CameraPanel::CameraPanel(scene::CameraDesc &camera, const VkViewport &viewport,
                          const bool &viewportFocused,
                          const bool &viewportHovered)
     : UiComponent("Camera"), camera_(camera), viewport_(viewport),
@@ -30,8 +29,7 @@ void CameraPanel::render() {
 
   ImGui::Text("Front: %.2f, %.2f, %.2f", camera_.front.x, camera_.front.y,
               camera_.front.z);
-  ImGui::Text("Up: %.2f, %.2f, %.2f", camera_.up.x, camera_.up.y,
-              camera_.up.z);
+  ImGui::Text("Up: %.2f, %.2f, %.2f", camera_.up.x, camera_.up.y, camera_.up.z);
 
   ImGui::SeparatorText("Lens");
   ImGui::SliderFloat("FOV", &camera_.fov, 1.0f, 120.0f, "%.1f deg");

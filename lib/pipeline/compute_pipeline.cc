@@ -3,8 +3,8 @@
 
 namespace vkr::pipeline {
 
-ComputePipeline::ComputePipeline(const core::Device &device) : device_(device) {
-}
+ComputePipeline::ComputePipeline(const core::Device &device)
+    : device_(device) {}
 
 ComputePipeline::~ComputePipeline() { destroy(); }
 

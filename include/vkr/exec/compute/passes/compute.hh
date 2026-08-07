@@ -85,7 +85,8 @@ struct ComputePassDesc {
   }
 
 private:
-  auto descriptorWrite(uint32_t setIndex) -> pipeline::DescriptorSetWriteDesc & {
+  auto descriptorWrite(uint32_t setIndex)
+      -> pipeline::DescriptorSetWriteDesc & {
     for (auto &write : descriptorWrites) {
       if (write.setIndex == setIndex) {
         return write;

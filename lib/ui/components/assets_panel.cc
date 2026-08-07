@@ -93,9 +93,9 @@ void AssetsPanel::render() {
 
       std::error_code entryEc;
       if (iterator->is_directory(entryEc)) {
-        const bool isHiddenAssetsDirectory =
-            hideAssetsDirectory && iterator.depth() == 0 &&
-            filename == "assets";
+        const bool isHiddenAssetsDirectory = hideAssetsDirectory &&
+                                             iterator.depth() == 0 &&
+                                             filename == "assets";
         if (filename == ".git" || filename == "build" ||
             filename == "3rdparty" || filename == ".cache") {
           iterator.disable_recursion_pending();
