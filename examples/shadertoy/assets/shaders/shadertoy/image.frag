@@ -1,4 +1,30 @@
+#version 450
+
+layout(binding = 0) uniform ShaderToyUBO {
+  vec3 iResolution;
+  float iTime;
+  float iTimeDelta;
+  float iFrameRate;
+  int iFrame;
+  vec4 iMouse;
+  vec4 iDate;
+  vec4 iChannelTime;
+  vec3 iChannelResolution[4];
+};
+
+layout(binding = 1) uniform sampler2D iChannel0;
+layout(binding = 2) uniform sampler2D iChannel1;
+layout(binding = 3) uniform sampler2D iChannel2;
+layout(binding = 4) uniform sampler2D iChannel3;
+
+layout(location = 0) in vec2 fragUV;
+layout(location = 0) out vec4 outColor;
+
 void mainImage(out vec4 color, in vec2 pixelCoord) {
   vec2 uv = pixelCoord / iResolution.xy;
   color = vec4(uv, 0.5 + 0.5 * sin(iTime), 1.0);
+}
+
+void main() {
+  mainImage(outColor, fragUV * iResolution.xy);
 }

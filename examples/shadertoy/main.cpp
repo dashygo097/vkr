@@ -7,7 +7,6 @@
 #include <string_view>
 #include <vector>
 #include <vkr.hh>
-#include <vkr/util/io.hh>
 #include <vulkan/vulkan.h>
 
 namespace {
@@ -106,49 +105,6 @@ private:
     return channels;
   }
 
-  [[nodiscard]] auto shadertoyFragmentSource(const std::string &fragmentShader,
-                                             const std::string &label) const
-      -> vkr::resource::ShaderModuleDesc {
-    const auto path =
-        assetSystem->resolveApp("shaders/shadertoy/" + fragmentShader);
-    const std::string body = vkr::util::fread_string(path.string());
-
-    std::string source{};
-    source.reserve(body.size() + 2048);
-    source += "#version 450\n"
-              "\n"
-              "layout(binding = 0) uniform ShaderToyUBO {\n"
-              "  vec3 iResolution;\n"
-              "  float iTime;\n"
-              "  float iTimeDelta;\n"
-              "  float iFrameRate;\n"
-              "  int iFrame;\n"
-              "  vec4 iMouse;\n"
-              "  vec4 iDate;\n"
-              "  vec4 iChannelTime;\n"
-              "  vec3 iChannelResolution[4];\n"
-              "};\n"
-              "\n"
-              "layout(binding = 1) uniform sampler2D iChannel0;\n"
-              "layout(binding = 2) uniform sampler2D iChannel1;\n"
-              "layout(binding = 3) uniform sampler2D iChannel2;\n"
-              "layout(binding = 4) uniform sampler2D iChannel3;\n"
-              "\n"
-              "layout(location = 0) in vec2 fragUV;\n"
-              "layout(location = 0) out vec4 outColor;\n"
-              "\n"
-              "#define texture2D texture\n"
-              "#define textureCube texture\n"
-              "\n";
-    source += body;
-    source += "\n"
-              "void main() {\n"
-              "  mainImage(outColor, fragUV * iResolution.xy);\n"
-              "}\n";
-
-    return vkr::resource::ShaderModuleDesc::fragmentGlslSource(source, label);
-  }
-
   [[nodiscard]] auto shadertoyPipeline(const std::string &name,
                                        const std::string &fragmentShader) const
       -> vkr::pipeline::GraphicsPipelineDesc {
@@ -157,8 +113,9 @@ private:
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/shadertoy/shadertoy.vert")
                 .string()))
-        .fragmentShader(
-            shadertoyFragmentSource(fragmentShader, name + ".frag"));
+        .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
+            assetSystem->resolveApp("shaders/shadertoy/" + fragmentShader)
+                .string()));
     return pipeline;
   }
 
