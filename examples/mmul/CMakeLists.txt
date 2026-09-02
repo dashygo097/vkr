@@ -1,6 +1,6 @@
-add_vk_app(vector_ops
+add_vk_app(mmul
   SOURCES
     main.cpp
-  ASSET_DIR
+  ASSET_DIR 
     assets
 )

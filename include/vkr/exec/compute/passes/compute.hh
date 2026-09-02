@@ -26,6 +26,32 @@ struct ComputeDispatchDesc {
     return groupCountX > 0 && groupCountY > 0 && groupCountZ > 0;
   }
 
+  [[nodiscard]] static auto dispatchX(uint32_t X) -> ComputeDispatchDesc {
+    return {
+        .groupCountX = X,
+        .groupCountY = 1,
+        .groupCountZ = 1,
+    };
+  }
+
+  [[nodiscard]] static auto dispatchXY(uint32_t X, uint32_t Y)
+      -> ComputeDispatchDesc {
+    return {
+        .groupCountX = X,
+        .groupCountY = Y,
+        .groupCountZ = 1,
+    };
+  }
+
+  [[nodiscard]] static auto dispatchXYZ(uint32_t X, uint32_t Y, uint32_t Z)
+      -> ComputeDispatchDesc {
+    return {
+        .groupCountX = X,
+        .groupCountY = Y,
+        .groupCountZ = Z,
+    };
+  }
+
   [[nodiscard]] static auto dispatch1D(uint32_t LocalSize,
                                        uint32_t ElementCount)
       -> ComputeDispatchDesc {
@@ -33,6 +59,27 @@ struct ComputeDispatchDesc {
         .groupCountX = (ElementCount + LocalSize - 1) / LocalSize,
         .groupCountY = 1,
         .groupCountZ = 1,
+    };
+  }
+
+  [[nodiscard]] static auto
+  dispatch2D(uint32_t LocalSizeX, uint32_t ElementCountX, uint32_t LocalSizeY,
+             uint32_t ElementCountY) -> ComputeDispatchDesc {
+    return {
+        .groupCountX = (ElementCountX + LocalSizeX - 1) / LocalSizeX,
+        .groupCountY = (ElementCountY + LocalSizeY - 1) / LocalSizeY,
+        .groupCountZ = 1,
+    };
+  }
+
+  [[nodiscard]] static auto
+  dispatch3D(uint32_t LocalSizeX, uint32_t ElementCountX, uint32_t LocalSizeY,
+             uint32_t ElementCountY, uint32_t LocalSizeZ,
+             uint32_t ElementCountZ) -> ComputeDispatchDesc {
+    return {
+        .groupCountX = (ElementCountX + LocalSizeX - 1) / LocalSizeX,
+        .groupCountY = (ElementCountY + LocalSizeY - 1) / LocalSizeY,
+        .groupCountZ = (ElementCountZ + LocalSizeZ - 1) / LocalSizeZ,
     };
   }
 };
@@ -78,9 +125,42 @@ struct ComputePassDesc {
     return *this;
   }
 
+  auto dispatchX(uint32_t X) -> ComputePassDesc & {
+    dispatch = ComputeDispatchDesc::dispatchX(X);
+    return *this;
+  }
+
+  auto dispatchXY(uint32_t X, uint32_t Y) -> ComputePassDesc & {
+    dispatch = ComputeDispatchDesc::dispatchXY(X, Y);
+    return *this;
+  }
+
+  auto dispatchXYZ(uint32_t X, uint32_t Y, uint32_t Z) -> ComputePassDesc & {
+    dispatch = ComputeDispatchDesc::dispatchXYZ(X, Y, Z);
+    return *this;
+  }
+
   auto dispatch1D(uint32_t localSize, uint32_t elementCount)
       -> ComputePassDesc & {
     dispatch = ComputeDispatchDesc::dispatch1D(localSize, elementCount);
+    return *this;
+  }
+
+  auto dispatch2D(uint32_t localSizeX, uint32_t elementCountX,
+                  uint32_t localSizeY, uint32_t elementCountY)
+      -> ComputePassDesc & {
+    dispatch = ComputeDispatchDesc::dispatch2D(localSizeX, elementCountX,
+                                               localSizeY, elementCountY);
+    return *this;
+  }
+
+  auto dispatch3D(uint32_t localSizeX, uint32_t elementCountX,
+                  uint32_t localSizeY, uint32_t elementCountY,
+                  uint32_t localSizeZ, uint32_t elementCountZ)
+      -> ComputePassDesc & {
+    dispatch = ComputeDispatchDesc::dispatch3D(localSizeX, elementCountX,
+                                               localSizeY, elementCountY,
+                                               localSizeZ, elementCountZ);
     return *this;
   }
 

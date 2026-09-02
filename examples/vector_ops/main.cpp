@@ -142,7 +142,7 @@ private:
   void afterExecute() override {
     output_c_->read(c_);
 
-    std::vector<float> cpuResult(ElementCount, 0.0F);
+    std::vector<float> cpuResult(ElementCount, 0.0f);
     auto runCpuVectorOps = [&]() -> void {
       for (uint32_t i = 0; i < ElementCount; ++i) {
         cpuResult[i] = nonlinearOp(a_[i], b_[i], Iterations);
@@ -165,7 +165,7 @@ private:
     const auto cpuStats = timingStats(cpuSamples);
 
     for (uint32_t i = 0; i < ElementCount; ++i) {
-      if (std::fabs(c_[i] - cpuResult[i]) > 0.02F) {
+      if (std::fabs(c_[i] - cpuResult[i]) > 0.01f) {
         throw std::runtime_error("vector_ops validation failed at index " +
                                  std::to_string(i));
       }

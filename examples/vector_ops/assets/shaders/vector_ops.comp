@@ -40,5 +40,5 @@ void main() {
   }
 
   outputC.values[index] = nonlinearOp(inputA.values[index],
-                                      inputB.values[index]);
+      inputB.values[index]);
 }
