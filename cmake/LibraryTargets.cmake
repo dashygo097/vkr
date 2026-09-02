@@ -35,6 +35,10 @@ elseif(UNIX)
 endif()
 
 # 3rdparty libs to link statically
+target_link_libraries(imgui PRIVATE
+    glfw
+    Vulkan::Vulkan
+)
 target_link_libraries(vkr PUBLIC glfw)
 target_link_libraries(vkr PUBLIC glm::glm-header-only)
 target_link_libraries(vkr PUBLIC tinyobjloader)
