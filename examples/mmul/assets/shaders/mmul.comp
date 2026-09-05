@@ -1,9 +1,10 @@
 #version 450
+#extension GL_KHR_memory_scope_semantics : require
 layout(row_major) uniform;
 layout(row_major) buffer;
 
-#line 4 0
-struct MMulParams_std140_0
+#line 1 0
+struct MMulParams_0
 {
     uint M_0;
     uint K_0;
@@ -12,7 +13,7 @@ struct MMulParams_std140_0
 
 #line 17
 layout(binding = 3)
-layout(std140) uniform block_MMulParams_std140_0
+layout(std140) uniform block_MMulParams_0
 {
     uint M_0;
     uint K_0;
@@ -31,74 +32,201 @@ layout(std430, binding = 2) buffer StructuredBuffer_float_t_2 {
 } C_0;
 
 #line 21
+shared float tileA_0[16][16];
+
+#line 22
+shared float tileB_0[16][16];
+
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 void main()
 {
 
-    #line 22
-    uint idx_0 = gl_GlobalInvocationID.x;
-    uint idy_0 = gl_GlobalInvocationID.y;
-
-    #line 23
+    #line 26
     bool _S1;
 
-    if (idx_0 < (params_0.M_0))
+    uint row_0 = gl_GlobalInvocationID.x;
+    uint col_0 = gl_GlobalInvocationID.y;
+    uint _S2 = gl_LocalInvocationID.x;
+    uint _S3 = gl_LocalInvocationID.y;
+
+    uint _S4 = (params_0.K_0 + 16U - 1U) / 16U;
+
+    #line 34
+    uint tile_0 = 0U;
+
+    #line 34
+    float sum_0 = 0.0;
+
+    for (; ; )
     {
 
-        #line 25
-        _S1 = idy_0 < (params_0.N_0);
+        #line 36
+        if (tile_0 < _S4)
+        {}
+        else
+        {
 
-        #line 25
-    }
-    else
-    {
+            #line 36
+            break;
+        }
 
-        #line 25
-        _S1 = false;
+        #line 37
+        uint _S5 = tile_0 * 16U;
 
-        #line 25
-    }
+        #line 37
+        uint aCol_0 = _S5 + _S3;
+        uint bRow_0 = _S5 + _S2;
 
-    #line 25
-    if (_S1)
-    {
+        if (row_0 < (params_0.M_0))
+        {
 
-        #line 25
+            #line 41
+            _S1 = aCol_0 < (params_0.K_0);
+
+            #line 41
+        }
+        else
+        {
+
+            #line 41
+            _S1 = false;
+
+            #line 41
+        }
+
+        #line 41
+        float _S6;
+
+        #line 41
+        if (_S1)
+        {
+
+            #line 41
+            _S6 = A_0._data[uint(row_0 * params_0.K_0 + aCol_0)];
+
+            #line 41
+        }
+        else
+        {
+
+            #line 41
+            _S6 = 0.0;
+
+            #line 41
+        }
+
+        #line 40
+        tileA_0[_S2][_S3] = _S6;
+
+        #line 40
+        bool _S7;
+
+        if (bRow_0 < (params_0.K_0))
+        {
+
+            #line 43
+            _S7 = col_0 < (params_0.N_0);
+
+            #line 43
+        }
+        else
+        {
+
+            #line 43
+            _S7 = false;
+
+            #line 43
+        }
+
+        #line 43
+        float _S8;
+
+        #line 43
+        if (_S7)
+        {
+
+            #line 43
+            _S8 = B_0._data[uint(bRow_0 * params_0.N_0 + col_0)];
+
+            #line 43
+        }
+        else
+        {
+
+            #line 43
+            _S8 = 0.0;
+
+            #line 43
+        }
+
+        #line 42
+        tileB_0[_S2][_S3] = _S8;
+
+        controlBarrier(gl_ScopeWorkgroup, gl_ScopeWorkgroup, gl_StorageSemanticsShared, gl_SemanticsAcquireRelease);
+
+        #line 45
         uint k_0 = 0U;
-
-        #line 25
-        float sum_0 = 0.0;
 
         for (; ; )
         {
 
-            #line 27
-            if (k_0 < (params_0.K_0))
+            #line 47
+            if (k_0 < 16U)
             {}
             else
             {
 
-                #line 27
+                #line 47
                 break;
             }
 
-            #line 28
-            float sum_1 = sum_0 + A_0._data[uint(idx_0 * params_0.K_0 + k_0)] * B_0._data[uint(k_0 * params_0.N_0 + idy_0)];
+            #line 48
+            float sum_1 = sum_0 + tileA_0[_S2][k_0] * tileB_0[k_0][_S3];
 
-            #line 27
+            #line 47
             k_0 = k_0 + 1U;
 
-            #line 27
+            #line 47
             sum_0 = sum_1;
 
-            #line 27
+            #line 47
         }
 
-        C_0._data[uint(idx_0 * params_0.N_0 + idy_0)] = sum_0;
+        controlBarrier(gl_ScopeWorkgroup, gl_ScopeWorkgroup, gl_StorageSemanticsShared, gl_SemanticsAcquireRelease);
 
-        #line 25
+        #line 36
+        tile_0 = tile_0 + 1U;
+
+        #line 36
     }
 
-    #line 32
+    #line 54
+    if (row_0 < (params_0.M_0))
+    {
+
+        #line 54
+        _S1 = col_0 < (params_0.N_0);
+
+        #line 54
+    }
+    else
+    {
+
+        #line 54
+        _S1 = false;
+
+        #line 54
+    }
+
+    #line 54
+    if (_S1)
+    {
+
+        #line 55
+        C_0._data[uint(row_0 * params_0.N_0 + col_0)] = sum_0;
+
+        #line 54
+    }
+
     return;
 }

@@ -16,17 +16,42 @@ RWStructuredBuffer<float> C;
 [[vk::binding(3, 0)]]
 ConstantBuffer<MMulParams> params;
 
-[shader("compute")]
-[numthreads(16, 16, 1)]
-void main(uint3 dispatchThreadId: SV_DispatchThreadID) {
-  const uint idx = dispatchThreadId.x;
-  const uint idy = dispatchThreadId.y;
+static const uint LOCAL_SIZE = 16;
 
-  if (idx < params.M && idy < params.N) {
-    float sum = 0.0f;
-    for (uint k = 0; k < params.K; k++) {
-      sum += A[idx * params.K + k] * B[k * params.N + idy];
+groupshared float tileA[LOCAL_SIZE][LOCAL_SIZE];
+groupshared float tileB[LOCAL_SIZE][LOCAL_SIZE];
+
+[shader("compute")]
+[numthreads(LOCAL_SIZE, LOCAL_SIZE, 1)]
+void main(uint3 dispatchThreadId: SV_DispatchThreadID,
+          uint3 groupThreadId: SV_GroupThreadID) {
+  const uint row = dispatchThreadId.x;
+  const uint col = dispatchThreadId.y;
+  const uint localRow = groupThreadId.x;
+  const uint localCol = groupThreadId.y;
+
+  float sum = 0.0f;
+  const uint tileCount = (params.K + LOCAL_SIZE - 1) / LOCAL_SIZE;
+
+  for (uint tile = 0; tile < tileCount; ++tile) {
+    const uint aCol = tile * LOCAL_SIZE + localCol;
+    const uint bRow = tile * LOCAL_SIZE + localRow;
+
+    tileA[localRow][localCol] =
+        (row < params.M && aCol < params.K) ? A[row * params.K + aCol] : 0.0f;
+    tileB[localRow][localCol] =
+        (bRow < params.K && col < params.N) ? B[bRow * params.N + col] : 0.0f;
+
+    GroupMemoryBarrierWithGroupSync();
+
+    for (uint k = 0; k < LOCAL_SIZE; ++k) {
+      sum += tileA[localRow][k] * tileB[k][localCol];
     }
-    C[idx * params.N + idy] = sum;
+
+    GroupMemoryBarrierWithGroupSync();
+  }
+
+  if (row < params.M && col < params.N) {
+    C[row * params.N + col] = sum;
   }
 }
