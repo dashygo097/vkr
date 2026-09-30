@@ -216,13 +216,4 @@ private:
   }
 };
 
-auto main() -> int {
-  try {
-    VectorOpsApp app{};
-    app.run();
-    return 0;
-  } catch (const std::exception &e) {
-    std::cerr << "vector_ops failed: " << e.what() << '\n';
-    return 1;
-  }
-}
+VKR_APP_RUN(VectorOpsApp)

@@ -213,13 +213,4 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
   }
 };
 
-auto main() -> int {
-  try {
-    MMulApplication app{};
-    app.run();
-    return 0;
-  } catch (const std::exception &e) {
-    std::cerr << "mmul failed: " << e.what() << '\n';
-    return 1;
-  }
-}
+VKR_APP_RUN(MMulApplication)

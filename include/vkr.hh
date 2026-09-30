@@ -36,3 +36,16 @@
 #include "vkr/scene/material/texture.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/util/runtime_path.hh"
+
+// macros
+#define VKR_APP_RUN(Application)                                               \
+  auto main() -> int {                                                         \
+    try {                                                                      \
+      Application app{};                                                       \
+      app.run();                                                               \
+      return 0;                                                                \
+    } catch (const std::exception &e) {                                        \
+      std::cerr << "mmul failed: " << e.what() << '\n';                        \
+      return 1;                                                                \
+    }                                                                          \
+  }
