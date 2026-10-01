@@ -6,6 +6,8 @@
 #include "vkr/exec/profiler.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
 #include "vkr/exec/render/sync.hh"
+#include "vkr/pipeline/descriptors/set.hh"
+#include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/ui/ui.hh"
@@ -71,8 +73,8 @@ public:
                  const RenderPassBeginDesc &desc);
   void endPass();
 
-  void bindPipeline(VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-                    const std::vector<VkDescriptorSet> &descriptorSets);
+  void bindPipeline(const pipeline::GraphicsPipeline &pipeline,
+                    const pipeline::DescriptorSets &sets);
   void setViewportAndScissor(VkExtent2D extent);
 
   void drawIndexed(const scene::IVertexBuffer &vertexBuffer,

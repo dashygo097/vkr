@@ -72,18 +72,16 @@ void ComputePass::record() {
     VKR_EXEC_ERROR("ComputePass '{}' has invalid dispatch group count", name());
   }
 
-  const std::vector<VkDescriptorSet> emptySets{};
-  const auto &sets = descriptor_sets_ ? descriptor_sets_->sets() : emptySets;
-
   executor_.beginProfileScope(name());
-  executor_.bindComputePipeline(pipeline_->pipeline(), pipeline_->layout(),
-                                sets);
+  executor_.bindPipeline(*pipeline_, *descriptor_sets_);
   executor_.dispatch(desc_.dispatch.groupCountX, desc_.dispatch.groupCountY,
                      desc_.dispatch.groupCountZ);
   executor_.endProfileScope();
 }
 
 void ComputePass::createDescriptors() {
+  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
+
   if (desc_.descriptorBindings.empty()) {
     if (!desc_.descriptorWrites.empty()) {
       VKR_EXEC_ERROR("ComputePass '{}' has descriptor writes but no "
@@ -107,7 +105,6 @@ void ComputePass::createDescriptors() {
   descriptor_layout_->update(
       pipeline::DescriptorSetLayoutDesc{.bindings = bindings});
 
-  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
   descriptor_sets_->update(pipeline::DescriptorSetsDesc{
       .pool = descriptor_pool_->pool(),
       .layout = descriptor_layout_->layout(),

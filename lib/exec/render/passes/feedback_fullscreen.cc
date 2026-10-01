@@ -236,10 +236,7 @@ void FeedbackFullscreenPass::record() {
   executor_.setViewportAndScissor({writeTarget.width(), writeTarget.height()});
 
   if (pipeline_ && pipeline_->valid()) {
-    const std::vector<VkDescriptorSet> emptySets{};
-    const auto &sets = descriptor_sets_ ? descriptor_sets_->sets() : emptySets;
-
-    executor_.bindPipeline(pipeline_->pipeline(), pipeline_->layout(), sets);
+    executor_.bindPipeline(*pipeline_, *descriptor_sets_);
     executor_.drawFullscreenTriangle();
   }
 
@@ -407,6 +404,8 @@ void FeedbackFullscreenPass::createFramebuffers() {
 }
 
 void FeedbackFullscreenPass::createDescriptors() {
+  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
+
   const auto inputs = resolvedInputs();
   if (inputs.empty() && !desc_.historyInput &&
       desc_.descriptorBindings.empty()) {
@@ -441,7 +440,6 @@ void FeedbackFullscreenPass::createDescriptors() {
   descriptor_layout_->update(
       pipeline::DescriptorSetLayoutDesc{.bindings = bindings});
 
-  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
   descriptor_sets_->update(pipeline::DescriptorSetsDesc{
       .pool = descriptor_pool_->pool(),
       .layout = descriptor_layout_->layout(),

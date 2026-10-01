@@ -147,34 +147,34 @@ void Executor::endPass() {
   vkCmdEndRenderPass(command_buffer_);
 }
 
-void Executor::bindPipeline(
-    VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-    const std::vector<VkDescriptorSet> &descriptorSets) {
+void Executor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
+                            const pipeline::DescriptorSets &sets) {
   ensureFrameActive("bindPipeline");
 
-  if (pipeline == VK_NULL_HANDLE) {
+  if (pipeline.pipeline() == VK_NULL_HANDLE) {
     VKR_EXEC_ERROR("bindPipeline received null VkPipeline");
   }
 
-  if (pipelineLayout == VK_NULL_HANDLE) {
+  if (pipeline.layout() == VK_NULL_HANDLE) {
     VKR_EXEC_ERROR("bindPipeline received null VkPipelineLayout");
   }
 
-  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    pipeline.pipeline());
 
-  if (descriptorSets.empty()) {
+  if (sets.empty()) {
     return;
   }
 
-  if (frame_index_ >= descriptorSets.size()) {
+  if (frame_index_ >= sets.count()) {
     VKR_EXEC_ERROR("Descriptor set frame index {} out of range, count {}",
-                   frame_index_, descriptorSets.size());
+                   frame_index_, sets.count());
   }
 
-  VkDescriptorSet descriptorSet = descriptorSets[frame_index_];
+  VkDescriptorSet descriptorSet = sets.set(frame_index_);
 
   vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+                          pipeline.layout(), 0, 1, &descriptorSet, 0, nullptr);
 }
 
 void Executor::setViewportAndScissor(VkExtent2D extent) {

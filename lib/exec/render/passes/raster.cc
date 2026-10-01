@@ -142,10 +142,7 @@ void RasterPass::record() {
   executor_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
-    const std::vector<VkDescriptorSet> emptySets{};
-    const auto &sets = descriptor_sets_ ? descriptor_sets_->sets() : emptySets;
-
-    executor_.bindPipeline(pipeline_->pipeline(), pipeline_->layout(), sets);
+    executor_.bindPipeline(*pipeline_, *descriptor_sets_);
     if (desc_.meshNames.empty()) {
       executor_.drawGeometry();
     } else {
@@ -166,7 +163,7 @@ void RasterPass::record() {
         executor_.drawIndexed(vertexBuffer->get(), indexBuffer->get());
       }
     }
-    recordSelectedMeshGrid(sets);
+    recordSelectedMeshGrid(*descriptor_sets_);
   }
 
   executor_.endPass();
@@ -243,6 +240,8 @@ void RasterPass::createFramebuffers() {
 }
 
 void RasterPass::createDescriptors() {
+  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
+
   if (desc_.descriptorBindings.empty() && desc_.inputs.empty()) {
     return;
   }
@@ -271,7 +270,6 @@ void RasterPass::createDescriptors() {
   descriptor_layout_->update(
       pipeline::DescriptorSetLayoutDesc{.bindings = bindings});
 
-  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
   descriptor_sets_->update(pipeline::DescriptorSetsDesc{
       .pool = descriptor_pool_->pool(),
       .layout = descriptor_layout_->layout(),
@@ -535,7 +533,7 @@ void RasterPass::syncSelectedMeshGrid() {
 }
 
 void RasterPass::recordSelectedMeshGrid(
-    const std::vector<VkDescriptorSet> &sets) {
+    const pipeline::DescriptorSets &sets) {
   if (!mesh_grid_pipeline_ || !mesh_grid_pipeline_->valid() ||
       !mesh_grid_index_buffer_ || mesh_grid_name_.empty()) {
     return;
@@ -557,8 +555,7 @@ void RasterPass::recordSelectedMeshGrid(
     return;
   }
 
-  executor_.bindPipeline(mesh_grid_pipeline_->pipeline(),
-                         mesh_grid_pipeline_->layout(), sets);
+  executor_.bindPipeline(*mesh_grid_pipeline_, sets);
   executor_.drawIndexed(vertexBuffer->get(), *mesh_grid_index_buffer_);
 }
 

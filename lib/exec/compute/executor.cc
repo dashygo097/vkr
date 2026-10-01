@@ -94,28 +94,28 @@ auto ComputeExecutor::commandBuffer() const -> VkCommandBuffer {
   return command_buffer_;
 }
 
-void ComputeExecutor::bindComputePipeline(
-    VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-    const std::vector<VkDescriptorSet> &descriptorSets) {
-  ensureActive("bindComputePipeline");
+void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline,
+                                   const pipeline::DescriptorSets &sets) {
+  ensureActive("bindPipeline");
 
-  if (pipeline == VK_NULL_HANDLE) {
-    VKR_EXEC_ERROR("bindComputePipeline received null VkPipeline");
+  if (pipeline.pipeline() == VK_NULL_HANDLE) {
+    VKR_EXEC_ERROR("bindPipeline received null VkPipeline");
   }
 
-  if (pipelineLayout == VK_NULL_HANDLE) {
-    VKR_EXEC_ERROR("bindComputePipeline received null VkPipelineLayout");
+  if (pipeline.layout() == VK_NULL_HANDLE) {
+    VKR_EXEC_ERROR("bindPipeline received null VkPipelineLayout");
   }
 
-  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
+                    pipeline.pipeline());
 
-  if (descriptorSets.empty()) {
+  if (sets.empty()) {
     return;
   }
 
-  VkDescriptorSet descriptorSet = descriptorSets[0];
+  VkDescriptorSet descriptorSet = sets.set(0);
   vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
-                          pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+                          pipeline.layout(), 0, 1, &descriptorSet, 0, nullptr);
 }
 
 void ComputeExecutor::dispatch(uint32_t groupCountX, uint32_t groupCountY,

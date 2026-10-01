@@ -3,6 +3,8 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/sync/fence.hh"
+#include "vkr/pipeline/compute_pipeline.hh"
+#include "vkr/pipeline/descriptors/set.hh"
 #include <string_view>
 
 namespace vkr::exec {
@@ -25,8 +27,8 @@ public:
 
   [[nodiscard]] auto commandBuffer() const -> VkCommandBuffer;
 
-  void bindComputePipeline(VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-                           const std::vector<VkDescriptorSet> &descriptorSets);
+  void bindPipeline(const pipeline::ComputePipeline &pipeline,
+                    const pipeline::DescriptorSets &sets);
   void dispatch(uint32_t groupCountX, uint32_t groupCountY,
                 uint32_t groupCountZ);
   void beginProfileScope(std::string_view name);
