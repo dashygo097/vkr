@@ -3,7 +3,6 @@
 #include "vkr/logger.hh"
 #include <algorithm>
 #include <string_view>
-#include <unordered_set>
 
 namespace vkr::exec {
 namespace {
@@ -16,19 +15,19 @@ auto imageLayoutForAttachment(const ColorAttachment &attachment)
 }
 
 auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
-                     const RenderPassSource &source,
+                     const OffscreenTarget &source,
                      const RenderPassInputDesc &input)
     -> VkDescriptorImageInfo {
   VkDescriptorImageInfo imageInfo{};
 
   switch (input.kind) {
   case RenderPassInputKind::Color: {
-    if (!source.target().hasColor()) {
+    if (!source.hasColor()) {
       VKR_EXEC_ERROR("RasterPass '{}' source {} has no color attachment",
                      std::string(passName), sourceIndex);
     }
 
-    const auto &color = source.target().color();
+    const auto &color = source.color();
     if (!color.hasSampler()) {
       VKR_EXEC_ERROR("RasterPass '{}' source {} color has no sampler",
                      std::string(passName), sourceIndex);
@@ -41,7 +40,7 @@ auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
   }
 
   case RenderPassInputKind::Depth: {
-    const auto *depth = source.target().depth();
+    const auto *depth = source.depth();
     if (depth == nullptr) {
       VKR_EXEC_ERROR("RasterPass '{}' source {} has no depth attachment",
                      std::string(passName), sourceIndex);
@@ -80,7 +79,7 @@ void validateUniqueDescriptorBindings(
 
 } // namespace
 
-RasterPass::RasterPass(Executor &executor, const core::Device &device,
+RasterPass::RasterPass(RenderExecutor &executor, const core::Device &device,
                        const core::CommandPool &commandPool,
                        scene::Scene &scene)
     : executor_(executor), device_(device), command_pool_(commandPool),
@@ -98,10 +97,7 @@ void RasterPass::create() {
   createPipeline();
 }
 
-void RasterPass::destroy() {
-  mesh_grid_pipeline_.reset();
-  mesh_grid_index_buffer_.reset();
-  mesh_grid_name_.clear();
+void RasterPass::destroy() noexcept {
   pipeline_.reset();
   descriptor_sets_.reset();
   descriptor_layout_.reset();
@@ -111,15 +107,20 @@ void RasterPass::destroy() {
   target_.reset();
 }
 
-void RasterPass::update(const RasterPassDesc &desc) { desc_ = desc; }
+void RasterPass::update(const RasterPassDesc &desc) {
+  ensureConfigurable();
+  desc_ = desc;
+}
 
-auto RasterPass::addSource(RenderPassSource source) -> RasterPass & {
+auto RasterPass::addSource(Pass &source) -> RasterPass & {
+  ensureConfigurable();
   sources_.push_back(source);
   return *this;
 }
 
-auto RasterPass::setSources(std::vector<RenderPassSource> sources)
+auto RasterPass::setSources(std::vector<std::reference_wrapper<Pass>> sources)
     -> RasterPass & {
+  ensureConfigurable();
   sources_ = std::move(sources);
   return *this;
 }
@@ -129,16 +130,8 @@ void RasterPass::record() {
     VKR_EXEC_ERROR("RasterPass '{}' recorded before create", name());
   }
 
-  syncSelectedMeshGrid();
-
-  RenderPassBeginDesc beginDesc{
-      .framebufferIndex = 0,
-      .renderArea = {.offset = {0, 0},
-                     .extent = {target_->width(), target_->height()}},
-      .clearValues = desc_.clearValues};
-
   executor_.beginProfileScope(name());
-  executor_.beginPass(*framebuffers_, *render_pass_, beginDesc);
+  executor_.beginPass(*framebuffers_, desc_.clearValues);
   executor_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
@@ -147,14 +140,14 @@ void RasterPass::record() {
       executor_.drawGeometry();
     } else {
       for (const auto &meshName : desc_.meshNames) {
-        auto mesh = scene_.getMesh(meshName);
-        if (!mesh || !mesh->isValid()) {
+        const auto &mesh = scene_.mesh(meshName);
+        if (!mesh.isValid()) {
           VKR_EXEC_ERROR("RasterPass '{}' mesh resource not found: {}", name(),
                          meshName);
         }
 
-        const auto vertexBuffer = mesh->vertexBufferBase();
-        const auto indexBuffer = mesh->indexBuffer();
+        const auto vertexBuffer = mesh.vertexBufferBase();
+        const auto indexBuffer = mesh.indexBuffer();
         if (!vertexBuffer || !indexBuffer) {
           VKR_EXEC_ERROR("RasterPass '{}' mesh '{}' has invalid buffers",
                          name(), meshName);
@@ -163,7 +156,6 @@ void RasterPass::record() {
         executor_.drawIndexed(vertexBuffer->get(), indexBuffer->get());
       }
     }
-    recordSelectedMeshGrid(*descriptor_sets_);
   }
 
   executor_.endPass();
@@ -223,9 +215,10 @@ void RasterPass::createRenderPass() {
       renderPassDesc.depth.finalLayout = depthDesc.finalLayout;
     }
 
-    if ((depthDesc.usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0) {
-      renderPassDesc.depth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    }
+    renderPassDesc.depth.storeOp =
+        (depthDesc.usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0
+            ? VK_ATTACHMENT_STORE_OP_STORE
+            : depthDesc.storeOp;
   }
 
   render_pass_->update(renderPassDesc);
@@ -302,34 +295,15 @@ void RasterPass::createPipeline() {
     VKR_EXEC_ERROR("RasterPass '{}' failed to create graphics pipeline '{}'",
                    name(), pipelineDesc.name);
   }
-
-  auto gridPipelineDesc = pipelineDesc;
-  gridPipelineDesc.name = pipelineDesc.name + "-mesh-grid";
-  gridPipelineDesc.inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-  gridPipelineDesc.rasterization =
-      pipeline::GraphicsRasterizationDesc::noCull();
-  gridPipelineDesc.depthStencil =
-      pipeline::GraphicsDepthStencilDesc::readOnly();
-
-  mesh_grid_pipeline_ =
-      std::make_unique<pipeline::GraphicsPipeline>(device_, *render_pass_);
-  mesh_grid_pipeline_->update(gridPipelineDesc);
-
-  if (!mesh_grid_pipeline_->valid()) {
-    VKR_EXEC_ERROR(
-        "RasterPass '{}' failed to create mesh grid graphics pipeline '{}'",
-        name(), gridPipelineDesc.name);
-  }
 }
 
 auto RasterPass::createDescriptorWrites() const
     -> std::vector<pipeline::DescriptorSetWriteDesc> {
-  std::vector<pipeline::DescriptorSetWriteDesc> writes{};
   const uint32_t frameCount = executor_.framesInFlight();
+  std::vector<pipeline::DescriptorSetWriteDesc> writes{};
   writes.reserve(frameCount);
-
-  for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-    writes.push_back(pipeline::DescriptorSetWriteDesc::forSet(frameIndex));
+  for (uint32_t frame = 0; frame < frameCount; ++frame) {
+    writes.push_back(pipeline::DescriptorSetWriteDesc::forSet(frame));
   }
 
   for (const auto &binding : desc_.descriptorBindings) {
@@ -340,19 +314,15 @@ auto RasterPass::createDescriptorWrites() const
 
     switch (binding.layout.descriptorType) {
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
-      auto uniformBuffer = scene_.getUniformBuffer(binding.name);
+      const auto &uniformBuffer = scene_.uniformBuffer(binding.name);
 
-      if (!uniformBuffer) {
-        VKR_EXEC_ERROR("Uniform buffer resource not found: {}", binding.name);
-      }
-
-      if (uniformBuffer->frameCount() != frameCount) {
+      if (uniformBuffer.frameCount() != frameCount) {
         VKR_EXEC_ERROR("Uniform buffer '{}' frame count mismatch: {} vs {}",
-                       binding.name, uniformBuffer->frameCount(), frameCount);
+                       binding.name, uniformBuffer.frameCount(), frameCount);
       }
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-        const auto bufferInfo = uniformBuffer->descriptorInfo(frameIndex);
+        const auto bufferInfo = uniformBuffer.descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
             pipeline::DescriptorBufferWriteDesc::one(
@@ -363,29 +333,25 @@ auto RasterPass::createDescriptorWrites() const
     }
 
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-      auto texture = scene_.getTexture(binding.name);
-      auto cubemap = texture ? nullptr : scene_.getCubemap(binding.name);
+      const auto texture = scene_.findTexture(binding.name);
+      const auto cubemap =
+          texture ? std::nullopt : scene_.findCubemap(binding.name);
 
       if (!texture && !cubemap) {
         VKR_EXEC_ERROR("Texture or cubemap resource not found: {}",
                        binding.name);
       }
 
-      if (texture && !texture->hasSampler()) {
+      if (texture && !texture->get().hasSampler()) {
         VKR_EXEC_ERROR("Texture sampler not found: {}", binding.name);
       }
 
-      if (cubemap && !cubemap->valid()) {
+      if (cubemap && !cubemap->get().valid()) {
         VKR_EXEC_ERROR("Cubemap resource is invalid: {}", binding.name);
       }
 
-      VkDescriptorImageInfo imageInfo{};
-      imageInfo = texture ? VkDescriptorImageInfo{
-                                .sampler = texture->sampler(),
-                                .imageView = texture->imageView(),
-                                .imageLayout = texture->layout(),
-                            }
-                          : cubemap->descriptorInfo();
+      const auto imageInfo = texture ? texture->get().descriptorInfo()
+                                     : cubemap->get().descriptorInfo();
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         writes[frameIndex].images.push_back(
@@ -406,10 +372,15 @@ auto RasterPass::createDescriptorWrites() const
 
   for (size_t sourceIndex = 0; sourceIndex < sources_.size(); ++sourceIndex) {
     const auto &input = desc_.inputs[sourceIndex];
-    const VkDescriptorImageInfo imageInfo =
-        sourceImageInfo(name(), sourceIndex, sources_[sourceIndex], input);
-
+    const auto source =
+        sources_[sourceIndex].get().capability<RenderTargetCapability>();
+    if (!source) {
+      VKR_EXEC_ERROR("RasterPass '{}' source '{}' has no render target", name(),
+                     sources_[sourceIndex].get().name());
+    }
     for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
+      const VkDescriptorImageInfo imageInfo = sourceImageInfo(
+          name(), sourceIndex, source->get().target(frameIndex), input);
       writes[frameIndex].images.push_back(
           pipeline::DescriptorImageWriteDesc::one(
               input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -452,7 +423,7 @@ auto RasterPass::descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc {
         frameCount * static_cast<uint32_t>(desc_.inputs.size());
     auto existing = std::find_if(
         poolDesc.poolSizes.begin(), poolDesc.poolSizes.end(),
-        [](const VkDescriptorPoolSize &poolSize) {
+        [](const VkDescriptorPoolSize &poolSize) -> bool {
           return poolSize.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         });
 
@@ -466,97 +437,6 @@ auto RasterPass::descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc {
 
   poolDesc.maxSets = frameCount;
   return poolDesc;
-}
-
-void RasterPass::syncSelectedMeshGrid() {
-  const std::string &selectedMesh = scene_.selectedMeshName();
-
-  if (selectedMesh == mesh_grid_name_) {
-    return;
-  }
-
-  device_.waitIdle();
-  mesh_grid_name_ = selectedMesh;
-  mesh_grid_index_buffer_.reset();
-
-  if (selectedMesh.empty()) {
-    return;
-  }
-
-  auto mesh = scene_.getMesh(selectedMesh);
-  if (!mesh || !mesh->isValid()) {
-    mesh_grid_name_.clear();
-    return;
-  }
-
-  const auto indexBuffer = mesh->indexBuffer();
-  if (!indexBuffer) {
-    mesh_grid_name_.clear();
-    return;
-  }
-
-  const auto indices = indexBuffer->get().indices();
-  std::vector<uint16_t> lineIndices;
-  lineIndices.reserve(indices.size() * 2);
-
-  std::unordered_set<uint32_t> edges;
-  edges.reserve(indices.size());
-
-  auto addEdge = [&](uint16_t a, uint16_t b) -> void {
-    const uint16_t lo = std::min(a, b);
-    const uint16_t hi = std::max(a, b);
-    const uint32_t key =
-        (static_cast<uint32_t>(lo) << 16) | static_cast<uint32_t>(hi);
-
-    if (!edges.insert(key).second) {
-      return;
-    }
-
-    lineIndices.push_back(a);
-    lineIndices.push_back(b);
-  };
-
-  for (size_t i = 0; i + 2 < indices.size(); i += 3) {
-    addEdge(indices[i], indices[i + 1]);
-    addEdge(indices[i + 1], indices[i + 2]);
-    addEdge(indices[i + 2], indices[i]);
-  }
-
-  if (lineIndices.empty()) {
-    mesh_grid_name_.clear();
-    return;
-  }
-
-  mesh_grid_index_buffer_ =
-      std::make_unique<scene::IndexBuffer>(device_, command_pool_);
-  mesh_grid_index_buffer_->update(lineIndices);
-}
-
-void RasterPass::recordSelectedMeshGrid(
-    const pipeline::DescriptorSets &sets) {
-  if (!mesh_grid_pipeline_ || !mesh_grid_pipeline_->valid() ||
-      !mesh_grid_index_buffer_ || mesh_grid_name_.empty()) {
-    return;
-  }
-
-  if (!desc_.meshNames.empty() &&
-      std::find(desc_.meshNames.begin(), desc_.meshNames.end(),
-                mesh_grid_name_) == desc_.meshNames.end()) {
-    return;
-  }
-
-  auto mesh = scene_.getMesh(mesh_grid_name_);
-  if (!mesh || !mesh->isValid()) {
-    return;
-  }
-
-  const auto vertexBuffer = mesh->vertexBufferBase();
-  if (!vertexBuffer) {
-    return;
-  }
-
-  executor_.bindPipeline(*mesh_grid_pipeline_, sets);
-  executor_.drawIndexed(vertexBuffer->get(), *mesh_grid_index_buffer_);
 }
 
 } // namespace vkr::exec

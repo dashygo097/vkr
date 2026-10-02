@@ -15,6 +15,7 @@ struct DepthAttachmentDesc {
   VkFormat format{VK_FORMAT_UNDEFINED};
   VkImageUsageFlags usage{VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT};
   VkImageLayout finalLayout{VK_IMAGE_LAYOUT_UNDEFINED};
+  VkAttachmentStoreOp storeOp{VK_ATTACHMENT_STORE_OP_DONT_CARE};
   bool createSampler{false};
   resource::SamplerDesc sampler{resource::SamplerDesc::nearestClampToEdge()};
 
@@ -46,6 +47,7 @@ struct DepthAttachmentDesc {
       usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
       finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
       createSampler = true;
+      storeOp = VK_ATTACHMENT_STORE_OP_STORE;
       return *this;
     }
 
@@ -58,6 +60,11 @@ struct DepthAttachmentDesc {
   auto finalImageLayout(VkImageLayout layout) noexcept
       -> DepthAttachmentDesc & {
     finalLayout = layout;
+    return *this;
+  }
+
+  auto store(VkAttachmentStoreOp op) noexcept -> DepthAttachmentDesc & {
+    storeOp = op;
     return *this;
   }
 

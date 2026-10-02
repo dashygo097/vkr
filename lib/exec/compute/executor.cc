@@ -38,8 +38,8 @@ void ComputeExecutor::begin() {
   active_ = true;
   submitted_ = false;
 
-  if (profiler_ != nullptr) {
-    profiler_->beginFrame(command_buffer_);
+  if (profiler_) {
+    profiler_->get().beginFrame(command_buffer_);
   }
 }
 
@@ -50,8 +50,8 @@ void ComputeExecutor::submitAndWait() {
     VKR_EXEC_ERROR("ComputeExecutor::submitAndWait called twice");
   }
 
-  if (profiler_ != nullptr) {
-    profiler_->endFrame(command_buffer_);
+  if (profiler_) {
+    profiler_->get().endFrame(command_buffer_);
   }
 
   if (vkEndCommandBuffer(command_buffer_) != VK_SUCCESS) {
@@ -85,9 +85,11 @@ void ComputeExecutor::end() {
   submitted_ = false;
 }
 
-void ComputeExecutor::setProfiler(Profiler *profiler) noexcept {
+void ComputeExecutor::setProfiler(Profiler &profiler) noexcept {
   profiler_ = profiler;
 }
+
+void ComputeExecutor::clearProfiler() noexcept { profiler_.reset(); }
 
 auto ComputeExecutor::commandBuffer() const -> VkCommandBuffer {
   ensureActive("commandBuffer");
@@ -132,15 +134,15 @@ void ComputeExecutor::dispatch(uint32_t groupCountX, uint32_t groupCountY,
 
 void ComputeExecutor::beginProfileScope(std::string_view name) {
   ensureActive("beginProfileScope");
-  if (profiler_ != nullptr) {
-    profiler_->beginScope(command_buffer_, name);
+  if (profiler_) {
+    profiler_->get().beginScope(command_buffer_, name);
   }
 }
 
 void ComputeExecutor::endProfileScope() {
   ensureActive("endProfileScope");
-  if (profiler_ != nullptr) {
-    profiler_->endScope(command_buffer_);
+  if (profiler_) {
+    profiler_->get().endScope(command_buffer_);
   }
 }
 
@@ -165,7 +167,7 @@ void ComputeExecutor::freeCommandBuffer() noexcept {
   }
 }
 
-void ComputeExecutor::ensureActive(const char *op) const {
+void ComputeExecutor::ensureActive(std::string_view op) const {
   if (!active_) {
     VKR_EXEC_ERROR("ComputeExecutor::{} called without an active command "
                    "buffer",
@@ -173,7 +175,7 @@ void ComputeExecutor::ensureActive(const char *op) const {
   }
 }
 
-void ComputeExecutor::ensureInactive(const char *op) const {
+void ComputeExecutor::ensureInactive(std::string_view op) const {
   if (active_) {
     VKR_EXEC_ERROR("ComputeExecutor::{} called while a command buffer is "
                    "active",

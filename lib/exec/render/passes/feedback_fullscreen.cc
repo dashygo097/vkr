@@ -67,18 +67,13 @@ auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
 }
 
 void appendResourceDescriptorWrites(
-    std::string_view passName, const scene::Scene *scene,
+    std::string_view passName,
+    const scene::Scene &scene,
     const std::vector<pipeline::DescriptorBinding> &bindings,
     std::vector<pipeline::DescriptorSetWriteDesc> &writes,
     uint32_t frameCount) {
   if (bindings.empty()) {
     return;
-  }
-
-  if (scene == nullptr) {
-    VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' has descriptor resource "
-                   "bindings but no Scene",
-                   std::string(passName));
   }
 
   for (const auto &binding : bindings) {
@@ -90,22 +85,17 @@ void appendResourceDescriptorWrites(
 
     switch (binding.layout.descriptorType) {
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
-      auto uniformBuffer = scene->getUniformBuffer(binding.name);
-      if (!uniformBuffer) {
-        VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' uniform buffer resource "
-                       "not found: {}",
-                       std::string(passName), binding.name);
-      }
+      const auto &uniformBuffer = scene.uniformBuffer(binding.name);
 
-      if (uniformBuffer->frameCount() != frameCount) {
+      if (uniformBuffer.frameCount() != frameCount) {
         VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' uniform buffer '{}' "
                        "frame count mismatch: {} vs {}",
                        std::string(passName), binding.name,
-                       uniformBuffer->frameCount(), frameCount);
+                       uniformBuffer.frameCount(), frameCount);
       }
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-        const auto bufferInfo = uniformBuffer->descriptorInfo(frameIndex);
+        const auto bufferInfo = uniformBuffer.descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
             pipeline::DescriptorBufferWriteDesc::one(
@@ -116,23 +106,15 @@ void appendResourceDescriptorWrites(
     }
 
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-      auto texture = scene->getTexture(binding.name);
-      if (!texture) {
-        VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' texture resource not "
-                       "found: {}",
-                       std::string(passName), binding.name);
-      }
+      const auto &texture = scene.texture(binding.name);
 
-      if (!texture->hasSampler()) {
+      if (!texture.hasSampler()) {
         VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' texture sampler not "
                        "found: {}",
                        std::string(passName), binding.name);
       }
 
-      VkDescriptorImageInfo imageInfo{};
-      imageInfo.imageLayout = texture->layout();
-      imageInfo.imageView = texture->imageView();
-      imageInfo.sampler = texture->sampler();
+      const auto imageInfo = texture.descriptorInfo();
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         writes[frameIndex].images.push_back(
@@ -170,17 +152,11 @@ void validateUniqueDescriptorBindings(
 } // namespace
 
 FeedbackFullscreenPass::FeedbackFullscreenPass(
-    Executor &executor, const core::Device &device,
-    const core::CommandPool &commandPool, std::vector<RenderPassSource> sources)
-    : executor_(executor), device_(device), command_pool_(commandPool),
-      sources_(std::move(sources)) {}
-
-FeedbackFullscreenPass::FeedbackFullscreenPass(
-    Executor &executor, const core::Device &device,
+    RenderExecutor &executor, const core::Device &device,
     const core::CommandPool &commandPool, scene::Scene &scene,
-    std::vector<RenderPassSource> sources)
+    std::vector<std::reference_wrapper<Pass>> sources)
     : executor_(executor), device_(device), command_pool_(commandPool),
-      scene_(&scene), sources_(std::move(sources)) {}
+      scene_(scene), sources_(std::move(sources)) {}
 
 FeedbackFullscreenPass::~FeedbackFullscreenPass() { destroy(); }
 
@@ -194,7 +170,7 @@ void FeedbackFullscreenPass::create() {
   createPipeline();
 }
 
-void FeedbackFullscreenPass::destroy() {
+void FeedbackFullscreenPass::destroy() noexcept {
   pipeline_.reset();
   descriptor_sets_.reset();
   descriptor_layout_.reset();
@@ -205,6 +181,7 @@ void FeedbackFullscreenPass::destroy() {
 }
 
 void FeedbackFullscreenPass::update(const FeedbackFullscreenPassDesc &desc) {
+  ensureConfigurable();
   desc_ = desc;
 }
 
@@ -225,14 +202,8 @@ void FeedbackFullscreenPass::record() {
                    name(), writeIndex);
   }
 
-  RenderPassBeginDesc beginDesc{
-      .framebufferIndex = 0,
-      .renderArea = {.offset = {0, 0},
-                     .extent = {writeTarget.width(), writeTarget.height()}},
-      .clearValues = desc_.clearValues};
-
   executor_.beginProfileScope(name());
-  executor_.beginPass(*framebuffer, *render_pass_, beginDesc);
+  executor_.beginPass(*framebuffer, desc_.clearValues);
   executor_.setViewportAndScissor({writeTarget.width(), writeTarget.height()});
 
   if (pipeline_ && pipeline_->valid()) {
@@ -242,16 +213,20 @@ void FeedbackFullscreenPass::record() {
 
   executor_.endPass();
   executor_.endProfileScope();
+
 }
 
-auto FeedbackFullscreenPass::addSource(RenderPassSource source)
+auto FeedbackFullscreenPass::addSource(Pass &source)
     -> FeedbackFullscreenPass & {
+  ensureConfigurable();
   sources_.push_back(source);
   return *this;
 }
 
-auto FeedbackFullscreenPass::setSources(std::vector<RenderPassSource> sources)
+auto FeedbackFullscreenPass::setSources(
+    std::vector<std::reference_wrapper<Pass>> sources)
     -> FeedbackFullscreenPass & {
+  ensureConfigurable();
   sources_ = std::move(sources);
   return *this;
 }
@@ -380,9 +355,10 @@ void FeedbackFullscreenPass::createRenderPass() {
       renderPassDesc.depth.finalLayout = depthDesc.finalLayout;
     }
 
-    if ((depthDesc.usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0) {
-      renderPassDesc.depth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    }
+    renderPassDesc.depth.storeOp =
+        (depthDesc.usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0
+            ? VK_ATTACHMENT_STORE_OP_STORE
+            : depthDesc.storeOp;
   }
 
   render_pass_->update(renderPassDesc);
@@ -578,9 +554,16 @@ auto FeedbackFullscreenPass::createDescriptorWrites(
   }
 
   for (size_t index = 0; index < sources_.size(); ++index) {
+    const auto source =
+        sources_[index].get().capability<RenderTargetCapability>();
+    if (!source) {
+      VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' source '{}' has no render "
+                     "target",
+                     name(), sources_[index].get().name());
+    }
     for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
       const VkDescriptorImageInfo imageInfo = sourceImageInfo(
-          name(), index, sources_[index].target(frameIndex), inputs[index]);
+          name(), index, source->get().target(frameIndex), inputs[index]);
 
       writes[frameIndex].images.push_back(
           pipeline::DescriptorImageWriteDesc::one(

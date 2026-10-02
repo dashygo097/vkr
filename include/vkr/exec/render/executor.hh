@@ -3,41 +3,40 @@
 #include "vkr/core/command/buffers.hh"
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
+#include "vkr/core/swapchain.hh"
+#include "vkr/core/sync/fence.hh"
+#include "vkr/core/sync/semaphore.hh"
 #include "vkr/exec/profiler.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
-#include "vkr/exec/render/sync.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/scene/scene.hh"
-#include "vkr/ui/ui.hh"
+#include <functional>
+#include <optional>
 #include <string_view>
+#include <vector>
 
 namespace vkr::exec {
 
-struct RenderPassBeginDesc {
-  uint32_t framebufferIndex{0};
-  VkRect2D renderArea{};
-  std::vector<VkClearValue> clearValues{};
-  VkSubpassContents contents{VK_SUBPASS_CONTENTS_INLINE};
-};
-
-class Executor {
+class RenderExecutor {
 public:
-  explicit Executor(const core::Device &device,
-                    const core::Swapchain &swapchain,
-                    const core::CommandPool &commandPool, FrameSync &frameSync,
-                    scene::Scene &scene, core::CommandBuffers &commandBuffers);
-  ~Executor() = default;
+  explicit RenderExecutor(const core::Device &device,
+                          const core::Swapchain &swapchain,
+                          const core::CommandPool &commandPool,
+                          scene::Scene &scene,
+                          core::CommandBuffers &commandBuffers);
+  ~RenderExecutor() = default;
 
-  Executor(const Executor &) = delete;
-  auto operator=(const Executor &) -> Executor & = delete;
+  RenderExecutor(const RenderExecutor &) = delete;
+  auto operator=(const RenderExecutor &) -> RenderExecutor & = delete;
 
   auto beginFrame() -> bool;
   void submitFrame();
   void presentFrame();
   void endFrame();
-  void setProfiler(Profiler *profiler) noexcept;
+  void setProfiler(Profiler &profiler) noexcept;
+  void clearProfiler() noexcept;
 
   [[nodiscard]] auto swapchainOutOfDate() const noexcept -> bool {
     return swapchain_out_of_date_;
@@ -69,8 +68,9 @@ public:
   [[nodiscard]] auto framesInFlight() const noexcept -> uint32_t;
 
   void beginPass(const FramebufferSet &framebufferSet,
-                 const pipeline::RenderPass &renderPass,
-                 const RenderPassBeginDesc &desc);
+                 const std::vector<VkClearValue> &clearValues,
+                 uint32_t framebufferIndex = 0,
+                 VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
   void endPass();
 
   void bindPipeline(const pipeline::GraphicsPipeline &pipeline,
@@ -81,7 +81,6 @@ public:
                    const scene::IndexBuffer &indexBuffer);
   void drawGeometry();
   void drawFullscreenTriangle();
-  void drawUI(ui::UI &ui);
   void beginProfileScope(std::string_view name);
   void endProfileScope();
 
@@ -90,10 +89,14 @@ private:
   const core::Device &device_;
   const core::Swapchain &swapchain_;
   const core::CommandPool &command_pool_;
-  FrameSync &frame_sync_;
   scene::Scene &scene_;
   core::CommandBuffers &command_buffers_;
-  Profiler *profiler_{nullptr};
+  std::optional<std::reference_wrapper<Profiler>> profiler_{};
+
+  // components
+  std::vector<core::Semaphore> image_available_{};
+  std::vector<core::Semaphore> render_finished_{};
+  std::vector<core::Fence> in_flight_{};
 
   // state
   uint32_t current_frame_{0};
@@ -106,8 +109,8 @@ private:
   bool swapchain_out_of_date_{false};
 
   // helpers
-  void ensureFrameActive(const char *op) const;
-  void ensureFrameInactive(const char *op) const;
+  void ensureFrameActive(std::string_view op) const;
+  void ensureFrameInactive(std::string_view op) const;
 
   auto acquireNextImage(uint32_t &imageIndex) -> bool;
   void submitCommandBuffer();

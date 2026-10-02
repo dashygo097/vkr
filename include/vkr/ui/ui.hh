@@ -5,7 +5,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
 #include "vkr/core/window.hh"
-#include "vkr/exec/render/graph.hh"
+#include "vkr/exec/graph.hh"
 #include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
@@ -67,9 +67,8 @@ public:
      const core::Surface &surface, const core::Device &device,
      const core::CommandPool &commandPool, scene::Scene &scene,
      const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-     exec::OffscreenTarget &offscreenTarget,
-     const pipeline::RenderPass &renderPass,
-     const pipeline::DescriptorPool &descriptorPool, exec::RenderGraph &graph,
+     exec::Pass &source, const pipeline::RenderPass &renderPass,
+     const pipeline::DescriptorPool &descriptorPool, exec::Graph &graph,
      util::Timer &timer, UiDesc &desc,
      const core::CommandBuffers &commandBuffers);
   ~UI();
@@ -77,7 +76,7 @@ public:
   UI(const UI &) = delete;
   auto operator=(const UI &) -> UI & = delete;
 
-  void render(VkCommandBuffer commandBuffer);
+  void render(VkCommandBuffer commandBuffer, uint32_t frameIndex);
 
   [[nodiscard]] auto desc() const noexcept -> const UiDesc & { return desc_; }
 
@@ -97,10 +96,6 @@ public:
     }
 
     desc_.layoutMode = layout_mode_;
-  }
-
-  [[nodiscard]] auto shouldClose() const noexcept -> bool {
-    return should_close_;
   }
 
   void viewport(const VkViewport &viewport) noexcept {
@@ -133,10 +128,9 @@ private:
   scene::Scene &scene_;
   const util::AssetSystem &asset_system_;
   scene::CameraDesc &camera_;
-  exec::OffscreenTarget &offscreen_target_;
+  exec::Pass &source_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
-  exec::RenderGraph &graph_;
   util::Timer &timer_;
   const core::CommandBuffers &command_buffers_;
 
@@ -156,7 +150,7 @@ private:
 
   // state
   LayoutMode layout_mode_{LayoutMode::FullScreen};
-  bool should_close_{false};
+  uint32_t frame_index_{0};
   bool dock_layout_dirty_{true};
   std::vector<std::reference_wrapper<UiComponent>> dock_components_{};
 

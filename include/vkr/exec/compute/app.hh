@@ -43,6 +43,8 @@ public:
   auto operator=(const ComputeApplication &) -> ComputeApplication & = delete;
 
   void run();
+  // Repeats the workload, including warmup; resource state is not reset.
+  void benchmark(uint32_t warmupRuns, uint32_t measuredRuns);
 
   ComputeAppDesc ctx;
 
@@ -51,9 +53,9 @@ public:
   std::unique_ptr<core::Instance> instance;
   std::unique_ptr<core::Device> device;
   std::unique_ptr<core::CommandPool> commandPool;
-  std::unique_ptr<Profiler> profiler;
   std::unique_ptr<ComputeExecutor> executor;
   std::unique_ptr<ComputeGraph> graph;
+  std::unique_ptr<Profiler> profiler;
   ProfileReport profileReport;
 
 protected:
@@ -64,7 +66,7 @@ protected:
 
 private:
   void initCompute();
-  void execute();
+  [[nodiscard]] auto execute(bool capture) -> ProfileReport;
 };
 
 } // namespace vkr::exec

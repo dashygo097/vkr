@@ -51,13 +51,6 @@ public:
     return target_->isMapped();
   }
 
-  void updateRaw(const void *data, size_t size) {
-    if (size != sizeof(UniformType)) {
-      VKR_RES_ERROR("Size mismatch in uniform buffer update!");
-    }
-    update(*static_cast<const UniformType *>(data));
-  }
-
   void update(const UniformType &newObject) {
     if (!target_->isMapped()) {
       VKR_RES_ERROR("Uniform buffer memory is not mapped!");

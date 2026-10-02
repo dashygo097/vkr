@@ -1,5 +1,7 @@
 #include "vkr/ui/ui.hh"
+#include "vkr/exec/capability.hh"
 #include "vkr/logger.hh"
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <imgui.h>
@@ -28,15 +30,15 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool, scene::Scene &scene,
        const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-       exec::OffscreenTarget &offscreenTarget,
+       exec::Pass &source,
        const pipeline::RenderPass &renderPass,
-       const pipeline::DescriptorPool &descriptorPool, exec::RenderGraph &graph,
+       const pipeline::DescriptorPool &descriptorPool, exec::Graph &graph,
        util::Timer &timer, UiDesc &desc,
        const core::CommandBuffers &commandBuffers)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), scene_(scene), asset_system_(assetSystem),
-      camera_(camera), offscreen_target_(offscreenTarget),
-      render_pass_(renderPass), descriptor_pool_(descriptorPool), graph_(graph),
+      camera_(camera), source_(source),
+      render_pass_(renderPass), descriptor_pool_(descriptorPool),
       timer_(timer), command_buffers_(commandBuffers), desc_(desc) {
   if (command_buffers_.empty()) {
     VKR_UI_ERROR("UI requires initialized command buffers");
@@ -74,8 +76,8 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   initInfo.PipelineCache = VK_NULL_HANDLE;
   initInfo.DescriptorPool = descriptor_pool_.pool();
   initInfo.Allocator = nullptr;
-  initInfo.MinImageCount = command_buffers_.size();
-  initInfo.ImageCount = command_buffers_.size();
+  initInfo.MinImageCount = 2;
+  initInfo.ImageCount = std::max(2U, command_buffers_.size());
   initInfo.CheckVkResultFn = checkVkResult;
   initInfo.PipelineInfoMain = pipelineInfo;
 
@@ -94,28 +96,42 @@ UI::UI(const core::Window &window, const core::Instance &instance,
       std::make_unique<pipeline::DescriptorSetLayout>(device_);
   offscreen_descriptor_layout_->update({.bindings = offscreenBindings});
 
-  VkDescriptorImageInfo offscreenImageInfo{};
-  offscreenImageInfo.sampler = offscreen_target_.color().sampler();
-  offscreenImageInfo.imageView = offscreen_target_.color().imageView();
-  offscreenImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-  auto offscreenWrite = pipeline::DescriptorSetWriteDesc::forSet(0);
-  offscreenWrite.images.push_back(pipeline::DescriptorImageWriteDesc::one(
-      0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, offscreenImageInfo));
+  const auto target = source_.capability<exec::RenderTargetCapability>();
+  if (!target) {
+    VKR_UI_ERROR("UI source '{}' has no offscreen target", source_.name());
+  }
+  std::vector<pipeline::DescriptorSetWriteDesc> writes{};
+  for (uint32_t frame = 0; frame < command_buffers_.size(); ++frame) {
+    const auto &color = target->get().target(frame).color();
+    if (!color.hasSampler()) {
+      VKR_UI_ERROR("UI source '{}' color has no sampler", source_.name());
+    }
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.sampler = color.sampler();
+    imageInfo.imageView = color.imageView();
+    imageInfo.imageLayout = color.desc().finalLayout;
+    if (imageInfo.imageLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
+      imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
+    auto write = pipeline::DescriptorSetWriteDesc::forSet(frame);
+    write.images.push_back(pipeline::DescriptorImageWriteDesc::one(
+        0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageInfo));
+    writes.push_back(std::move(write));
+  }
 
   offscreen_descriptor_sets_ =
       std::make_unique<pipeline::DescriptorSets>(device_);
   offscreen_descriptor_sets_->update(pipeline::DescriptorSetsDesc{
       .pool = descriptor_pool_.pool(),
       .layout = offscreen_descriptor_layout_->layout(),
-      .setCount = 1,
-      .writes = {offscreenWrite},
+      .setCount = command_buffers_.size(),
+      .writes = std::move(writes),
   });
 
   viewport_panel_ = std::make_unique<ViewportPanel>(
       desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
   viewport_panel_->flipY(desc_.viewportFlipY);
-  graph_panel_ = std::make_unique<ExecGraphPanel>(graph_);
+  graph_panel_ = std::make_unique<ExecGraphPanel>(graph);
   assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
   camera_panel_ = std::make_unique<CameraPanel>(
       camera_, desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
@@ -127,7 +143,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   VKR_UI_INFO("FPS Panel initialized successfully.");
 
   VKR_UI_INFO("Initializing Shader Editor...");
-  shader_editor_ = std::make_unique<ShaderEditor>(graph_);
+  shader_editor_ = std::make_unique<ShaderEditor>(graph);
   VKR_UI_INFO("Shader Editor initialized successfully.");
 
   VKR_UI_INFO("Initializing Logging Panel...");
@@ -164,10 +180,15 @@ UI::~UI() {
   ImGui::DestroyContext();
 }
 
-void UI::render(VkCommandBuffer commandBuffer) {
+void UI::render(VkCommandBuffer commandBuffer, uint32_t frameIndex) {
+  frame_index_ = frameIndex;
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
+
+  if (ImGui::IsKeyPressed(ImGuiKey_Tab, false)) {
+    switchLayoutMode();
+  }
 
   switch (layout_mode_) {
   case LayoutMode::FullScreen:
@@ -202,7 +223,7 @@ void UI::renderFullScreen() {
       VkDescriptorSet texture = VK_NULL_HANDLE;
       if (offscreen_descriptor_sets_ &&
           !offscreen_descriptor_sets_->sets().empty()) {
-        texture = offscreen_descriptor_sets_->sets()[0];
+        texture = offscreen_descriptor_sets_->set(frame_index_);
       }
 
       viewport_panel_->renderFullscreen(texture);
@@ -313,7 +334,7 @@ void UI::renderMainMenu() {
 
   if (ImGui::BeginMenu("File")) {
     if (ImGui::MenuItem("Exit")) {
-      should_close_ = true;
+      glfwSetWindowShouldClose(window_.glfwWindow(), GLFW_TRUE);
     }
 
     ImGui::EndMenu();
@@ -363,7 +384,7 @@ void UI::renderWorkspacePanels() {
   VkDescriptorSet texture = VK_NULL_HANDLE;
   if (offscreen_descriptor_sets_ &&
       !offscreen_descriptor_sets_->sets().empty()) {
-    texture = offscreen_descriptor_sets_->sets()[0];
+    texture = offscreen_descriptor_sets_->set(frame_index_);
   }
 
   if (viewport_panel_) {

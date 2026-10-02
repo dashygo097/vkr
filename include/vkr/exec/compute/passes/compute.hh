@@ -188,7 +188,7 @@ public:
   auto operator=(const ComputePass &) -> ComputePass & = delete;
 
   void create() override;
-  void destroy() override;
+  void destroy() noexcept override;
   void update(const ComputePassDesc &desc);
   void record() override;
 

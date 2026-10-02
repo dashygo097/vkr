@@ -2,9 +2,7 @@
 
 namespace vkr::exec {
 
-PresentPass::PresentPass(Executor &executor) : executor_(executor) {
-  read("swapchain");
-}
+PresentPass::PresentPass(RenderExecutor &executor) : executor_(executor) {}
 
 void PresentPass::record() {
   // Queue presentation happens after the command buffer has been submitted.

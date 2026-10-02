@@ -10,9 +10,15 @@
 #include "vkr/scene/material/texture.hh"
 #include <array>
 #include <cstdint>
+#include <filesystem>
+#include <functional>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <typeinfo>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace vkr::scene {
@@ -20,208 +26,226 @@ namespace vkr::scene {
 class Scene {
 public:
   Scene(const core::Device &device, const core::CommandPool &commandPool,
-        const core::CommandBuffers &commandBuffers)
-      : device_(device), command_pool_(commandPool),
-        command_buffers_(commandBuffers) {
-    if (command_buffers_.empty()) {
-      VKR_RES_ERROR("Scene requires initialized command buffers");
-    }
-  }
-  ~Scene() = default;
+        const core::CommandBuffers &commandBuffers);
+  ~Scene();
 
   Scene(const Scene &) = delete;
   auto operator=(const Scene &) -> Scene & = delete;
 
   // Uniform buffer management
-  template <typename UBOType>
-  void createUniformBuffer(const std::string &name, const UBOType &ubo) {
-    auto buffer = std::make_shared<FrameUniformBufferSet<UBOType>>(
+  template <typename UniformType>
+  auto createUniformBuffer(std::string name, const UniformType &initial)
+      -> FrameUniformBufferSet<UniformType> & {
+    validateNewResource(uniform_buffers_, name, "uniform buffer");
+
+    auto buffer = std::make_unique<FrameUniformBufferSet<UniformType>>(
         device_, command_buffers_.size());
-    buffer->update(0, ubo);
-    uniform_buffers_[name] = std::move(buffer);
+    for (uint32_t frameIndex = 0; frameIndex < command_buffers_.size();
+         ++frameIndex) {
+      buffer->update(frameIndex, initial);
+    }
+
+    auto &result = *buffer;
+    uniform_buffers_.emplace(std::move(name), std::move(buffer));
+    return result;
   }
 
-  [[nodiscard]] auto getUniformBuffer(const std::string &name) const
-      -> std::shared_ptr<IFrameUniformBufferSet> {
-    auto it = uniform_buffers_.find(name);
-    return it == uniform_buffers_.end() ? nullptr : it->second;
+  template <typename UniformType>
+  [[nodiscard]] auto uniformBuffer(std::string_view name)
+      -> FrameUniformBufferSet<UniformType> & {
+    try {
+      return dynamic_cast<FrameUniformBufferSet<UniformType> &>(
+          uniformBuffer(name));
+    } catch (const std::bad_cast &) {
+      VKR_RES_ERROR("Uniform buffer '{}' has a different type", name);
+    }
   }
 
-  void destroyUniformBuffer(const std::string &name) {
-    uniform_buffers_.erase(name);
+  template <typename UniformType>
+  [[nodiscard]] auto uniformBuffer(std::string_view name) const
+      -> const FrameUniformBufferSet<UniformType> & {
+    try {
+      return dynamic_cast<const FrameUniformBufferSet<UniformType> &>(
+          uniformBuffer(name));
+    } catch (const std::bad_cast &) {
+      VKR_RES_ERROR("Uniform buffer '{}' has a different type", name);
+    }
   }
+
+  [[nodiscard]] auto uniformBuffer(std::string_view name)
+      -> IFrameUniformBufferSet &;
+
+  [[nodiscard]] auto uniformBuffer(std::string_view name) const
+      -> const IFrameUniformBufferSet &;
+
+  [[nodiscard]] auto findUniformBuffer(std::string_view name)
+      -> std::optional<std::reference_wrapper<IFrameUniformBufferSet>>;
+
+  [[nodiscard]] auto findUniformBuffer(std::string_view name) const
+      -> std::optional<std::reference_wrapper<const IFrameUniformBufferSet>>;
+
+  void destroyUniformBuffer(std::string_view name);
 
   // Mesh management
-  template <typename VBOType>
-  void createMesh(const std::string &name, const Mesh<VBOType> &mesh) {
-    const auto vertexBuffer = mesh.vertexBuffer();
-    const auto indexBuffer = mesh.indexBuffer();
+  template <typename VertexType>
+  auto createMesh(std::string name, const std::vector<VertexType> &vertices,
+                  const std::vector<uint16_t> &indices) -> Mesh<VertexType> & {
+    validateNewResource(meshes_, name, "mesh");
 
-    if (!vertexBuffer || !indexBuffer) {
-      VKR_RES_ERROR("Cannot create mesh resource '{}' from invalid mesh", name);
+    auto mesh = std::make_unique<Mesh<VertexType>>(device_, command_pool_);
+    mesh->load(vertices, indices);
+
+    auto &result = *mesh;
+    meshes_.emplace(std::move(name), std::move(mesh));
+    return result;
+  }
+
+  template <typename VertexType>
+  auto loadMesh(std::string name, const std::filesystem::path &path)
+      -> Mesh<VertexType> & {
+    validateNewResource(meshes_, name, "mesh");
+
+    auto mesh = std::make_unique<Mesh<VertexType>>(device_, command_pool_);
+    mesh->load(path.string());
+
+    auto &result = *mesh;
+    meshes_.emplace(std::move(name), std::move(mesh));
+    return result;
+  }
+
+  template <typename VertexType>
+  [[nodiscard]] auto mesh(std::string_view name) -> Mesh<VertexType> & {
+    try {
+      return dynamic_cast<Mesh<VertexType> &>(mesh(name));
+    } catch (const std::bad_cast &) {
+      VKR_RES_ERROR("Mesh '{}' has a different vertex type", name);
     }
-
-    auto stored = std::make_shared<Mesh<VBOType>>(device_, command_pool_);
-    stored->load(vertexBuffer->get().vertices(), indexBuffer->get().indices());
-    meshes_[name] = std::move(stored);
   }
 
-  void destroyMesh(const std::string &name) {
-    if (selected_mesh_name_ == name) {
-      selected_mesh_name_.clear();
+  template <typename VertexType>
+  [[nodiscard]] auto mesh(std::string_view name) const
+      -> const Mesh<VertexType> & {
+    try {
+      return dynamic_cast<const Mesh<VertexType> &>(mesh(name));
+    } catch (const std::bad_cast &) {
+      VKR_RES_ERROR("Mesh '{}' has a different vertex type", name);
     }
-
-    meshes_.erase(name);
   }
 
-  [[nodiscard]] auto hasMesh(const std::string &name) const -> bool {
-    auto it = meshes_.find(name);
-    return it != meshes_.end() && it->second && it->second->isValid();
-  }
+  [[nodiscard]] auto mesh(std::string_view name) -> IMesh &;
 
-  [[nodiscard]] auto getMesh(const std::string &name) const
-      -> std::shared_ptr<IMesh> {
-    auto it = meshes_.find(name);
-    return it == meshes_.end() ? nullptr : it->second;
-  }
+  [[nodiscard]] auto mesh(std::string_view name) const -> const IMesh &;
 
-  [[nodiscard]] auto meshCount() const noexcept -> size_t {
-    return meshes_.size();
-  }
+  [[nodiscard]] auto findMesh(std::string_view name)
+      -> std::optional<std::reference_wrapper<IMesh>>;
 
-  [[nodiscard]] auto selectedMeshName() const noexcept -> const std::string & {
-    return selected_mesh_name_;
-  }
+  [[nodiscard]] auto findMesh(std::string_view name) const
+      -> std::optional<std::reference_wrapper<const IMesh>>;
 
-  void selectMesh(std::string name) {
-    selected_mesh_name_ = hasMesh(name) ? std::move(name) : std::string{};
-  }
+  void destroyMesh(std::string_view name);
 
-  void clearSelectedMesh() { selected_mesh_name_.clear(); }
+  [[nodiscard]] auto hasMesh(std::string_view name) const -> bool;
+
+  [[nodiscard]] auto meshCount() const noexcept -> size_t;
+
+  [[nodiscard]] auto selectedMeshName() const noexcept -> const std::string &;
+
+  void selectMesh(std::string name);
+
+  void clearSelectedMesh();
 
   // Texture management
-  void createTexture(const std::string &name, const TextureDesc &desc) {
-    auto texture = std::make_shared<Texture>(device_, command_pool_);
-    texture->update(desc);
-    textures_[name] = std::move(texture);
-  }
+  auto createTexture(std::string name, TextureDesc desc) -> Texture &;
 
-  void createTexture(const std::string &name, TextureDesc &&desc) {
-    auto texture = std::make_shared<Texture>(device_, command_pool_);
-    texture->update(desc);
-    textures_[name] = std::move(texture);
-  }
+  auto loadTexture(std::string name, const std::filesystem::path &path)
+      -> Texture &;
 
-  void createTexture(const std::string &name, const std::string &filePath) {
-    createTexture(name, TextureDesc::textureFile(filePath));
-  }
+  [[nodiscard]] auto texture(std::string_view name) -> Texture &;
 
-  void createCubemap(const std::string &name,
+  [[nodiscard]] auto texture(std::string_view name) const -> const Texture &;
+
+  [[nodiscard]] auto findTexture(std::string_view name)
+      -> std::optional<std::reference_wrapper<Texture>>;
+
+  [[nodiscard]] auto findTexture(std::string_view name) const
+      -> std::optional<std::reference_wrapper<const Texture>>;
+
+  auto createCubemap(std::string name, CubemapDesc desc) -> Cubemap &;
+
+  auto createCubemap(std::string name,
                      const std::array<std::string, 6> &facePaths,
-                     VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
-    createCubemap(name, CubemapDesc::files(facePaths, format));
-  }
+                     VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) -> Cubemap &;
 
-  void createCubemap(const std::string &name, const CubemapDesc &desc) {
-    auto cubemap = std::make_shared<Cubemap>(device_, command_pool_);
-    cubemap->update(desc);
-    cubemaps_[name] = std::move(cubemap);
-  }
+  [[nodiscard]] auto cubemap(std::string_view name) -> Cubemap &;
 
-  void createCubemap(const std::string &name, CubemapDesc &&desc) {
-    auto cubemap = std::make_shared<Cubemap>(device_, command_pool_);
-    cubemap->update(desc);
-    cubemaps_[name] = std::move(cubemap);
-  }
+  [[nodiscard]] auto cubemap(std::string_view name) const -> const Cubemap &;
 
-  [[nodiscard]] auto getCubemap(const std::string &name) const
-      -> std::shared_ptr<Cubemap> {
-    auto it = cubemaps_.find(name);
-    return it == cubemaps_.end() ? nullptr : it->second;
-  }
+  [[nodiscard]] auto findCubemap(std::string_view name)
+      -> std::optional<std::reference_wrapper<Cubemap>>;
 
-  [[nodiscard]] auto getTexture(const std::string &name) const
-      -> std::shared_ptr<Texture> {
-    auto it = textures_.find(name);
-    return it == textures_.end() ? nullptr : it->second;
-  }
+  [[nodiscard]] auto findCubemap(std::string_view name) const
+      -> std::optional<std::reference_wrapper<const Cubemap>>;
 
-  void destroyTexture(const std::string &name) { textures_.erase(name); }
+  void destroyTexture(std::string_view name);
 
-  void destroyCubemap(const std::string &name) { cubemaps_.erase(name); }
+  void destroyCubemap(std::string_view name);
 
   // Counts
-  [[nodiscard]] auto uniformBufferCount() const noexcept -> size_t {
-    return uniform_buffers_.size();
-  }
+  [[nodiscard]] auto uniformBufferCount() const noexcept -> size_t;
 
-  [[nodiscard]] auto textureCount() const noexcept -> size_t {
-    return textures_.size();
-  }
+  [[nodiscard]] auto textureCount() const noexcept -> size_t;
 
-  [[nodiscard]] auto textureImageCount() const noexcept -> size_t {
-    return textures_.size();
-  }
-
-  [[nodiscard]] auto cubemapCount() const noexcept -> size_t {
-    return cubemaps_.size();
-  }
+  [[nodiscard]] auto cubemapCount() const noexcept -> size_t;
 
   // Names
   [[nodiscard]] auto listUniformBufferNames() const
-      -> std::vector<std::string> {
-    return listResourceNames(uniform_buffers_);
-  }
+      -> std::vector<std::string>;
 
-  [[nodiscard]] auto listTextureNames() const -> std::vector<std::string> {
-    return listResourceNames(textures_);
-  }
+  [[nodiscard]] auto listTextureNames() const -> std::vector<std::string>;
 
-  [[nodiscard]] auto listTextureImageNames() const -> std::vector<std::string> {
-    return listTextureNames();
-  }
+  [[nodiscard]] auto listCubemapNames() const -> std::vector<std::string>;
 
-  [[nodiscard]] auto listCubemapNames() const -> std::vector<std::string> {
-    return listResourceNames(cubemaps_);
-  }
-
-  [[nodiscard]] auto listMeshNames() const -> std::vector<std::string> {
-    return listResourceNames(meshes_);
-  }
-
-  // Lists
-  [[nodiscard]] auto listUniformBuffers() const
-      -> std::vector<std::shared_ptr<IFrameUniformBufferSet>> {
-    return listResources(uniform_buffers_);
-  }
-
-  [[nodiscard]] auto listTextures() const
-      -> std::vector<std::shared_ptr<Texture>> {
-    return listResources(textures_);
-  }
-
-  [[nodiscard]] auto listCubemaps() const
-      -> std::vector<std::shared_ptr<Cubemap>> {
-    return listResources(cubemaps_);
-  }
-
-  [[nodiscard]] auto listMeshes() const -> std::vector<std::shared_ptr<IMesh>> {
-    return listResources(meshes_);
-  }
+  [[nodiscard]] auto listMeshNames() const -> std::vector<std::string>;
 
 private:
   template <typename ResourceType>
-  [[nodiscard]] static auto listResources(
-      const std::unordered_map<std::string, std::shared_ptr<ResourceType>>
-          &resourceMap) -> std::vector<std::shared_ptr<ResourceType>> {
-    std::vector<std::shared_ptr<ResourceType>> resources;
-    resources.reserve(resourceMap.size());
+  using ResourceMap =
+      std::unordered_map<std::string, std::unique_ptr<ResourceType>>;
 
-    for (const auto &[_, resource] : resourceMap) {
-      resources.push_back(resource);
+  template <typename ResourceType>
+  static void validateNewResource(const ResourceMap<ResourceType> &resources,
+                                  std::string_view name,
+                                  std::string_view kind) {
+    if (name.empty()) {
+      VKR_RES_ERROR("Cannot create {} with an empty name", kind);
     }
 
-    return resources;
+    if (resources.find(std::string(name)) != resources.end()) {
+      VKR_RES_ERROR("{} resource already exists: {}", kind, name);
+    }
+  }
+
+  template <typename ResourceType>
+  [[nodiscard]] static auto findResource(ResourceMap<ResourceType> &resources,
+                                         std::string_view name)
+      -> std::optional<std::reference_wrapper<ResourceType>> {
+    const auto it = resources.find(std::string(name));
+    if (it == resources.end()) {
+      return std::nullopt;
+    }
+    return *it->second;
+  }
+
+  template <typename ResourceType>
+  [[nodiscard]] static auto
+  findResource(const ResourceMap<ResourceType> &resources,
+               std::string_view name)
+      -> std::optional<std::reference_wrapper<const ResourceType>> {
+    const auto it = resources.find(std::string(name));
+    if (it == resources.end()) {
+      return std::nullopt;
+    }
+    return *it->second;
   }
 
   template <typename ResourceType>
@@ -245,11 +269,10 @@ private:
   const core::CommandBuffers &command_buffers_;
 
   // components
-  std::unordered_map<std::string, std::shared_ptr<IFrameUniformBufferSet>>
-      uniform_buffers_{};
-  std::unordered_map<std::string, std::shared_ptr<Texture>> textures_{};
-  std::unordered_map<std::string, std::shared_ptr<Cubemap>> cubemaps_{};
-  std::unordered_map<std::string, std::shared_ptr<IMesh>> meshes_{};
+  ResourceMap<IFrameUniformBufferSet> uniform_buffers_{};
+  ResourceMap<Texture> textures_{};
+  ResourceMap<Cubemap> cubemaps_{};
+  ResourceMap<IMesh> meshes_{};
   std::string selected_mesh_name_{};
 };
 

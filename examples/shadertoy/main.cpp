@@ -34,6 +34,8 @@ private:
   uint64_t shadertoy_pipeline_revision_{0};
   uint64_t shadertoy_frame_offset_{0};
   float shadertoy_time_offset_{0.0f};
+  std::vector<std::reference_wrapper<vkr::exec::GraphicsPipelineCapability>>
+      shader_pipelines_{};
 
   glm::vec4 shadertoyMouse() const {
     const auto mousePosition = viewportMousePosition();
@@ -142,7 +144,7 @@ private:
       desc.input(channelInput(channel));
     }
 
-    desc.pipelineDesc(shadertoyPipeline(name, fragmentShader));
+    desc.graphicsPipeline = shadertoyPipeline(name, fragmentShader);
     return desc;
   }
 
@@ -162,7 +164,7 @@ private:
       desc.input(channelInput(channel));
     }
 
-    desc.pipelineDesc(shadertoyPipeline("shadertoy.image", "image.frag"));
+    desc.graphicsPipeline = shadertoyPipeline("shadertoy.image", "image.frag");
     return desc;
   }
 
@@ -204,8 +206,8 @@ private:
   [[nodiscard]] auto shadertoyPipelineRevision() -> uint64_t {
     uint64_t hash = 1469598103934665603ULL;
 
-    for (auto pass : graph->passes()) {
-      auto pipeline = pass.get().editablePipeline();
+    for (const auto &capability : shader_pipelines_) {
+      auto pipeline = capability.get().editablePipeline();
       if (!pipeline) {
         continue;
       }
@@ -226,80 +228,38 @@ private:
   }
 
   void buildGraph() override {
-    auto &bufferA = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
-        *executor, *device, *commandPool, *scene);
-    bufferA.setName("buffer.a").read("buffer.a.history").write("buffer.a");
-    bufferA.update(feedbackDesc("shadertoy.buffer.a", "buffer_a.frag", 0, {}));
+    shader_pipelines_.clear();
+    auto &bufferA = graph->feedback(
+        "buffer.a", {},
+        feedbackDesc("shadertoy.buffer.a", "buffer_a.frag", 0, {}));
 
-    auto &bufferB = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
-        *executor, *device, *commandPool, *scene,
-        std::vector<vkr::exec::RenderPassSource>{
-            vkr::exec::RenderPassSource{bufferA}});
-    bufferB.setName("buffer.b")
-        .read("buffer.b.history")
-        .read("buffer.a")
-        .write("buffer.b");
-    bufferB.update(feedbackDesc("shadertoy.buffer.b", "buffer_b.frag", 1, {0}));
+    auto &bufferB = graph->feedback(
+        "buffer.b", {bufferA},
+        feedbackDesc("shadertoy.buffer.b", "buffer_b.frag", 1, {0}));
 
-    auto &bufferC = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
-        *executor, *device, *commandPool, *scene,
-        std::vector<vkr::exec::RenderPassSource>{
-            vkr::exec::RenderPassSource{bufferA},
-            vkr::exec::RenderPassSource{bufferB}});
-    bufferC.setName("buffer.c")
-        .read("buffer.c.history")
-        .read("buffer.a")
-        .read("buffer.b")
-        .write("buffer.c");
-    bufferC.update(
+    auto &bufferC = graph->feedback(
+        "buffer.c", {bufferA, bufferB},
         feedbackDesc("shadertoy.buffer.c", "buffer_c.frag", 2, {0, 1}));
 
-    auto &bufferD = graph->addPass<vkr::exec::FeedbackFullscreenPass>(
-        *executor, *device, *commandPool, *scene,
-        std::vector<vkr::exec::RenderPassSource>{
-            vkr::exec::RenderPassSource{bufferA},
-            vkr::exec::RenderPassSource{bufferB},
-            vkr::exec::RenderPassSource{bufferC}});
-    bufferD.setName("buffer.d")
-        .read("buffer.d.history")
-        .read("buffer.a")
-        .read("buffer.b")
-        .read("buffer.c")
-        .write("buffer.d");
-    bufferD.update(
+    auto &bufferD = graph->feedback(
+        "buffer.d", {bufferA, bufferB, bufferC},
         feedbackDesc("shadertoy.buffer.d", "buffer_d.frag", 3, {0, 1, 2}));
 
-    auto &imagePass = graph->addPass<vkr::exec::FullscreenPass>(
-        *executor, *device, *commandPool, *scene,
-        std::vector<vkr::exec::RenderPassSource>{
-            vkr::exec::RenderPassSource{bufferA},
-            vkr::exec::RenderPassSource{bufferB},
-            vkr::exec::RenderPassSource{bufferC},
-            vkr::exec::RenderPassSource{bufferD}});
-    imagePass.setName("image")
-        .read("buffer.a")
-        .read("buffer.b")
-        .read("buffer.c")
-        .read("buffer.d")
-        .write("scene.color");
-    imagePass.update(imageDesc({0, 1, 2, 3}));
-
-    auto &uiPass = graph->addPass<vkr::exec::UiPass>(
-        *executor, *window, *instance, *surface, *device, *commandPool,
-        *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::exec::RenderPassSource{imagePass}, *graph, *timer, ctx.ui);
-    uiPass.setName("ui").read("scene.color").write("swapchain");
-
-    auto &presentPass = graph->addPass<vkr::exec::PresentPass>(*executor);
-    presentPass.setName("present");
+    auto &imagePass = graph->fullscreen(
+        "image", {bufferA, bufferB, bufferC, bufferD}, imageDesc({0, 1, 2, 3}));
+    graph->present(imagePass);
+    for (const auto &pass : graph->passes()) {
+      const auto capability =
+          pass.get().capability<vkr::exec::GraphicsPipelineCapability>();
+      if (capability) {
+        shader_pipelines_.emplace_back(capability->get());
+      }
+    }
   }
 
   void onDraw() override {
-    auto shadertoyUBO =
-        scene->getUniformBuffer(std::string(kShaderToyUniformName));
-    if (!shadertoyUBO) {
-      return;
-    }
+    auto &shadertoyUBO = scene->uniformBuffer<UniformBufferShaderToyObject>(
+        kShaderToyUniformName);
 
     const uint64_t revision = shadertoyPipelineRevision();
     if (revision != shadertoy_pipeline_revision_) {
@@ -342,26 +302,14 @@ private:
       resolution = channelResolution;
     }
 
-    shadertoyUBO->updateRaw(executor->frameIndex(), &ubo, sizeof(ubo));
+    shadertoyUBO.update(executor->frameIndex(), ubo);
   }
 
   void configure() override {
-    ctx.window = {
-        .title = "ShaderToy Viewer",
-        .width = 1200,
-        .height = 900,
-    };
-
-    ctx.instance = {
-        .name = "shadertoy",
-        .version = VK_MAKE_VERSION(1, 0, 0),
-        .surfaceIntegration = vkr::core::SurfaceIntegration::GLFW,
-    };
-
+    ctx = vkr::exec::RenderAppDesc::windowed("shadertoy", "ShaderToy Viewer");
     ctx.swapchain = {
         .presentMode = VK_PRESENT_MODE_FIFO_KHR,
     };
-    ctx.commandBuffers.size = 2;
 
     ctx.camera = {
         .locked = true,

@@ -10,15 +10,16 @@
 #include "vkr/exec/profiler.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/graph.hh"
-#include "vkr/exec/render/sync.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/ui/ui.hh"
 #include "vkr/util/asset.hh"
 #include "vkr/util/input_tracer.hh"
 #include "vkr/util/timer.hh"
+#include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <string>
 
 namespace vkr::exec {
 
@@ -33,6 +34,10 @@ struct RenderAppDesc {
   ProfilerDesc profiler{};
   vkr::scene::CameraDesc camera{};
   ui::UiDesc ui{};
+
+  [[nodiscard]] static auto
+  windowed(std::string appName, std::string windowTitle, uint32_t width = 1200,
+           uint32_t height = 900, uint32_t framesInFlight = 2) -> RenderAppDesc;
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return asset.isValid() && window.isValid() && instance.isValid() &&
@@ -77,7 +82,6 @@ public:
   std::unique_ptr<core::Swapchain> swapchain;
   std::unique_ptr<core::CommandPool> commandPool;
   std::unique_ptr<core::CommandBuffers> commandBuffers;
-  std::unique_ptr<FrameSync> frameSync;
 
   // resource management
   std::unique_ptr<vkr::scene::Scene> scene;
@@ -86,7 +90,7 @@ public:
   std::unique_ptr<util::InputTracer> inputTracer;
 
   // executor
-  std::unique_ptr<Executor> executor;
+  std::unique_ptr<RenderExecutor> executor;
   std::unique_ptr<RenderGraph> graph;
   std::unique_ptr<Profiler> profiler;
   ProfileReport profileReport;
@@ -100,7 +104,7 @@ protected:
   virtual void onDraw() {}
   virtual void createResources() {}
   virtual void buildGraph() = 0;
-  [[nodiscard]] virtual auto shouldClose() const -> bool;
+  [[nodiscard]] virtual auto shouldClose() const -> bool { return false; }
 
   [[nodiscard]] virtual auto snapshotPath() const -> std::filesystem::path {
     return "snapshot.toml";
@@ -111,7 +115,7 @@ private:
 
   void mainLoop();
   void drawFrame();
-  void updateUiState();
+  void buildPresentation();
   void recreateSwapchain();
 
   void loadSnapshot();

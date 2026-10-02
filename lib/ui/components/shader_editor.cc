@@ -1,4 +1,5 @@
 #include "vkr/ui/components/shader_editor.hh"
+#include "vkr/exec/capability.hh"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -567,19 +568,27 @@ auto ShaderEditor::makeEditor() -> TextEditor {
   return ed;
 }
 
-ShaderEditor::ShaderEditor(exec::RenderGraph &graph)
-    : UiComponent("Shader Editor"), graph_(graph), vert_editor_(makeEditor()),
+ShaderEditor::ShaderEditor(exec::Graph &graph)
+    : UiComponent("Shader Editor"), vert_editor_(makeEditor()),
       frag_editor_(makeEditor()) {
+  const auto passes = graph.passes();
+  pipeline_sources_.reserve(passes.size());
+  for (const auto &pass : passes) {
+    const auto capability =
+        pass.get().capability<exec::GraphicsPipelineCapability>();
+    if (capability) {
+      pipeline_sources_.push_back({pass.get(), capability->get()});
+    }
+  }
   reloadFromPipeline();
 }
 
 auto ShaderEditor::collectTargets() -> std::vector<PipelineTarget> {
   std::vector<PipelineTarget> targets{};
 
-  for (auto passRef : graph_.passes()) {
-    auto &pass = passRef.get();
-
-    auto pipeline = pass.editablePipeline();
+  for (const auto &source : pipeline_sources_) {
+    const auto &pass = source.pass.get();
+    auto pipeline = source.capability.get().editablePipeline();
     if (!pipeline) {
       continue;
     }
@@ -626,8 +635,8 @@ auto ShaderEditor::activePipeline()
 }
 
 auto ShaderEditor::hasPipeline() const -> bool {
-  for (auto pass : graph_.passes()) {
-    if (pass.get().editablePipeline()) {
+  for (const auto &source : pipeline_sources_) {
+    if (source.capability.get().editablePipeline()) {
       return true;
     }
   }

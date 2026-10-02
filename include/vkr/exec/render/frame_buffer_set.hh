@@ -75,6 +75,15 @@ public:
     return vk_framebuffers_.at(index);
   }
 
+  [[nodiscard]] auto renderPass() const noexcept
+      -> const pipeline::RenderPass & {
+    return render_pass_;
+  }
+
+  [[nodiscard]] auto extent() const noexcept -> VkExtent2D {
+    return {desc_.width, desc_.height};
+  }
+
 private:
   // dependencies
   const core::Device &device_;

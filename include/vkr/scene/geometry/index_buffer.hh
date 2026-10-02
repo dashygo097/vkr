@@ -24,7 +24,7 @@ public:
   void destroy();
   void update(const std::vector<uint16_t> &indices);
 
-  [[nodiscard]] auto indices() const noexcept -> std::vector<uint16_t> {
+  [[nodiscard]] auto indices() const noexcept -> const std::vector<uint16_t> & {
     return indices_;
   }
   [[nodiscard]] auto buffer() const noexcept -> VkBuffer {

@@ -52,14 +52,17 @@ void ComputePass::create() {
   createPipeline();
 }
 
-void ComputePass::destroy() {
+void ComputePass::destroy() noexcept {
   pipeline_.reset();
   descriptor_sets_.reset();
   descriptor_layout_.reset();
   descriptor_pool_.reset();
 }
 
-void ComputePass::update(const ComputePassDesc &desc) { desc_ = desc; }
+void ComputePass::update(const ComputePassDesc &desc) {
+  ensureConfigurable();
+  desc_ = desc;
+}
 
 void ComputePass::record() {
   if (!pipeline_ || !pipeline_->valid()) {

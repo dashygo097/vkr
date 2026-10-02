@@ -14,6 +14,8 @@ namespace {
 constexpr uint32_t M{1U << 10};
 constexpr uint32_t N{1U << 10};
 constexpr uint32_t K{1U << 10};
+constexpr uint32_t WarmupRuns = 2;
+constexpr uint32_t MeasuredRuns = 5;
 constexpr uint32_t LocalSize = 16;
 
 struct alignas(16) MMulParams {
@@ -133,7 +135,7 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
 #endif
         .dispatch2D(LocalSize, M, LocalSize, N);
 
-    auto &pass = graph->addPass(*executor, *device);
+    auto &pass = graph->addPass<vkr::exec::ComputePass>(*executor, *device);
     pass.setName("mmul")
         .setReads({"input_A", "input_B"})
         .setWrites({"output_C"});
@@ -157,8 +159,8 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
     };
 
     std::vector<double> cpuSamples{};
-    cpuSamples.reserve(ctx.profiler.captureFrames);
-    for (uint32_t i = 0; i < ctx.profiler.captureFrames; ++i) {
+    cpuSamples.reserve(MeasuredRuns);
+    for (uint32_t i = 0; i < MeasuredRuns; ++i) {
       timer->reset();
       runCpuMMul();
       timer->update();
@@ -176,8 +178,8 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
 
     std::cout << "mmul passed: " << N << "x" << M << "x" << K << " elements\n";
     std::cout << std::fixed << std::setprecision(6);
-    std::cout << "gpu captures:   " << ctx.profiler.captureFrames
-              << " profiled, " << ctx.profiler.warmupFrames << " warmup\n";
+    std::cout << "gpu captures:   " << MeasuredRuns << " profiled, "
+              << WarmupRuns << " warmup\n";
     std::cout << "cpu mmul: min=" << cpuStats.minMs
               << " ms, mean=" << cpuStats.meanMs
               << " ms, median=" << cpuStats.medianMs
@@ -208,9 +210,7 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
   void configure() override {
     ctx.instance.name = "mmul";
     ctx.profiler.enableGpuTimestamps = true;
-    ctx.profiler.warmupFrames = 2;
-    ctx.profiler.captureFrames = 5;
   }
 };
 
-VKR_APP_RUN(MMulApplication)
+VKR_COMP_APP_BENCHMARK(MMulApplication, WarmupRuns, MeasuredRuns)

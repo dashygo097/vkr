@@ -7,11 +7,10 @@
 #include "vkr/core/surface.hh"
 #include "vkr/core/swapchain.hh"
 #include "vkr/core/window.hh"
+#include "vkr/exec/graph.hh"
 #include "vkr/exec/pass.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
-#include "vkr/exec/render/graph.hh"
-#include "vkr/exec/render/passes/fullscreen.hh"
 #include "vkr/exec/render/targets/swapchain.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/render_pass.hh"
@@ -26,13 +25,13 @@ namespace vkr::exec {
 
 class UiPass final : public Pass {
 public:
-  UiPass(Executor &executor, const core::Window &window,
+  UiPass(RenderExecutor &executor, const core::Window &window,
          const core::Instance &instance, const core::Surface &surface,
          const core::Device &device, const core::CommandPool &commandPool,
          const core::CommandBuffers &commandBuffers,
          const core::Swapchain &swapchain, scene::Scene &scene,
          const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-         RenderPassSource source, RenderGraph &graph, util::Timer &timer,
+         Pass &source, Graph &graph, util::Timer &timer,
          ui::UiDesc &uiDesc);
   ~UiPass() override;
 
@@ -40,38 +39,12 @@ public:
   auto operator=(const UiPass &) -> UiPass & = delete;
 
   void create() override;
-  void destroy() override;
+  void destroy() noexcept override;
   void record() override;
-
-  [[nodiscard]] auto shouldClose() const noexcept -> bool {
-    return ui_ && ui_->shouldClose();
-  }
-
-  [[nodiscard]] auto layoutMode() const noexcept -> ui::LayoutMode {
-    return ui_ ? ui_->layoutMode() : ui::LayoutMode::FullScreen;
-  }
-
-  [[nodiscard]] auto viewport() const noexcept -> VkViewport {
-    return ui_ ? ui_->viewport() : VkViewport{};
-  }
-
-  [[nodiscard]] auto viewportFocused() const noexcept -> bool {
-    return ui_ && ui_->viewportFocused();
-  }
-
-  [[nodiscard]] auto viewportHovered() const noexcept -> bool {
-    return ui_ && ui_->viewportHovered();
-  }
-
-  void switchLayoutMode() {
-    if (ui_) {
-      ui_->switchLayoutMode();
-    }
-  }
 
 private:
   // dependencies
-  Executor &executor_;
+  RenderExecutor &executor_;
   const core::Window &window_;
   const core::Instance &instance_;
   const core::Surface &surface_;
@@ -82,8 +55,8 @@ private:
   scene::Scene &scene_;
   const util::AssetSystem &asset_system_;
   scene::CameraDesc &camera_;
-  RenderPassSource source_;
-  RenderGraph &graph_;
+  Pass &source_;
+  Graph &graph_;
   util::Timer &timer_;
   ui::UiDesc &ui_desc_;
 

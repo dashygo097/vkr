@@ -13,19 +13,15 @@ namespace vkr::exec {
 struct ProfilerDesc {
   bool enableGpuTimestamps{false};
   uint32_t maxScopes{64};
-  uint32_t warmupFrames{0};
-  uint32_t captureFrames{1};
   bool logReport{true};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
-    return maxScopes > 0 && captureFrames > 0;
+    return maxScopes > 0;
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
     ar("enableGpuTimestamps", enableGpuTimestamps);
     ar("maxScopes", maxScopes);
-    ar("warmupFrames", warmupFrames);
-    ar("captureFrames", captureFrames);
     ar("logReport", logReport);
   }
 };
@@ -47,6 +43,10 @@ struct ProfileReport {
   [[nodiscard]] auto empty() const noexcept -> bool {
     return gpuSamples.empty() && cpuSamples.empty();
   }
+
+  [[nodiscard]] static auto aggregate(const std::vector<ProfileReport> &reports)
+      -> ProfileReport;
+  void log() const;
 };
 
 class Profiler {

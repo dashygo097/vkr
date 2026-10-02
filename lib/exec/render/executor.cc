@@ -3,33 +3,50 @@
 
 namespace vkr::exec {
 
-Executor::Executor(const core::Device &device, const core::Swapchain &swapchain,
-                   const core::CommandPool &commandPool, FrameSync &frameSync,
-                   scene::Scene &scene, core::CommandBuffers &commandBuffers)
+RenderExecutor::RenderExecutor(const core::Device &device,
+                               const core::Swapchain &swapchain,
+                               const core::CommandPool &commandPool,
+                               scene::Scene &scene,
+                               core::CommandBuffers &commandBuffers)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
-      frame_sync_(frameSync), scene_(scene), command_buffers_(commandBuffers) {
+      scene_(scene), command_buffers_(commandBuffers) {
   if (command_pool_.queueRole() != core::CommandQueueRole::Graphics) {
-    VKR_EXEC_ERROR("Executor requires a graphics command pool");
+    VKR_EXEC_ERROR("RenderExecutor requires a graphics command pool");
   }
 
-  if (command_buffers_.size() != frame_sync_.framesInFlight()) {
-    VKR_EXEC_ERROR("Executor command buffer count {} does not match "
-                   "FrameSync frames in flight {}",
-                   command_buffers_.size(), frame_sync_.framesInFlight());
+  if (command_buffers_.empty()) {
+    VKR_EXEC_ERROR("RenderExecutor requires initialized command buffers");
+  }
+
+  if (swapchain_.imageCount() == 0) {
+    VKR_EXEC_ERROR("RenderExecutor requires an initialized swapchain");
+  }
+
+  image_available_.reserve(framesInFlight());
+  in_flight_.reserve(framesInFlight());
+  render_finished_.reserve(swapchain_.imageCount());
+
+  for (uint32_t i = 0; i < framesInFlight(); ++i) {
+    image_available_.emplace_back(device_);
+    in_flight_.emplace_back(device_, true);
+  }
+
+  for (size_t i = 0; i < swapchain_.imageCount(); ++i) {
+    render_finished_.emplace_back(device_);
   }
 }
 
-auto Executor::beginFrame() -> bool {
+auto RenderExecutor::beginFrame() -> bool {
   ensureFrameInactive("beginFrame");
 
-  frame_sync_.waitForFrame(current_frame_);
+  in_flight_.at(current_frame_).wait();
 
   uint32_t imageIndex = 0;
   if (!acquireNextImage(imageIndex)) {
     return false;
   }
 
-  frame_sync_.resetFrame(current_frame_);
+  in_flight_.at(current_frame_).reset();
 
   VkCommandBuffer commandBuffer = command_buffers_.buffer(current_frame_);
   vkResetCommandBuffer(commandBuffer, 0);
@@ -49,22 +66,22 @@ auto Executor::beginFrame() -> bool {
   frame_submitted_ = false;
   frame_presented_ = false;
 
-  if (profiler_ != nullptr) {
-    profiler_->beginFrame(command_buffer_);
+  if (profiler_) {
+    profiler_->get().beginFrame(command_buffer_);
   }
 
   return true;
 }
 
-void Executor::submitFrame() {
+void RenderExecutor::submitFrame() {
   ensureFrameActive("submitFrame");
 
   if (frame_submitted_) {
-    VKR_EXEC_ERROR("Executor::submitFrame called twice for one frame");
+    VKR_EXEC_ERROR("RenderExecutor::submitFrame called twice for one frame");
   }
 
-  if (profiler_ != nullptr) {
-    profiler_->endFrame(command_buffer_);
+  if (profiler_) {
+    profiler_->get().endFrame(command_buffer_);
   }
 
   if (vkEndCommandBuffer(command_buffer_) != VK_SUCCESS) {
@@ -75,30 +92,32 @@ void Executor::submitFrame() {
   frame_submitted_ = true;
 }
 
-void Executor::presentFrame() {
+void RenderExecutor::presentFrame() {
   ensureFrameActive("presentFrame");
 
   if (!frame_submitted_) {
-    VKR_EXEC_ERROR("Executor::presentFrame called before submitFrame");
+    VKR_EXEC_ERROR("RenderExecutor::presentFrame called before submitFrame");
   }
 
   if (frame_presented_) {
-    VKR_EXEC_ERROR("Executor::presentFrame called twice for one frame");
+    VKR_EXEC_ERROR("RenderExecutor::presentFrame called twice for one frame");
   }
 
   present(image_index_);
   frame_presented_ = true;
 }
 
-void Executor::setProfiler(Profiler *profiler) noexcept {
+void RenderExecutor::setProfiler(Profiler &profiler) noexcept {
   profiler_ = profiler;
 }
 
-void Executor::endFrame() {
+void RenderExecutor::clearProfiler() noexcept { profiler_.reset(); }
+
+void RenderExecutor::endFrame() {
   ensureFrameActive("endFrame");
 
   if (!frame_submitted_) {
-    VKR_EXEC_ERROR("Executor::endFrame called before submitFrame");
+    VKR_EXEC_ERROR("RenderExecutor::endFrame called before submitFrame");
   }
 
   current_frame_ = (current_frame_ + 1) % command_buffers_.size();
@@ -111,44 +130,45 @@ void Executor::endFrame() {
   frame_presented_ = false;
 }
 
-auto Executor::framesInFlight() const noexcept -> uint32_t {
+auto RenderExecutor::framesInFlight() const noexcept -> uint32_t {
   return command_buffers_.size();
 }
 
-void Executor::beginPass(const FramebufferSet &framebufferSet,
-                         const pipeline::RenderPass &renderPass,
-                         const RenderPassBeginDesc &desc) {
+void RenderExecutor::beginPass(const FramebufferSet &framebufferSet,
+                               const std::vector<VkClearValue> &clearValues,
+                               uint32_t framebufferIndex,
+                               VkSubpassContents contents) {
   ensureFrameActive("beginPass");
 
-  if (desc.framebufferIndex >= framebufferSet.buffers().size()) {
+  if (framebufferIndex >= framebufferSet.buffers().size()) {
     VKR_EXEC_ERROR("Framebuffer index {} out of range, framebuffer count {}",
-                   desc.framebufferIndex, framebufferSet.buffers().size());
+                   framebufferIndex, framebufferSet.buffers().size());
   }
 
-  if (desc.renderArea.extent.width == 0 || desc.renderArea.extent.height == 0) {
-    VKR_EXEC_ERROR("RenderPassBeginDesc has invalid extent: {}x{}",
-                   desc.renderArea.extent.width, desc.renderArea.extent.height);
+  const auto extent = framebufferSet.extent();
+  if (extent.width == 0 || extent.height == 0) {
+    VKR_EXEC_ERROR("FramebufferSet has invalid extent: {}x{}", extent.width,
+                   extent.height);
   }
 
   VkRenderPassBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  info.renderPass = renderPass.renderPass();
-  info.framebuffer = framebufferSet.buffer(desc.framebufferIndex);
-  info.renderArea = desc.renderArea;
-  info.clearValueCount = static_cast<uint32_t>(desc.clearValues.size());
-  info.pClearValues =
-      desc.clearValues.empty() ? nullptr : desc.clearValues.data();
+  info.renderPass = framebufferSet.renderPass().renderPass();
+  info.framebuffer = framebufferSet.buffer(framebufferIndex);
+  info.renderArea = {.offset = {0, 0}, .extent = extent};
+  info.clearValueCount = static_cast<uint32_t>(clearValues.size());
+  info.pClearValues = clearValues.empty() ? nullptr : clearValues.data();
 
-  vkCmdBeginRenderPass(command_buffer_, &info, desc.contents);
+  vkCmdBeginRenderPass(command_buffer_, &info, contents);
 }
 
-void Executor::endPass() {
+void RenderExecutor::endPass() {
   ensureFrameActive("endPass");
   vkCmdEndRenderPass(command_buffer_);
 }
 
-void Executor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
-                            const pipeline::DescriptorSets &sets) {
+void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
+                                  const pipeline::DescriptorSets &sets) {
   ensureFrameActive("bindPipeline");
 
   if (pipeline.pipeline() == VK_NULL_HANDLE) {
@@ -177,7 +197,7 @@ void Executor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
                           pipeline.layout(), 0, 1, &descriptorSet, 0, nullptr);
 }
 
-void Executor::setViewportAndScissor(VkExtent2D extent) {
+void RenderExecutor::setViewportAndScissor(VkExtent2D extent) {
   ensureFrameActive("setViewportAndScissor");
 
   VkViewport viewport{};
@@ -197,8 +217,8 @@ void Executor::setViewportAndScissor(VkExtent2D extent) {
   vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
 }
 
-void Executor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
-                           const scene::IndexBuffer &indexBuffer) {
+void RenderExecutor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
+                                 const scene::IndexBuffer &indexBuffer) {
   ensureFrameActive("drawIndexed");
 
   if (vertexBuffer.vertexCount() == 0 || indexBuffer.indices().empty()) {
@@ -216,7 +236,7 @@ void Executor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
                    0);
 }
 
-void Executor::drawGeometry() {
+void RenderExecutor::drawGeometry() {
   ensureFrameActive("drawGeometry");
 
   auto meshNames = scene_.listMeshNames();
@@ -227,13 +247,13 @@ void Executor::drawGeometry() {
   }
 
   for (const auto &name : meshNames) {
-    auto mesh = scene_.getMesh(name);
-    if (!mesh || !mesh->isValid()) {
+    const auto mesh = scene_.findMesh(name);
+    if (!mesh || !mesh->get().isValid()) {
       continue;
     }
 
-    const auto vertexBuffer = mesh->vertexBufferBase();
-    const auto indexBuffer = mesh->indexBuffer();
+    const auto vertexBuffer = mesh->get().vertexBufferBase();
+    const auto indexBuffer = mesh->get().indexBuffer();
     if (!vertexBuffer || !indexBuffer) {
       continue;
     }
@@ -242,46 +262,42 @@ void Executor::drawGeometry() {
   }
 }
 
-void Executor::drawFullscreenTriangle() {
+void RenderExecutor::drawFullscreenTriangle() {
   ensureFrameActive("drawFullscreenTriangle");
   vkCmdDraw(command_buffer_, 3, 1, 0, 0);
 }
 
-void Executor::drawUI(ui::UI &ui) {
-  ensureFrameActive("drawUI");
-  ui.render(command_buffer_);
-}
-
-void Executor::beginProfileScope(std::string_view name) {
+void RenderExecutor::beginProfileScope(std::string_view name) {
   ensureFrameActive("beginProfileScope");
-  if (profiler_ != nullptr) {
-    profiler_->beginScope(command_buffer_, name);
+  if (profiler_) {
+    profiler_->get().beginScope(command_buffer_, name);
   }
 }
 
-void Executor::endProfileScope() {
+void RenderExecutor::endProfileScope() {
   ensureFrameActive("endProfileScope");
-  if (profiler_ != nullptr) {
-    profiler_->endScope(command_buffer_);
+  if (profiler_) {
+    profiler_->get().endScope(command_buffer_);
   }
 }
 
-void Executor::ensureFrameActive(const char *op) const {
+void RenderExecutor::ensureFrameActive(std::string_view op) const {
   if (!frame_active_) {
-    VKR_EXEC_ERROR("Executor::{} called without an active frame", op);
+    VKR_EXEC_ERROR("RenderExecutor::{} called without an active frame", op);
   }
 }
 
-void Executor::ensureFrameInactive(const char *op) const {
+void RenderExecutor::ensureFrameInactive(std::string_view op) const {
   if (frame_active_) {
-    VKR_EXEC_ERROR("Executor::{} called while a frame is already active", op);
+    VKR_EXEC_ERROR("RenderExecutor::{} called while a frame is already active",
+                   op);
   }
 }
 
-auto Executor::acquireNextImage(uint32_t &imageIndex) -> bool {
+auto RenderExecutor::acquireNextImage(uint32_t &imageIndex) -> bool {
   VkResult result = vkAcquireNextImageKHR(
       device_.device(), swapchain_.swapchain(), UINT64_MAX,
-      frame_sync_.imageAvailableSemaphore(current_frame_), VK_NULL_HANDLE,
+      image_available_.at(current_frame_).semaphore(), VK_NULL_HANDLE,
       &imageIndex);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -296,12 +312,12 @@ auto Executor::acquireNextImage(uint32_t &imageIndex) -> bool {
   return true;
 }
 
-void Executor::submitCommandBuffer() {
+void RenderExecutor::submitCommandBuffer() {
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
   VkSemaphore waitSemaphores[] = {
-      frame_sync_.imageAvailableSemaphore(frame_index_)};
+      image_available_.at(frame_index_).semaphore()};
 
   VkPipelineStageFlags waitStages[] = {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -313,23 +329,23 @@ void Executor::submitCommandBuffer() {
   submitInfo.pCommandBuffers = &command_buffer_;
 
   VkSemaphore signalSemaphores[] = {
-      frame_sync_.renderFinishedSemaphore(image_index_)};
+      render_finished_.at(image_index_).semaphore()};
 
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
   if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo,
-                    frame_sync_.inFlightFence(frame_index_)) != VK_SUCCESS) {
+                    in_flight_.at(frame_index_).fence()) != VK_SUCCESS) {
     VKR_EXEC_ERROR("failed to submit draw command buffer");
   }
 }
 
-void Executor::present(uint32_t imageIndex) {
+void RenderExecutor::present(uint32_t imageIndex) {
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
   VkSemaphore signalSemaphores[] = {
-      frame_sync_.renderFinishedSemaphore(imageIndex)};
+      render_finished_.at(imageIndex).semaphore()};
 
   presentInfo.waitSemaphoreCount = 1;
   presentInfo.pWaitSemaphores = signalSemaphores;

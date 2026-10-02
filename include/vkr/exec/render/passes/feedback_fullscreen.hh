@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vkr/exec/capability.hh"
 #include "vkr/exec/render/passes/fullscreen.hh"
 #include "vkr/exec/render/targets/frame_history.hh"
 #include <optional>
@@ -16,87 +17,6 @@ struct FeedbackFullscreenPassDesc {
   std::optional<RenderPassInputDesc> historyInput{};
   std::vector<RenderPassInputDesc> inputs{};
   pipeline::GraphicsPipelineDesc graphicsPipeline{};
-
-  auto targetDesc(OffscreenTargetDesc desc) -> FeedbackFullscreenPassDesc & {
-    target.targetDesc(std::move(desc));
-    return *this;
-  }
-
-  auto targetDesc(FrameHistoryTargetDesc desc) -> FeedbackFullscreenPassDesc & {
-    target = std::move(desc);
-    return *this;
-  }
-
-  auto color(uint32_t width, uint32_t height, VkFormat format)
-      -> FeedbackFullscreenPassDesc & {
-    target.target.colorAttachment(width, height, format);
-    return *this;
-  }
-
-  auto color(ColorAttachmentDesc desc) -> FeedbackFullscreenPassDesc & {
-    target.target.colorAttachment(std::move(desc));
-    return *this;
-  }
-
-  auto colorUsage(VkImageUsageFlags usage) -> FeedbackFullscreenPassDesc & {
-    target.target.color.usage = usage;
-    return *this;
-  }
-
-  auto sampledColor(bool enabled = true) -> FeedbackFullscreenPassDesc & {
-    target.target.sampledColor(enabled);
-    return *this;
-  }
-
-  auto colorFinalLayout(VkImageLayout layout) -> FeedbackFullscreenPassDesc & {
-    target.target.color.finalLayout = layout;
-    return *this;
-  }
-
-  auto colorSampler(resource::SamplerDesc desc)
-      -> FeedbackFullscreenPassDesc & {
-    target.target.color.withSampler(std::move(desc));
-    return *this;
-  }
-
-  auto depth(VkFormat format) -> FeedbackFullscreenPassDesc & {
-    target.target.depthAttachment(target.target.width(), target.target.height(),
-                                  format);
-    return *this;
-  }
-
-  auto depth(uint32_t width, uint32_t height, VkFormat format)
-      -> FeedbackFullscreenPassDesc & {
-    target.target.depthAttachment(width, height, format);
-    return *this;
-  }
-
-  auto disableDepthAttachment() -> FeedbackFullscreenPassDesc & {
-    target.target.disableDepth();
-    return *this;
-  }
-
-  auto frameCount(uint32_t count) -> FeedbackFullscreenPassDesc & {
-    target.frames(count);
-    return *this;
-  }
-
-  auto descriptorPoolDesc(pipeline::DescriptorPoolDesc desc)
-      -> FeedbackFullscreenPassDesc & {
-    descriptorPool = std::move(desc);
-    return *this;
-  }
-
-  auto descriptors(std::vector<pipeline::DescriptorBinding> bindings)
-      -> FeedbackFullscreenPassDesc & {
-    descriptorBindings = std::move(bindings);
-    return *this;
-  }
-
-  auto clearDescriptors() noexcept -> FeedbackFullscreenPassDesc & {
-    descriptorBindings.clear();
-    return *this;
-  }
 
   auto descriptor(pipeline::DescriptorBinding binding)
       -> FeedbackFullscreenPassDesc & {
@@ -141,11 +61,6 @@ struct FeedbackFullscreenPassDesc {
     return *this;
   }
 
-  auto disableHistory() noexcept -> FeedbackFullscreenPassDesc & {
-    historyInput.reset();
-    return *this;
-  }
-
   auto input(uint32_t binding,
              VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FeedbackFullscreenPassDesc & {
@@ -165,17 +80,6 @@ struct FeedbackFullscreenPassDesc {
     return *this;
   }
 
-  auto inputsList(std::vector<RenderPassInputDesc> descs)
-      -> FeedbackFullscreenPassDesc & {
-    inputs = std::move(descs);
-    return *this;
-  }
-
-  auto clearInputs() noexcept -> FeedbackFullscreenPassDesc & {
-    inputs.clear();
-    return *this;
-  }
-
   auto clearColor(float r, float g, float b, float a)
       -> FeedbackFullscreenPassDesc & {
     clearValues.push_back(VkClearValue{.color = {{r, g, b, a}}});
@@ -188,121 +92,27 @@ struct FeedbackFullscreenPassDesc {
     return *this;
   }
 
-  auto clearValuesList(std::vector<VkClearValue> values)
-      -> FeedbackFullscreenPassDesc & {
-    clearValues = std::move(values);
-    return *this;
-  }
-
-  auto clearClearValues() noexcept -> FeedbackFullscreenPassDesc & {
-    clearValues.clear();
-    return *this;
-  }
-
-  auto pipelineDesc(pipeline::GraphicsPipelineDesc desc)
-      -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline = std::move(desc);
-    return *this;
-  }
-
-  auto pipeline(std::string name) -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.setName(std::move(name));
-    return *this;
-  }
-
-  auto vertexInput(scene::VertexInputDesc desc)
-      -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.vertexInputDesc(std::move(desc));
-    return *this;
-  }
-
-  auto shader(pipeline::GraphicsShaderStageDesc shaderDesc)
-      -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.shader(std::move(shaderDesc));
-    return *this;
-  }
-
-  auto vertexShader(resource::ShaderModuleDesc shaderDesc,
-                    std::string entryPoint = "main")
-      -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.vertexShader(std::move(shaderDesc), std::move(entryPoint));
-    return *this;
-  }
-
-  auto fragmentShader(resource::ShaderModuleDesc shaderDesc,
-                      std::string entryPoint = "main")
-      -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.fragmentShader(std::move(shaderDesc),
-                                    std::move(entryPoint));
-    return *this;
-  }
-
-  auto depthTest(VkBool32 testEnable = VK_TRUE, VkBool32 writeEnable = VK_TRUE,
-                 VkCompareOp compareOp = VK_COMPARE_OP_LESS)
-      -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.depth(testEnable, writeEnable, compareOp);
-    return *this;
-  }
-
-  auto disableDepthTest() -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.disableDepth();
-    return *this;
-  }
-
-  auto readOnlyDepthTest() -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.readOnlyDepth();
-    return *this;
-  }
-
-  auto rasterize(pipeline::GraphicsRasterizationDesc desc)
-      -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.rasterize(desc);
-    return *this;
-  }
-
-  auto noCull() -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.noCull();
-    return *this;
-  }
-
-  auto blend(pipeline::GraphicsColorBlendDesc desc)
-      -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.blend(std::move(desc));
-    return *this;
-  }
-
-  auto alphaBlend() -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline.alphaBlend();
-    return *this;
-  }
-
-  auto fullscreenPipeline(std::string name) -> FeedbackFullscreenPassDesc & {
-    graphicsPipeline =
-        pipeline::GraphicsPipelineDesc::fullscreen(std::move(name));
-    return *this;
-  }
-
   [[nodiscard]] static auto feedback(uint32_t width, uint32_t height,
                                      VkFormat format, std::string pipelineName)
       -> FeedbackFullscreenPassDesc {
     FeedbackFullscreenPassDesc desc{};
-    return desc
-        .targetDesc(
-            OffscreenTargetDesc::sampledColorOnly(width, height, format))
-        .clearColor(0.0F, 0.0F, 0.0F, 1.0F)
-        .fullscreenPipeline(std::move(pipelineName));
+    desc.target.target =
+        OffscreenTargetDesc::sampledColorOnly(width, height, format);
+    desc.graphicsPipeline =
+        pipeline::GraphicsPipelineDesc::fullscreen(std::move(pipelineName));
+    desc.clearColor(0.0F, 0.0F, 0.0F, 1.0F);
+    return desc;
   }
 };
 
-class FeedbackFullscreenPass final : public Pass {
+class FeedbackFullscreenPass final : public Pass,
+                                     public GraphicsPipelineCapability,
+                                     public RenderTargetCapability {
 public:
-  FeedbackFullscreenPass(Executor &executor, const core::Device &device,
-                         const core::CommandPool &commandPool,
-                         std::vector<RenderPassSource> sources = {});
-  FeedbackFullscreenPass(Executor &executor, const core::Device &device,
-                         const core::CommandPool &commandPool,
-                         scene::Scene &scene,
-                         std::vector<RenderPassSource> sources = {});
+  FeedbackFullscreenPass(
+      RenderExecutor &executor, const core::Device &device,
+      const core::CommandPool &commandPool, scene::Scene &scene,
+      std::vector<std::reference_wrapper<Pass>> sources = {});
   ~FeedbackFullscreenPass() override;
 
   FeedbackFullscreenPass(const FeedbackFullscreenPass &) = delete;
@@ -310,19 +120,19 @@ public:
       -> FeedbackFullscreenPass & = delete;
 
   void create() override;
-  void destroy() override;
+  void destroy() noexcept override;
   void update(const FeedbackFullscreenPassDesc &desc);
   void record() override;
 
-  auto addSource(RenderPassSource source) -> FeedbackFullscreenPass &;
-  auto setSources(std::vector<RenderPassSource> sources)
+  auto addSource(Pass &source) -> FeedbackFullscreenPass &;
+  auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
       -> FeedbackFullscreenPass &;
 
   [[nodiscard]] auto target() -> OffscreenTarget &;
   [[nodiscard]] auto target() const -> const OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t frameIndex) -> OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t frameIndex) -> OffscreenTarget & override;
   [[nodiscard]] auto target(uint32_t frameIndex) const
-      -> const OffscreenTarget &;
+      -> const OffscreenTarget & override;
 
   [[nodiscard]] auto historyTarget() -> OffscreenTarget &;
   [[nodiscard]] auto historyTarget() const -> const OffscreenTarget &;
@@ -350,14 +160,14 @@ public:
 
 private:
   // dependencies
-  Executor &executor_;
+  RenderExecutor &executor_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  scene::Scene *scene_{nullptr};
+  scene::Scene &scene_;
 
   // components
   FeedbackFullscreenPassDesc desc_{};
-  std::vector<RenderPassSource> sources_{};
+  std::vector<std::reference_wrapper<Pass>> sources_{};
   std::unique_ptr<FrameHistoryTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
   std::vector<std::unique_ptr<FramebufferSet>> framebuffers_{};

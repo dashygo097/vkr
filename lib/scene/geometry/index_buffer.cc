@@ -55,6 +55,18 @@ void IndexBuffer::create() {
   vkCmdCopyBuffer(commandBuffer, staging.buffer(), target_->buffer(), 1,
                   &copyRegion);
 
+  VkBufferMemoryBarrier uploadBarrier{};
+  uploadBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+  uploadBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  uploadBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+  uploadBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  uploadBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  uploadBarrier.buffer = target_->buffer();
+  uploadBarrier.size = bufferSize;
+  vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                       VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr,
+                       1, &uploadBarrier, 0, nullptr);
+
   if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
     vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
                          &commandBuffer);

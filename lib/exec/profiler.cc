@@ -1,9 +1,78 @@
 #include "vkr/exec/profiler.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
-#include <limits>
+#include <numeric>
+#include <unordered_map>
 
 namespace vkr::exec {
+
+auto ProfileReport::aggregate(const std::vector<ProfileReport> &reports)
+    -> ProfileReport {
+  ProfileReport result{};
+  auto aggregateSamples = [&reports](auto samples) {
+    std::unordered_map<std::string, std::vector<double>> timings{};
+    for (const auto &report : reports) {
+      for (const auto &sample : report.*samples) {
+        timings[sample.name].push_back(sample.milliseconds);
+      }
+    }
+
+    std::vector<ProfileSample> aggregated{};
+    aggregated.reserve(timings.size());
+    for (auto &[name, values] : timings) {
+      std::sort(values.begin(), values.end());
+      const double sum = std::accumulate(values.begin(), values.end(), 0.0);
+      double median = values[values.size() / 2];
+      if (values.size() % 2 == 0) {
+        median = (values[(values.size() / 2) - 1] + median) * 0.5;
+      }
+      aggregated.push_back(ProfileSample{
+          .name = name,
+          .milliseconds = sum / static_cast<double>(values.size()),
+          .minMilliseconds = values.front(),
+          .medianMilliseconds = median,
+          .maxMilliseconds = values.back(),
+          .captureCount = static_cast<uint32_t>(values.size()),
+      });
+    }
+    std::sort(aggregated.begin(), aggregated.end(),
+              [](const ProfileSample &first, const ProfileSample &second) {
+                return first.name < second.name;
+              });
+    return aggregated;
+  };
+
+  for (const auto &report : reports) {
+    result.gpuTimestampsEnabled |= report.gpuTimestampsEnabled;
+  }
+  result.cpuSamples = aggregateSamples(&ProfileReport::cpuSamples);
+  result.gpuSamples = aggregateSamples(&ProfileReport::gpuSamples);
+  return result;
+}
+
+void ProfileReport::log() const {
+  if (empty()) {
+    VKR_EXEC_INFO("profile report: no samples");
+    return;
+  }
+
+  auto logSamples = [](std::string_view label,
+                       const std::vector<ProfileSample> &samples) {
+    if (samples.empty()) {
+      return;
+    }
+    VKR_EXEC_INFO("{} profile report:", label);
+    for (const auto &sample : samples) {
+      VKR_EXEC_INFO("  {}: captures={}, min={:.6f} ms, mean={:.6f} ms, "
+                    "median={:.6f} ms, max={:.6f} ms",
+                    sample.name, sample.captureCount, sample.minMilliseconds,
+                    sample.milliseconds, sample.medianMilliseconds,
+                    sample.maxMilliseconds);
+    }
+  };
+  logSamples("CPU", cpuSamples);
+  logSamples("GPU", gpuSamples);
+}
 
 Profiler::Profiler(const core::Device &device,
                    const core::CommandPool &commandPool,

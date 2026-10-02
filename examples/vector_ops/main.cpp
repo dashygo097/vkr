@@ -12,6 +12,8 @@
 namespace {
 
 constexpr uint32_t ElementCount = 1U << 18U;
+constexpr uint32_t WarmupRuns = 8;
+constexpr uint32_t MeasuredRuns = 16;
 constexpr uint32_t LocalSize = 64;
 constexpr uint32_t Iterations = 32;
 
@@ -132,7 +134,7 @@ private:
 #endif
         .dispatch1D(LocalSize, ElementCount);
 
-    auto &pass = graph->addPass(*executor, *device);
+    auto &pass = graph->addPass<vkr::exec::ComputePass>(*executor, *device);
     pass.setName("vector_ops")
         .setReads({"input_a", "input_b"})
         .setWrites({"output_c"});
@@ -149,13 +151,13 @@ private:
       }
     };
 
-    for (uint32_t i = 0; i < ctx.profiler.warmupFrames; ++i) {
+    for (uint32_t i = 0; i < WarmupRuns; ++i) {
       runCpuVectorOps();
     }
 
     std::vector<double> cpuSamples{};
-    cpuSamples.reserve(ctx.profiler.captureFrames);
-    for (uint32_t i = 0; i < ctx.profiler.captureFrames; ++i) {
+    cpuSamples.reserve(MeasuredRuns);
+    for (uint32_t i = 0; i < MeasuredRuns; ++i) {
       timer->reset();
       runCpuVectorOps();
       timer->update();
@@ -174,8 +176,8 @@ private:
     std::cout << "vector_ops passed: " << ElementCount << " elements, "
               << Iterations << " nonlinear iterations\n";
     std::cout << std::fixed << std::setprecision(6);
-    std::cout << "captures:       " << ctx.profiler.captureFrames
-              << " profiled, " << ctx.profiler.warmupFrames << " warmup\n";
+    std::cout << "captures:       " << MeasuredRuns << " profiled, "
+              << WarmupRuns << " warmup\n";
     std::cout << "cpu vector_ops: min=" << cpuStats.minMs
               << " ms, mean=" << cpuStats.meanMs
               << " ms, median=" << cpuStats.medianMs
@@ -211,9 +213,7 @@ private:
   void configure() override {
     ctx.instance.name = "vector_ops";
     ctx.profiler.enableGpuTimestamps = true;
-    ctx.profiler.warmupFrames = 8;
-    ctx.profiler.captureFrames = 16;
   }
 };
 
-VKR_APP_RUN(VectorOpsApp)
+VKR_COMP_APP_BENCHMARK(VectorOpsApp, WarmupRuns, MeasuredRuns)

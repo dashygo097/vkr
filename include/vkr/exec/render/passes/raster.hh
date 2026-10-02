@@ -2,11 +2,11 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
+#include "vkr/exec/capability.hh"
 #include "vkr/exec/pass.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/exec/render/frame_buffer_set.hh"
 #include "vkr/exec/render/passes/input.hh"
-#include "vkr/exec/render/passes/source.hh"
 #include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
@@ -29,93 +29,6 @@ struct RasterPassDesc {
   pipeline::GraphicsPipelineDesc graphicsPipeline{};
   std::vector<std::string> meshNames{};
   std::vector<RenderPassInputDesc> inputs{};
-
-  auto targetDesc(OffscreenTargetDesc desc) -> RasterPassDesc & {
-    target = std::move(desc);
-    return *this;
-  }
-
-  auto color(uint32_t width, uint32_t height, VkFormat format)
-      -> RasterPassDesc & {
-    target.colorAttachment(width, height, format);
-    return *this;
-  }
-
-  auto color(ColorAttachmentDesc desc) -> RasterPassDesc & {
-    target.colorAttachment(std::move(desc));
-    return *this;
-  }
-
-  auto colorUsage(VkImageUsageFlags usage) -> RasterPassDesc & {
-    target.color.usage = usage;
-    return *this;
-  }
-
-  auto sampledColor(bool enabled = true) -> RasterPassDesc & {
-    target.sampledColor(enabled);
-    return *this;
-  }
-
-  auto colorFinalLayout(VkImageLayout layout) -> RasterPassDesc & {
-    target.color.finalLayout = layout;
-    return *this;
-  }
-
-  auto colorSampler(resource::SamplerDesc desc) -> RasterPassDesc & {
-    target.color.withSampler(std::move(desc));
-    return *this;
-  }
-
-  auto depth(VkFormat format) -> RasterPassDesc & {
-    target.depthAttachment(target.width(), target.height(), format);
-    return *this;
-  }
-
-  auto depth(uint32_t width, uint32_t height, VkFormat format)
-      -> RasterPassDesc & {
-    target.depthAttachment(width, height, format);
-    return *this;
-  }
-
-  auto disableDepthAttachment() -> RasterPassDesc & {
-    target.disableDepth();
-    return *this;
-  }
-
-  auto sampledDepth(bool enabled = true) -> RasterPassDesc & {
-    target.sampledDepth(enabled);
-    return *this;
-  }
-
-  auto depthSampler(resource::SamplerDesc desc) -> RasterPassDesc & {
-    target.ensureDepth();
-    target.depth->withSampler(std::move(desc));
-    return *this;
-  }
-
-  auto shadowMapTarget(uint32_t width, uint32_t height,
-                       VkFormat depthFormat = VK_FORMAT_D32_SFLOAT)
-      -> RasterPassDesc & {
-    target = OffscreenTargetDesc::shadowMap(width, height, depthFormat);
-    return *this;
-  }
-
-  auto descriptorPoolDesc(pipeline::DescriptorPoolDesc desc)
-      -> RasterPassDesc & {
-    descriptorPool = std::move(desc);
-    return *this;
-  }
-
-  auto descriptors(std::vector<pipeline::DescriptorBinding> bindings)
-      -> RasterPassDesc & {
-    descriptorBindings = std::move(bindings);
-    return *this;
-  }
-
-  auto clearDescriptors() noexcept -> RasterPassDesc & {
-    descriptorBindings.clear();
-    return *this;
-  }
 
   auto descriptor(pipeline::DescriptorBinding binding) -> RasterPassDesc & {
     descriptorBindings.push_back(std::move(binding));
@@ -164,28 +77,8 @@ struct RasterPassDesc {
     return *this;
   }
 
-  auto inputsList(std::vector<RenderPassInputDesc> descs) -> RasterPassDesc & {
-    inputs = std::move(descs);
-    return *this;
-  }
-
-  auto clearInputs() noexcept -> RasterPassDesc & {
-    inputs.clear();
-    return *this;
-  }
-
   auto mesh(std::string name) -> RasterPassDesc & {
     meshNames.push_back(std::move(name));
-    return *this;
-  }
-
-  auto meshes(std::vector<std::string> names) -> RasterPassDesc & {
-    meshNames = std::move(names);
-    return *this;
-  }
-
-  auto clearMeshes() noexcept -> RasterPassDesc & {
-    meshNames.clear();
     return *this;
   }
 
@@ -200,136 +93,16 @@ struct RasterPassDesc {
     return *this;
   }
 
-  auto clearValuesList(std::vector<VkClearValue> values) -> RasterPassDesc & {
-    clearValues = std::move(values);
-    return *this;
-  }
-
-  auto clearClearValues() noexcept -> RasterPassDesc & {
-    clearValues.clear();
-    return *this;
-  }
-
-  auto pipelineDesc(pipeline::GraphicsPipelineDesc desc) -> RasterPassDesc & {
-    graphicsPipeline = std::move(desc);
-    return *this;
-  }
-
-  auto pipeline(std::string name) -> RasterPassDesc & {
-    graphicsPipeline.setName(std::move(name));
-    return *this;
-  }
-
-  auto vertexInput(scene::VertexInputDesc desc) -> RasterPassDesc & {
-    graphicsPipeline.vertexInputDesc(std::move(desc));
-    return *this;
-  }
-
-  auto shader(pipeline::GraphicsShaderStageDesc shaderDesc)
-      -> RasterPassDesc & {
-    graphicsPipeline.shader(std::move(shaderDesc));
-    return *this;
-  }
-
-  auto vertexShader(resource::ShaderModuleDesc shaderDesc,
-                    std::string entryPoint = "main") -> RasterPassDesc & {
-    graphicsPipeline.vertexShader(std::move(shaderDesc), std::move(entryPoint));
-    return *this;
-  }
-
-  auto fragmentShader(resource::ShaderModuleDesc shaderDesc,
-                      std::string entryPoint = "main") -> RasterPassDesc & {
-    graphicsPipeline.fragmentShader(std::move(shaderDesc),
-                                    std::move(entryPoint));
-    return *this;
-  }
-
-  auto depthTest(VkBool32 testEnable = VK_TRUE, VkBool32 writeEnable = VK_TRUE,
-                 VkCompareOp compareOp = VK_COMPARE_OP_LESS)
-      -> RasterPassDesc & {
-    graphicsPipeline.depth(testEnable, writeEnable, compareOp);
-    return *this;
-  }
-
-  auto disableDepthTest() -> RasterPassDesc & {
-    graphicsPipeline.disableDepth();
-    return *this;
-  }
-
-  auto readOnlyDepthTest() -> RasterPassDesc & {
-    graphicsPipeline.readOnlyDepth();
-    return *this;
-  }
-
-  auto rasterize(pipeline::GraphicsRasterizationDesc desc) -> RasterPassDesc & {
-    graphicsPipeline.rasterize(desc);
-    return *this;
-  }
-
-  auto noCull() -> RasterPassDesc & {
-    graphicsPipeline.noCull();
-    return *this;
-  }
-
-  auto cull(VkCullModeFlags mode) -> RasterPassDesc & {
-    graphicsPipeline.cull(mode);
-    return *this;
-  }
-
-  auto cullBack() -> RasterPassDesc & {
-    graphicsPipeline.cullBack();
-    return *this;
-  }
-
-  auto cullFront() -> RasterPassDesc & {
-    graphicsPipeline.cullFront();
-    return *this;
-  }
-
-  auto frontFace(VkFrontFace face) -> RasterPassDesc & {
-    graphicsPipeline.frontFace(face);
-    return *this;
-  }
-
-  auto blend(pipeline::GraphicsColorBlendDesc desc) -> RasterPassDesc & {
-    graphicsPipeline.blend(std::move(desc));
-    return *this;
-  }
-
-  auto alphaBlend() -> RasterPassDesc & {
-    graphicsPipeline.alphaBlend();
-    return *this;
-  }
-
-  auto meshPipeline(std::string name, scene::VertexInputDesc vertexInputDesc)
-      -> RasterPassDesc & {
-    graphicsPipeline = pipeline::GraphicsPipelineDesc::mesh(
-        std::move(name), std::move(vertexInputDesc));
-    return *this;
-  }
-
-  auto shadowMapPipeline(std::string name,
-                         scene::VertexInputDesc vertexInputDesc,
-                         float depthBiasConstant = 1.25F,
-                         float depthBiasSlope = 1.75F,
-                         VkCullModeFlags shadowCullMode = VK_CULL_MODE_BACK_BIT,
-                         VkCompareOp compareOp = VK_COMPARE_OP_LESS)
-      -> RasterPassDesc & {
-    graphicsPipeline = pipeline::GraphicsPipelineDesc::shadowMap(
-        std::move(name), std::move(vertexInputDesc), depthBiasConstant,
-        depthBiasSlope, shadowCullMode, compareOp);
-    return *this;
-  }
-
   [[nodiscard]] static auto
   offscreen(uint32_t width, uint32_t height, VkFormat colorFormat,
             VkFormat depthFormat, std::string pipelineName,
             scene::VertexInputDesc vertexInputDesc) -> RasterPassDesc {
     RasterPassDesc desc{};
-    return desc
-        .targetDesc(OffscreenTargetDesc::sampledColorDepth(
-            width, height, colorFormat, depthFormat))
-        .meshPipeline(std::move(pipelineName), std::move(vertexInputDesc));
+    desc.target = OffscreenTargetDesc::sampledColorDepth(
+        width, height, colorFormat, depthFormat);
+    desc.graphicsPipeline = pipeline::GraphicsPipelineDesc::mesh(
+        std::move(pipelineName), std::move(vertexInputDesc));
+    return desc;
   }
 
   [[nodiscard]] static auto
@@ -339,17 +112,20 @@ struct RasterPassDesc {
             VkCullModeFlags shadowCullMode = VK_CULL_MODE_BACK_BIT,
             VkCompareOp compareOp = VK_COMPARE_OP_LESS) -> RasterPassDesc {
     RasterPassDesc desc{};
-    return desc.shadowMapTarget(width, height, depthFormat)
-        .shadowMapPipeline(std::move(pipelineName), std::move(vertexInputDesc),
-                           depthBiasConstant, depthBiasSlope, shadowCullMode,
-                           compareOp)
-        .clearDepth();
+    desc.target = OffscreenTargetDesc::shadowMap(width, height, depthFormat);
+    desc.graphicsPipeline = pipeline::GraphicsPipelineDesc::shadowMap(
+        std::move(pipelineName), std::move(vertexInputDesc), depthBiasConstant,
+        depthBiasSlope, shadowCullMode, compareOp);
+    desc.clearDepth();
+    return desc;
   }
 };
 
-class RasterPass final : public Pass {
+class RasterPass final : public Pass,
+                         public GraphicsPipelineCapability,
+                         public RenderTargetCapability {
 public:
-  RasterPass(Executor &executor, const core::Device &device,
+  RasterPass(RenderExecutor &executor, const core::Device &device,
              const core::CommandPool &commandPool, scene::Scene &scene);
   ~RasterPass() override;
 
@@ -357,16 +133,20 @@ public:
   auto operator=(const RasterPass &) -> RasterPass & = delete;
 
   void create() override;
-  void destroy() override;
+  void destroy() noexcept override;
   void update(const RasterPassDesc &desc);
   void record() override;
-  auto addSource(RenderPassSource source) -> RasterPass &;
-  auto setSources(std::vector<RenderPassSource> sources) -> RasterPass &;
+  auto addSource(Pass &source) -> RasterPass &;
+  auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
+      -> RasterPass &;
 
   [[nodiscard]] auto target() -> OffscreenTarget &;
   [[nodiscard]] auto target() const -> const OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t) -> OffscreenTarget & { return target(); }
-  [[nodiscard]] auto target(uint32_t) const -> const OffscreenTarget & {
+  [[nodiscard]] auto target(uint32_t) -> OffscreenTarget & override {
+    return target();
+  }
+  [[nodiscard]] auto target(uint32_t) const
+      -> const OffscreenTarget & override {
     return target();
   }
 
@@ -390,7 +170,7 @@ public:
 
 private:
   // dependencies
-  Executor &executor_;
+  RenderExecutor &executor_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
   scene::Scene &scene_;
@@ -404,10 +184,7 @@ private:
   std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
   std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
-  std::unique_ptr<pipeline::GraphicsPipeline> mesh_grid_pipeline_{};
-  std::unique_ptr<scene::IndexBuffer> mesh_grid_index_buffer_{};
-  std::string mesh_grid_name_{};
-  std::vector<RenderPassSource> sources_{};
+  std::vector<std::reference_wrapper<Pass>> sources_{};
 
   // helpers
   void createTarget();
@@ -419,8 +196,6 @@ private:
   [[nodiscard]] auto createDescriptorWrites() const
       -> std::vector<pipeline::DescriptorSetWriteDesc>;
   [[nodiscard]] auto descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc;
-  void syncSelectedMeshGrid();
-  void recordSelectedMeshGrid(const pipeline::DescriptorSets &sets);
 };
 
 } // namespace vkr::exec

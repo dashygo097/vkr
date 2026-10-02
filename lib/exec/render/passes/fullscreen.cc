@@ -1,6 +1,4 @@
 #include "vkr/exec/render/passes/fullscreen.hh"
-#include "vkr/exec/render/passes/feedback_fullscreen.hh"
-#include "vkr/exec/render/passes/raster.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
 #include <string_view>
@@ -15,19 +13,19 @@ auto imageLayoutForColor(const ColorAttachment &color) -> VkImageLayout {
 }
 
 auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
-                     const RenderPassSource &source,
-                     const RenderPassInputDesc &input, uint32_t frameIndex)
+                     const OffscreenTarget &source,
+                     const RenderPassInputDesc &input)
     -> VkDescriptorImageInfo {
   VkDescriptorImageInfo imageInfo{};
 
   switch (input.kind) {
   case RenderPassInputKind::Color: {
-    if (!source.target(frameIndex).hasColor()) {
+    if (!source.hasColor()) {
       VKR_EXEC_ERROR("FullscreenPass '{}' source {} has no color attachment",
                      std::string(passName), sourceIndex);
     }
 
-    const auto &color = source.target(frameIndex).color();
+    const auto &color = source.color();
     if (!color.hasSampler()) {
       VKR_EXEC_ERROR("FullscreenPass '{}' source {} color has no sampler",
                      std::string(passName), sourceIndex);
@@ -40,7 +38,7 @@ auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
   }
 
   case RenderPassInputKind::Depth: {
-    const auto *depth = source.target(frameIndex).depth();
+    const auto *depth = source.depth();
     if (depth == nullptr) {
       VKR_EXEC_ERROR("FullscreenPass '{}' source {} has no depth attachment",
                      std::string(passName), sourceIndex);
@@ -65,18 +63,13 @@ auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
 }
 
 void appendResourceDescriptorWrites(
-    std::string_view passName, const scene::Scene *scene,
+    std::string_view passName,
+    const scene::Scene &scene,
     const std::vector<pipeline::DescriptorBinding> &bindings,
     std::vector<pipeline::DescriptorSetWriteDesc> &writes,
     uint32_t frameCount) {
   if (bindings.empty()) {
     return;
-  }
-
-  if (scene == nullptr) {
-    VKR_EXEC_ERROR("FullscreenPass '{}' has descriptor resource bindings "
-                   "but no Scene",
-                   std::string(passName));
   }
 
   for (const auto &binding : bindings) {
@@ -88,22 +81,17 @@ void appendResourceDescriptorWrites(
 
     switch (binding.layout.descriptorType) {
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
-      auto uniformBuffer = scene->getUniformBuffer(binding.name);
-      if (!uniformBuffer) {
-        VKR_EXEC_ERROR("FullscreenPass '{}' uniform buffer resource not "
-                       "found: {}",
-                       std::string(passName), binding.name);
-      }
+      const auto &uniformBuffer = scene.uniformBuffer(binding.name);
 
-      if (uniformBuffer->frameCount() != frameCount) {
+      if (uniformBuffer.frameCount() != frameCount) {
         VKR_EXEC_ERROR("FullscreenPass '{}' uniform buffer '{}' frame count "
                        "mismatch: {} vs {}",
                        std::string(passName), binding.name,
-                       uniformBuffer->frameCount(), frameCount);
+                       uniformBuffer.frameCount(), frameCount);
       }
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-        const auto bufferInfo = uniformBuffer->descriptorInfo(frameIndex);
+        const auto bufferInfo = uniformBuffer.descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
             pipeline::DescriptorBufferWriteDesc::one(
@@ -114,21 +102,14 @@ void appendResourceDescriptorWrites(
     }
 
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-      auto texture = scene->getTexture(binding.name);
-      if (!texture) {
-        VKR_EXEC_ERROR("FullscreenPass '{}' texture resource not found: {}",
-                       std::string(passName), binding.name);
-      }
+      const auto &texture = scene.texture(binding.name);
 
-      if (!texture->hasSampler()) {
+      if (!texture.hasSampler()) {
         VKR_EXEC_ERROR("FullscreenPass '{}' texture sampler not found: {}",
                        std::string(passName), binding.name);
       }
 
-      VkDescriptorImageInfo imageInfo{};
-      imageInfo.imageLayout = texture->layout();
-      imageInfo.imageView = texture->imageView();
-      imageInfo.sampler = texture->sampler();
+      const auto imageInfo = texture.descriptorInfo();
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         writes[frameIndex].images.push_back(
@@ -165,18 +146,13 @@ void validateUniqueDescriptorBindings(
 
 } // namespace
 
-FullscreenPass::FullscreenPass(Executor &executor, const core::Device &device,
-                               const core::CommandPool &commandPool,
-                               std::vector<RenderPassSource> sources)
-    : executor_(executor), device_(device), command_pool_(commandPool),
+FullscreenPass::FullscreenPass(RenderExecutor &executor,
+                              const core::Device &device,
+                              const core::CommandPool &commandPool,
+                              scene::Scene &scene,
+                              std::vector<std::reference_wrapper<Pass>> sources)
+    : executor_(executor), device_(device), command_pool_(commandPool), scene_(scene),
       sources_(std::move(sources)) {}
-
-FullscreenPass::FullscreenPass(Executor &executor, const core::Device &device,
-                               const core::CommandPool &commandPool,
-                               scene::Scene &scene,
-                               std::vector<RenderPassSource> sources)
-    : executor_(executor), device_(device), command_pool_(commandPool),
-      scene_(&scene), sources_(std::move(sources)) {}
 
 FullscreenPass::~FullscreenPass() { destroy(); }
 
@@ -190,7 +166,7 @@ void FullscreenPass::create() {
   createPipeline();
 }
 
-void FullscreenPass::destroy() {
+void FullscreenPass::destroy() noexcept {
   pipeline_.reset();
   descriptor_sets_.reset();
   descriptor_layout_.reset();
@@ -200,21 +176,18 @@ void FullscreenPass::destroy() {
   target_.reset();
 }
 
-void FullscreenPass::update(const FullscreenPassDesc &desc) { desc_ = desc; }
+void FullscreenPass::update(const FullscreenPassDesc &desc) {
+  ensureConfigurable();
+  desc_ = desc;
+}
 
 void FullscreenPass::record() {
   if (!target_ || !render_pass_ || !framebuffers_) {
     VKR_EXEC_ERROR("FullscreenPass '{}' recorded before create", name());
   }
 
-  RenderPassBeginDesc beginDesc{
-      .framebufferIndex = 0,
-      .renderArea = {.offset = {0, 0},
-                     .extent = {target_->width(), target_->height()}},
-      .clearValues = desc_.clearValues};
-
   executor_.beginProfileScope(name());
-  executor_.beginPass(*framebuffers_, *render_pass_, beginDesc);
+  executor_.beginPass(*framebuffers_, desc_.clearValues);
   executor_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
@@ -226,13 +199,15 @@ void FullscreenPass::record() {
   executor_.endProfileScope();
 }
 
-auto FullscreenPass::addSource(RenderPassSource source) -> FullscreenPass & {
+auto FullscreenPass::addSource(Pass &source) -> FullscreenPass & {
+  ensureConfigurable();
   sources_.push_back(source);
   return *this;
 }
 
-auto FullscreenPass::setSources(std::vector<RenderPassSource> sources)
+auto FullscreenPass::setSources(std::vector<std::reference_wrapper<Pass>> sources)
     -> FullscreenPass & {
+  ensureConfigurable();
   sources_ = std::move(sources);
   return *this;
 }
@@ -291,9 +266,10 @@ void FullscreenPass::createRenderPass() {
       renderPassDesc.depth.finalLayout = depthDesc.finalLayout;
     }
 
-    if ((depthDesc.usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0) {
-      renderPassDesc.depth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    }
+    renderPassDesc.depth.storeOp =
+        (depthDesc.usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0
+            ? VK_ATTACHMENT_STORE_OP_STORE
+            : depthDesc.storeOp;
   }
 
   render_pass_->update(renderPassDesc);
@@ -454,9 +430,15 @@ auto FullscreenPass::createDescriptorWrites(
                                  writes, frameCount);
 
   for (size_t index = 0; index < sources_.size(); ++index) {
+    const auto source =
+        sources_[index].get().capability<RenderTargetCapability>();
+    if (!source) {
+      VKR_EXEC_ERROR("FullscreenPass '{}' source '{}' has no render target",
+                     name(), sources_[index].get().name());
+    }
     for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
       const VkDescriptorImageInfo imageInfo = sourceImageInfo(
-          name(), index, sources_[index], inputs[index], frameIndex);
+          name(), index, source->get().target(frameIndex), inputs[index]);
 
       auto &write = writes[frameIndex];
       write.images.push_back(pipeline::DescriptorImageWriteDesc::one(

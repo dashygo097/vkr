@@ -5,7 +5,6 @@
 #include "vkr/logger.hh"
 #include "vkr/resource/buffer/buffer.hh"
 #include "vkr/scene/geometry/vbos.hh"
-#include <cstring>
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -22,8 +21,6 @@ public:
   [[nodiscard]] virtual auto vertexCount() const noexcept -> size_t = 0;
 
   [[nodiscard]] virtual auto vertexInputDesc() const -> VertexInputDesc = 0;
-
-  virtual void updateRaw(const void *data, size_t count) = 0;
 };
 
 template <typename VertexType> class VertexBuffer : public IVertexBuffer {
@@ -57,16 +54,6 @@ public:
     }
 
     upload(vertices_.data(), newBufferSize);
-  }
-
-  void updateRaw(const void *data, size_t count) override {
-    if (data == nullptr || count == 0) {
-      VKR_RES_ERROR("Cannot update vertex buffer with invalid raw data!");
-    }
-
-    const auto *rawVertices = static_cast<const VertexType *>(data);
-    std::vector<VertexType> vertices(rawVertices, rawVertices + count);
-    update(vertices);
   }
 
   [[nodiscard]] auto buffer() const -> const VkBuffer & override {

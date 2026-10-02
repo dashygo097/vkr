@@ -1,16 +1,17 @@
 #include "vkr/exec/render/passes/ui.hh"
+#include "vkr/exec/capability.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::exec {
 
-UiPass::UiPass(Executor &executor, const core::Window &window,
+UiPass::UiPass(RenderExecutor &executor, const core::Window &window,
                const core::Instance &instance, const core::Surface &surface,
                const core::Device &device, const core::CommandPool &commandPool,
                const core::CommandBuffers &commandBuffers,
                const core::Swapchain &swapchain, scene::Scene &scene,
                const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-               RenderPassSource source, RenderGraph &graph, util::Timer &timer,
+               Pass &source, Graph &graph, util::Timer &timer,
                ui::UiDesc &uiDesc)
     : executor_(executor), window_(window), instance_(instance),
       surface_(surface), device_(device), command_pool_(commandPool),
@@ -22,6 +23,17 @@ UiPass::~UiPass() { destroy(); }
 
 void UiPass::create() {
   destroy();
+
+  const auto source = source_.capability<RenderTargetCapability>();
+  if (!source) {
+    VKR_EXEC_ERROR("UiPass '{}' source '{}' has no render target", name(),
+                   source_.name());
+  }
+  const auto &sourceTarget = source->get().target(0);
+  if (!sourceTarget.hasColor() || !sourceTarget.color().hasSampler()) {
+    VKR_EXEC_ERROR("UiPass '{}' source '{}' needs a sampled color target",
+                   name(), source_.name());
+  }
 
   target_ =
       std::make_unique<SwapchainTarget>(device_, command_pool_, swapchain_);
@@ -46,13 +58,13 @@ void UiPass::create() {
       .maxSets = 16,
   });
 
-  ui_ = std::make_unique<ui::UI>(
-      window_, instance_, surface_, device_, command_pool_, scene_,
-      asset_system_, camera_, source_.target(), *render_pass_,
-      *descriptor_pool_, graph_, timer_, ui_desc_, command_buffers_);
+  ui_ = std::make_unique<ui::UI>(window_, instance_, surface_, device_,
+                                 command_pool_, scene_, asset_system_, camera_,
+                                 source_, *render_pass_, *descriptor_pool_,
+                                 graph_, timer_, ui_desc_, command_buffers_);
 }
 
-void UiPass::destroy() {
+void UiPass::destroy() noexcept {
   ui_.reset();
   descriptor_pool_.reset();
   framebuffers_.reset();
@@ -65,16 +77,12 @@ void UiPass::record() {
     VKR_EXEC_ERROR("UiPass '{}' recorded before create", name());
   }
 
-  RenderPassBeginDesc beginDesc{
-      .framebufferIndex = executor_.imageIndex(),
-      .renderArea = {.offset = {0, 0},
-                     .extent = {target_->width(), target_->height()}},
-      .clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}}};
-
   executor_.beginProfileScope(name());
-  executor_.beginPass(*framebuffers_, *render_pass_, beginDesc);
+  executor_.beginPass(*framebuffers_,
+                      {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}},
+                      executor_.imageIndex());
   executor_.setViewportAndScissor({target_->width(), target_->height()});
-  executor_.drawUI(*ui_);
+  ui_->render(executor_.commandBuffer(), executor_.frameIndex());
   executor_.endPass();
   executor_.endProfileScope();
 }

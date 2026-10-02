@@ -1,7 +1,8 @@
 #pragma once
 
 #include "TextEditor.h"
-#include "vkr/exec/render/graph.hh"
+#include "vkr/exec/capability.hh"
+#include "vkr/exec/graph.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/ui/components/ui_component.hh"
 #include <filesystem>
@@ -30,10 +31,10 @@ struct ShaderEditorPipelineState {
 
 class ShaderEditor final : public UiComponent {
 public:
-  explicit ShaderEditor(exec::RenderGraph &graph);
+  explicit ShaderEditor(exec::Graph &graph);
 
 private:
-  void render();
+  void render() override;
 
   struct PipelineTarget {
     std::string passName{};
@@ -45,8 +46,13 @@ private:
     }
   };
 
+  struct PipelineSource {
+    std::reference_wrapper<const exec::Pass> pass;
+    std::reference_wrapper<exec::GraphicsPipelineCapability> capability;
+  };
+
   // dependencies
-  exec::RenderGraph &graph_;
+  std::vector<PipelineSource> pipeline_sources_{};
 
   // components
   TextEditor vert_editor_;

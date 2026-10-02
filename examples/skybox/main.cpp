@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
@@ -23,23 +24,20 @@ private:
   void createResources() override {
     scene->createCubemap("skybox", skyboxFaces(), VK_FORMAT_R8G8B8A8_SRGB);
 
-    vkr::scene::Mesh<vkr::scene::VertexSkybox3D> skybox(*device, *commandPool);
-    skybox.load(vkr::scene::skyboxCubeVertices(),
-                vkr::scene::skyboxCubeIndices());
-    scene->createMesh("skybox", skybox);
+    scene->createMesh<vkr::scene::VertexSkybox3D>(
+        "skybox", vkr::scene::skyboxCubeVertices(),
+        vkr::scene::skyboxCubeIndices());
     scene->createUniformBuffer<UniformBuffer3DObject>("skybox", {});
 
     for (const char *part : CornellBoxParts) {
-      vkr::scene::Mesh<vkr::scene::Vertex3D> cornellPart(*device, *commandPool);
-
       std::string path = "objects/cornellbox/";
       path += part;
       path += ".obj";
-      cornellPart.load(assetSystem->resolveApp(path).string());
 
       std::string meshName = "cornellbox.";
       meshName += part;
-      scene->createMesh(meshName, cornellPart);
+      scene->loadMesh<vkr::scene::Vertex3D>(std::move(meshName),
+                                            assetSystem->resolveApp(path));
     }
 
     scene->createUniformBuffer<UniformBuffer3DObject>("cornellbox", {});
@@ -53,32 +51,31 @@ private:
     skyboxDesc.uniform(0, "skybox", VK_SHADER_STAGE_VERTEX_BIT)
         .cubemap(1, "skybox", VK_SHADER_STAGE_FRAGMENT_BIT)
         .mesh("skybox")
+        .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        .clearDepth();
+    skyboxDesc.graphicsPipeline
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/skybox/skybox.vert").string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
             assetSystem->resolveApp("shaders/skybox/skybox.frag").string()))
-        .readOnlyDepthTest()
-        .noCull()
-        .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
-        .clearDepth();
+        .readOnlyDepth()
+        .noCull();
 
-    auto &skyboxPass = graph->addPass<vkr::exec::RasterPass>(
-        *executor, *device, *commandPool, *scene);
-    skyboxPass.setName("skybox").write("scene.skybox");
-    skyboxPass.update(skyboxDesc);
+    auto &skyboxPass = graph->raster("skybox", std::move(skyboxDesc));
 
     auto cornellDesc = vkr::exec::RasterPassDesc::offscreen(
         swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
         VK_FORMAT_D32_SFLOAT, "cornellbox",
         vkr::scene::Vertex3D::vertexInputDesc());
     cornellDesc.uniform(0, "cornellbox", VK_SHADER_STAGE_VERTEX_BIT)
+        .clearColor(0.0f, 0.0f, 0.0f, 0.0f)
+        .clearDepth();
+    cornellDesc.graphicsPipeline
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/cornell/cornell.vert").string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
             assetSystem->resolveApp("shaders/cornell/cornell.frag").string()))
-        .noCull()
-        .clearColor(0.0f, 0.0f, 0.0f, 0.0f)
-        .clearDepth();
+        .noCull();
 
     for (const char *part : CornellBoxParts) {
       std::string meshName = "cornellbox.";
@@ -86,15 +83,12 @@ private:
       cornellDesc.mesh(meshName);
     }
 
-    auto &cornellPass = graph->addPass<vkr::exec::RasterPass>(
-        *executor, *device, *commandPool, *scene);
-    cornellPass.setName("cornellbox").write("scene.cornell");
-    cornellPass.update(cornellDesc);
+    auto &cornellPass = graph->raster("cornellbox", std::move(cornellDesc));
 
     auto compositeDesc = vkr::exec::FullscreenPassDesc::postProcess(
         swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
         "skybox-cornell-composite");
-    compositeDesc
+    compositeDesc.graphicsPipeline
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/composite/composite.vert")
                 .string()))
@@ -102,62 +96,33 @@ private:
             assetSystem->resolveApp("shaders/composite/composite.frag")
                 .string()));
 
-    auto &compositePass = graph->addPass<vkr::exec::CompositePass>(
-        *executor, *device, *commandPool,
-        std::vector<vkr::exec::RenderPassSource>{
-            vkr::exec::RenderPassSource{skyboxPass},
-            vkr::exec::RenderPassSource{cornellPass}});
-    compositePass.setName("composite")
-        .read("scene.skybox")
-        .read("scene.cornell")
-        .write("scene.color");
-    compositePass.update(compositeDesc);
-
-    auto &uiPass = graph->addPass<vkr::exec::UiPass>(
-        *executor, *window, *instance, *surface, *device, *commandPool,
-        *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera,
-        vkr::exec::RenderPassSource{compositePass}, *graph, *timer, ctx.ui);
-    uiPass.setName("ui").read("scene.color").write("swapchain");
-
-    auto &presentPass = graph->addPass<vkr::exec::PresentPass>(*executor);
-    presentPass.setName("present");
+    auto &compositePass = graph->composite(
+        "composite", {skyboxPass, cornellPass}, std::move(compositeDesc));
+    graph->present(compositePass);
   }
 
   void onDraw() override {
     const uint32_t frameIndex = executor->frameIndex();
+    const auto &viewport = ctx.ui.viewport;
+    ctx.camera.aspectRatio =
+        ctx.ui.layoutMode == vkr::ui::LayoutMode::Standard &&
+                viewport.height > 0.0f
+            ? viewport.width / viewport.height
+            : ctx.window.ratio();
 
     UniformBuffer3DObject ubo{};
     ubo.model = glm::mat4(1.0f);
     ubo.view = camera->getView();
     ubo.proj = camera->getProjection();
 
-    scene->getUniformBuffer("skybox")->updateRaw(frameIndex, &ubo, sizeof(ubo));
-    scene->getUniformBuffer("cornellbox")
-        ->updateRaw(frameIndex, &ubo, sizeof(ubo));
-
-    if (ctx.ui.viewport.height > 0 &&
-        ctx.ui.layoutMode == vkr::ui::LayoutMode::Standard) {
-      ctx.camera.aspectRatio =
-          ctx.ui.viewport.width / static_cast<float>(ctx.ui.viewport.height);
-    } else {
-      ctx.camera.aspectRatio = ctx.window.ratio();
-    }
+    scene->uniformBuffer<UniformBuffer3DObject>("skybox").update(frameIndex,
+                                                                 ubo);
+    scene->uniformBuffer<UniformBuffer3DObject>("cornellbox")
+        .update(frameIndex, ubo);
   }
 
   void configure() override {
-    ctx.window = {
-        .title = "Cornell Box",
-        .width = 1200,
-        .height = 900,
-    };
-
-    ctx.instance = {
-        .name = "cornellbox",
-        .version = VK_MAKE_VERSION(1, 0, 0),
-        .surfaceIntegration = vkr::core::SurfaceIntegration::GLFW,
-    };
-    ctx.commandBuffers.size = 2;
-
+    ctx = vkr::exec::RenderAppDesc::windowed("cornellbox", "Cornell Box");
     ctx.camera = {
         .movementSpeed = 5.0f,
         .mouseSensitivity = 0.5f,

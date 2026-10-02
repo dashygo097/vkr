@@ -1,18 +1,18 @@
 #pragma once
 
-#include "vkr/pipeline/graphics_pipeline.hh"
 #include <functional>
 #include <optional>
 #include <string>
+#include <type_traits>
+#include <typeinfo>
 #include <utility>
 #include <vector>
-#include <vulkan/vulkan.h>
 
 namespace vkr::exec {
 
 class Pass {
 public:
-  explicit Pass() = default;
+  Pass() = default;
   virtual ~Pass() = default;
 
   Pass(const Pass &) = delete;
@@ -32,57 +32,55 @@ public:
     return writes_;
   }
 
-  auto setName(std::string name) -> Pass & {
-    name_ = std::move(name);
-    return *this;
-  }
-
-  auto setReads(std::vector<std::string> reads) -> Pass & {
-    reads_ = std::move(reads);
-    return *this;
-  }
-
-  auto setWrites(std::vector<std::string> writes) -> Pass & {
-    writes_ = std::move(writes);
-    return *this;
-  }
-
-  auto read(std::string resource) -> Pass & {
-    reads_.push_back(std::move(resource));
-    return *this;
-  }
-
-  auto write(std::string resource) -> Pass & {
-    writes_.push_back(std::move(resource));
-    return *this;
-  }
+  auto setName(std::string name) -> Pass &;
+  auto setReads(std::vector<std::string> reads) -> Pass &;
+  auto setWrites(std::vector<std::string> writes) -> Pass &;
+  auto read(std::string resource) -> Pass &;
+  auto write(std::string resource) -> Pass &;
 
   virtual void create() = 0;
-  virtual void destroy() = 0;
+  virtual void destroy() noexcept = 0;
   virtual void record() = 0;
 
-  virtual void present() {}
-  virtual void afterFrame() {}
+  template <typename CapabilityT>
+  [[nodiscard]] auto capability() noexcept
+      -> std::optional<std::reference_wrapper<CapabilityT>> {
+    static_assert(std::is_polymorphic_v<CapabilityT>,
+                  "CapabilityT must be a polymorphic interface");
 
-  [[nodiscard]] virtual auto presentsToSwapchain() const noexcept -> bool {
-    return false;
+    try {
+      return std::ref(dynamic_cast<CapabilityT &>(*this));
+    } catch (const std::bad_cast &) {
+      return std::nullopt;
+    }
   }
 
-  [[nodiscard]] virtual auto editablePipeline() noexcept
-      -> std::optional<std::reference_wrapper<pipeline::GraphicsPipeline>> {
-    return std::nullopt;
+  template <typename CapabilityT>
+  [[nodiscard]] auto capability() const noexcept
+      -> std::optional<std::reference_wrapper<const CapabilityT>> {
+    static_assert(std::is_polymorphic_v<CapabilityT>,
+                  "CapabilityT must be a polymorphic interface");
+
+    try {
+      return std::cref(dynamic_cast<const CapabilityT &>(*this));
+    } catch (const std::bad_cast &) {
+      return std::nullopt;
+    }
   }
 
-  [[nodiscard]] virtual auto editablePipeline() const noexcept -> std::optional<
-      std::reference_wrapper<const pipeline::GraphicsPipeline>> {
-    return std::nullopt;
-  }
+protected:
+  void ensureConfigurable() const;
 
 private:
+  friend class Graph;
+
   // components
   std::string name_{};
   std::vector<std::string> reads_{};
   std::vector<std::string> writes_{};
+
+  // states
+  bool configuration_locked_{false};
 };
 
 } // namespace vkr::exec

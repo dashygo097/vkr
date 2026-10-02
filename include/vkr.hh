@@ -6,20 +6,20 @@
 
 #include "vkr/core/sync/fence.hh"
 #include "vkr/core/sync/semaphore.hh"
+#include "vkr/exec/capability.hh"
 #include "vkr/exec/compute/app.hh"
 #include "vkr/exec/compute/executor.hh"
 #include "vkr/exec/compute/graph.hh"
 #include "vkr/exec/compute/passes/compute.hh"
+#include "vkr/exec/graph.hh"
 #include "vkr/exec/profiler.hh"
 #include "vkr/exec/render/app.hh"
-#include "vkr/exec/render/passes/composite.hh"
 #include "vkr/exec/render/passes/feedback_fullscreen.hh"
 #include "vkr/exec/render/passes/fullscreen.hh"
 #include "vkr/exec/render/passes/input.hh"
-#include "vkr/exec/render/passes/post_process.hh"
+#include "vkr/exec/render/passes/overlay.hh"
 #include "vkr/exec/render/passes/present.hh"
 #include "vkr/exec/render/passes/raster.hh"
-#include "vkr/exec/render/passes/source.hh"
 #include "vkr/exec/render/passes/ui.hh"
 #include "vkr/exec/render/targets/frame_history.hh"
 #include "vkr/pipeline/compute_pipeline.hh"
@@ -36,6 +36,8 @@
 #include "vkr/scene/material/texture.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/util/runtime_path.hh"
+#include <exception>
+#include <iostream>
 
 // macros
 #define VKR_APP_RUN(Application)                                               \
@@ -45,7 +47,19 @@
       app.run();                                                               \
       return 0;                                                                \
     } catch (const std::exception &e) {                                        \
-      std::cerr << "mmul failed: " << e.what() << '\n';                        \
+      std::cerr << #Application " failed: " << e.what() << '\n';               \
+      return 1;                                                                \
+    }                                                                          \
+  }
+
+#define VKR_COMP_APP_BENCHMARK(Application, WarmupRuns, MeasuredRuns)          \
+  auto main() -> int {                                                         \
+    try {                                                                      \
+      Application app{};                                                       \
+      app.benchmark((WarmupRuns), (MeasuredRuns));                             \
+      return 0;                                                                \
+    } catch (const std::exception &e) {                                        \
+      std::cerr << #Application " failed: " << e.what() << '\n';               \
       return 1;                                                                \
     }                                                                          \
   }
