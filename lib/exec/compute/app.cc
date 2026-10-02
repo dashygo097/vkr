@@ -33,7 +33,7 @@ void ComputeApplication::initCompute() {
   commandPool = std::make_unique<core::CommandPool>(*device, ctx.commandPool);
   profiler = std::make_unique<Profiler>(*device, *commandPool, ctx.profiler);
   executor = std::make_unique<ComputeExecutor>(*device, *commandPool);
-  executor->setProfiler(profiler.get());
+  executor->setProfiler(*profiler);
 
   createResources();
 
@@ -45,7 +45,7 @@ void ComputeApplication::initCompute() {
 
 void ComputeApplication::execute() {
   for (uint32_t i = 0; i < ctx.profiler.warmupFrames; ++i) {
-    executor->setProfiler(nullptr);
+    executor->clearProfiler();
     executor->begin();
     graph->record();
     executor->submitAndWait();
@@ -55,7 +55,7 @@ void ComputeApplication::execute() {
   std::vector<ProfileReport> captures{};
   captures.reserve(ctx.profiler.captureFrames);
 
-  executor->setProfiler(profiler.get());
+  executor->setProfiler(*profiler);
   for (uint32_t i = 0; i < ctx.profiler.captureFrames; ++i) {
     ProfileReport capture{};
 

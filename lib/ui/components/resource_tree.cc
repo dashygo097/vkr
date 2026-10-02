@@ -22,8 +22,8 @@ void ResourceTree::render() {
     renderCategory("Uniform Buffers", scene_.listUniformBufferNames(),
                    scene_.uniformBufferCount());
 
-    renderCategory("Textures", scene_.listTextureImageNames(),
-                   scene_.textureImageCount());
+    renderCategory("Textures", scene_.listTextureNames(),
+                   scene_.textureCount());
 
     renderCategory("Cubemaps", scene_.listCubemapNames(),
                    scene_.cubemapCount());
@@ -119,14 +119,14 @@ void ResourceTree::renderSelectedResource() {
   ImGui::Text("Name: %s", selected_name_.c_str());
 
   if (selected_type_ == "Meshes") {
-    auto mesh = scene_.getMesh(selected_name_);
-    if (!mesh || !mesh->isValid()) {
+    const auto mesh = scene_.findMesh(selected_name_);
+    if (!mesh || !mesh->get().isValid()) {
       ImGui::TextDisabled("State: unavailable");
       return;
     }
 
-    const auto vertexBuffer = mesh->vertexBufferBase();
-    const auto indexBuffer = mesh->indexBuffer();
+    const auto vertexBuffer = mesh->get().vertexBufferBase();
+    const auto indexBuffer = mesh->get().indexBuffer();
     if (!vertexBuffer || !indexBuffer) {
       ImGui::TextDisabled("State: unavailable");
       return;
@@ -143,7 +143,7 @@ void ResourceTree::renderSelectedResource() {
   }
 
   if (selected_type_ == "Uniform Buffers") {
-    auto uniformBuffer = scene_.getUniformBuffer(selected_name_);
+    const auto uniformBuffer = scene_.findUniformBuffer(selected_name_);
     if (!uniformBuffer) {
       ImGui::TextDisabled("State: unavailable");
       return;
@@ -151,44 +151,48 @@ void ResourceTree::renderSelectedResource() {
 
     ImGui::Text("State: valid");
     ImGui::Text("Buffer size: %llu bytes",
-                static_cast<unsigned long long>(uniformBuffer->byteSize()));
-    ImGui::Text("Frames: %zu", uniformBuffer->frameCount());
-    ImGui::Text("Mapped frames: %zu", uniformBuffer->mappedFrameCount());
+                static_cast<unsigned long long>(
+                    uniformBuffer->get().byteSize()));
+    ImGui::Text("Frames: %zu", uniformBuffer->get().frameCount());
+    ImGui::Text("Mapped frames: %zu",
+                uniformBuffer->get().mappedFrameCount());
     return;
   }
 
   if (selected_type_ == "Textures") {
-    auto texture = scene_.getTexture(selected_name_);
+    const auto texture = scene_.findTexture(selected_name_);
     if (!texture) {
       ImGui::TextDisabled("State: unavailable");
       return;
     }
 
-    const auto &desc = texture->desc();
+    const auto &value = texture->get();
+    const auto &desc = value.desc();
 
-    ImGui::Text("State: %s", texture->valid() ? "valid" : "invalid");
-    ImGui::Text("Size: %ux%u", texture->width(), texture->height());
+    ImGui::Text("State: %s", value.valid() ? "valid" : "invalid");
+    ImGui::Text("Size: %ux%u", value.width(), value.height());
     ImGui::Text("Format: %d", static_cast<int>(desc.image.format));
-    ImGui::Text("Layout: %d", static_cast<int>(texture->layout()));
-    ImGui::Text("Image: %s", texture->hasImage() ? "yes" : "no");
-    ImGui::Text("View: %s", texture->hasImageView() ? "yes" : "no");
-    ImGui::Text("Sampler: %s", texture->hasSampler() ? "yes" : "no");
+    ImGui::Text("Layout: %d", static_cast<int>(value.layout()));
+    ImGui::Text("Image: %s", value.hasImage() ? "yes" : "no");
+    ImGui::Text("View: %s", value.hasImageView() ? "yes" : "no");
+    ImGui::Text("Sampler: %s", value.hasSampler() ? "yes" : "no");
     return;
   }
 
   if (selected_type_ == "Cubemaps") {
-    auto cubemap = scene_.getCubemap(selected_name_);
+    const auto cubemap = scene_.findCubemap(selected_name_);
     if (!cubemap) {
       ImGui::TextDisabled("State: unavailable");
       return;
     }
 
-    const auto &desc = cubemap->desc();
+    const auto &value = cubemap->get();
+    const auto &desc = value.desc();
 
-    ImGui::Text("State: %s", cubemap->valid() ? "valid" : "invalid");
-    ImGui::Text("Size: %ux%u", cubemap->width(), cubemap->height());
+    ImGui::Text("State: %s", value.valid() ? "valid" : "invalid");
+    ImGui::Text("Size: %ux%u", value.width(), value.height());
     ImGui::Text("Format: %d", static_cast<int>(desc.format));
-    ImGui::Text("Layout: %d", static_cast<int>(cubemap->layout()));
+    ImGui::Text("Layout: %d", static_cast<int>(value.layout()));
   }
 }
 

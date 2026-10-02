@@ -80,11 +80,11 @@ void validateUniqueDescriptorBindings(
 
 } // namespace
 
-RasterPass::RasterPass(Executor &executor, const core::Device &device,
+RasterPass::RasterPass(RenderExecutor &executor, const core::Device &device,
                        const core::CommandPool &commandPool,
                        scene::Scene &scene)
-    : executor_(executor), device_(device), command_pool_(commandPool),
-      scene_(scene) {}
+    : Pass(PassCapability::GraphicsPipeline), executor_(executor),
+      device_(device), command_pool_(commandPool), scene_(scene) {}
 
 RasterPass::~RasterPass() { destroy(); }
 
@@ -131,14 +131,8 @@ void RasterPass::record() {
 
   syncSelectedMeshGrid();
 
-  RenderPassBeginDesc beginDesc{
-      .framebufferIndex = 0,
-      .renderArea = {.offset = {0, 0},
-                     .extent = {target_->width(), target_->height()}},
-      .clearValues = desc_.clearValues};
-
   executor_.beginProfileScope(name());
-  executor_.beginPass(*framebuffers_, *render_pass_, beginDesc);
+  executor_.beginPass(*framebuffers_, desc_.clearValues);
   executor_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
@@ -147,14 +141,14 @@ void RasterPass::record() {
       executor_.drawGeometry();
     } else {
       for (const auto &meshName : desc_.meshNames) {
-        auto mesh = scene_.getMesh(meshName);
-        if (!mesh || !mesh->isValid()) {
+        const auto &mesh = scene_.mesh(meshName);
+        if (!mesh.isValid()) {
           VKR_EXEC_ERROR("RasterPass '{}' mesh resource not found: {}", name(),
                          meshName);
         }
 
-        const auto vertexBuffer = mesh->vertexBufferBase();
-        const auto indexBuffer = mesh->indexBuffer();
+        const auto vertexBuffer = mesh.vertexBufferBase();
+        const auto indexBuffer = mesh.indexBuffer();
         if (!vertexBuffer || !indexBuffer) {
           VKR_EXEC_ERROR("RasterPass '{}' mesh '{}' has invalid buffers",
                          name(), meshName);
@@ -340,19 +334,15 @@ auto RasterPass::createDescriptorWrites() const
 
     switch (binding.layout.descriptorType) {
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
-      auto uniformBuffer = scene_.getUniformBuffer(binding.name);
+      const auto &uniformBuffer = scene_.uniformBuffer(binding.name);
 
-      if (!uniformBuffer) {
-        VKR_EXEC_ERROR("Uniform buffer resource not found: {}", binding.name);
-      }
-
-      if (uniformBuffer->frameCount() != frameCount) {
+      if (uniformBuffer.frameCount() != frameCount) {
         VKR_EXEC_ERROR("Uniform buffer '{}' frame count mismatch: {} vs {}",
-                       binding.name, uniformBuffer->frameCount(), frameCount);
+                       binding.name, uniformBuffer.frameCount(), frameCount);
       }
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-        const auto bufferInfo = uniformBuffer->descriptorInfo(frameIndex);
+        const auto bufferInfo = uniformBuffer.descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
             pipeline::DescriptorBufferWriteDesc::one(
@@ -363,29 +353,25 @@ auto RasterPass::createDescriptorWrites() const
     }
 
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-      auto texture = scene_.getTexture(binding.name);
-      auto cubemap = texture ? nullptr : scene_.getCubemap(binding.name);
+      const auto texture = scene_.findTexture(binding.name);
+      const auto cubemap = texture ? std::nullopt
+                                   : scene_.findCubemap(binding.name);
 
       if (!texture && !cubemap) {
         VKR_EXEC_ERROR("Texture or cubemap resource not found: {}",
                        binding.name);
       }
 
-      if (texture && !texture->hasSampler()) {
+      if (texture && !texture->get().hasSampler()) {
         VKR_EXEC_ERROR("Texture sampler not found: {}", binding.name);
       }
 
-      if (cubemap && !cubemap->valid()) {
+      if (cubemap && !cubemap->get().valid()) {
         VKR_EXEC_ERROR("Cubemap resource is invalid: {}", binding.name);
       }
 
-      VkDescriptorImageInfo imageInfo{};
-      imageInfo = texture ? VkDescriptorImageInfo{
-                                .sampler = texture->sampler(),
-                                .imageView = texture->imageView(),
-                                .imageLayout = texture->layout(),
-                            }
-                          : cubemap->descriptorInfo();
+      const auto imageInfo = texture ? texture->get().descriptorInfo()
+                                     : cubemap->get().descriptorInfo();
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         writes[frameIndex].images.push_back(
@@ -483,13 +469,13 @@ void RasterPass::syncSelectedMeshGrid() {
     return;
   }
 
-  auto mesh = scene_.getMesh(selectedMesh);
-  if (!mesh || !mesh->isValid()) {
+  const auto mesh = scene_.findMesh(selectedMesh);
+  if (!mesh || !mesh->get().isValid()) {
     mesh_grid_name_.clear();
     return;
   }
 
-  const auto indexBuffer = mesh->indexBuffer();
+  const auto indexBuffer = mesh->get().indexBuffer();
   if (!indexBuffer) {
     mesh_grid_name_.clear();
     return;
@@ -545,12 +531,12 @@ void RasterPass::recordSelectedMeshGrid(
     return;
   }
 
-  auto mesh = scene_.getMesh(mesh_grid_name_);
-  if (!mesh || !mesh->isValid()) {
+  const auto mesh = scene_.findMesh(mesh_grid_name_);
+  if (!mesh || !mesh->get().isValid()) {
     return;
   }
 
-  const auto vertexBuffer = mesh->vertexBufferBase();
+  const auto vertexBuffer = mesh->get().vertexBufferBase();
   if (!vertexBuffer) {
     return;
   }

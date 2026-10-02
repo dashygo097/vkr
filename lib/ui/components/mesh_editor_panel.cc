@@ -49,14 +49,14 @@ void MeshEditorPanel::render() {
 
   ImGui::Text("Name: %s", currentMesh.c_str());
 
-  auto mesh = scene_.getMesh(currentMesh);
-  if (!mesh || !mesh->isValid()) {
+  const auto mesh = scene_.findMesh(currentMesh);
+  if (!mesh || !mesh->get().isValid()) {
     ImGui::TextDisabled("State: unavailable");
     return;
   }
 
-  const auto vertexBuffer = mesh->vertexBufferBase();
-  const auto indexBuffer = mesh->indexBuffer();
+  const auto vertexBuffer = mesh->get().vertexBufferBase();
+  const auto indexBuffer = mesh->get().indexBuffer();
   if (!vertexBuffer || !indexBuffer) {
     ImGui::TextDisabled("State: unavailable");
     return;

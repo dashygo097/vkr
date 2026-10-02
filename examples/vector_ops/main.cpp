@@ -132,7 +132,7 @@ private:
 #endif
         .dispatch1D(LocalSize, ElementCount);
 
-    auto &pass = graph->addPass(*executor, *device);
+    auto &pass = graph->addPass<vkr::exec::ComputePass>(*executor, *device);
     pass.setName("vector_ops")
         .setReads({"input_a", "input_b"})
         .setWrites({"output_c"});

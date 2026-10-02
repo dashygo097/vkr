@@ -51,9 +51,9 @@ public:
   std::unique_ptr<core::Instance> instance;
   std::unique_ptr<core::Device> device;
   std::unique_ptr<core::CommandPool> commandPool;
-  std::unique_ptr<Profiler> profiler;
   std::unique_ptr<ComputeExecutor> executor;
   std::unique_ptr<ComputeGraph> graph;
+  std::unique_ptr<Profiler> profiler;
   ProfileReport profileReport;
 
 protected:

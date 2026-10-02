@@ -579,7 +579,13 @@ auto ShaderEditor::collectTargets() -> std::vector<PipelineTarget> {
   for (auto passRef : graph_.passes()) {
     auto &pass = passRef.get();
 
-    auto pipeline = pass.editablePipeline();
+    const auto pipelineCapability =
+        pass.capability<exec::GraphicsPipelineCapability>();
+    if (!pipelineCapability) {
+      continue;
+    }
+
+    auto pipeline = pipelineCapability->get().editablePipeline();
     if (!pipeline) {
       continue;
     }
@@ -627,7 +633,9 @@ auto ShaderEditor::activePipeline()
 
 auto ShaderEditor::hasPipeline() const -> bool {
   for (auto pass : graph_.passes()) {
-    if (pass.get().editablePipeline()) {
+    const auto pipelineCapability =
+        pass.get().capability<exec::GraphicsPipelineCapability>();
+    if (pipelineCapability && pipelineCapability->get().editablePipeline()) {
       return true;
     }
   }

@@ -2,6 +2,7 @@
 
 #include "vkr/exec/render/targets/offscreen.hh"
 #include <functional>
+#include <string>
 #include <variant>
 
 namespace vkr::exec {
@@ -19,6 +20,7 @@ struct RenderPassSource {
   explicit RenderPassSource(FullscreenPass &source);
   explicit RenderPassSource(FeedbackFullscreenPass &source);
 
+  [[nodiscard]] auto name() const -> const std::string &;
   [[nodiscard]] auto target() -> OffscreenTarget &;
   [[nodiscard]] auto target() const -> const OffscreenTarget &;
   [[nodiscard]] auto target(uint32_t frameIndex) -> OffscreenTarget &;

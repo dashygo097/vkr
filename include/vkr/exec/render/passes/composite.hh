@@ -6,7 +6,7 @@ namespace vkr::exec {
 
 class CompositePass final : public FullscreenPass {
 public:
-  CompositePass(Executor &executor, const core::Device &device,
+  CompositePass(RenderExecutor &executor, const core::Device &device,
                 const core::CommandPool &commandPool,
                 std::vector<RenderPassSource> sources);
 };

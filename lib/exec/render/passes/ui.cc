@@ -4,7 +4,7 @@
 
 namespace vkr::exec {
 
-UiPass::UiPass(Executor &executor, const core::Window &window,
+UiPass::UiPass(RenderExecutor &executor, const core::Window &window,
                const core::Instance &instance, const core::Surface &surface,
                const core::Device &device, const core::CommandPool &commandPool,
                const core::CommandBuffers &commandBuffers,
@@ -65,14 +65,11 @@ void UiPass::record() {
     VKR_EXEC_ERROR("UiPass '{}' recorded before create", name());
   }
 
-  RenderPassBeginDesc beginDesc{
-      .framebufferIndex = executor_.imageIndex(),
-      .renderArea = {.offset = {0, 0},
-                     .extent = {target_->width(), target_->height()}},
-      .clearValues = {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}}};
-
   executor_.beginProfileScope(name());
-  executor_.beginPass(*framebuffers_, *render_pass_, beginDesc);
+  executor_.beginPass(
+      *framebuffers_,
+      {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}},
+      executor_.imageIndex());
   executor_.setViewportAndScissor({target_->width(), target_->height()});
   executor_.drawUI(*ui_);
   executor_.endPass();

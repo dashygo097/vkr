@@ -133,7 +133,7 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
 #endif
         .dispatch2D(LocalSize, M, LocalSize, N);
 
-    auto &pass = graph->addPass(*executor, *device);
+    auto &pass = graph->addPass<vkr::exec::ComputePass>(*executor, *device);
     pass.setName("mmul")
         .setReads({"input_A", "input_B"})
         .setWrites({"output_C"});

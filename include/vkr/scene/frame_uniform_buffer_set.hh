@@ -18,9 +18,6 @@ public:
   [[nodiscard]] virtual auto frameCount() const noexcept -> size_t = 0;
   [[nodiscard]] virtual auto mappedFrameCount() const noexcept -> size_t = 0;
   [[nodiscard]] virtual auto byteSize() const noexcept -> VkDeviceSize = 0;
-
-  virtual void updateRaw(uint32_t frameIndex, const void *data,
-                         size_t size) = 0;
 };
 
 template <typename UniformType>
@@ -71,13 +68,6 @@ public:
 
   [[nodiscard]] auto byteSize() const noexcept -> VkDeviceSize override {
     return sizeof(UniformType);
-  }
-
-  void updateRaw(uint32_t frameIndex, const void *data, size_t size) override {
-    if (size != sizeof(UniformType)) {
-      VKR_RES_ERROR("Size mismatch in frame uniform buffer update!");
-    }
-    update(frameIndex, *static_cast<const UniformType *>(data));
   }
 
   void update(uint32_t frameIndex, const UniformType &object) {

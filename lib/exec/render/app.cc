@@ -1,4 +1,5 @@
 #include "vkr/exec/render/app.hh"
+#include "vkr/exec/render/passes/present.hh"
 #include "vkr/exec/render/passes/ui.hh"
 #include "vkr/logger.hh"
 #include "vkr/util/toml.hh"
@@ -6,6 +7,24 @@
 #include <filesystem>
 
 namespace vkr::exec {
+
+auto RenderAppDesc::windowed(std::string appName, std::string windowTitle,
+                             uint32_t width, uint32_t height,
+                             uint32_t framesInFlight) -> RenderAppDesc {
+  RenderAppDesc desc{};
+  desc.window = {
+      .title = std::move(windowTitle),
+      .width = width,
+      .height = height,
+  };
+  desc.instance = {
+      .name = std::move(appName),
+      .version = VK_MAKE_VERSION(1, 0, 0),
+      .surfaceIntegration = core::SurfaceIntegration::GLFW,
+  };
+  desc.commandBuffers.size = framesInFlight;
+  return desc;
+}
 
 void RenderApplication::run() {
   initVulkan();
@@ -90,9 +109,6 @@ void RenderApplication::initVulkan() {
       std::make_unique<core::CommandBuffers>(*device, *commandPool);
   commandBuffers->update(ctx.commandBuffers);
 
-  // sync objects
-  frameSync = std::make_unique<FrameSync>(*device, *swapchain, *commandBuffers);
-
   // scene
   scene = std::make_unique<vkr::scene::Scene>(*device, *commandPool,
                                               *commandBuffers);
@@ -108,15 +124,32 @@ void RenderApplication::initVulkan() {
       std::make_unique<vkr::scene::Camera>(*timer, *inputTracer, ctx.camera);
 
   // executor
-  executor = std::make_unique<Executor>(*device, *swapchain, *commandPool,
-                                        *frameSync, *scene, *commandBuffers);
-  executor->setProfiler(profiler.get());
+  executor = std::make_unique<RenderExecutor>(*device, *swapchain, *commandPool,
+                                              *scene, *commandBuffers);
+  executor->setProfiler(*profiler);
 
   // render graph
-  graph = std::make_unique<RenderGraph>();
+  graph =
+      std::make_unique<RenderGraph>(*executor, *device, *commandPool, *scene);
   buildGraph();
+  buildPresentation();
   graph->compile();
   graph->create();
+}
+
+void RenderApplication::buildPresentation() {
+  const auto &source = graph->presentationSource();
+
+  auto &uiPass = graph->addPass<UiPass>(
+      *executor, *window, *instance, *surface, *device, *commandPool,
+      *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera, source,
+      *graph, *timer, ctx.ui);
+  uiPass.setName("ui");
+  graph->addDependency(source.name(), uiPass.name());
+
+  auto &presentPass = graph->addPass<PresentPass>(*executor);
+  presentPass.setName("present");
+  graph->addDependency(uiPass.name(), presentPass.name());
 }
 
 void RenderApplication::mainLoop() {
@@ -170,7 +203,6 @@ void RenderApplication::drawFrame() {
   }
 
   graph->present();
-  graph->afterFrame();
   executor->endFrame();
 
   if (executor->consumeSwapchainOutOfDate()) {
@@ -224,15 +256,19 @@ void RenderApplication::recreateSwapchain() {
     return;
   }
 
-  ctx.camera.aspectRatio = ctx.window.ratio();
-
   graph->destroy();
+  graph.reset();
 
   swapchain->recreate();
-  frameSync->recreate();
 
-  graph = std::make_unique<RenderGraph>();
+  executor = std::make_unique<RenderExecutor>(*device, *swapchain, *commandPool,
+                                              *scene, *commandBuffers);
+  executor->setProfiler(*profiler);
+
+  graph =
+      std::make_unique<RenderGraph>(*executor, *device, *commandPool, *scene);
   buildGraph();
+  buildPresentation();
   graph->compile();
   graph->create();
 }

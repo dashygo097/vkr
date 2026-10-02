@@ -26,7 +26,12 @@ void ExecGraphPanel::render() {
       continue;
     }
 
-    const auto pipeline = pass.editablePipeline();
+    const auto pipelineCapability =
+        pass.capability<exec::GraphicsPipelineCapability>();
+    const auto pipeline = pipelineCapability
+                              ? pipelineCapability->get().editablePipeline()
+                              : std::nullopt;
+
     if (pipeline) {
       ImGui::Text("Graphics Pipeline: %s",
                   pipeline->get().desc().name.empty()

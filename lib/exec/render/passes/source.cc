@@ -14,6 +14,12 @@ RenderPassSource::RenderPassSource(FullscreenPass &source)
 RenderPassSource::RenderPassSource(FeedbackFullscreenPass &source)
     : source_(std::ref(source)) {}
 
+auto RenderPassSource::name() const -> const std::string & {
+  return std::visit(
+      [](auto source) -> const std::string & { return source.get().name(); },
+      source_);
+}
+
 auto RenderPassSource::target() -> OffscreenTarget & { return target(0); }
 
 auto RenderPassSource::target() const -> const OffscreenTarget & {

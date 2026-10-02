@@ -1,20 +1,16 @@
-#include "vkr/exec/compute/graph.hh"
+#include "vkr/exec/graph.hh"
 #include "vkr/logger.hh"
 #include <deque>
 
 namespace vkr::exec {
 
-auto ComputeGraph::addPass(ComputeExecutor &executor,
-                           const core::Device &device) -> ComputePass & {
-  auto pass = std::make_unique<ComputePass>(executor, device);
-  auto &ref = *pass;
-  addPass(std::move(pass));
-  return ref;
-}
+Graph::Graph(std::string name) : name_(std::move(name)) {}
 
-void ComputeGraph::addPass(std::unique_ptr<ComputePass> pass) {
+Graph::~Graph() { destroy(); }
+
+void Graph::addPass(std::unique_ptr<Pass> pass) {
   if (!pass) {
-    VKR_EXEC_ERROR("Cannot add null compute graph pass");
+    VKR_EXEC_ERROR("Cannot add null {} graph pass", name_);
   }
 
   if (!pass->name().empty()) {
@@ -25,26 +21,28 @@ void ComputeGraph::addPass(std::unique_ptr<ComputePass> pass) {
   dirty_ = true;
 }
 
-void ComputeGraph::addDependency(std::string producer, std::string consumer) {
+void Graph::addDependency(std::string producer, std::string consumer) {
   if (producer.empty()) {
-    VKR_EXEC_ERROR("Compute graph dependency has empty producer");
+    VKR_EXEC_ERROR("{} graph dependency has empty producer", name_);
   }
 
   if (consumer.empty()) {
-    VKR_EXEC_ERROR("Compute graph dependency has empty consumer");
+    VKR_EXEC_ERROR("{} graph dependency has empty consumer", name_);
   }
 
   if (producer == consumer) {
-    VKR_EXEC_ERROR("Compute graph pass '{}' cannot depend on itself", producer);
+    VKR_EXEC_ERROR("{} graph pass '{}' cannot depend on itself", name_,
+                   producer);
   }
 
   manual_dependencies_[std::move(producer)].push_back(std::move(consumer));
   dirty_ = true;
 }
 
-void ComputeGraph::compile() {
+void Graph::compile() {
   rebuildNameTable();
   validateDependencies();
+  validateContract();
 
   const size_t passCount = passes_.size();
 
@@ -71,9 +69,9 @@ void ComputeGraph::compile() {
   }
 
   std::deque<size_t> ready{};
-  for (size_t i = 0; i < passCount; ++i) {
-    if (indegree[i] == 0) {
-      ready.push_back(i);
+  for (size_t index = 0; index < passCount; ++index) {
+    if (indegree[index] == 0) {
+      ready.push_back(index);
     }
   }
 
@@ -87,7 +85,7 @@ void ComputeGraph::compile() {
 
     for (const size_t consumer : compiled_dependencies_[index]) {
       if (indegree[consumer] == 0) {
-        VKR_EXEC_ERROR("Compute graph internal indegree underflow");
+        VKR_EXEC_ERROR("{} graph internal indegree underflow", name_);
       }
 
       indegree[consumer]--;
@@ -98,14 +96,14 @@ void ComputeGraph::compile() {
   }
 
   if (ordered_passes_.size() != passCount) {
-    VKR_EXEC_ERROR("Compute graph contains a dependency cycle");
+    VKR_EXEC_ERROR("{} graph contains a dependency cycle", name_);
   }
 
   dirty_ = false;
-  VKR_EXEC_INFO("Compute graph compiled: passes={}", passes_.size());
+  VKR_EXEC_INFO("{} graph compiled: passes={}", name_, passes_.size());
 }
 
-void ComputeGraph::create() {
+void Graph::create() {
   if (dirty_) {
     compile();
   }
@@ -117,7 +115,7 @@ void ComputeGraph::create() {
   created_ = true;
 }
 
-void ComputeGraph::destroy() {
+void Graph::destroy() {
   for (auto it = ordered_passes_.rbegin(); it != ordered_passes_.rend(); ++it) {
     passes_[*it]->destroy();
   }
@@ -125,7 +123,7 @@ void ComputeGraph::destroy() {
   created_ = false;
 }
 
-void ComputeGraph::record() {
+void Graph::record() {
   if (dirty_) {
     compile();
   }
@@ -139,9 +137,8 @@ void ComputeGraph::record() {
   }
 }
 
-auto ComputeGraph::passes()
-    -> std::vector<std::reference_wrapper<ComputePass>> {
-  std::vector<std::reference_wrapper<ComputePass>> result{};
+auto Graph::passes() -> std::vector<std::reference_wrapper<Pass>> {
+  std::vector<std::reference_wrapper<Pass>> result{};
   result.reserve(passes_.size());
 
   for (const auto &pass : passes_) {
@@ -151,9 +148,8 @@ auto ComputeGraph::passes()
   return result;
 }
 
-auto ComputeGraph::passes() const
-    -> std::vector<std::reference_wrapper<const ComputePass>> {
-  std::vector<std::reference_wrapper<const ComputePass>> result{};
+auto Graph::passes() const -> std::vector<std::reference_wrapper<const Pass>> {
+  std::vector<std::reference_wrapper<const Pass>> result{};
   result.reserve(passes_.size());
 
   for (const auto &pass : passes_) {
@@ -163,68 +159,71 @@ auto ComputeGraph::passes() const
   return result;
 }
 
-auto ComputeGraph::getPass(std::string_view name)
-    -> std::optional<std::reference_wrapper<ComputePass>> {
-  const auto index = passIndex(name);
-  return *passes_[index];
+void Graph::present() {
+  if (dirty_) {
+    compile();
+  }
+
+  if (!created_) {
+    VKR_EXEC_ERROR("{} graph presented before create", name_);
+  }
+
+  for (const size_t index : ordered_passes_) {
+    const auto capability = passes_[index]->capability<PresentCapability>();
+    if (capability) {
+      capability->get().present();
+    }
+  }
 }
 
-auto ComputeGraph::getPass(std::string_view name) const
-    -> std::optional<std::reference_wrapper<const ComputePass>> {
-  const auto index = passIndex(name);
-  return *passes_[index];
-}
-
-void ComputeGraph::rebuildNameTable() {
+void Graph::rebuildNameTable() {
   pass_indices_.clear();
   pass_indices_.reserve(passes_.size());
 
-  for (size_t i = 0; i < passes_.size(); ++i) {
-    const auto &name = passes_[i]->name();
+  for (size_t index = 0; index < passes_.size(); ++index) {
+    const auto &name = passes_[index]->name();
 
     if (name.empty()) {
-      VKR_EXEC_ERROR("Compute graph pass at index {} has empty name", i);
+      VKR_EXEC_ERROR("{} graph pass at index {} has empty name", name_, index);
     }
 
-    auto [_, inserted] = pass_indices_.emplace(name, i);
+    auto [_, inserted] = pass_indices_.emplace(name, index);
     if (!inserted) {
-      VKR_EXEC_ERROR("Compute graph pass '{}' is duplicated", name);
+      VKR_EXEC_ERROR("{} graph pass '{}' is duplicated", name_, name);
     }
   }
 }
 
-void ComputeGraph::validatePassNameAvailable(std::string_view name) const {
+void Graph::validatePassNameAvailable(std::string_view name) const {
   if (name.empty()) {
-    VKR_EXEC_ERROR("Compute graph pass name cannot be empty");
+    VKR_EXEC_ERROR("{} graph pass name cannot be empty", name_);
   }
 
   for (const auto &pass : passes_) {
     if (pass->name() == name) {
-      VKR_EXEC_ERROR("Compute graph pass '{}' already exists",
+      VKR_EXEC_ERROR("{} graph pass '{}' already exists", name_,
                      std::string(name));
     }
   }
 }
 
-void ComputeGraph::validateDependencies() const {
+void Graph::validateDependencies() const {
   for (const auto &[producer, consumers] : manual_dependencies_) {
     if (pass_indices_.find(producer) == pass_indices_.end()) {
-      VKR_EXEC_ERROR(
-          "Compute graph dependency references unknown producer '{}'",
-          producer);
+      VKR_EXEC_ERROR("{} graph dependency references unknown producer '{}'",
+                     name_, producer);
     }
 
     for (const auto &consumer : consumers) {
       if (pass_indices_.find(consumer) == pass_indices_.end()) {
-        VKR_EXEC_ERROR(
-            "Compute graph dependency references unknown consumer '{}'",
-            consumer);
+        VKR_EXEC_ERROR("{} graph dependency references unknown consumer '{}'",
+                       name_, consumer);
       }
     }
   }
 }
 
-void ComputeGraph::addCompiledDependency(size_t producer, size_t consumer) {
+void Graph::addCompiledDependency(size_t producer, size_t consumer) {
   if (producer == consumer) {
     return;
   }
@@ -239,7 +238,7 @@ void ComputeGraph::addCompiledDependency(size_t producer, size_t consumer) {
   consumers.push_back(consumer);
 }
 
-void ComputeGraph::buildResourceDependencies() {
+void Graph::buildResourceDependencies() {
   const size_t passCount = passes_.size();
 
   for (size_t producer = 0; producer < passCount; ++producer) {
@@ -274,18 +273,19 @@ void ComputeGraph::buildResourceDependencies() {
   }
 }
 
-auto ComputeGraph::passIndex(std::string_view name) const -> size_t {
-  auto it = pass_indices_.find(std::string(name));
+auto Graph::passIndex(std::string_view name) const -> size_t {
+  const auto it = pass_indices_.find(std::string(name));
 
   if (it == pass_indices_.end()) {
-    VKR_EXEC_ERROR("Compute graph pass '{}' does not exist", std::string(name));
+    VKR_EXEC_ERROR("{} graph pass '{}' does not exist", name_,
+                   std::string(name));
   }
 
   return it->second;
 }
 
-auto ComputeGraph::contains(const std::vector<std::string> &values,
-                            const std::string &target) -> bool {
+auto Graph::contains(const std::vector<std::string> &values,
+                     const std::string &target) -> bool {
   for (const auto &value : values) {
     if (value == target) {
       return true;
