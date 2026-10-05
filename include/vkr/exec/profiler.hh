@@ -15,9 +15,7 @@ struct ProfilerDesc {
   uint32_t maxScopes{64};
   bool logReport{true};
 
-  [[nodiscard]] auto isValid() const noexcept -> bool {
-    return maxScopes > 0;
-  }
+  [[nodiscard]] auto isValid() const noexcept -> bool { return maxScopes > 0; }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
     ar("enableGpuTimestamps", enableGpuTimestamps);

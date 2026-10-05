@@ -64,7 +64,6 @@ void Graph::compile() {
     return;
   }
 
-  // Build locally so a failed compile does not publish a partial plan.
   const size_t passCount = passes_.size();
   std::unordered_map<std::string, size_t> indices{};
   indices.reserve(passCount);
@@ -82,7 +81,8 @@ void Graph::compile() {
   validate();
 
   std::vector<std::vector<size_t>> dependencies(passCount);
-  auto addDependency = [&dependencies](size_t producer, size_t consumer) {
+  auto addDependency = [&dependencies](size_t producer,
+                                       size_t consumer) -> void {
     if (producer == consumer) {
       return;
     }
@@ -184,7 +184,6 @@ void Graph::create() {
   size_t attempted = 0;
   try {
     for (const size_t index : ordered_passes_) {
-      // Include the failing pass: create() may have allocated some resources.
       attempted++;
       passes_[index]->create();
     }
@@ -267,7 +266,7 @@ auto Graph::dependencies(const Pass &pass) const
   }
 
   const auto consumer = std::find_if(
-      passes_.begin(), passes_.end(), [&pass](const auto &entry) {
+      passes_.begin(), passes_.end(), [&pass](const auto &entry) -> bool {
         return std::addressof(*entry) == std::addressof(pass);
       });
   if (consumer == passes_.end()) {

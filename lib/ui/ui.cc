@@ -3,6 +3,7 @@
 #include "vkr/logger.hh"
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <imgui.h>
@@ -10,6 +11,7 @@
 #include <imgui_impl_vulkan.h>
 #include <imgui_internal.h>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace vkr::ui {
@@ -45,6 +47,9 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   if (command_buffers_.empty()) {
     VKR_UI_ERROR("UI requires initialized command buffers");
   }
+  if (!desc_.isValid()) {
+    VKR_UI_ERROR("Invalid UI descriptor");
+  }
 
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
@@ -57,15 +62,10 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   layout_mode_ = desc_.layoutMode;
   // Preserve a saved dockspace even when the first frame opens in fullscreen.
   dockspace_id_ = ImHashStr("DockSpace", 0, ImHashStr("DockSpace"));
-  Theme::apply(desc_.theme);
-
-  ImGuiStyle &style = ImGui::GetStyle();
-  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-    style.WindowRounding = 0.0f;
-    style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-  }
-
   ImGui_ImplGlfw_InitForVulkan(window_.glfwWindow(), true);
+  updateTheme();
+  const auto [interfaceFont, codeFont] = Theme::loadFonts();
+  io.FontDefault = &interfaceFont.get();
 
   ImGui_ImplVulkan_PipelineInfo pipelineInfo{};
   pipelineInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
@@ -135,11 +135,20 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   viewport_panel_ = std::make_unique<ViewportPanel>(
       desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
   viewport_panel_->flipY(desc_.viewportFlipY);
-  graph_panel_ = std::make_unique<ExecGraphPanel>(graph);
+  if (!scene_.selectedMeshName().empty()) {
+    selection_ = {SelectionType::Mesh, scene_.selectedMeshName()};
+  }
+  const auto onSelect = [this](Selection selection) {
+    select(std::move(selection));
+  };
+  inspector_panel_ =
+      std::make_unique<InspectorPanel>(scene_, graph, selection_, onSelect);
+  graph_panel_ = std::make_unique<ExecGraphPanel>(graph, selection_, onSelect);
   assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
   camera_panel_ = std::make_unique<CameraPanel>(
       camera_, desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
-  mesh_editor_panel_ = std::make_unique<MeshEditorPanel>(scene_);
+  mesh_editor_panel_ =
+      std::make_unique<MeshEditorPanel>(scene_, selection_, onSelect);
 
   VKR_UI_INFO("Initializing FPS Panel...");
   fps_panel_ = std::make_unique<FPSPanel>(timer);
@@ -147,7 +156,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   VKR_UI_INFO("FPS Panel initialized successfully.");
 
   VKR_UI_INFO("Initializing Shader Editor...");
-  shader_editor_ = std::make_unique<ShaderEditor>(graph);
+  shader_editor_ = std::make_unique<ShaderEditor>(graph, codeFont.get());
   VKR_UI_INFO("Shader Editor initialized successfully.");
 
   VKR_UI_INFO("Initializing Logging Panel...");
@@ -155,17 +164,19 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   VKR_UI_INFO("Logging Panel initialized successfully.");
 
   VKR_UI_INFO("Initializing Resource Tree...");
-  resource_tree_ = std::make_unique<ResourceTree>(scene_);
+  resource_tree_ = std::make_unique<ResourceTree>(scene_, selection_, onSelect);
   VKR_UI_INFO("Resource Tree initialized successfully.");
 
   dock_components_ = {*viewport_panel_, *resource_tree_, *graph_panel_,
                       *assets_panel_,   *camera_panel_,  *mesh_editor_panel_,
-                      *shader_editor_,  *fps_panel_,     *logging_panel_};
+                      *shader_editor_,  *fps_panel_,     *logging_panel_,
+                      *inspector_panel_};
 
   VKR_UI_INFO("ImGui UI initialized successfully.");
 }
 
 UI::~UI() {
+  inspector_panel_.reset();
   shader_editor_.reset();
   logging_panel_.reset();
   fps_panel_.reset();
@@ -188,6 +199,7 @@ void UI::render(VkCommandBuffer commandBuffer, uint32_t frameIndex) {
   frame_index_ = frameIndex;
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplGlfw_NewFrame();
+  updateTheme();
   ImGui::NewFrame();
 
   if (ImGui::IsKeyPressed(ImGuiKey_F11, false)) {
@@ -316,8 +328,9 @@ void UI::setupDockingLayout() {
 
   ImGui::DockBuilderDockWindow(resource_tree_->name().c_str(), left);
   ImGui::DockBuilderDockWindow(assets_panel_->name().c_str(), left);
+  ImGui::DockBuilderDockWindow(mesh_editor_panel_->name().c_str(), left);
   ImGui::DockBuilderDockWindow(camera_panel_->name().c_str(), right);
-  ImGui::DockBuilderDockWindow(mesh_editor_panel_->name().c_str(), right);
+  ImGui::DockBuilderDockWindow(inspector_panel_->name().c_str(), right);
   ImGui::DockBuilderDockWindow(viewport_panel_->name().c_str(), center);
   ImGui::DockBuilderDockWindow(shader_editor_->name().c_str(), center);
   ImGui::DockBuilderDockWindow(graph_panel_->name().c_str(), center);
@@ -336,7 +349,7 @@ void UI::setupDockingLayout() {
   }
   if (right != center && right != left) {
     ImGui::DockBuilderGetNode(right)->SelectedTabId =
-        ImHashStr("#TAB", 0, ImHashStr(camera_panel_->name().c_str()));
+        ImHashStr("#TAB", 0, ImHashStr(inspector_panel_->name().c_str()));
   }
 
   ImGui::DockBuilderFinish(dockspace_id_);
@@ -466,6 +479,28 @@ void UI::renderStatusBar() {
   ImGui::End();
 }
 
+void UI::select(Selection selection) {
+  selection_ = std::move(selection);
+  if (selection_.type == SelectionType::Mesh) {
+    scene_.selectMesh(selection_.name);
+  } else {
+    scene_.clearSelectedMesh();
+  }
+
+  inspector_panel_->openRef() = true;
+  if (ImGui::FindWindowByName(inspector_panel_->name().c_str())) {
+    const auto &inspector =
+        *ImGui::FindWindowByName(inspector_panel_->name().c_str());
+    const auto &source = *ImGui::GetCurrentWindow()->RootWindow;
+    // Show the inspector without taking keyboard focus from the source panel.
+    // In compact layouts, keep the source tab visible when both share a node.
+    if (inspector.DockId != source.DockId && inspector.DockNode &&
+        inspector.DockNode->TabBar) {
+      inspector.DockNode->TabBar->SelectedTabId = inspector.TabId;
+    }
+  }
+}
+
 void UI::renderWorkspacePanels() {
   desc_.viewport = {};
   desc_.viewportFocused = false;
@@ -485,6 +520,26 @@ void UI::renderWorkspacePanels() {
     if (panel.open()) {
       panel.renderWindow();
     }
+  }
+}
+
+void UI::updateTheme() {
+  // The GLFW helper excludes macOS backing-pixel scale: Retina is handled by
+  // the backend's framebuffer scale, not by doubling logical UI dimensions.
+  const float reportedScale =
+      ImGui_ImplGlfw_GetContentScaleForWindow(window_.glfwWindow());
+  const float dpiScale = std::isfinite(reportedScale) && reportedScale > 0.0f
+                             ? reportedScale
+                             : 1.0f;
+  if (theme_dirty_ || std::abs(dpiScale - dpi_scale_) > 0.001f) {
+    dpi_scale_ = dpiScale;
+    Theme::apply(desc_.theme, dpi_scale_);
+    if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+      auto &style = ImGui::GetStyle();
+      style.WindowRounding = 0.0f;
+      style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
+    theme_dirty_ = false;
   }
 }
 
@@ -519,7 +574,7 @@ void UI::renderThemeControls() {
   }
 
   ImGui::SeparatorText("Shape");
-  ImGui::PushItemWidth(140.0f);
+  ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
 
   changed |= ImGui::SliderFloat("Rounding", &desc_.theme.rounding, 0.0f, 10.0f,
                                 "%.1f");
@@ -528,8 +583,27 @@ void UI::renderThemeControls() {
 
   ImGui::PopItemWidth();
 
+  ImGui::SeparatorText("Density");
+  if (ImGui::MenuItem("Compact", nullptr,
+                     desc_.theme.density == ThemeDensity::Compact)) {
+    desc_.theme.density = ThemeDensity::Compact;
+    changed = true;
+  }
+  if (ImGui::MenuItem("Comfortable", nullptr,
+                     desc_.theme.density == ThemeDensity::Comfortable)) {
+    desc_.theme.density = ThemeDensity::Comfortable;
+    changed = true;
+  }
+
+  ImGui::SeparatorText("Typography");
+  ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
+  ImGui::SliderFloat("UI scale", &desc_.theme.scale, 0.75f, 2.0f, "%.2fx");
+  // Keep the slider geometry stable while dragging or entering a value.
+  changed |= ImGui::IsItemDeactivatedAfterEdit();
+  ImGui::PopItemWidth();
+
   if (changed) {
-    Theme::apply(desc_.theme);
+    theme_dirty_ = true;
   }
 }
 

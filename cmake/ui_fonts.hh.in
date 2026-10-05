@@ -1,0 +1,12 @@
+#pragma once
+
+// Karla and Cousine, bundled with Dear ImGui under SIL OFL 1.1.
+// Copyright notices and license: licenses/ui-fonts.txt.
+namespace {
+
+// ImGui's memory-font API takes mutable storage, but does not modify these
+// bytes. Static storage outlives lazy glyph loading and UI recreation.
+unsigned char interfaceFontData[]{@VKR_UI_FONT_Karla@};
+unsigned char codeFontData[]{@VKR_UI_FONT_Cousine@};
+
+} // namespace

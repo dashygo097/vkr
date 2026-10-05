@@ -31,7 +31,7 @@ struct ShaderEditorPipelineState {
 
 class ShaderEditor final : public UiComponent {
 public:
-  explicit ShaderEditor(exec::Graph &graph);
+  ShaderEditor(exec::Graph &graph, ImFont &codeFont);
 
 private:
   void render() override;
@@ -52,6 +52,7 @@ private:
   };
 
   // dependencies
+  ImFont &code_font_;
   std::vector<PipelineSource> pipeline_sources_{};
 
   // components

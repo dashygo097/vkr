@@ -569,9 +569,9 @@ auto ShaderEditor::makeEditor() -> TextEditor {
   return ed;
 }
 
-ShaderEditor::ShaderEditor(exec::Graph &graph)
-    : UiComponent("Shader Editor"), vert_editor_(makeEditor()),
-      frag_editor_(makeEditor()) {
+ShaderEditor::ShaderEditor(exec::Graph &graph, ImFont &codeFont)
+    : UiComponent("Shader Editor"), code_font_(codeFont),
+      vert_editor_(makeEditor()), frag_editor_(makeEditor()) {
   const auto passes = graph.passes();
   pipeline_sources_.reserve(passes.size());
   for (const auto &pass : passes) {
@@ -1535,14 +1535,9 @@ auto ShaderEditor::render() -> void {
                         ImGuiChildFlags_None,
                         ImGuiWindowFlags_NoScrollbar |
                             ImGuiWindowFlags_NoScrollWithMouse)) {
-    const bool hasCodeFont = ImGui::GetIO().Fonts->Fonts.Size > 1;
-    if (hasCodeFont) {
-      ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
-    }
+    ImGui::PushFont(&code_font_, 0.0f);
     editor.Render("##shader_source", ImVec2(0.0f, 0.0f));
-    if (hasCodeFont) {
-      ImGui::PopFont();
-    }
+    ImGui::PopFont();
   }
   ImGui::EndChild();
   ImGui::PopStyleVar();

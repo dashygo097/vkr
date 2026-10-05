@@ -1,6 +1,23 @@
 # vkr
 add_library(vkr ${VKR_SOURCES} ${VKR_HEADERS})
 
+# Package the existing UI fonts into the library, not each app's asset root.
+foreach(vkr_ui_font IN ITEMS Karla Cousine)
+  set(vkr_ui_font_path
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/imgui/misc/fonts/${vkr_ui_font}-Regular.ttf")
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${vkr_ui_font_path}")
+  file(READ "${vkr_ui_font_path}" VKR_UI_FONT_${vkr_ui_font} HEX)
+  string(REGEX REPLACE "(..)" "0x\\1,"
+    VKR_UI_FONT_${vkr_ui_font} "${VKR_UI_FONT_${vkr_ui_font}}")
+endforeach()
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ui_fonts.hh.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/vkr_ui_fonts.hh" @ONLY)
+target_include_directories(vkr PRIVATE
+  "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set_property(TARGET vkr PROPERTY VKR_UI_FONT_LICENSE
+  "${CMAKE_CURRENT_SOURCE_DIR}/licenses/ui-fonts.txt")
+
 target_precompile_headers(vkr PRIVATE
   $<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/include/vkr/pch.hh>
 )

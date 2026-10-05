@@ -1,8 +1,8 @@
 #pragma once
 
-#include "vkr/exec/capability.hh"
 #include "vkr/exec/graph.hh"
 #include "vkr/ui/components/ui_component.hh"
+#include "vkr/ui/selection.hh"
 #include <array>
 #include <cstddef>
 #include <functional>
@@ -13,20 +13,19 @@ namespace vkr::ui {
 
 class ExecGraphPanel final : public UiComponent {
 public:
-  explicit ExecGraphPanel(const exec::Graph &graph);
+  ExecGraphPanel(const exec::Graph &graph, const Selection &selection,
+                 std::function<void(Selection)> onSelect);
 
 private:
   void render() override;
 
   struct PassEntry {
     std::reference_wrapper<const exec::Pass> pass;
-    std::optional<
-        std::reference_wrapper<const exec::GraphicsPipelineCapability>>
-        pipeline;
-    std::optional<std::reference_wrapper<const exec::RenderTargetCapability>>
-        target;
+    bool pipeline{false};
+    bool target{false};
     bool presents{false};
     std::vector<size_t> dependencies;
+    size_t consumerCount{};
     ImVec2 position{};
   };
 
@@ -41,7 +40,9 @@ private:
   void renderGraph(float height);
   void drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
                  std::optional<size_t> hoveredNode);
-  void renderPass(const PassEntry &entry);
+
+  const Selection &selection_;
+  std::function<void(Selection)> on_select_;
 
   // Cached graph layout, in font-relative coordinates.
   std::vector<PassEntry> passes_{};
@@ -50,12 +51,11 @@ private:
   ImVec2 graph_max_{};
 
   // View state.
-  size_t selected_pass_{};
   ImVec2 view_offset_{};
   float zoom_{1.0f};
-  bool fit_view_{true};
+  bool view_initialized_{false};
+  bool fit_view_{false};
   bool dragging_canvas_{false};
-  bool show_details_{false};
 };
 
 } // namespace vkr::ui

@@ -1,5 +1,7 @@
 #include "vkr/ui/theme.hh"
-#include <algorithm>
+#include "vkr/logger.hh"
+#include "vkr_ui_fonts.hh"
+#include <cstdio>
 
 namespace vkr::ui {
 
@@ -42,7 +44,7 @@ void Theme::applyDarkBase(ImGuiStyle &style) {
   auto &colors = style.Colors;
 
   colors[ImGuiCol_Text] = ImVec4(0.88f, 0.90f, 0.93f, 1.00f);
-  colors[ImGuiCol_TextDisabled] = ImVec4(0.55f, 0.58f, 0.63f, 1.00f);
+  colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.63f, 0.68f, 1.00f);
 
   colors[ImGuiCol_WindowBg] = ImVec4(0.10f, 0.11f, 0.13f, 1.00f);
   colors[ImGuiCol_ChildBg] = ImVec4(0.08f, 0.09f, 0.11f, 1.00f);
@@ -71,9 +73,9 @@ void Theme::applyDarkBase(ImGuiStyle &style) {
 
   colors[ImGuiCol_Tab] = ImVec4(0.11f, 0.12f, 0.15f, 1.00f);
   colors[ImGuiCol_TabHovered] = ImVec4(0.20f, 0.23f, 0.28f, 1.00f);
-  colors[ImGuiCol_TabActive] = ImVec4(0.19f, 0.21f, 0.24f, 1.00f);
-  colors[ImGuiCol_TabUnfocused] = ImVec4(0.10f, 0.11f, 0.13f, 1.00f);
-  colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.14f, 0.15f, 0.18f, 1.00f);
+  colors[ImGuiCol_TabSelected] = ImVec4(0.19f, 0.21f, 0.24f, 1.00f);
+  colors[ImGuiCol_TabDimmed] = ImVec4(0.10f, 0.11f, 0.13f, 1.00f);
+  colors[ImGuiCol_TabDimmedSelected] = ImVec4(0.14f, 0.15f, 0.18f, 1.00f);
 
   colors[ImGuiCol_DockingPreview] = ImVec4(0.32f, 0.60f, 0.94f, 0.45f);
   colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.05f, 0.06f, 0.07f, 1.00f);
@@ -118,9 +120,9 @@ void Theme::applyLightBase(ImGuiStyle &style) {
 
   colors[ImGuiCol_Tab] = ImVec4(0.86f, 0.89f, 0.93f, 1.00f);
   colors[ImGuiCol_TabHovered] = ImVec4(0.81f, 0.86f, 0.93f, 1.00f);
-  colors[ImGuiCol_TabActive] = ImVec4(0.98f, 0.98f, 0.99f, 1.00f);
-  colors[ImGuiCol_TabUnfocused] = ImVec4(0.92f, 0.94f, 0.96f, 1.00f);
-  colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.95f, 0.96f, 0.98f, 1.00f);
+  colors[ImGuiCol_TabSelected] = ImVec4(0.98f, 0.98f, 0.99f, 1.00f);
+  colors[ImGuiCol_TabDimmed] = ImVec4(0.92f, 0.94f, 0.96f, 1.00f);
+  colors[ImGuiCol_TabDimmedSelected] = ImVec4(0.95f, 0.96f, 0.98f, 1.00f);
 
   colors[ImGuiCol_TableHeaderBg] = ImVec4(0.88f, 0.91f, 0.94f, 1.00f);
   colors[ImGuiCol_TableBorderStrong] = ImVec4(0.73f, 0.77f, 0.82f, 1.00f);
@@ -138,14 +140,42 @@ void Theme::applyLightBase(ImGuiStyle &style) {
   colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.24f, 0.31f, 0.35f);
 }
 
-void Theme::apply(const ThemeDesc &config) {
-  if (config.dark) {
-    ImGui::StyleColorsDark();
-  } else {
-    ImGui::StyleColorsLight();
+auto Theme::loadFonts()
+    -> std::pair<std::reference_wrapper<ImFont>,
+                 std::reference_wrapper<ImFont>> {
+  auto &atlas = *ImGui::GetIO().Fonts;
+  ImFontConfig fontConfig{};
+  // Embedded bytes outlive the context; ImGui must not free them.
+  fontConfig.FontDataOwnedByAtlas = false;
+  std::snprintf(fontConfig.Name, sizeof(fontConfig.Name), "Karla (interface)");
+  if (!atlas.AddFontFromMemoryTTF(
+          interfaceFontData, static_cast<int>(sizeof(interfaceFontData)),
+          0.0f, &fontConfig)) {
+    VKR_UI_ERROR("Failed to load the interface font");
+  }
+  auto &interfaceFont = *atlas.Fonts.back();
+  std::snprintf(fontConfig.Name, sizeof(fontConfig.Name), "Cousine (code)");
+  if (!atlas.AddFontFromMemoryTTF(
+          codeFontData, static_cast<int>(sizeof(codeFontData)),
+          0.0f, &fontConfig)) {
+    VKR_UI_ERROR("Failed to load the code font");
+  }
+  return {interfaceFont, *atlas.Fonts.back()};
+}
+
+void Theme::apply(const ThemeDesc &config, float dpiScale) {
+  if (!config.isValid() || !std::isfinite(dpiScale) || dpiScale <= 0.0f) {
+    VKR_UI_ERROR("Invalid theme or DPI scale");
   }
 
-  ImGuiStyle &style = ImGui::GetStyle();
+  auto &style = ImGui::GetStyle();
+  // Rebuild from unscaled metrics: repeated DPI/density changes cannot drift.
+  style = ImGuiStyle{};
+  if (config.dark) {
+    ImGui::StyleColorsDark(&style);
+  } else {
+    ImGui::StyleColorsLight(&style);
+  }
 
   if (config.dark) {
     applyDarkBase(style);
@@ -156,8 +186,9 @@ void Theme::apply(const ThemeDesc &config) {
   const ImVec4 accent = accentColor(config.accent);
   const ImVec4 accentHover = accentHoverColor(config.accent);
   const ImVec4 accentActive = accentActiveColor(config.accent);
-  const float headerHoverAlpha = config.dark ? 0.20f : 0.12f;
-  const float headerActiveAlpha = config.dark ? 0.30f : 0.20f;
+  const float headerAlpha = config.dark ? 0.18f : 0.12f;
+  const float headerHoverAlpha = config.dark ? 0.24f : 0.16f;
+  const float headerActiveAlpha = config.dark ? 0.32f : 0.22f;
   const float selectionAlpha = config.dark ? 0.30f : 0.22f;
 
   auto &colors = style.Colors;
@@ -180,6 +211,7 @@ void Theme::apply(const ThemeDesc &config) {
   colors[ImGuiCol_ResizeGripActive] =
       ImVec4(accentActive.x, accentActive.y, accentActive.z, 0.90f);
 
+  colors[ImGuiCol_Header] = ImVec4(accent.x, accent.y, accent.z, headerAlpha);
   colors[ImGuiCol_HeaderHovered] =
       ImVec4(accent.x, accent.y, accent.z, headerHoverAlpha);
   colors[ImGuiCol_HeaderActive] =
@@ -196,10 +228,10 @@ void Theme::apply(const ThemeDesc &config) {
   colors[ImGuiCol_DockingPreview] = ImVec4(accent.x, accent.y, accent.z, 0.45f);
   colors[ImGuiCol_TextSelectedBg] =
       ImVec4(accent.x, accent.y, accent.z, selectionAlpha);
-  colors[ImGuiCol_NavHighlight] = accent;
+  colors[ImGuiCol_NavCursor] = accent;
 
-  const float rounding = std::clamp(config.rounding, 0.0f, 10.0f);
-  style.Alpha = std::clamp(config.alpha, 0.35f, 1.0f);
+  const float rounding = config.rounding;
+  style.Alpha = config.alpha;
   style.WindowRounding = rounding;
   style.ChildRounding = rounding;
   style.FrameRounding = rounding;
@@ -208,17 +240,19 @@ void Theme::apply(const ThemeDesc &config) {
   style.GrabRounding = rounding;
   style.TabRounding = rounding;
 
-  style.WindowPadding = ImVec2(10.0f, 8.0f);
-  style.FramePadding = ImVec2(6.0f, 4.0f);
-  style.CellPadding = ImVec2(6.0f, 3.0f);
-  style.ItemSpacing = ImVec2(6.0f, 5.0f);
-  style.ItemInnerSpacing = ImVec2(5.0f, 4.0f);
+  const bool compact = config.density == ThemeDensity::Compact;
+  style.WindowPadding = compact ? ImVec2(10.0f, 8.0f) : ImVec2(12.0f, 10.0f);
+  style.FramePadding = compact ? ImVec2(6.0f, 3.0f) : ImVec2(8.0f, 6.0f);
+  style.CellPadding = compact ? ImVec2(6.0f, 3.0f) : ImVec2(8.0f, 5.0f);
+  style.ItemSpacing = compact ? ImVec2(6.0f, 5.0f) : ImVec2(8.0f, 8.0f);
+  style.ItemInnerSpacing = compact ? ImVec2(5.0f, 4.0f) : ImVec2(6.0f, 5.0f);
   style.TouchExtraPadding = ImVec2(0.0f, 0.0f);
-  style.IndentSpacing = 16.0f;
-  style.ScrollbarSize = 11.0f;
-  style.GrabMinSize = 10.0f;
-  style.TabBarBorderSize = 1.0f;
-  style.DockingSeparatorSize = 3.0f;
+  style.IndentSpacing = compact ? 16.0f : 18.0f;
+  style.ScrollbarSize = compact ? 11.0f : 13.0f;
+  style.GrabMinSize = compact ? 10.0f : 12.0f;
+  style.TabBarBorderSize = 0.0f;
+  style.TabBarOverlineSize = 2.0f;
+  style.DockingSeparatorSize = compact ? 2.0f : 3.0f;
   style.WindowTitleAlign = ImVec2(0.0f, 0.5f);
   style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
   style.SelectableTextAlign = ImVec2(0.0f, 0.5f);
@@ -226,11 +260,16 @@ void Theme::apply(const ThemeDesc &config) {
   style.SeparatorTextPadding = ImVec2(0.0f, 4.0f);
   style.WindowMinSize = ImVec2(140.0f, 100.0f);
 
-  style.WindowBorderSize = 1.0f;
-  style.ChildBorderSize = 1.0f;
+  style.WindowBorderSize = 0.0f;
+  style.ChildBorderSize = 0.0f;
   style.FrameBorderSize = 0.0f;
   style.PopupBorderSize = 1.0f;
   style.TabBorderSize = 0.0f;
+
+  style.FontSizeBase = 15.0f;
+  style.FontScaleMain = config.scale;
+  style.FontScaleDpi = dpiScale;
+  style.ScaleAllSizes(config.scale * dpiScale);
 }
 
 } // namespace vkr::ui

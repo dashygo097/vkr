@@ -17,12 +17,14 @@
 #include "vkr/ui/components/camera_panel.hh"
 #include "vkr/ui/components/exec_graph_panel.hh"
 #include "vkr/ui/components/fps_panel.hh"
+#include "vkr/ui/components/inspector_panel.hh"
 #include "vkr/ui/components/logging_panel.hh"
 #include "vkr/ui/components/mesh_editor_panel.hh"
 #include "vkr/ui/components/resource_tree.hh"
 #include "vkr/ui/components/shader_editor.hh"
 #include "vkr/ui/components/ui_component.hh"
 #include "vkr/ui/components/viewport_panel.hh"
+#include "vkr/ui/selection.hh"
 #include "vkr/ui/theme.hh"
 #include "vkr/util/asset.hh"
 #include "vkr/util/timer.hh"
@@ -142,6 +144,7 @@ private:
   std::unique_ptr<AssetsPanel> assets_panel_;
   std::unique_ptr<CameraPanel> camera_panel_;
   std::unique_ptr<MeshEditorPanel> mesh_editor_panel_;
+  std::unique_ptr<InspectorPanel> inspector_panel_;
   std::unique_ptr<FPSPanel> fps_panel_;
   std::unique_ptr<ShaderEditor> shader_editor_;
   std::unique_ptr<LoggingPanel> logging_panel_;
@@ -149,13 +152,18 @@ private:
   std::unique_ptr<pipeline::DescriptorSets> offscreen_descriptor_sets_;
 
   // state
+  Selection selection_{};
   LayoutMode layout_mode_{LayoutMode::Standard};
   uint32_t frame_index_{0};
   ImGuiID dockspace_id_{0};
   bool dock_layout_dirty_{false};
+  float dpi_scale_{1.0f};
+  bool theme_dirty_{true};
   std::vector<std::reference_wrapper<UiComponent>> dock_components_{};
 
   // helpers
+  void updateTheme();
+  void select(Selection selection);
   void renderFullScreen();
   void renderDockspace();
   void setupDockingLayout();
