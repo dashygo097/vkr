@@ -51,11 +51,16 @@ void FPSPanel::render() {
   const ImGuiStyle &style = ImGui::GetStyle();
   const ImVec4 textColor = style.Colors[ImGuiCol_Text];
   const ImVec4 accentColor = style.Colors[ImGuiCol_CheckMark];
+  const bool lightBackground = style.Colors[ImGuiCol_WindowBg].x > 0.5f;
 
   const ImVec4 goodColor =
       withAlpha(mixColor(textColor, accentColor, 0.65f), 0.90f);
-  const ImVec4 warnColor = ImVec4(1.00f, 0.82f, 0.28f, 0.90f);
-  const ImVec4 badColor = ImVec4(1.00f, 0.35f, 0.35f, 0.90f);
+  const ImVec4 warnColor = lightBackground
+      ? ImVec4(0.68f, 0.38f, 0.07f, 1.0f)
+      : ImVec4(1.00f, 0.82f, 0.35f, 1.0f);
+  const ImVec4 badColor = lightBackground
+      ? ImVec4(0.72f, 0.16f, 0.18f, 1.0f)
+      : ImVec4(1.00f, 0.48f, 0.48f, 1.0f);
 
   ImVec4 fpsColor = fps > 59.0f   ? goodColor
                     : fps > 29.0f ? warnColor
@@ -69,8 +74,12 @@ void FPSPanel::render() {
     ImGui::Text("Frame Time: -- ms");
   }
 
-  ImGui::Text("Average: %.1f FPS / Maximum %.1f FPS", avg_fps_,
-              timer_.maxFPS());
+  if (unlimited) {
+    ImGui::TextDisabled("Average: %.1f FPS / Limit: unlimited", avg_fps_);
+  } else {
+    ImGui::TextDisabled("Average: %.1f FPS / Limit: %.0f FPS", avg_fps_,
+                        timer_.maxFPS());
+  }
 
   ImGui::Separator();
 

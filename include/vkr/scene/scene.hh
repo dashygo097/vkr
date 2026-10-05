@@ -198,8 +198,7 @@ public:
   [[nodiscard]] auto cubemapCount() const noexcept -> size_t;
 
   // Names
-  [[nodiscard]] auto listUniformBufferNames() const
-      -> std::vector<std::string>;
+  [[nodiscard]] auto listUniformBufferNames() const -> std::vector<std::string>;
 
   [[nodiscard]] auto listTextureNames() const -> std::vector<std::string>;
 

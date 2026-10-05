@@ -2,6 +2,10 @@
 
 #include "vkr/ui/components/ui_component.hh"
 #include "vkr/util/asset.hh"
+#include <filesystem>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace vkr::ui {
 
@@ -11,10 +15,17 @@ public:
 
 private:
   void render() override;
+  void refresh();
 
   const util::AssetSystem &asset_system_;
-  bool show_app_assets_{true};
-  bool show_user_assets_{false};
+  int selected_root_{0};
+  std::filesystem::path root_{};
+  std::vector<std::string> files_{};
+  std::vector<size_t> filtered_files_{};
+  std::optional<size_t> selected_file_{};
+  ImGuiTextFilter filter_{};
+  std::string scan_error_{};
+  bool truncated_{false};
 };
 
 } // namespace vkr::ui

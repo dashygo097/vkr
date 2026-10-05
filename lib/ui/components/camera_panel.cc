@@ -13,6 +13,7 @@ CameraPanel::CameraPanel(scene::CameraDesc &camera, const VkViewport &viewport,
       viewport_focused_(viewportFocused), viewport_hovered_(viewportHovered) {}
 
 void CameraPanel::render() {
+  ImGui::PushItemWidth(-ImGui::GetFontSize() * 8.0f);
   bool vectorsChanged = false;
 
   ImGui::SeparatorText("Transform");
@@ -27,9 +28,9 @@ void CameraPanel::render() {
     refreshCameraVectors(camera_);
   }
 
-  ImGui::Text("Front: %.2f, %.2f, %.2f", camera_.front.x, camera_.front.y,
+  ImGui::TextDisabled("Front: %.2f, %.2f, %.2f", camera_.front.x, camera_.front.y,
               camera_.front.z);
-  ImGui::Text("Up: %.2f, %.2f, %.2f", camera_.up.x, camera_.up.y, camera_.up.z);
+  ImGui::TextDisabled("Up: %.2f, %.2f, %.2f", camera_.up.x, camera_.up.y, camera_.up.z);
 
   ImGui::SeparatorText("Lens");
   ImGui::SliderFloat("FOV", &camera_.fov, 1.0f, 120.0f, "%.1f deg");
@@ -46,7 +47,7 @@ void CameraPanel::render() {
   ImGui::Checkbox("Locked", &camera_.locked);
   ImGui::DragFloat("Move Speed", &camera_.movementSpeed, 0.05f, 0.0f, 100.0f,
                    "%.2f");
-  ImGui::DragFloat("Mouse Sensitivity", &camera_.mouseSensitivity, 0.01f, 0.0f,
+  ImGui::DragFloat("Sensitivity", &camera_.mouseSensitivity, 0.01f, 0.0f,
                    10.0f, "%.2f");
 
   if (ImGui::Button("Reset Camera")) {
@@ -60,11 +61,13 @@ void CameraPanel::render() {
     refreshCameraVectors(camera_);
   }
 
-  ImGui::SeparatorText("Viewport");
-  ImGui::Text("Position: %.1f, %.1f", viewport_.x, viewport_.y);
-  ImGui::Text("Size: %.1f x %.1f", viewport_.width, viewport_.height);
-  ImGui::Text("Focused: %s", viewport_focused_ ? "yes" : "no");
-  ImGui::Text("Hovered: %s", viewport_hovered_ ? "yes" : "no");
+  ImGui::PopItemWidth();
+  if (ImGui::CollapsingHeader("Viewport details")) {
+    ImGui::TextDisabled("Position: %.1f, %.1f", viewport_.x, viewport_.y);
+    ImGui::TextDisabled("Size: %.1f x %.1f", viewport_.width, viewport_.height);
+    ImGui::TextDisabled("Focused: %s", viewport_focused_ ? "yes" : "no");
+    ImGui::TextDisabled("Hovered: %s", viewport_hovered_ ? "yes" : "no");
+  }
 }
 
 void CameraPanel::refreshCameraVectors(scene::CameraDesc &camera) {

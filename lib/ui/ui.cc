@@ -2,12 +2,14 @@
 #include "vkr/exec/capability.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include <imgui_internal.h>
+#include <string_view>
 #include <vector>
 
 namespace vkr::ui {
@@ -53,6 +55,8 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   layout_mode_ = desc_.layoutMode;
+  // Preserve a saved dockspace even when the first frame opens in fullscreen.
+  dockspace_id_ = ImHashStr("DockSpace", 0, ImHashStr("DockSpace"));
   Theme::apply(desc_.theme);
 
   ImGuiStyle &style = ImGui::GetStyle();
@@ -186,16 +190,22 @@ void UI::render(VkCommandBuffer commandBuffer, uint32_t frameIndex) {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
-  if (ImGui::IsKeyPressed(ImGuiKey_Tab, false)) {
+  if (ImGui::IsKeyPressed(ImGuiKey_F11, false)) {
     switchLayoutMode();
   }
 
+  renderMainMenu();
+
   switch (layout_mode_) {
   case LayoutMode::FullScreen:
-    renderMainMenu();
+    if (dockspace_id_ != 0) {
+      ImGui::DockSpace(dockspace_id_, ImVec2(0.0f, 0.0f),
+                       ImGuiDockNodeFlags_KeepAliveOnly);
+    }
     renderFullScreen();
     break;
   case LayoutMode::Standard:
+    renderStatusBar();
     renderDockspace();
     renderWorkspacePanels();
     break;
@@ -207,16 +217,19 @@ void UI::render(VkCommandBuffer commandBuffer, uint32_t frameIndex) {
 }
 
 void UI::renderFullScreen() {
-  const ImGuiViewport *viewport = ImGui::GetMainViewport();
-  ImGui::SetNextWindowPos(viewport->WorkPos);
-  ImGui::SetNextWindowSize(viewport->WorkSize);
+  const auto workRect =
+      ImGui::GetCurrentContext()->Viewports[0]->GetBuildWorkRect();
+  ImGui::SetNextWindowPos(workRect.Min);
+  ImGui::SetNextWindowSize(workRect.GetSize());
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
   ImGuiWindowFlags flags =
       ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
+      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus |
+      ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoScrollbar |
+      ImGuiWindowFlags_NoScrollWithMouse;
 
   if (ImGui::Begin("Fullscreen Viewport", nullptr, flags)) {
     if (viewport_panel_) {
@@ -235,88 +248,98 @@ void UI::renderFullScreen() {
 }
 
 void UI::renderDockspace() {
-  static bool dockspaceOpen = true;
-  static ImGuiDockNodeFlags dockSpaceFlags = ImGuiDockNodeFlags_None;
-
-  renderMainMenu();
-
-  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking;
-
-  const ImGuiViewport *viewport = ImGui::GetMainViewport();
-  ImGui::SetNextWindowPos(viewport->WorkPos);
-  ImGui::SetNextWindowSize(viewport->WorkSize);
-  ImGui::SetNextWindowViewport(viewport->ID);
+  const auto workRect =
+      ImGui::GetCurrentContext()->Viewports[0]->GetBuildWorkRect();
+  ImGui::SetNextWindowPos(workRect.Min);
+  ImGui::SetNextWindowSize(workRect.GetSize());
+  ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-
-  windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-  windowFlags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-  windowFlags |=
-      ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
-  if (dockSpaceFlags & ImGuiDockNodeFlags_PassthruCentralNode) {
-    windowFlags |= ImGuiWindowFlags_NoBackground;
-  }
-
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-  ImGui::Begin("DockSpace", &dockspaceOpen, windowFlags);
-  ImGui::PopStyleVar();
-  ImGui::PopStyleVar(2);
 
-  ImGuiIO &io = ImGui::GetIO();
-  if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-    ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
-    ImGui::DockSpace(dockSpaceId, ImVec2(0.0f, 0.0f), dockSpaceFlags);
+  const ImGuiWindowFlags flags =
+      ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoDecoration |
+      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
+      ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoSavedSettings |
+      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+  ImGui::Begin("DockSpace", nullptr, flags);
+  ImGui::PopStyleVar(3);
 
-    if (dock_layout_dirty_) {
-      dock_layout_dirty_ = false;
-      setupDockingLayout();
-    }
+  dockspace_id_ = ImGui::GetID("DockSpace");
+  if (dock_layout_dirty_ || !ImGui::DockBuilderGetNode(dockspace_id_)) {
+    setupDockingLayout();
+    dock_layout_dirty_ = false;
   }
+  ImGui::DockSpace(dockspace_id_, ImVec2(0.0f, 0.0f));
 
   ImGui::End();
 }
 
 void UI::setupDockingLayout() {
-  ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
-  ImGui::DockBuilderRemoveNode(dockSpaceId);
-  ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
-  ImGui::DockBuilderSetNodeSize(dockSpaceId, ImGui::GetMainViewport()->Size);
+  const ImVec2 size = ImGui::GetContentRegionAvail();
+  const float width = std::max(1.0f, size.x);
+  const float height = std::max(1.0f, size.y);
+  const float fontSize = ImGui::GetFontSize();
+  const float leftWidth = std::min(width * 0.24f,
+      std::clamp(width * 0.19f, fontSize * 15.0f, fontSize * 22.0f));
+  const float rightWidth = std::min(width * 0.27f,
+      std::clamp(width * 0.22f, fontSize * 18.0f, fontSize * 26.0f));
+  const float bottomHeight = std::min(height * 0.30f,
+      std::clamp(height * 0.20f, fontSize * 7.0f, fontSize * 13.0f));
 
-  ImGuiID dockLeft;
-  ImGuiID dockLeftBottom;
-  ImGuiID dockRight;
-  ImGuiID dockRightBottom;
-  ImGuiID dockRightTop;
-  ImGuiID dockBottom;
+  ImGui::DockBuilderRemoveNode(dockspace_id_);
+  ImGui::DockBuilderAddNode(dockspace_id_, ImGuiDockNodeFlags_DockSpace);
+  ImGui::DockBuilderSetNodePos(dockspace_id_, ImGui::GetWindowPos());
+  ImGui::DockBuilderSetNodeSize(dockspace_id_, size);
 
-  dockLeft = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Left, 0.2f,
-                                         nullptr, &dockSpaceId);
+  ImGuiID center = dockspace_id_;
+  ImGuiID bottom = 0;
+  if (height >= fontSize * 24.0f) {
+    bottom = ImGui::DockBuilderSplitNode(
+        center, ImGuiDir_Down, bottomHeight / height, nullptr, &center);
+  }
+  ImGuiID left = center;
+  ImGuiID right = center;
+  if (width >= fontSize * 36.0f) {
+    left = ImGui::DockBuilderSplitNode(
+        center, ImGuiDir_Left, leftWidth / width, nullptr, &center);
+    right = left;
+    if (width >= fontSize * 64.0f) {
+      right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right,
+          rightWidth / (width - leftWidth), nullptr, &center);
+    }
+  }
+  if (bottom == 0) {
+    bottom = center;
+  }
 
-  dockRight = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Right, 0.2f,
-                                          nullptr, &dockSpaceId);
+  ImGui::DockBuilderDockWindow(resource_tree_->name().c_str(), left);
+  ImGui::DockBuilderDockWindow(assets_panel_->name().c_str(), left);
+  ImGui::DockBuilderDockWindow(camera_panel_->name().c_str(), right);
+  ImGui::DockBuilderDockWindow(mesh_editor_panel_->name().c_str(), right);
+  ImGui::DockBuilderDockWindow(viewport_panel_->name().c_str(), center);
+  ImGui::DockBuilderDockWindow(shader_editor_->name().c_str(), center);
+  ImGui::DockBuilderDockWindow(graph_panel_->name().c_str(), center);
+  ImGui::DockBuilderDockWindow(logging_panel_->name().c_str(), bottom);
+  ImGui::DockBuilderDockWindow(fps_panel_->name().c_str(), bottom);
 
-  dockRightTop = ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Up, 0.7f,
-                                             nullptr, &dockRightBottom);
+  ImGui::DockBuilderGetNode(center)->SelectedTabId =
+      ImHashStr("#TAB", 0, ImHashStr(viewport_panel_->name().c_str()));
+  if (bottom != center) {
+    ImGui::DockBuilderGetNode(bottom)->SelectedTabId =
+        ImHashStr("#TAB", 0, ImHashStr(logging_panel_->name().c_str()));
+  }
+  if (left != center) {
+    ImGui::DockBuilderGetNode(left)->SelectedTabId =
+        ImHashStr("#TAB", 0, ImHashStr(resource_tree_->name().c_str()));
+  }
+  if (right != center && right != left) {
+    ImGui::DockBuilderGetNode(right)->SelectedTabId =
+        ImHashStr("#TAB", 0, ImHashStr(camera_panel_->name().c_str()));
+  }
 
-  dockBottom = ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Down, 0.22f,
-                                           nullptr, &dockSpaceId);
-  dockLeftBottom = ImGui::DockBuilderSplitNode(dockLeft, ImGuiDir_Down, 0.48f,
-                                               nullptr, &dockLeft);
-
-  ImGui::DockBuilderDockWindow(resource_tree_->name().c_str(), dockLeft);
-  ImGui::DockBuilderDockWindow(assets_panel_->name().c_str(), dockLeft);
-  ImGui::DockBuilderDockWindow(graph_panel_->name().c_str(), dockLeftBottom);
-  ImGui::DockBuilderDockWindow(camera_panel_->name().c_str(), dockLeftBottom);
-  ImGui::DockBuilderDockWindow(mesh_editor_panel_->name().c_str(),
-                               dockLeftBottom);
-  ImGui::DockBuilderDockWindow(shader_editor_->name().c_str(), dockRightTop);
-  ImGui::DockBuilderDockWindow(fps_panel_->name().c_str(), dockRightBottom);
-  ImGui::DockBuilderDockWindow(logging_panel_->name().c_str(), dockBottom);
-  ImGui::DockBuilderDockWindow(viewport_panel_->name().c_str(), dockSpaceId);
-
-  ImGui::DockBuilderFinish(dockSpaceId);
+  ImGui::DockBuilderFinish(dockspace_id_);
 }
 
 void UI::resetDockingLayout() noexcept {
@@ -332,6 +355,15 @@ void UI::renderMainMenu() {
     return;
   }
 
+  auto brandColor = Theme::accentColor(desc_.theme.accent);
+  if (!desc_.theme.dark) {
+    brandColor.x *= 0.62f;
+    brandColor.y *= 0.62f;
+    brandColor.z *= 0.62f;
+  }
+  ImGui::TextColored(brandColor, "vkr");
+  ImGui::SameLine(0.0f, ImGui::GetFontSize());
+
   if (ImGui::BeginMenu("File")) {
     if (ImGui::MenuItem("Exit")) {
       glfwSetWindowShouldClose(window_.glfwWindow(), GLFW_TRUE);
@@ -341,46 +373,103 @@ void UI::renderMainMenu() {
   }
 
   if (ImGui::BeginMenu("View")) {
-    if (ImGui::MenuItem("Fullscreen Viewport", nullptr,
+    if (ImGui::MenuItem("Fullscreen Viewport", "F11",
                         layout_mode_ == LayoutMode::FullScreen)) {
-      layout_mode_ = LayoutMode::FullScreen;
+      layoutMode(LayoutMode::FullScreen);
     }
 
-    if (ImGui::MenuItem("Workspace", nullptr,
+    if (ImGui::MenuItem("Editor Workspace", "F11",
                         layout_mode_ == LayoutMode::Standard)) {
-      layout_mode_ = LayoutMode::Standard;
+      layoutMode(LayoutMode::Standard);
     }
 
     if (ImGui::MenuItem("Reset Dock Layout")) {
       resetDockingLayout();
-      layout_mode_ = LayoutMode::Standard;
+      layoutMode(LayoutMode::Standard);
     }
 
-    ImGui::SeparatorText("Panels");
+    ImGui::Separator();
 
     for (auto component : dock_components_) {
       auto &panel = component.get();
 
       if (ImGui::MenuItem(panel.name().c_str(), nullptr, panel.open())) {
         panel.openRef() = !panel.open();
+        if (panel.open()) {
+          layoutMode(LayoutMode::Standard);
+        }
       }
     }
 
     ImGui::EndMenu();
   }
 
-  if (ImGui::BeginMenu("Theme")) {
+  if (ImGui::BeginMenu("Appearance")) {
     renderThemeControls();
     ImGui::EndMenu();
   }
 
-  ImGui::Separator();
-  ImGui::TextDisabled("%.1f FPS", timer_.fps());
+  const std::string_view modeLabel = layout_mode_ == LayoutMode::Standard
+                                        ? "Viewport  F11" : "Editor  F11";
+  const float buttonWidth = ImGui::CalcTextSize(modeLabel.data()).x +
+                            ImGui::GetStyle().FramePadding.x * 2.0f;
+  const float right = ImGui::GetWindowWidth() - buttonWidth -
+                      ImGui::GetStyle().WindowPadding.x;
+  if (right > ImGui::GetCursorPosX() + ImGui::GetFontSize()) {
+    ImGui::SetCursorPosX(right);
+    if (ImGui::Button(modeLabel.data())) {
+      switchLayoutMode();
+    }
+  }
 
   ImGui::EndMainMenuBar();
 }
 
+void UI::renderStatusBar() {
+  const ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings |
+      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNavFocus |
+      ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_MenuBar;
+  if (ImGui::BeginViewportSideBar("##EditorStatus", ImGui::GetMainViewport(),
+                                 ImGuiDir_Down, ImGui::GetFrameHeight(), flags)) {
+    if (ImGui::BeginMenuBar()) {
+      std::array<char, 96> timing{};
+      const float fps = timer_.fps();
+      if (fps > 0.0f) {
+        std::snprintf(timing.data(), timing.size(), "%.1f FPS   %.2f ms",
+                      fps, 1000.0f / fps);
+      } else {
+        std::snprintf(timing.data(), timing.size(), "-- FPS   -- ms");
+      }
+      const float timingWidth = ImGui::CalcTextSize(timing.data()).x;
+      const float right = ImGui::GetWindowWidth() - timingWidth -
+                          ImGui::GetStyle().WindowPadding.x;
+      if (right > ImGui::GetFontSize() * 24.0f) {
+        const auto position = ImGui::GetCursorScreenPos();
+        const auto windowPosition = ImGui::GetWindowPos();
+        ImGui::PushClipRect(position,
+            ImVec2(windowPosition.x + right - ImGui::GetFontSize(),
+                   position.y + ImGui::GetFrameHeight()), true);
+        ImGui::TextDisabled("Output: %s", source_.name().c_str());
+        if (ImGui::GetCursorPosX() + ImGui::GetFontSize() * 12.0f < right) {
+          ImGui::TextDisabled("%.0f x %.0f", desc_.viewport.width,
+                              desc_.viewport.height);
+        }
+        ImGui::PopClipRect();
+      }
+      if (right > 0.0f) {
+        ImGui::SetCursorPosX(right);
+      }
+      ImGui::TextDisabled("%s", timing.data());
+      ImGui::EndMenuBar();
+    }
+  }
+  ImGui::End();
+}
+
 void UI::renderWorkspacePanels() {
+  desc_.viewport = {};
+  desc_.viewportFocused = false;
+  desc_.viewportHovered = false;
   VkDescriptorSet texture = VK_NULL_HANDLE;
   if (offscreen_descriptor_sets_ &&
       !offscreen_descriptor_sets_->sets().empty()) {

@@ -19,7 +19,8 @@ ViewportPanel::ViewportPanel(VkViewport &viewport, bool &focused, bool &hovered)
       hovered_(hovered) {}
 
 auto ViewportPanel::windowFlags() const noexcept -> ImGuiWindowFlags {
-  return ImGuiWindowFlags_NoCollapse;
+  return ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
+         ImGuiWindowFlags_NoScrollWithMouse;
 }
 
 void ViewportPanel::renderWindow() {
@@ -29,55 +30,35 @@ void ViewportPanel::renderWindow() {
 }
 
 void ViewportPanel::render() {
-  ImVec2 panelSize = ImGui::GetContentRegionAvail();
-
-  if (panelSize.x < 1.0f) {
-    panelSize.x = 1.0f;
+  focused_ = false;
+  hovered_ = false;
+  viewport_ = {};
+  const ImVec2 panelSize = ImGui::GetContentRegionAvail();
+  if (panelSize.x < 1.0f || panelSize.y < 1.0f) {
+    return;
   }
 
-  if (panelSize.y < 1.0f) {
-    panelSize.y = 1.0f;
+  if (texture_ == VK_NULL_HANDLE) {
+    ImGui::TextDisabled("No render output");
+    return;
   }
 
-  if (texture_ != VK_NULL_HANDLE) {
-    drawViewportImage(texture_, panelSize, flip_y_);
-  } else {
-    ImGui::TextDisabled("(no offscreen target)");
-  }
+  const ImVec2 imagePosition = ImGui::GetCursorScreenPos();
+  drawViewportImage(texture_, panelSize, flip_y_);
 
-  ImVec2 windowPos = ImGui::GetWindowPos();
-  ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
-  ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
-
-  viewport_.x = windowPos.x + contentMin.x;
-  viewport_.y = windowPos.y + contentMin.y;
-  viewport_.width = contentMax.x - contentMin.x;
-  viewport_.height = contentMax.y - contentMin.y;
+  viewport_.x = imagePosition.x;
+  viewport_.y = imagePosition.y;
+  viewport_.width = panelSize.x;
+  viewport_.height = panelSize.y;
   viewport_.minDepth = 0.0f;
   viewport_.maxDepth = 1.0f;
   focused_ = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-  hovered_ = ImGui::IsWindowHovered();
+  hovered_ = ImGui::IsItemHovered();
 }
 
 void ViewportPanel::renderFullscreen(VkDescriptorSet texture) {
-  ImVec2 panelSize = ImGui::GetContentRegionAvail();
-
-  if (texture != VK_NULL_HANDLE) {
-    drawViewportImage(texture, panelSize, flip_y_);
-  }
-
-  ImVec2 windowPos = ImGui::GetWindowPos();
-  ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
-  ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
-
-  viewport_.x = windowPos.x + contentMin.x;
-  viewport_.y = windowPos.y + contentMin.y;
-  viewport_.width = contentMax.x - contentMin.x;
-  viewport_.height = contentMax.y - contentMin.y;
-  viewport_.minDepth = 0.0f;
-  viewport_.maxDepth = 1.0f;
-  focused_ = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-  hovered_ = ImGui::IsWindowHovered();
+  texture_ = texture;
+  render();
 }
 
 } // namespace vkr::ui

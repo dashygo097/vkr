@@ -14,6 +14,7 @@ private:
   void render();
 
   bool auto_scroll_{true};
+  ImGuiTextFilter filter_{};
 };
 
 } // namespace vkr::ui

@@ -20,7 +20,8 @@ private:
 
   std::string selected_type_;
   std::string selected_name_;
-  bool show_empty_groups_{true};
+  ImGuiTextFilter filter_{};
+  bool show_empty_groups_{false};
 
   void renderCategory(const char *type, std::vector<std::string> names,
                       size_t count);

@@ -15,7 +15,7 @@ enum class ThemeAccent : uint8_t {
 
 struct ThemeDesc {
   ThemeAccent accent{ThemeAccent::Blue};
-  float rounding{6.0f};
+  float rounding{3.0f};
   float alpha{1.0f};
   bool dark{true};
 

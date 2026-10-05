@@ -9,6 +9,7 @@
 #include <imgui.h>
 #include <initializer_list>
 #include <sstream>
+#include <string_view>
 #include <utility>
 
 namespace vkr::ui {
@@ -1462,37 +1463,53 @@ auto ShaderEditor::render() -> void {
   syncPalette(vert_editor_);
   syncPalette(frag_editor_);
 
-  ImGui::TextUnformatted("Shader Target");
   renderTargetSelector(targets);
 
-  const float spacingY = style.ItemSpacing.y;
-  const float frameH = ImGui::GetFrameHeight();
-  const float textLineH = ImGui::GetTextLineHeight();
-
-  const float statusH = status_message_.empty() ? 0.0f : textLineH + spacingY;
-  const float headerH = textLineH + frameH + spacingY * 2.0f;
-  const float tabsH = frameH + spacingY;
-  const float bottomBarH = spacingY + 1.0f + spacingY + statusH + frameH +
-                           spacingY + textLineH + spacingY;
-  const float codeH =
-      ImGui::GetContentRegionAvail().y - headerH - tabsH - bottomBarH;
-
   if (ImGui::BeginTabBar("ShaderTabs")) {
-    if (ImGui::BeginTabItem("  Vertex  ")) {
+    if (ImGui::BeginTabItem("Vertex")) {
       active_tab_ = 0;
       ImGui::EndTabItem();
     }
-
-    if (ImGui::BeginTabItem("  Fragment  ")) {
+    if (ImGui::BeginTabItem("Fragment")) {
       active_tab_ = 1;
       ImGui::EndTabItem();
     }
-
     ImGui::EndTabBar();
   }
 
-  TextEditor &editor = currentEditor();
-  ShaderEditorFileState &fileState = currentFileState();
+  auto &editor = currentEditor();
+  auto &fileState = currentFileState();
+  const bool fileBacked = fileState.file_backed;
+  const std::string_view applyLabel = fileBacked ? "Save & Apply" : "Compile & Apply";
+  const float availableWidth = ImGui::GetContentRegionAvail().x;
+  const float actionWidth = ImGui::CalcTextSize(applyLabel.data()).x +
+                            style.FramePadding.x * 2.0f;
+  const float historyWidth = ImGui::CalcTextSize("Undo").x +
+                            ImGui::CalcTextSize("Redo").x +
+                            style.FramePadding.x * 4.0f +
+                            style.ItemSpacing.x * 2.0f;
+
+  ImGui::BeginDisabled(!hasPipeline());
+  if (ImGui::Button(applyLabel.data())) {
+    setStatus(fileBacked ? "Saving..." : "Compiling...", false);
+    (void)applyToPipeline();
+  }
+  ImGui::EndDisabled();
+
+  if (actionWidth + historyWidth <= availableWidth) {
+    ImGui::SameLine();
+  }
+  ImGui::BeginDisabled(!editor.CanUndo());
+  if (ImGui::Button("Undo")) {
+    editor.Undo();
+  }
+  ImGui::EndDisabled();
+  ImGui::SameLine();
+  ImGui::BeginDisabled(!editor.CanRedo());
+  if (ImGui::Button("Redo")) {
+    editor.Redo();
+  }
+  ImGui::EndDisabled();
 
   if (status_is_error_ && !status_message_.empty()) {
     editor.SetErrorMarkers(parseErrors(status_message_));
@@ -1500,80 +1517,58 @@ auto ShaderEditor::render() -> void {
     editor.SetErrorMarkers({});
   }
 
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 4.0f));
+  // The header has already been submitted: reserve only the actual footer.
+  const float spacingY = style.ItemSpacing.y;
+  const float footerHeight = ImGui::GetTextLineHeightWithSpacing();
+  const float availableHeight = ImGui::GetContentRegionAvail().y;
+  const size_t statusLines = 1 + static_cast<size_t>(
+      std::count(status_message_.begin(), status_message_.end(), '\n'));
+  const float statusHeight = status_message_.empty() ? 0.0f :
+      std::min(ImGui::GetTextLineHeightWithSpacing() *
+                   static_cast<float>(std::min(statusLines, size_t{5})),
+               std::max(1.0f, availableHeight * 0.25f));
+  const float codeHeight = std::max(1.0f,
+      availableHeight - footerHeight - statusHeight - spacingY * 2.0f);
 
-  if (ImGui::BeginChild("##shader_code_area", ImVec2(-1.0f, codeH), true,
-                        ImGuiWindowFlags_NoScrollbar)) {
-    if (ImGui::GetIO().Fonts->Fonts.Size > 1) {
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+  if (ImGui::BeginChild("##shader_code_area", ImVec2(0.0f, codeHeight),
+                        ImGuiChildFlags_None,
+                        ImGuiWindowFlags_NoScrollbar |
+                            ImGuiWindowFlags_NoScrollWithMouse)) {
+    const bool hasCodeFont = ImGui::GetIO().Fonts->Fonts.Size > 1;
+    if (hasCodeFont) {
       ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
     }
-
-    editor.Render("##shader_source", ImVec2(-1.0f, -1.0f));
-
-    if (ImGui::GetIO().Fonts->Fonts.Size > 1) {
+    editor.Render("##shader_source", ImVec2(0.0f, 0.0f));
+    if (hasCodeFont) {
       ImGui::PopFont();
     }
   }
-
   ImGui::EndChild();
   ImGui::PopStyleVar();
 
-  ImGui::Spacing();
-  ImGui::Separator();
-  ImGui::Spacing();
-
   if (!status_message_.empty()) {
     const ImVec4 statusColor = status_is_error_
-                                   ? ImVec4(1.0f, 0.35f, 0.35f, 1.0f)
-                                   : ImVec4(0.55f, 1.0f, 0.55f, 1.0f);
-
-    ImGui::TextColored(statusColor, "%s", status_message_.c_str());
-    ImGui::Spacing();
+        ? (lightBackground ? ImVec4(0.72f, 0.16f, 0.18f, 1.0f)
+                           : ImVec4(1.0f, 0.48f, 0.48f, 1.0f))
+        : textDisabled;
+    if (ImGui::BeginChild("##shader_status", ImVec2(0.0f, statusHeight),
+                          ImGuiChildFlags_None,
+                          ImGuiWindowFlags_HorizontalScrollbar)) {
+      ImGui::PushStyleColor(ImGuiCol_Text, statusColor);
+      ImGui::TextUnformatted(status_message_.c_str());
+      ImGui::PopStyleColor();
+    }
+    ImGui::EndChild();
   }
 
-  const bool canEdit = hasPipeline();
-
-  if (!canEdit) {
-    ImGui::BeginDisabled();
-  }
-
-  const bool fileBacked = fileState.file_backed;
-  if (ImGui::Button(fileBacked ? "Save & Apply" : "Compile & Apply",
-                    ImVec2(150.0f, 0.0f))) {
-    setStatus(fileBacked ? "Saving..." : "Compiling...", false);
-    (void)applyToPipeline();
-  }
-
-  if (!canEdit) {
-    ImGui::EndDisabled();
-  }
-
-  ImGui::SameLine(0.0f, 8.0f);
-
-  if (ImGui::Button("Undo", ImVec2(54.0f, 0.0f))) {
-    editor.Undo();
-  }
-
-  ImGui::SameLine(0.0f, 4.0f);
-
-  if (ImGui::Button("Redo", ImVec2(54.0f, 0.0f))) {
-    editor.Redo();
-  }
-
-  auto coords = editor.GetCursorPosition();
+  const auto coords = editor.GetCursorPosition();
   const bool dirty = editor.GetText() != fileState.synced_text;
-  std::array<char, 80> info{};
-
+  std::array<char, 96> info{};
   std::snprintf(info.data(), info.size(), "%s%sLn %d   Col %d",
-                dirty ? "modified   " : "",
-                fileState.conflict ? "conflict   " : "", coords.mLine + 1,
-                coords.mColumn + 1);
-
-  const float infoW = ImGui::CalcTextSize(info.data()).x;
-  const float cursorX = ImGui::GetCursorPosX();
-  const float rightX = cursorX + ImGui::GetContentRegionAvail().x - infoW;
-
-  ImGui::SetCursorPosX(rightX > cursorX ? rightX : cursorX);
+                dirty ? "Modified   " : "",
+                fileState.conflict ? "Disk conflict   " : "",
+                coords.mLine + 1, coords.mColumn + 1);
   ImGui::TextDisabled("%s", info.data());
 }
 

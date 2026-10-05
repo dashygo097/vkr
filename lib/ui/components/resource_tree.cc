@@ -7,15 +7,21 @@ ResourceTree::ResourceTree(scene::Scene &scene)
     : UiComponent("Resources"), scene_(scene) {}
 
 void ResourceTree::render() {
-  ImGui::TextUnformatted("Resource Tree");
-  ImGui::Separator();
+  ImGui::SetNextItemWidth(-1.0f);
+  if (ImGui::InputTextWithHint("##resource_filter", "Filter resources...",
+                              filter_.InputBuf, sizeof(filter_.InputBuf))) {
+    filter_.Build();
+  }
+  ImGui::Checkbox("Empty groups", &show_empty_groups_);
 
-  ImGui::Checkbox("Show empty groups", &show_empty_groups_);
-  ImGui::Spacing();
-
-  const float detailsHeight = ImGui::GetTextLineHeightWithSpacing() * 11.0f;
+  const float availableHeight = ImGui::GetContentRegionAvail().y;
+  const float detailsHeight = selected_name_.empty()
+      ? ImGui::GetTextLineHeightWithSpacing() * 3.0f
+      : std::min(availableHeight * 0.4f,
+                 ImGui::GetTextLineHeightWithSpacing() * 10.0f);
   if (ImGui::BeginChild("ResourceTreeScrollRegion",
-                        ImVec2(0.0f, -detailsHeight), true,
+                        ImVec2(0.0f, std::max(1.0f, availableHeight - detailsHeight)),
+                        ImGuiChildFlags_None,
                         ImGuiWindowFlags_HorizontalScrollbar)) {
     renderCategory("Meshes", scene_.listMeshNames(), scene_.meshCount());
 
@@ -39,13 +45,15 @@ void ResourceTree::renderCategory(const char *type,
                                   size_t count) {
   names.erase(std::remove_if(
                   names.begin(), names.end(),
-                  [](const std::string &name) -> bool { return name.empty(); }),
+                  [this](const std::string &name) -> bool {
+                    return name.empty() || !filter_.PassFilter(name.c_str());
+                  }),
               names.end());
 
   std::sort(names.begin(), names.end());
   names.erase(std::unique(names.begin(), names.end()), names.end());
 
-  if (!show_empty_groups_ && names.empty()) {
+  if (names.empty() && (!show_empty_groups_ || filter_.IsActive())) {
     return;
   }
 
@@ -106,17 +114,15 @@ void ResourceTree::renderCategory(const char *type,
 }
 
 void ResourceTree::renderSelectedResource() {
-  ImGui::Separator();
-
-  ImGui::TextUnformatted("Selected Resource");
+  ImGui::SeparatorText("Selection");
 
   if (selected_name_.empty()) {
-    ImGui::TextDisabled("None");
+    ImGui::TextDisabled("Select a resource to inspect");
     return;
   }
 
   ImGui::Text("Type: %s", selected_type_.c_str());
-  ImGui::Text("Name: %s", selected_name_.c_str());
+  ImGui::TextWrapped("Name: %s", selected_name_.c_str());
 
   if (selected_type_ == "Meshes") {
     const auto mesh = scene_.findMesh(selected_name_);

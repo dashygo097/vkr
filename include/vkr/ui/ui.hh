@@ -38,7 +38,7 @@ enum LayoutMode {
 };
 
 struct UiDesc {
-  LayoutMode layoutMode{LayoutMode::FullScreen};
+  LayoutMode layoutMode{LayoutMode::Standard};
   ThemeDesc theme{};
   VkViewport viewport{};
   bool viewportFocused{false};
@@ -149,9 +149,10 @@ private:
   std::unique_ptr<pipeline::DescriptorSets> offscreen_descriptor_sets_;
 
   // state
-  LayoutMode layout_mode_{LayoutMode::FullScreen};
+  LayoutMode layout_mode_{LayoutMode::Standard};
   uint32_t frame_index_{0};
-  bool dock_layout_dirty_{true};
+  ImGuiID dockspace_id_{0};
+  bool dock_layout_dirty_{false};
   std::vector<std::reference_wrapper<UiComponent>> dock_components_{};
 
   // helpers
@@ -160,6 +161,7 @@ private:
   void setupDockingLayout();
   void resetDockingLayout() noexcept;
   void renderMainMenu();
+  void renderStatusBar();
   void renderWorkspacePanels();
   void renderThemeControls();
 };
