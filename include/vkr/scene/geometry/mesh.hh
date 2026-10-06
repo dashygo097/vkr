@@ -5,6 +5,7 @@
 #include "vkr/logger.hh"
 #include "vkr/scene/geometry/index_buffer.hh"
 #include "vkr/scene/geometry/vertex_buffer.hh"
+#include "vkr/scene/transform.hh"
 #include <algorithm>
 #include <functional>
 #include <limits>
@@ -174,6 +175,11 @@ class IMesh {
 public:
   virtual ~IMesh() = default;
 
+  [[nodiscard]] auto transform() noexcept -> Transform & { return transform_; }
+  [[nodiscard]] auto transform() const noexcept -> const Transform & {
+    return transform_;
+  }
+
   [[nodiscard]] virtual auto vertexBufferBase() const
       -> std::optional<std::reference_wrapper<const IVertexBuffer>> = 0;
   [[nodiscard]] virtual auto indexBuffer() const
@@ -182,6 +188,9 @@ public:
   [[nodiscard]] auto isValid() const -> bool {
     return vertexBufferBase().has_value() && indexBuffer().has_value();
   }
+
+private:
+  Transform transform_{};
 };
 
 template <typename VBOType> class Mesh final : public IMesh {

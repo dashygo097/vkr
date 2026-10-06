@@ -32,6 +32,9 @@ public:
   Scene(const Scene &) = delete;
   auto operator=(const Scene &) -> Scene & = delete;
 
+  [[nodiscard]] auto world() noexcept -> Transform & { return world_; }
+  [[nodiscard]] auto world() const noexcept -> const Transform & { return world_; }
+
   // Uniform buffer management
   template <typename UniformType>
   auto createUniformBuffer(std::string name, const UniformType &initial)
@@ -268,6 +271,7 @@ private:
   const core::CommandBuffers &command_buffers_;
 
   // components
+  Transform world_{};
   ResourceMap<IFrameUniformBufferSet> uniform_buffers_{};
   ResourceMap<Texture> textures_{};
   ResourceMap<Cubemap> cubemaps_{};

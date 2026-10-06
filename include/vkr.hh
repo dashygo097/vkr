@@ -35,6 +35,7 @@
 #include "vkr/scene/material/cubemap.hh"
 #include "vkr/scene/material/texture.hh"
 #include "vkr/scene/scene.hh"
+#include "vkr/scene/transform.hh"
 #include "vkr/util/runtime_path.hh"
 #include <exception>
 #include <iostream>

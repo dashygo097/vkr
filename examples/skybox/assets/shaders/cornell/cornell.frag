@@ -13,8 +13,8 @@ void main() {
   } else if (localPosition.x > 5.45) {
     color = vec3(0.10, 0.55, 0.18);
   } else if (localPosition.y > 5.40 && localPosition.x > 2.10 &&
-             localPosition.x < 3.55 && localPosition.z > 2.05 &&
-             localPosition.z < 3.70) {
+      localPosition.x < 3.55 && localPosition.z > 2.05 &&
+      localPosition.z < 3.70) {
     color = vec3(1.0, 0.92, 0.68);
   }
 
