@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vkr/core/command/buffers.hh"
-#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
 #include "vkr/core/window.hh"
@@ -67,8 +66,7 @@ public:
      const util::AssetSystem &assetSystem, scene::Camera &camera,
      exec::Pass &source, const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool, exec::Graph &graph,
-     util::Timer &timer,
-     const core::CommandBuffers &commandBuffers);
+     util::Timer &timer, const core::CommandBuffers &commandBuffers);
   ~UI();
 
   UI(const UI &) = delete;
@@ -83,9 +81,7 @@ public:
 
   [[nodiscard]] auto desc() const noexcept -> const UiDesc & { return desc_; }
 
-  void layoutMode(LayoutMode mode) noexcept {
-    layout_mode_ = mode;
-  }
+  void layoutMode(LayoutMode mode) noexcept { layout_mode_ = mode; }
 
   void switchLayoutMode() noexcept {
     switch (layout_mode_) {
@@ -96,12 +92,9 @@ public:
       layout_mode_ = LayoutMode::FullScreen;
       break;
     }
-
   }
 
-  void viewport(const VkViewport &viewport) noexcept {
-    viewport_ = viewport;
-  }
+  void viewport(const VkViewport &viewport) noexcept { viewport_ = viewport; }
 
   [[nodiscard]] auto layoutMode() const noexcept -> LayoutMode {
     return layout_mode_;

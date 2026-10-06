@@ -171,13 +171,13 @@ private:
   [[nodiscard]] auto viewportMousePosition() const -> glm::vec2 {
     const auto cursor = inputTracer->cursorPosition();
 
-    if (ctx.ui.layoutMode == vkr::ui::LayoutMode::FullScreen) {
+    if (ui().layoutMode() == vkr::ui::LayoutMode::FullScreen) {
       return {static_cast<float>(cursor.x),
               static_cast<float>(ctx.window.height - cursor.y)};
     }
 
-    const auto viewport = ctx.ui.viewport;
-    if (!ctx.ui.viewportFocused || viewport.width <= 0.0f ||
+    const auto viewport = ui().viewport();
+    if (!ui().viewportFocused() || viewport.width <= 0.0f ||
         viewport.height <= 0.0f) {
       return {0.0f, 0.0f};
     }
@@ -194,12 +194,12 @@ private:
   }
 
   [[nodiscard]] auto isViewportMouseActive() const -> bool {
-    if (ctx.ui.layoutMode == vkr::ui::LayoutMode::FullScreen) {
+    if (ui().layoutMode() == vkr::ui::LayoutMode::FullScreen) {
       return true;
     }
 
-    const auto viewport = ctx.ui.viewport;
-    return ctx.ui.viewportFocused && viewport.width > 0.0f &&
+    const auto viewport = ui().viewport();
+    return ui().viewportFocused() && viewport.width > 0.0f &&
            viewport.height > 0.0f;
   }
 

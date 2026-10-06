@@ -18,10 +18,14 @@
 #include "vkr/util/timer.hh"
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace vkr::exec {
+
+class UiPass;
 
 struct RenderAppDesc {
   util::AssetDesc asset{};
@@ -69,6 +73,8 @@ public:
   auto operator=(const RenderApplication &) -> RenderApplication & = delete;
 
   void run();
+  [[nodiscard]] auto ui() -> ui::UI &;
+  [[nodiscard]] auto ui() const -> const ui::UI &;
 
   RenderAppDesc ctx;
 
@@ -115,11 +121,13 @@ private:
 
   void mainLoop();
   void drawFrame();
-  void buildPresentation();
+  auto buildPresentation() -> UiPass &;
   void recreateSwapchain();
 
   void loadSnapshot();
   void saveSnapshot();
+
+  std::optional<std::reference_wrapper<ui::UI>> ui_{};
 };
 
 } // namespace vkr::exec

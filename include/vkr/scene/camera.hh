@@ -58,14 +58,19 @@ struct CameraDesc {
 
 class Camera {
 public:
-  explicit Camera(const util::Timer &timer, const util::InputTracer &input,
-                  CameraDesc &desc);
-  ~Camera() = default;
+  explicit Camera(const util::Timer &timer, const util::InputTracer &input);
+  ~Camera();
 
   Camera(const Camera &) = delete;
   auto operator=(const Camera &) -> Camera & = delete;
 
+  void create();
+  void destroy() noexcept;
+  void update(const CameraDesc &desc);
   void track();
+  void aspect(float ratio);
+
+  [[nodiscard]] auto valid() const noexcept -> bool { return created_; }
 
   [[nodiscard]] auto desc() const noexcept -> const CameraDesc & {
     return desc_;
@@ -140,7 +145,10 @@ private:
   const util::InputTracer &input_;
 
   // components
-  CameraDesc &desc_;
+  CameraDesc desc_{};
+
+  // status
+  bool created_{false};
 
   // helpers
   void updateVectors() {

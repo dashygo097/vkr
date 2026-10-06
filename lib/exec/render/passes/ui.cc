@@ -7,20 +7,41 @@
 namespace vkr::exec {
 
 UiPass::UiPass(RenderExecutor &executor, const core::Window &window,
-               const core::Instance &instance, const core::Surface &surface,
+               const core::Instance &instance,
                const core::Device &device, const core::CommandPool &commandPool,
                const core::CommandBuffers &commandBuffers,
                const core::Swapchain &swapchain, scene::Scene &scene,
-               const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-               Pass &source, Graph &graph, util::Timer &timer,
-               ui::UiDesc &uiDesc)
+               const util::AssetSystem &assetSystem, scene::Camera &camera,
+               Pass &source, Graph &graph, util::Timer &timer)
     : executor_(executor), window_(window), instance_(instance),
-      surface_(surface), device_(device), command_pool_(commandPool),
+      device_(device), command_pool_(commandPool),
       command_buffers_(commandBuffers), swapchain_(swapchain), scene_(scene),
       asset_system_(assetSystem), camera_(camera), source_(source),
-      graph_(graph), timer_(timer), ui_desc_(uiDesc) {}
+      graph_(graph), timer_(timer) {}
 
 UiPass::~UiPass() { destroy(); }
+
+void UiPass::update(const ui::UiDesc &desc) {
+  ensureConfigurable();
+  if (!desc.isValid()) {
+    VKR_EXEC_ERROR("Invalid UI descriptor for UiPass '{}'", name());
+  }
+  desc_ = desc;
+}
+
+auto UiPass::ui() -> ui::UI & {
+  if (!ui_ || !ui_->valid()) {
+    VKR_EXEC_ERROR("UiPass '{}' UI requested before create", name());
+  }
+  return *ui_;
+}
+
+auto UiPass::ui() const -> const ui::UI & {
+  if (!ui_ || !ui_->valid()) {
+    VKR_EXEC_ERROR("UiPass '{}' UI requested before create", name());
+  }
+  return *ui_;
+}
 
 void UiPass::create() {
   destroy();
@@ -64,10 +85,11 @@ void UiPass::create() {
       .maxSets = descriptorCount,
   });
 
-  ui_ = std::make_unique<ui::UI>(window_, instance_, surface_, device_,
-                                 command_pool_, scene_, asset_system_, camera_,
+  ui_ = std::make_unique<ui::UI>(window_, instance_, device_,
+                                 scene_, asset_system_, camera_,
                                  source_, *render_pass_, *descriptor_pool_,
-                                 graph_, timer_, ui_desc_, command_buffers_);
+                                 graph_, timer_, command_buffers_);
+  ui_->update(desc_);
 }
 
 void UiPass::destroy() noexcept {

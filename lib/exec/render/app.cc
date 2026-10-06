@@ -54,7 +54,29 @@ void RenderApplication::loadSnapshot() {
   }
 }
 
+auto RenderApplication::ui() -> ui::UI & {
+  if (!ui_) {
+    VKR_EXEC_ERROR("UI requested before initialization");
+  }
+  return ui_->get();
+}
+
+auto RenderApplication::ui() const -> const ui::UI & {
+  if (!ui_) {
+    VKR_EXEC_ERROR("UI requested before initialization");
+  }
+  return ui_->get();
+}
+
 void RenderApplication::saveSnapshot() {
+  if (camera && camera->valid()) {
+    ctx.camera = camera->desc();
+  }
+  if (ui_) {
+    ctx.ui = ui().desc();
+    ctx.ui.layoutMode = ui().layoutMode();
+    ctx.ui.theme = ui().theme();
+  }
   const auto path = snapshotPath();
 
   if (!vkr::util::saveTomlFile(path, ctx)) {
@@ -122,7 +144,8 @@ void RenderApplication::initVulkan() {
 
   // camera
   camera =
-      std::make_unique<vkr::scene::Camera>(*timer, *inputTracer, ctx.camera);
+      std::make_unique<vkr::scene::Camera>(*timer, *inputTracer);
+  camera->update(ctx.camera);
 
   // executor
   executor = std::make_unique<RenderExecutor>(*device, *swapchain, *commandPool,
@@ -133,24 +156,27 @@ void RenderApplication::initVulkan() {
   graph =
       std::make_unique<RenderGraph>(*executor, *device, *commandPool, *scene);
   buildGraph();
-  buildPresentation();
+  auto &uiPass = buildPresentation();
   graph->compile();
   graph->create();
+  ui_ = uiPass.ui();
 }
 
-void RenderApplication::buildPresentation() {
+auto RenderApplication::buildPresentation() -> UiPass & {
   auto &source = graph->presentationSource();
 
   auto &uiPass = graph->addPass<UiPass>(
-      *executor, *window, *instance, *surface, *device, *commandPool,
-      *commandBuffers, *swapchain, *scene, *assetSystem, ctx.camera, source,
-      *graph, *timer, ctx.ui);
+      *executor, *window, *instance, *device, *commandPool,
+      *commandBuffers, *swapchain, *scene, *assetSystem, *camera, source,
+      *graph, *timer);
   uiPass.setName("ui");
+  uiPass.update(ctx.ui);
   graph->addDependency(source.name(), uiPass.name());
 
   auto &presentPass = graph->addPass<PresentPass>(*executor);
   presentPass.setName("present");
   graph->addDependency(uiPass.name(), presentPass.name());
+  return uiPass;
 }
 
 void RenderApplication::mainLoop() {
@@ -166,8 +192,8 @@ void RenderApplication::mainLoop() {
       recreateSwapchain();
     }
 
-    camera->lock(ctx.ui.layoutMode == ui::LayoutMode::Standard &&
-                 !ctx.ui.viewportFocused);
+    camera->lock(ui().layoutMode() == ui::LayoutMode::Standard &&
+                 !ui().viewportFocused());
 
     if (!camera->isLocked()) {
       camera->track();
@@ -222,6 +248,10 @@ void RenderApplication::recreateSwapchain() {
     return;
   }
 
+  ctx.ui = ui().desc();
+  ctx.ui.layoutMode = ui().layoutMode();
+  ctx.ui.theme = ui().theme();
+  ui_.reset();
   graph->destroy();
   graph.reset();
 
@@ -234,9 +264,10 @@ void RenderApplication::recreateSwapchain() {
   graph =
       std::make_unique<RenderGraph>(*executor, *device, *commandPool, *scene);
   buildGraph();
-  buildPresentation();
+  auto &uiPass = buildPresentation();
   graph->compile();
   graph->create();
+  ui_ = uiPass.ui();
 }
 
 } // namespace vkr::exec

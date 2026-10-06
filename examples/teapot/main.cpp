@@ -62,12 +62,12 @@ private:
 
   void onDraw() override {
     const uint32_t frameIndex = executor->frameIndex();
-    const auto &viewport = ctx.ui.viewport;
-    ctx.camera.aspectRatio =
-        ctx.ui.layoutMode == vkr::ui::LayoutMode::Standard &&
+    const auto &viewport = ui().viewport();
+    camera->aspect(
+        ui().layoutMode() == vkr::ui::LayoutMode::Standard &&
                 viewport.height > 0.0f
             ? viewport.width / viewport.height
-            : ctx.window.ratio();
+            : ctx.window.ratio());
 
     UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.4f, -7.0f));

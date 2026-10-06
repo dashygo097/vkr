@@ -37,11 +37,10 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const util::AssetSystem &assetSystem, scene::Camera &camera,
        exec::Pass &source, const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool, exec::Graph &graph,
-       util::Timer &timer,
-       const core::CommandBuffers &commandBuffers)
-    : window_(window), instance_(instance), device_(device),
-      scene_(scene), asset_system_(assetSystem),
-      camera_(camera), source_(source), render_pass_(renderPass),
+       util::Timer &timer, const core::CommandBuffers &commandBuffers)
+    : window_(window), instance_(instance), device_(device), scene_(scene),
+      asset_system_(assetSystem), camera_(camera), source_(source),
+      render_pass_(renderPass),
       descriptor_pool_(descriptorPool), graph_(graph), timer_(timer),
       command_buffers_(commandBuffers) {}
 
@@ -62,147 +61,143 @@ void UI::create() {
   if (command_buffers_.empty()) {
     VKR_UI_ERROR("UI requires initialized command buffers");
   }
-  if (context_) {
-    device_.waitIdle();
-  }
   destroy();
 
   try {
+    VKR_UI_INFO("Initializing ImGui UI...");
+    IMGUI_CHECKVERSION();
 
-  VKR_UI_INFO("Initializing ImGui UI...");
-  IMGUI_CHECKVERSION();
+    context_.reset(ImGui::CreateContext());
+    ImGuiIO &io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-  context_.reset(ImGui::CreateContext());
-  ImGuiIO &io = ImGui::GetIO();
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-  layout_mode_ = desc_.layoutMode;
-  theme_ = desc_.theme;
-  dockspace_id_ = ImHashStr("DockSpace", 0, ImHashStr("DockSpace"));
-  if (!ImGui_ImplGlfw_InitForVulkan(window_.glfwWindow(), true)) {
-    VKR_UI_ERROR("Failed to initialize the ImGui GLFW backend");
-  }
-  glfw_initialized_ = true;
-  updateTheme();
-  const auto [interfaceFont, codeFont] = Theme::loadFonts();
-  io.FontDefault = &interfaceFont.get();
-
-  ImGui_ImplVulkan_PipelineInfo pipelineInfo{};
-  pipelineInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-  pipelineInfo.RenderPass = render_pass_.renderPass();
-
-  ImGui_ImplVulkan_InitInfo initInfo{};
-  initInfo.Instance = instance_.instance();
-  initInfo.PhysicalDevice = device_.physicalDevice();
-  initInfo.Device = device_.device();
-  initInfo.QueueFamily = device_.graphicsFamily();
-  initInfo.Queue = device_.graphicsQueue();
-  initInfo.PipelineCache = VK_NULL_HANDLE;
-  initInfo.DescriptorPool = descriptor_pool_.pool();
-  initInfo.Allocator = nullptr;
-  initInfo.MinImageCount = 2;
-  initInfo.ImageCount = std::max(2U, command_buffers_.size());
-  initInfo.CheckVkResultFn = checkVkResult;
-  initInfo.PipelineInfoMain = pipelineInfo;
-
-  if (!ImGui_ImplVulkan_Init(&initInfo)) {
-    VKR_UI_ERROR("Failed to initialize the ImGui Vulkan backend");
-  }
-  vulkan_initialized_ = true;
-
-  std::vector<pipeline::DescriptorBinding> offscreenBindings = {
-      {.name = "offscreen",
-       .layout = {
-           .binding = 0,
-           .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-           .descriptorCount = 1,
-           .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-       }}};
-
-  offscreen_descriptor_layout_ =
-      std::make_unique<pipeline::DescriptorSetLayout>(device_);
-  offscreen_descriptor_layout_->update({.bindings = offscreenBindings});
-
-  const auto target = source_.capability<exec::RenderTargetCapability>();
-  if (!target) {
-    VKR_UI_ERROR("UI source '{}' has no offscreen target", source_.name());
-  }
-  std::vector<pipeline::DescriptorSetWrite> writes{};
-  for (uint32_t frame = 0; frame < command_buffers_.size(); ++frame) {
-    const auto &color = target->get().target(frame).color();
-    if (!color.hasSampler()) {
-      VKR_UI_ERROR("UI source '{}' color has no sampler", source_.name());
+    layout_mode_ = desc_.layoutMode;
+    theme_ = desc_.theme;
+    dockspace_id_ = ImHashStr("DockSpace", 0, ImHashStr("DockSpace"));
+    if (!ImGui_ImplGlfw_InitForVulkan(window_.glfwWindow(), true)) {
+      VKR_UI_ERROR("Failed to initialize the ImGui GLFW backend");
     }
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.sampler = color.sampler();
-    imageInfo.imageView = color.imageView();
-    imageInfo.imageLayout = color.desc().finalLayout;
-    if (imageInfo.imageLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
-      imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    glfw_initialized_ = true;
+    updateTheme();
+    const auto [interfaceFont, codeFont] = Theme::loadFonts();
+    io.FontDefault = &interfaceFont.get();
+
+    ImGui_ImplVulkan_PipelineInfo pipelineInfo{};
+    pipelineInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    pipelineInfo.RenderPass = render_pass_.renderPass();
+
+    ImGui_ImplVulkan_InitInfo initInfo{};
+    initInfo.Instance = instance_.instance();
+    initInfo.PhysicalDevice = device_.physicalDevice();
+    initInfo.Device = device_.device();
+    initInfo.QueueFamily = device_.graphicsFamily();
+    initInfo.Queue = device_.graphicsQueue();
+    initInfo.PipelineCache = VK_NULL_HANDLE;
+    initInfo.DescriptorPool = descriptor_pool_.pool();
+    initInfo.Allocator = nullptr;
+    initInfo.MinImageCount = 2;
+    initInfo.ImageCount = std::max(2U, command_buffers_.size());
+    initInfo.CheckVkResultFn = checkVkResult;
+    initInfo.PipelineInfoMain = pipelineInfo;
+
+    if (!ImGui_ImplVulkan_Init(&initInfo)) {
+      VKR_UI_ERROR("Failed to initialize the ImGui Vulkan backend");
     }
-    auto write = pipeline::DescriptorSetWrite::forSet(frame);
-    write.images.push_back(pipeline::DescriptorImageWrite::one(
-        0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageInfo));
-    writes.push_back(std::move(write));
-  }
+    vulkan_initialized_ = true;
 
-  offscreen_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
-      device_, descriptor_pool_, *offscreen_descriptor_layout_);
-  offscreen_descriptor_sets_->update(pipeline::DescriptorSetsDesc{
-      .setCount = command_buffers_.size(),
-  });
-  offscreen_descriptor_sets_->write(writes);
+    std::vector<pipeline::DescriptorBinding> offscreenBindings = {
+        {.name = "offscreen",
+         .layout = {
+             .binding = 0,
+             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+             .descriptorCount = 1,
+             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+         }}};
 
-  preview_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
-      device_, descriptor_pool_, *offscreen_descriptor_layout_);
-  preview_descriptor_sets_->update(pipeline::DescriptorSetsDesc{
-      .setCount = command_buffers_.size(),
-  });
+    offscreen_descriptor_layout_ =
+        std::make_unique<pipeline::DescriptorSetLayout>(device_);
+    offscreen_descriptor_layout_->update({.bindings = offscreenBindings});
 
-  viewport_panel_ = std::make_unique<ViewportPanel>(
-      viewport_, viewport_focused_, viewport_hovered_);
-  viewport_panel_->flipY(desc_.viewportFlipY);
-  if (!scene_.selectedMeshName().empty()) {
-    selection_ = {SelectionType::Mesh, scene_.selectedMeshName()};
-  }
-  const auto onSelect = [this](Selection selection) {
-    select(std::move(selection));
-  };
-  inspector_panel_ = std::make_unique<InspectorPanel>(
-      scene_, graph_, selection_, onSelect,
-      [this](const scene::Texture &texture) { renderTexturePreview(texture); });
-  graph_panel_ = std::make_unique<ExecGraphPanel>(graph_, selection_, onSelect);
-  assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
-  camera_panel_ = std::make_unique<CameraPanel>(
-      camera_, viewport_, viewport_focused_, viewport_hovered_);
-  mesh_editor_panel_ =
-      std::make_unique<MeshEditorPanel>(scene_, selection_, onSelect);
+    const auto target = source_.capability<exec::RenderTargetCapability>();
+    if (!target) {
+      VKR_UI_ERROR("UI source '{}' has no offscreen target", source_.name());
+    }
+    std::vector<pipeline::DescriptorSetWrite> writes{};
+    for (uint32_t frame = 0; frame < command_buffers_.size(); ++frame) {
+      const auto &color = target->get().target(frame).color();
+      if (!color.hasSampler()) {
+        VKR_UI_ERROR("UI source '{}' color has no sampler", source_.name());
+      }
+      VkDescriptorImageInfo imageInfo{};
+      imageInfo.sampler = color.sampler();
+      imageInfo.imageView = color.imageView();
+      imageInfo.imageLayout = color.desc().finalLayout;
+      if (imageInfo.imageLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      }
+      auto write = pipeline::DescriptorSetWrite::forSet(frame);
+      write.images.push_back(pipeline::DescriptorImageWrite::one(
+          0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageInfo));
+      writes.push_back(std::move(write));
+    }
 
-  VKR_UI_INFO("Initializing FPS Panel...");
-  fps_panel_ = std::make_unique<FPSPanel>(timer_);
-  fps_panel_->clear();
-  VKR_UI_INFO("FPS Panel initialized successfully.");
+    offscreen_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
+        device_, descriptor_pool_, *offscreen_descriptor_layout_);
+    offscreen_descriptor_sets_->update(pipeline::DescriptorSetsDesc{
+        .setCount = command_buffers_.size(),
+    });
+    offscreen_descriptor_sets_->write(writes);
 
-  VKR_UI_INFO("Initializing Shader Editor...");
-  shader_editor_ = std::make_unique<ShaderEditor>(graph_, codeFont.get());
-  VKR_UI_INFO("Shader Editor initialized successfully.");
+    preview_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
+        device_, descriptor_pool_, *offscreen_descriptor_layout_);
+    preview_descriptor_sets_->update(pipeline::DescriptorSetsDesc{
+        .setCount = command_buffers_.size(),
+    });
 
-  VKR_UI_INFO("Initializing Logging Panel...");
-  logging_panel_ = std::make_unique<LoggingPanel>();
-  VKR_UI_INFO("Logging Panel initialized successfully.");
+    viewport_panel_ = std::make_unique<ViewportPanel>(
+        viewport_, viewport_focused_, viewport_hovered_);
+    viewport_panel_->flipY(desc_.viewportFlipY);
+    if (!scene_.selectedMeshName().empty()) {
+      selection_ = {SelectionType::Mesh, scene_.selectedMeshName()};
+    }
+    const auto onSelect = [this](Selection selection) {
+      select(std::move(selection));
+    };
+    inspector_panel_ = std::make_unique<InspectorPanel>(
+        scene_, graph_, selection_, onSelect,
+        [this](const scene::Texture &texture) { renderTexturePreview(texture); });
+    graph_panel_ = std::make_unique<ExecGraphPanel>(graph_, selection_, onSelect);
+    assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
+    camera_panel_ = std::make_unique<CameraPanel>(
+        camera_, viewport_, viewport_focused_, viewport_hovered_);
+    mesh_editor_panel_ =
+        std::make_unique<MeshEditorPanel>(scene_, selection_, onSelect);
 
-  VKR_UI_INFO("Initializing Resource Tree...");
-  resource_tree_ = std::make_unique<ResourceTree>(scene_, selection_, onSelect);
-  VKR_UI_INFO("Resource Tree initialized successfully.");
+    VKR_UI_INFO("Initializing FPS Panel...");
+    fps_panel_ = std::make_unique<FPSPanel>(timer_);
+    fps_panel_->clear();
+    VKR_UI_INFO("FPS Panel initialized successfully.");
 
-  dock_components_ = {*viewport_panel_, *resource_tree_, *graph_panel_,
-                      *assets_panel_,   *camera_panel_,  *mesh_editor_panel_,
-                      *shader_editor_,  *fps_panel_,     *logging_panel_,
-                      *inspector_panel_};
+    VKR_UI_INFO("Initializing Shader Editor...");
+    shader_editor_ = std::make_unique<ShaderEditor>(graph_, codeFont.get());
+    VKR_UI_INFO("Shader Editor initialized successfully.");
 
-  created_ = true;
-  VKR_UI_INFO("ImGui UI initialized successfully.");
+    VKR_UI_INFO("Initializing Logging Panel...");
+    logging_panel_ = std::make_unique<LoggingPanel>();
+    VKR_UI_INFO("Logging Panel initialized successfully.");
+
+    VKR_UI_INFO("Initializing Resource Tree...");
+    resource_tree_ = std::make_unique<ResourceTree>(scene_, selection_, onSelect);
+    VKR_UI_INFO("Resource Tree initialized successfully.");
+
+    dock_components_ = {*viewport_panel_, *resource_tree_, *graph_panel_,
+                        *assets_panel_,   *camera_panel_,  *mesh_editor_panel_,
+                        *shader_editor_,  *fps_panel_,     *logging_panel_,
+                        *inspector_panel_};
+
+    created_ = true;
+    VKR_UI_INFO("ImGui UI initialized successfully.");
   } catch (...) {
     destroy();
     throw;
@@ -211,6 +206,9 @@ void UI::create() {
 
 void UI::destroy() noexcept {
   if (context_) {
+    if (vulkan_initialized_) {
+      device_.waitIdle();
+    }
     ImGui::SetCurrentContext(context_.get());
   }
   dock_components_.clear();
@@ -434,8 +432,8 @@ void UI::renderMainMenu() {
     return;
   }
 
-  auto brandColor = Theme::accentColor(desc_.theme.accent);
-  if (!desc_.theme.dark) {
+  auto brandColor = Theme::accentColor(theme_.accent);
+  if (!theme_.dark) {
     brandColor.x *= 0.62f;
     brandColor.y *= 0.62f;
     brandColor.z *= 0.62f;
@@ -534,8 +532,8 @@ void UI::renderStatusBar() {
             true);
         ImGui::TextDisabled("Output: %s", source_.name().c_str());
         if (ImGui::GetCursorPosX() + ImGui::GetFontSize() * 12.0f < right) {
-          ImGui::TextDisabled("%.0f x %.0f", desc_.viewport.width,
-                              desc_.viewport.height);
+          ImGui::TextDisabled("%.0f x %.0f", viewport_.width,
+                              viewport_.height);
         }
         ImGui::PopClipRect();
       }
@@ -570,9 +568,9 @@ void UI::select(Selection selection) {
 }
 
 void UI::renderWorkspacePanels() {
-  desc_.viewport = {};
-  desc_.viewportFocused = false;
-  desc_.viewportHovered = false;
+  viewport_ = {};
+  viewport_focused_ = false;
+  viewport_hovered_ = false;
   VkDescriptorSet texture = VK_NULL_HANDLE;
   if (offscreen_descriptor_sets_ &&
       !offscreen_descriptor_sets_->sets().empty()) {
@@ -712,7 +710,7 @@ void UI::updateTheme() {
                              : 1.0f;
   if (theme_dirty_ || std::abs(dpiScale - dpi_scale_) > 0.001f) {
     dpi_scale_ = dpiScale;
-    Theme::apply(desc_.theme, dpi_scale_);
+    Theme::apply(theme_, dpi_scale_);
     if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
       auto &style = ImGui::GetStyle();
       style.WindowRounding = 0.0f;
@@ -728,8 +726,8 @@ void UI::renderThemeControls() {
   ImGui::SeparatorText("Accent");
 
   auto accentItem = [&](const char *label, ThemeAccent accent) {
-    if (ImGui::MenuItem(label, nullptr, desc_.theme.accent == accent)) {
-      desc_.theme.accent = accent;
+    if (ImGui::MenuItem(label, nullptr, theme_.accent == accent)) {
+      theme_.accent = accent;
       changed = true;
     }
   };
@@ -742,41 +740,41 @@ void UI::renderThemeControls() {
 
   ImGui::SeparatorText("Mode");
 
-  if (ImGui::MenuItem("Dark", nullptr, desc_.theme.dark)) {
-    desc_.theme.dark = true;
+  if (ImGui::MenuItem("Dark", nullptr, theme_.dark)) {
+    theme_.dark = true;
     changed = true;
   }
 
-  if (ImGui::MenuItem("Light", nullptr, !desc_.theme.dark)) {
-    desc_.theme.dark = false;
+  if (ImGui::MenuItem("Light", nullptr, !theme_.dark)) {
+    theme_.dark = false;
     changed = true;
   }
 
   ImGui::SeparatorText("Shape");
   ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
 
-  changed |= ImGui::SliderFloat("Rounding", &desc_.theme.rounding, 0.0f, 10.0f,
+  changed |= ImGui::SliderFloat("Rounding", &theme_.rounding, 0.0f, 10.0f,
                                 "%.1f");
   changed |=
-      ImGui::SliderFloat("Alpha", &desc_.theme.alpha, 0.35f, 1.0f, "%.2f");
+      ImGui::SliderFloat("Alpha", &theme_.alpha, 0.35f, 1.0f, "%.2f");
 
   ImGui::PopItemWidth();
 
   ImGui::SeparatorText("Density");
   if (ImGui::MenuItem("Compact", nullptr,
-                      desc_.theme.density == ThemeDensity::Compact)) {
-    desc_.theme.density = ThemeDensity::Compact;
+                      theme_.density == ThemeDensity::Compact)) {
+    theme_.density = ThemeDensity::Compact;
     changed = true;
   }
   if (ImGui::MenuItem("Comfortable", nullptr,
-                      desc_.theme.density == ThemeDensity::Comfortable)) {
-    desc_.theme.density = ThemeDensity::Comfortable;
+                      theme_.density == ThemeDensity::Comfortable)) {
+    theme_.density = ThemeDensity::Comfortable;
     changed = true;
   }
 
   ImGui::SeparatorText("Typography");
   ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
-  ImGui::SliderFloat("UI scale", &desc_.theme.scale, 0.75f, 2.0f, "%.2fx");
+  ImGui::SliderFloat("UI scale", &theme_.scale, 0.75f, 2.0f, "%.2fx");
   changed |= ImGui::IsItemDeactivatedAfterEdit();
   ImGui::PopItemWidth();
 
