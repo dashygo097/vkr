@@ -42,9 +42,6 @@ enum LayoutMode {
 struct UiDesc {
   LayoutMode layoutMode{LayoutMode::Standard};
   ThemeDesc theme{};
-  VkViewport viewport{};
-  bool viewportFocused{false};
-  bool viewportHovered{false};
   bool viewportFlipY{false};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
@@ -66,25 +63,28 @@ struct UiDesc {
 class UI {
 public:
   UI(const core::Window &window, const core::Instance &instance,
-     const core::Surface &surface, const core::Device &device,
-     const core::CommandPool &commandPool, scene::Scene &scene,
-     const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
+     const core::Device &device, scene::Scene &scene,
+     const util::AssetSystem &assetSystem, scene::Camera &camera,
      exec::Pass &source, const pipeline::RenderPass &renderPass,
      const pipeline::DescriptorPool &descriptorPool, exec::Graph &graph,
-     util::Timer &timer, UiDesc &desc,
+     util::Timer &timer,
      const core::CommandBuffers &commandBuffers);
   ~UI();
 
   UI(const UI &) = delete;
   auto operator=(const UI &) -> UI & = delete;
 
+  void create();
+  void destroy() noexcept;
+  void update(const UiDesc &desc);
   void render(VkCommandBuffer commandBuffer, uint32_t frameIndex);
+
+  [[nodiscard]] auto valid() const noexcept -> bool { return created_; }
 
   [[nodiscard]] auto desc() const noexcept -> const UiDesc & { return desc_; }
 
   void layoutMode(LayoutMode mode) noexcept {
     layout_mode_ = mode;
-    desc_.layoutMode = mode;
   }
 
   void switchLayoutMode() noexcept {
@@ -97,11 +97,10 @@ public:
       break;
     }
 
-    desc_.layoutMode = layout_mode_;
   }
 
   void viewport(const VkViewport &viewport) noexcept {
-    desc_.viewport = viewport;
+    viewport_ = viewport;
   }
 
   [[nodiscard]] auto layoutMode() const noexcept -> LayoutMode {
@@ -109,35 +108,40 @@ public:
   }
 
   [[nodiscard]] auto viewport() const noexcept -> const VkViewport & {
-    return desc_.viewport;
+    return viewport_;
   }
 
   [[nodiscard]] auto viewportFocused() const noexcept -> bool {
-    return desc_.viewportFocused;
+    return viewport_focused_;
   }
 
   [[nodiscard]] auto viewportHovered() const noexcept -> bool {
-    return desc_.viewportHovered;
+    return viewport_hovered_;
+  }
+
+  [[nodiscard]] auto theme() const noexcept -> const ThemeDesc & {
+    return theme_;
   }
 
 private:
   // dependencies
   const core::Window &window_;
   const core::Instance &instance_;
-  const core::Surface &surface_;
   const core::Device &device_;
-  const core::CommandPool &command_pool_;
   scene::Scene &scene_;
   const util::AssetSystem &asset_system_;
-  scene::CameraDesc &camera_;
+  scene::Camera &camera_;
   exec::Pass &source_;
   const pipeline::RenderPass &render_pass_;
   const pipeline::DescriptorPool &descriptor_pool_;
+  exec::Graph &graph_;
   util::Timer &timer_;
   const core::CommandBuffers &command_buffers_;
 
   // components
-  UiDesc &desc_;
+  UiDesc desc_{};
+  std::unique_ptr<ImGuiContext, decltype(&ImGui::DestroyContext)> context_{
+      nullptr, &ImGui::DestroyContext};
   std::unique_ptr<ViewportPanel> viewport_panel_;
   std::unique_ptr<ResourceTree> resource_tree_;
   std::unique_ptr<ExecGraphPanel> graph_panel_;
@@ -154,6 +158,13 @@ private:
 
   // state
   Selection selection_{};
+  ThemeDesc theme_{};
+  VkViewport viewport_{};
+  bool viewport_focused_{false};
+  bool viewport_hovered_{false};
+  bool glfw_initialized_{false};
+  bool vulkan_initialized_{false};
+  bool created_{false};
   LayoutMode layout_mode_{LayoutMode::Standard};
   uint32_t frame_index_{0};
   ImGuiID dockspace_id_{0};

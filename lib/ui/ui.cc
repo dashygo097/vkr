@@ -33,36 +33,57 @@ void checkVkResult(VkResult err) {
 } // namespace
 
 UI::UI(const core::Window &window, const core::Instance &instance,
-       const core::Surface &surface, const core::Device &device,
-       const core::CommandPool &commandPool, scene::Scene &scene,
-       const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
+       const core::Device &device, scene::Scene &scene,
+       const util::AssetSystem &assetSystem, scene::Camera &camera,
        exec::Pass &source, const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool, exec::Graph &graph,
-       util::Timer &timer, UiDesc &desc,
+       util::Timer &timer,
        const core::CommandBuffers &commandBuffers)
-    : window_(window), instance_(instance), surface_(surface), device_(device),
-      command_pool_(commandPool), scene_(scene), asset_system_(assetSystem),
+    : window_(window), instance_(instance), device_(device),
+      scene_(scene), asset_system_(assetSystem),
       camera_(camera), source_(source), render_pass_(renderPass),
-      descriptor_pool_(descriptorPool), timer_(timer),
-      command_buffers_(commandBuffers), desc_(desc) {
-  if (command_buffers_.empty()) {
-    VKR_UI_ERROR("UI requires initialized command buffers");
+      descriptor_pool_(descriptorPool), graph_(graph), timer_(timer),
+      command_buffers_(commandBuffers) {}
+
+UI::~UI() { destroy(); }
+
+void UI::update(const UiDesc &desc) {
+  if (!desc.isValid()) {
+    VKR_UI_ERROR("Invalid UI descriptor");
   }
+  desc_ = desc;
+  create();
+}
+
+void UI::create() {
   if (!desc_.isValid()) {
     VKR_UI_ERROR("Invalid UI descriptor");
   }
+  if (command_buffers_.empty()) {
+    VKR_UI_ERROR("UI requires initialized command buffers");
+  }
+  if (context_) {
+    device_.waitIdle();
+  }
+  destroy();
+
+  try {
 
   VKR_UI_INFO("Initializing ImGui UI...");
   IMGUI_CHECKVERSION();
 
-  ImGui::CreateContext();
+  context_.reset(ImGui::CreateContext());
   ImGuiIO &io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   layout_mode_ = desc_.layoutMode;
+  theme_ = desc_.theme;
   dockspace_id_ = ImHashStr("DockSpace", 0, ImHashStr("DockSpace"));
-  ImGui_ImplGlfw_InitForVulkan(window_.glfwWindow(), true);
+  if (!ImGui_ImplGlfw_InitForVulkan(window_.glfwWindow(), true)) {
+    VKR_UI_ERROR("Failed to initialize the ImGui GLFW backend");
+  }
+  glfw_initialized_ = true;
   updateTheme();
   const auto [interfaceFont, codeFont] = Theme::loadFonts();
   io.FontDefault = &interfaceFont.get();
@@ -85,7 +106,10 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   initInfo.CheckVkResultFn = checkVkResult;
   initInfo.PipelineInfoMain = pipelineInfo;
 
-  ImGui_ImplVulkan_Init(&initInfo);
+  if (!ImGui_ImplVulkan_Init(&initInfo)) {
+    VKR_UI_ERROR("Failed to initialize the ImGui Vulkan backend");
+  }
+  vulkan_initialized_ = true;
 
   std::vector<pipeline::DescriptorBinding> offscreenBindings = {
       {.name = "offscreen",
@@ -137,7 +161,7 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   });
 
   viewport_panel_ = std::make_unique<ViewportPanel>(
-      desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
+      viewport_, viewport_focused_, viewport_hovered_);
   viewport_panel_->flipY(desc_.viewportFlipY);
   if (!scene_.selectedMeshName().empty()) {
     selection_ = {SelectionType::Mesh, scene_.selectedMeshName()};
@@ -146,22 +170,22 @@ UI::UI(const core::Window &window, const core::Instance &instance,
     select(std::move(selection));
   };
   inspector_panel_ = std::make_unique<InspectorPanel>(
-      scene_, graph, selection_, onSelect,
+      scene_, graph_, selection_, onSelect,
       [this](const scene::Texture &texture) { renderTexturePreview(texture); });
-  graph_panel_ = std::make_unique<ExecGraphPanel>(graph, selection_, onSelect);
+  graph_panel_ = std::make_unique<ExecGraphPanel>(graph_, selection_, onSelect);
   assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
   camera_panel_ = std::make_unique<CameraPanel>(
-      camera_, desc_.viewport, desc_.viewportFocused, desc_.viewportHovered);
+      camera_, viewport_, viewport_focused_, viewport_hovered_);
   mesh_editor_panel_ =
       std::make_unique<MeshEditorPanel>(scene_, selection_, onSelect);
 
   VKR_UI_INFO("Initializing FPS Panel...");
-  fps_panel_ = std::make_unique<FPSPanel>(timer);
+  fps_panel_ = std::make_unique<FPSPanel>(timer_);
   fps_panel_->clear();
   VKR_UI_INFO("FPS Panel initialized successfully.");
 
   VKR_UI_INFO("Initializing Shader Editor...");
-  shader_editor_ = std::make_unique<ShaderEditor>(graph, codeFont.get());
+  shader_editor_ = std::make_unique<ShaderEditor>(graph_, codeFont.get());
   VKR_UI_INFO("Shader Editor initialized successfully.");
 
   VKR_UI_INFO("Initializing Logging Panel...");
@@ -177,10 +201,19 @@ UI::UI(const core::Window &window, const core::Instance &instance,
                       *shader_editor_,  *fps_panel_,     *logging_panel_,
                       *inspector_panel_};
 
+  created_ = true;
   VKR_UI_INFO("ImGui UI initialized successfully.");
+  } catch (...) {
+    destroy();
+    throw;
+  }
 }
 
-UI::~UI() {
+void UI::destroy() noexcept {
+  if (context_) {
+    ImGui::SetCurrentContext(context_.get());
+  }
+  dock_components_.clear();
   inspector_panel_.reset();
   shader_editor_.reset();
   logging_panel_.reset();
@@ -196,12 +229,35 @@ UI::~UI() {
   offscreen_descriptor_sets_.reset();
   offscreen_descriptor_layout_.reset();
 
-  ImGui_ImplVulkan_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
+  if (vulkan_initialized_) {
+    ImGui_ImplVulkan_Shutdown();
+    vulkan_initialized_ = false;
+  }
+  if (glfw_initialized_) {
+    ImGui_ImplGlfw_Shutdown();
+    glfw_initialized_ = false;
+  }
+  context_.reset();
+  created_ = false;
+  selection_ = {};
+  viewport_ = {};
+  viewport_focused_ = false;
+  viewport_hovered_ = false;
+  frame_index_ = 0;
+  dockspace_id_ = 0;
+  dock_layout_dirty_ = false;
+  dpi_scale_ = 1.0f;
+  theme_dirty_ = true;
 }
 
 void UI::render(VkCommandBuffer commandBuffer, uint32_t frameIndex) {
+  if (!created_) {
+    VKR_UI_ERROR("UI rendered before create");
+  }
+  if (frameIndex >= command_buffers_.size()) {
+    VKR_UI_ERROR("UI frame index {} out of range", frameIndex);
+  }
+  ImGui::SetCurrentContext(context_.get());
   frame_index_ = frameIndex;
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplGlfw_NewFrame();
