@@ -36,16 +36,15 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Surface &surface, const core::Device &device,
        const core::CommandPool &commandPool, scene::Scene &scene,
        const util::AssetSystem &assetSystem, scene::CameraDesc &camera,
-       exec::Pass &source,
-       const pipeline::RenderPass &renderPass,
+       exec::Pass &source, const pipeline::RenderPass &renderPass,
        const pipeline::DescriptorPool &descriptorPool, exec::Graph &graph,
        util::Timer &timer, UiDesc &desc,
        const core::CommandBuffers &commandBuffers)
     : window_(window), instance_(instance), surface_(surface), device_(device),
       command_pool_(commandPool), scene_(scene), asset_system_(assetSystem),
-      camera_(camera), source_(source),
-      render_pass_(renderPass), descriptor_pool_(descriptorPool),
-      timer_(timer), command_buffers_(commandBuffers), desc_(desc) {
+      camera_(camera), source_(source), render_pass_(renderPass),
+      descriptor_pool_(descriptorPool), timer_(timer),
+      command_buffers_(commandBuffers), desc_(desc) {
   if (command_buffers_.empty()) {
     VKR_UI_ERROR("UI requires initialized command buffers");
   }
@@ -62,7 +61,6 @@ UI::UI(const core::Window &window, const core::Instance &instance,
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   layout_mode_ = desc_.layoutMode;
-  // Preserve a saved dockspace even when the first frame opens in fullscreen.
   dockspace_id_ = ImHashStr("DockSpace", 0, ImHashStr("DockSpace"));
   ImGui_ImplGlfw_InitForVulkan(window_.glfwWindow(), true);
   updateTheme();
@@ -125,19 +123,15 @@ UI::UI(const core::Window &window, const core::Instance &instance,
     writes.push_back(std::move(write));
   }
 
-  offscreen_descriptor_sets_ =
-      std::make_unique<pipeline::DescriptorSets>(
-          device_, descriptor_pool_, *offscreen_descriptor_layout_);
+  offscreen_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
+      device_, descriptor_pool_, *offscreen_descriptor_layout_);
   offscreen_descriptor_sets_->update(pipeline::DescriptorSetsDesc{
       .setCount = command_buffers_.size(),
   });
   offscreen_descriptor_sets_->write(writes);
 
-  // A single reusable preview set per in-flight frame, independent of the
-  // number of textures in the scene. Unwritten sets are never drawn.
-  preview_descriptor_sets_ =
-      std::make_unique<pipeline::DescriptorSets>(
-          device_, descriptor_pool_, *offscreen_descriptor_layout_);
+  preview_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
+      device_, descriptor_pool_, *offscreen_descriptor_layout_);
   preview_descriptor_sets_->update(pipeline::DescriptorSetsDesc{
       .setCount = command_buffers_.size(),
   });
@@ -251,9 +245,9 @@ void UI::renderFullScreen() {
 
   ImGuiWindowFlags flags =
       ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus |
-      ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoScrollbar |
-      ImGuiWindowFlags_NoScrollWithMouse;
+      ImGuiWindowFlags_NoSavedSettings |
+      ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDocking |
+      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
   if (ImGui::Begin("Fullscreen Viewport", nullptr, flags)) {
     if (viewport_panel_) {
@@ -305,12 +299,15 @@ void UI::setupDockingLayout() {
   const float width = std::max(1.0f, size.x);
   const float height = std::max(1.0f, size.y);
   const float fontSize = ImGui::GetFontSize();
-  const float leftWidth = std::min(width * 0.24f,
-      std::clamp(width * 0.19f, fontSize * 15.0f, fontSize * 22.0f));
-  const float rightWidth = std::min(width * 0.27f,
-      std::clamp(width * 0.22f, fontSize * 18.0f, fontSize * 26.0f));
-  const float bottomHeight = std::min(height * 0.30f,
-      std::clamp(height * 0.20f, fontSize * 7.0f, fontSize * 13.0f));
+  const float leftWidth =
+      std::min(width * 0.24f,
+               std::clamp(width * 0.19f, fontSize * 15.0f, fontSize * 22.0f));
+  const float rightWidth =
+      std::min(width * 0.27f,
+               std::clamp(width * 0.22f, fontSize * 18.0f, fontSize * 26.0f));
+  const float bottomHeight =
+      std::min(height * 0.30f,
+               std::clamp(height * 0.20f, fontSize * 7.0f, fontSize * 13.0f));
 
   ImGui::DockBuilderRemoveNode(dockspace_id_);
   ImGui::DockBuilderAddNode(dockspace_id_, ImGuiDockNodeFlags_DockSpace);
@@ -326,12 +323,13 @@ void UI::setupDockingLayout() {
   ImGuiID left = center;
   ImGuiID right = center;
   if (width >= fontSize * 36.0f) {
-    left = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Left, leftWidth / width, nullptr, &center);
+    left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, leftWidth / width,
+                                       nullptr, &center);
     right = left;
     if (width >= fontSize * 64.0f) {
       right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right,
-          rightWidth / (width - leftWidth), nullptr, &center);
+                                          rightWidth / (width - leftWidth),
+                                          nullptr, &center);
     }
   }
   if (bottom == 0) {
@@ -434,12 +432,12 @@ void UI::renderMainMenu() {
     ImGui::EndMenu();
   }
 
-  const std::string_view modeLabel = layout_mode_ == LayoutMode::Standard
-                                        ? "Viewport  F11" : "Editor  F11";
+  const std::string_view modeLabel =
+      layout_mode_ == LayoutMode::Standard ? "Viewport  F11" : "Editor  F11";
   const float buttonWidth = ImGui::CalcTextSize(modeLabel.data()).x +
                             ImGui::GetStyle().FramePadding.x * 2.0f;
-  const float right = ImGui::GetWindowWidth() - buttonWidth -
-                      ImGui::GetStyle().WindowPadding.x;
+  const float right =
+      ImGui::GetWindowWidth() - buttonWidth - ImGui::GetStyle().WindowPadding.x;
   if (right > ImGui::GetCursorPosX() + ImGui::GetFontSize()) {
     ImGui::SetCursorPosX(right);
     if (ImGui::Button(modeLabel.data())) {
@@ -451,17 +449,19 @@ void UI::renderMainMenu() {
 }
 
 void UI::renderStatusBar() {
-  const ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings |
-      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNavFocus |
-      ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_MenuBar;
+  const ImGuiWindowFlags flags =
+      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
+      ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBringToFrontOnFocus |
+      ImGuiWindowFlags_MenuBar;
   if (ImGui::BeginViewportSideBar("##EditorStatus", ImGui::GetMainViewport(),
-                                 ImGuiDir_Down, ImGui::GetFrameHeight(), flags)) {
+                                  ImGuiDir_Down, ImGui::GetFrameHeight(),
+                                  flags)) {
     if (ImGui::BeginMenuBar()) {
       std::array<char, 96> timing{};
       const float fps = timer_.fps();
       if (fps > 0.0f) {
-        std::snprintf(timing.data(), timing.size(), "%.1f FPS   %.2f ms",
-                      fps, 1000.0f / fps);
+        std::snprintf(timing.data(), timing.size(), "%.1f FPS   %.2f ms", fps,
+                      1000.0f / fps);
       } else {
         std::snprintf(timing.data(), timing.size(), "-- FPS   -- ms");
       }
@@ -471,9 +471,11 @@ void UI::renderStatusBar() {
       if (right > ImGui::GetFontSize() * 24.0f) {
         const auto position = ImGui::GetCursorScreenPos();
         const auto windowPosition = ImGui::GetWindowPos();
-        ImGui::PushClipRect(position,
+        ImGui::PushClipRect(
+            position,
             ImVec2(windowPosition.x + right - ImGui::GetFontSize(),
-                   position.y + ImGui::GetFrameHeight()), true);
+                   position.y + ImGui::GetFrameHeight()),
+            true);
         ImGui::TextDisabled("Output: %s", source_.name().c_str());
         if (ImGui::GetCursorPosX() + ImGui::GetFontSize() * 12.0f < right) {
           ImGui::TextDisabled("%.0f x %.0f", desc_.viewport.width,
@@ -504,8 +506,6 @@ void UI::select(Selection selection) {
     const auto &inspector =
         *ImGui::FindWindowByName(inspector_panel_->name().c_str());
     const auto &source = *ImGui::GetCurrentWindow()->RootWindow;
-    // Show the inspector without taking keyboard focus from the source panel.
-    // In compact layouts, keep the source tab visible when both share a node.
     if (inspector.DockId != source.DockId && inspector.DockNode &&
         inspector.DockNode->TabBar) {
       inspector.DockNode->TabBar->SelectedTabId = inspector.TabId;
@@ -543,26 +543,27 @@ void UI::renderTexturePreview(const scene::Texture &texture) {
   }
 
   const auto &desc = texture.desc();
-  const auto viewType = desc.useDefaultView ? desc.image.defaultViewType
-                                          : desc.view.viewType;
-  const auto aspect = desc.useDefaultView ? desc.image.aspectMask
-                                         : desc.view.aspectMask;
+  const auto viewType =
+      desc.useDefaultView ? desc.image.defaultViewType : desc.view.viewType;
+  const auto aspect =
+      desc.useDefaultView ? desc.image.aspectMask : desc.view.aspectMask;
   if (desc.image.type != VK_IMAGE_TYPE_2D ||
       desc.image.samples != VK_SAMPLE_COUNT_1_BIT ||
-      viewType != VK_IMAGE_VIEW_TYPE_2D || aspect != VK_IMAGE_ASPECT_COLOR_BIT ||
+      viewType != VK_IMAGE_VIEW_TYPE_2D ||
+      aspect != VK_IMAGE_ASPECT_COLOR_BIT ||
       (!desc.useDefaultView && desc.view.image != texture.image()) ||
       (desc.image.usage & VK_IMAGE_USAGE_SAMPLED_BIT) == 0) {
-    ImGui::TextWrapped("Preview supports sampled, single-sample 2D color views.");
+    ImGui::TextWrapped(
+        "Preview supports sampled, single-sample 2D color views.");
     return;
   }
 
-  // Inspector does not declare graph reads or insert barriers. Live writable
-  // resources require an explicitly synchronized preview path instead.
   if ((desc.image.usage & (VK_IMAGE_USAGE_STORAGE_BIT |
-                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)) != 0 ||
+                           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)) != 0 ||
       texture.layout() != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-    ImGui::TextWrapped("Preview requires a read-only texture in shader-read-only "
-                       "layout. Live render/storage images are not supported.");
+    ImGui::TextWrapped(
+        "Preview requires a read-only texture in shader-read-only "
+        "layout. Live render/storage images are not supported.");
     return;
   }
 
@@ -574,24 +575,25 @@ void UI::renderTexturePreview(const scene::Texture &texture) {
     return;
   }
   const auto blockExtent = vk::blockExtent(format);
-  if (!vk::isCompressed(format) && (blockExtent[0] != 1 || blockExtent[1] != 1)) {
+  if (!vk::isCompressed(format) &&
+      (blockExtent[0] != 1 || blockExtent[1] != 1)) {
     ImGui::TextWrapped("Packed chroma formats require a specialized preview.");
     return;
   }
   const std::string_view numericFormat = vk::componentNumericFormat(format, 0);
   if (numericFormat != "UNORM" && numericFormat != "SRGB") {
-    ImGui::TextWrapped("Preview currently supports UNORM and sRGB color formats. "
-                       "HDR, signed and integer formats need display conversion.");
+    ImGui::TextWrapped(
+        "Preview currently supports UNORM and sRGB color formats. "
+        "HDR, signed and integer formats need display conversion.");
     return;
   }
   if (desc.sampler.compareEnable || desc.sampler.unnormalizedCoordinates) {
-    ImGui::TextWrapped("Preview requires a non-comparison sampler with normalized "
-                       "coordinates.");
+    ImGui::TextWrapped(
+        "Preview requires a non-comparison sampler with normalized "
+        "coordinates.");
     return;
   }
 
-  // UiPass runs after RenderExecutor has waited for this frame slot's fence.
-  // Other in-flight slots retain their own descriptors when selection changes.
   auto write = pipeline::DescriptorSetWrite::forSet(frame_index_);
   write.images.push_back(pipeline::DescriptorImageWrite::combinedImageSampler(
       0, texture.descriptorInfo()));
@@ -600,11 +602,10 @@ void UI::renderTexturePreview(const scene::Texture &texture) {
   const auto drawPreview = [this, &texture](ImVec2 available) {
     available.x = std::max(1.0f, available.x);
     available.y = std::max(1.0f, available.y);
-    const uint32_t mip = texture.desc().useDefaultView
-                             ? 0U
-                             : texture.desc().view.baseMipLevel;
-    const float width = static_cast<float>(
-        std::max(1U, texture.width() >> std::min(mip, 31U)));
+    const uint32_t mip =
+        texture.desc().useDefaultView ? 0U : texture.desc().view.baseMipLevel;
+    const float width =
+        static_cast<float>(std::max(1U, texture.width() >> std::min(mip, 31U)));
     const float height = static_cast<float>(
         std::max(1U, texture.height() >> std::min(mip, 31U)));
     const float scale = std::min(available.x / width, available.y / height);
@@ -615,10 +616,10 @@ void UI::renderTexturePreview(const scene::Texture &texture) {
     auto &drawList = *ImGui::GetWindowDrawList();
     // Bound checker geometry even when the enlarged window is very large.
     const float gridStep = std::max(ImGui::GetFontSize() * 0.75f,
-                                   std::max(size.x, size.y) / 64.0f);
-    ImGui::RenderColorRectWithAlphaCheckerboard(
-        &drawList, position, end, IM_COL32(0, 0, 0, 0), gridStep,
-        ImVec2{0.0f, 0.0f}, 0.0f);
+                                    std::max(size.x, size.y) / 64.0f);
+    ImGui::RenderColorRectWithAlphaCheckerboard(&drawList, position, end,
+                                                IM_COL32(0, 0, 0, 0), gridStep,
+                                                ImVec2{0.0f, 0.0f}, 0.0f);
     ImGui::SetCursorScreenPos(position);
     ImGui::Image(reinterpret_cast<ImTextureID>(
                      preview_descriptor_sets_->set(frame_index_)),
@@ -638,9 +639,7 @@ void UI::renderTexturePreview(const scene::Texture &texture) {
       {std::min(workSize.x * 0.85f, ImGui::GetFontSize() * 48.0f),
        std::min(workSize.y * 0.85f, ImGui::GetFontSize() * 36.0f)},
       ImGuiCond_Appearing);
-  bool open = true;
-  if (ImGui::BeginPopupModal("Texture preview", &open,
-                            ImGuiWindowFlags_NoSavedSettings)) {
+  if (ImGui::BeginPopup("Texture preview", ImGuiWindowFlags_NoSavedSettings)) {
     ImGui::TextWrapped("%s", selection_.name.c_str());
     ImGui::TextDisabled("%u x %u", texture.width(), texture.height());
     ImGui::Separator();
@@ -650,8 +649,6 @@ void UI::renderTexturePreview(const scene::Texture &texture) {
 }
 
 void UI::updateTheme() {
-  // The GLFW helper excludes macOS backing-pixel scale: Retina is handled by
-  // the backend's framebuffer scale, not by doubling logical UI dimensions.
   const float reportedScale =
       ImGui_ImplGlfw_GetContentScaleForWindow(window_.glfwWindow());
   const float dpiScale = std::isfinite(reportedScale) && reportedScale > 0.0f
@@ -711,12 +708,12 @@ void UI::renderThemeControls() {
 
   ImGui::SeparatorText("Density");
   if (ImGui::MenuItem("Compact", nullptr,
-                     desc_.theme.density == ThemeDensity::Compact)) {
+                      desc_.theme.density == ThemeDensity::Compact)) {
     desc_.theme.density = ThemeDensity::Compact;
     changed = true;
   }
   if (ImGui::MenuItem("Comfortable", nullptr,
-                     desc_.theme.density == ThemeDensity::Comfortable)) {
+                      desc_.theme.density == ThemeDensity::Comfortable)) {
     desc_.theme.density = ThemeDensity::Comfortable;
     changed = true;
   }
@@ -724,7 +721,6 @@ void UI::renderThemeControls() {
   ImGui::SeparatorText("Typography");
   ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
   ImGui::SliderFloat("UI scale", &desc_.theme.scale, 0.75f, 2.0f, "%.2fx");
-  // Keep the slider geometry stable while dragging or entering a value.
   changed |= ImGui::IsItemDeactivatedAfterEdit();
   ImGui::PopItemWidth();
 
