@@ -11,12 +11,13 @@
 
 namespace vkr::ui {
 
-InspectorPanel::InspectorPanel(const scene::Scene &scene,
-                               const exec::Graph &graph,
-                               const Selection &selection,
-                               std::function<void(Selection)> onSelect)
+InspectorPanel::InspectorPanel(
+    const scene::Scene &scene, const exec::Graph &graph,
+    const Selection &selection, std::function<void(Selection)> onSelect,
+    std::function<void(const scene::Texture &)> renderTexture)
     : UiComponent("Inspector"), scene_(scene), graph_(graph),
-      selection_(selection), on_select_(std::move(onSelect)) {}
+      selection_(selection), on_select_(std::move(onSelect)),
+      render_texture_(std::move(renderTexture)) {}
 
 void InspectorPanel::render() {
   if (selection_.type == SelectionType::None) {
@@ -149,6 +150,9 @@ void InspectorPanel::renderResource() {
                   vk::to_string(static_cast<vk::Format>(desc.image.format)));
       propertyRow("Source", source.empty() ? "No file" : source);
       ImGui::EndTable();
+    }
+    if (ImGui::CollapsingHeader("Preview", ImGuiTreeNodeFlags_DefaultOpen)) {
+      render_texture_(value);
     }
     if (ImGui::CollapsingHeader("Advanced") &&
         beginPropertyTable("##texture_advanced")) {

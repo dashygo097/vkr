@@ -96,8 +96,7 @@ auto ComputeExecutor::commandBuffer() const -> VkCommandBuffer {
   return command_buffer_;
 }
 
-void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline,
-                                   const pipeline::DescriptorSets &sets) {
+void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline) {
   ensureActive("bindPipeline");
 
   if (pipeline.pipeline() == VK_NULL_HANDLE) {
@@ -110,6 +109,11 @@ void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline,
 
   vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
                     pipeline.pipeline());
+}
+
+void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline,
+                                   const pipeline::DescriptorSets &sets) {
+  bindPipeline(pipeline);
 
   if (sets.empty()) {
     return;

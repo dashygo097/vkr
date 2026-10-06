@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vkr/logger.hh"
+#include <string>
 #include <vulkan/vulkan.h>
 
 namespace vkr::pipeline {

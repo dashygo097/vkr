@@ -150,6 +150,7 @@ private:
   std::unique_ptr<LoggingPanel> logging_panel_;
   std::unique_ptr<pipeline::DescriptorSetLayout> offscreen_descriptor_layout_;
   std::unique_ptr<pipeline::DescriptorSets> offscreen_descriptor_sets_;
+  std::unique_ptr<pipeline::DescriptorSets> preview_descriptor_sets_;
 
   // state
   Selection selection_{};
@@ -172,6 +173,7 @@ private:
   void renderStatusBar();
   void renderWorkspacePanels();
   void renderThemeControls();
+  void renderTexturePreview(const scene::Texture &texture);
 };
 
 } // namespace vkr::ui

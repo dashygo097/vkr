@@ -46,8 +46,6 @@ void DescriptorPool::create() {
                    static_cast<int>(result));
   }
 
-  desc_.allocatedSets = 0;
-
   VKR_PIPE_INFO("Descriptor pool created successfully.");
 }
 
@@ -56,13 +54,10 @@ void DescriptorPool::destroy() {
     vkDestroyDescriptorPool(device_.device(), pool_, nullptr);
     pool_ = VK_NULL_HANDLE;
   }
-
-  desc_.allocatedSets = 0;
 }
 
 void DescriptorPool::update(const DescriptorPoolDesc &desc) {
   desc_ = desc;
-  desc_.allocatedSets = 0;
   create();
 }
 

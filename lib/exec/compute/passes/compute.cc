@@ -76,15 +76,17 @@ void ComputePass::record() {
   }
 
   executor_.beginProfileScope(name());
-  executor_.bindPipeline(*pipeline_, *descriptor_sets_);
+  if (descriptor_sets_) {
+    executor_.bindPipeline(*pipeline_, *descriptor_sets_);
+  } else {
+    executor_.bindPipeline(*pipeline_);
+  }
   executor_.dispatch(desc_.dispatch.groupCountX, desc_.dispatch.groupCountY,
                      desc_.dispatch.groupCountZ);
   executor_.endProfileScope();
 }
 
 void ComputePass::createDescriptors() {
-  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
-
   if (desc_.descriptorBindings.empty()) {
     if (!desc_.descriptorWrites.empty()) {
       VKR_EXEC_ERROR("ComputePass '{}' has descriptor writes but no "
@@ -108,12 +110,10 @@ void ComputePass::createDescriptors() {
   descriptor_layout_->update(
       pipeline::DescriptorSetLayoutDesc{.bindings = bindings});
 
-  descriptor_sets_->update(pipeline::DescriptorSetsDesc{
-      .pool = descriptor_pool_->pool(),
-      .layout = descriptor_layout_->layout(),
-      .setCount = setCount,
-      .writes = desc_.descriptorWrites,
-  });
+  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
+      device_, *descriptor_pool_, *descriptor_layout_);
+  descriptor_sets_->update({.setCount = setCount});
+  descriptor_sets_->write(desc_.descriptorWrites);
 }
 
 void ComputePass::createPipeline() {

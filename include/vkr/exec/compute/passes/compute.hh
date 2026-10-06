@@ -88,7 +88,7 @@ struct ComputePassDesc {
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   pipeline::DescriptorPoolDesc descriptorPool{};
   uint32_t descriptorSetCount{1};
-  std::vector<pipeline::DescriptorSetWriteDesc> descriptorWrites{};
+  std::vector<pipeline::DescriptorSetWrite> descriptorWrites{};
   pipeline::ComputePipelineDesc pipeline{};
   ComputeDispatchDesc dispatch{};
 
@@ -100,7 +100,7 @@ struct ComputePassDesc {
         .layout = {binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
                    VK_SHADER_STAGE_COMPUTE_BIT}});
     descriptorWrite(setIndex).buffers.push_back(
-        pipeline::DescriptorBufferWriteDesc::storage(
+        pipeline::DescriptorBufferWrite::storage(
             binding, buffer.descriptorInfo(0, buffer.bufferSize())));
     return *this;
   }
@@ -113,7 +113,7 @@ struct ComputePassDesc {
         .layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                    VK_SHADER_STAGE_COMPUTE_BIT}});
     descriptorWrite(setIndex).buffers.push_back(
-        pipeline::DescriptorBufferWriteDesc::uniform(binding,
+        pipeline::DescriptorBufferWrite::uniform(binding,
                                                      buffer.descriptorInfo()));
     return *this;
   }
@@ -166,7 +166,7 @@ struct ComputePassDesc {
 
 private:
   auto descriptorWrite(uint32_t setIndex)
-      -> pipeline::DescriptorSetWriteDesc & {
+      -> pipeline::DescriptorSetWrite & {
     for (auto &write : descriptorWrites) {
       if (write.setIndex == setIndex) {
         return write;
@@ -174,7 +174,7 @@ private:
     }
 
     descriptorWrites.push_back(
-        pipeline::DescriptorSetWriteDesc::forSet(setIndex));
+        pipeline::DescriptorSetWrite::forSet(setIndex));
     return descriptorWrites.back();
   }
 };

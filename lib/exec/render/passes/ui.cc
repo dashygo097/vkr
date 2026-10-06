@@ -2,6 +2,7 @@
 #include "vkr/exec/capability.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/logger.hh"
+#include <imgui_impl_vulkan.h>
 
 namespace vkr::exec {
 
@@ -53,9 +54,14 @@ void UiPass::create() {
   framebuffers_->update(framebufferDesc);
 
   descriptor_pool_ = std::make_unique<pipeline::DescriptorPool>(device_);
+  // Viewport and selected-texture preview each use one set per frame slot.
+  // Leave the backend's documented reservation for its dynamic font atlas.
+  const uint32_t descriptorCount =
+      command_buffers_.size() * 2U +
+      IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE;
   descriptor_pool_->update({
-      .poolSizes = {{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16}},
-      .maxSets = 16,
+      .poolSizes = {{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptorCount}},
+      .maxSets = descriptorCount,
   });
 
   ui_ = std::make_unique<ui::UI>(window_, instance_, surface_, device_,

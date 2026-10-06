@@ -70,7 +70,7 @@ void appendResourceDescriptorWrites(
     std::string_view passName,
     const scene::Scene &scene,
     const std::vector<pipeline::DescriptorBinding> &bindings,
-    std::vector<pipeline::DescriptorSetWriteDesc> &writes,
+    std::vector<pipeline::DescriptorSetWrite> &writes,
     uint32_t frameCount) {
   if (bindings.empty()) {
     return;
@@ -98,7 +98,7 @@ void appendResourceDescriptorWrites(
         const auto bufferInfo = uniformBuffer.descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
-            pipeline::DescriptorBufferWriteDesc::one(
+            pipeline::DescriptorBufferWrite::one(
                 binding.layout.binding, binding.layout.descriptorType,
                 bufferInfo));
       }
@@ -118,7 +118,7 @@ void appendResourceDescriptorWrites(
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         writes[frameIndex].images.push_back(
-            pipeline::DescriptorImageWriteDesc::one(
+            pipeline::DescriptorImageWrite::one(
                 binding.layout.binding, binding.layout.descriptorType,
                 imageInfo));
       }
@@ -207,7 +207,11 @@ void FeedbackFullscreenPass::record() {
   executor_.setViewportAndScissor({writeTarget.width(), writeTarget.height()});
 
   if (pipeline_ && pipeline_->valid()) {
-    executor_.bindPipeline(*pipeline_, *descriptor_sets_);
+    if (descriptor_sets_) {
+      executor_.bindPipeline(*pipeline_, *descriptor_sets_);
+    } else {
+      executor_.bindPipeline(*pipeline_);
+    }
     executor_.drawFullscreenTriangle();
   }
 
@@ -380,8 +384,6 @@ void FeedbackFullscreenPass::createFramebuffers() {
 }
 
 void FeedbackFullscreenPass::createDescriptors() {
-  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
-
   const auto inputs = resolvedInputs();
   if (inputs.empty() && !desc_.historyInput &&
       desc_.descriptorBindings.empty()) {
@@ -416,12 +418,10 @@ void FeedbackFullscreenPass::createDescriptors() {
   descriptor_layout_->update(
       pipeline::DescriptorSetLayoutDesc{.bindings = bindings});
 
-  descriptor_sets_->update(pipeline::DescriptorSetsDesc{
-      .pool = descriptor_pool_->pool(),
-      .layout = descriptor_layout_->layout(),
-      .setCount = executor_.framesInFlight(),
-      .writes = createDescriptorWrites(inputs),
-  });
+  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
+      device_, *descriptor_pool_, *descriptor_layout_);
+  descriptor_sets_->update({.setCount = executor_.framesInFlight()});
+  descriptor_sets_->write(createDescriptorWrites(inputs));
 }
 
 void FeedbackFullscreenPass::createPipeline() {
@@ -529,13 +529,13 @@ auto FeedbackFullscreenPass::descriptorPoolDesc(
 
 auto FeedbackFullscreenPass::createDescriptorWrites(
     const std::vector<RenderPassInputDesc> &inputs)
-    -> std::vector<pipeline::DescriptorSetWriteDesc> {
-  std::vector<pipeline::DescriptorSetWriteDesc> writes{};
+    -> std::vector<pipeline::DescriptorSetWrite> {
+  std::vector<pipeline::DescriptorSetWrite> writes{};
   const uint32_t frameCount = executor_.framesInFlight();
   writes.reserve(frameCount);
 
   for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-    writes.push_back(pipeline::DescriptorSetWriteDesc::forSet(frameIndex));
+    writes.push_back(pipeline::DescriptorSetWrite::forSet(frameIndex));
   }
 
   appendResourceDescriptorWrites(name(), scene_, desc_.descriptorBindings,
@@ -547,7 +547,7 @@ auto FeedbackFullscreenPass::createDescriptorWrites(
           name(), 0, historyTarget(frameIndex), *desc_.historyInput);
 
       writes[frameIndex].images.push_back(
-          pipeline::DescriptorImageWriteDesc::one(
+          pipeline::DescriptorImageWrite::one(
               desc_.historyInput->binding,
               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageInfo));
     }
@@ -566,7 +566,7 @@ auto FeedbackFullscreenPass::createDescriptorWrites(
           name(), index, source->get().target(frameIndex), inputs[index]);
 
       writes[frameIndex].images.push_back(
-          pipeline::DescriptorImageWriteDesc::one(
+          pipeline::DescriptorImageWrite::one(
               inputs[index].binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
               imageInfo));
     }

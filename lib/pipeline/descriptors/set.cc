@@ -1,9 +1,13 @@
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/logger.hh"
+#include <utility>
 
 namespace vkr::pipeline {
 
-DescriptorSets::DescriptorSets(const core::Device &device) : device_(device) {}
+DescriptorSets::DescriptorSets(const core::Device &device,
+                               const DescriptorPool &pool,
+                               const DescriptorSetLayout &layout)
+    : device_(device), pool_(pool), layout_(layout) {}
 
 DescriptorSets::~DescriptorSets() { destroy(); }
 
@@ -15,24 +19,24 @@ void DescriptorSets::create() {
     return;
   }
 
-  if (!desc_.canAllocate()) {
-    VKR_PIPE_ERROR("Cannot allocate descriptor sets with a null pool/layout or "
-                   "setCount={}",
-                   desc_.setCount);
+  if (!pool_.valid() || !layout_.valid()) {
+    VKR_PIPE_ERROR("Cannot allocate descriptor sets without a valid pool/layout");
+  }
+  if ((pool_.desc().flags & VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT) ==
+      0) {
+    VKR_PIPE_ERROR("DescriptorSets requires a pool supporting individual frees");
   }
 
   allocateSets();
-  updateDescriptors();
 }
 
 void DescriptorSets::destroy() {
-  if (!sets_.empty() && allocated_pool_ != VK_NULL_HANDLE) {
-    vkFreeDescriptorSets(device_.device(), allocated_pool_,
+  if (!sets_.empty() && pool_.valid()) {
+    vkFreeDescriptorSets(device_.device(), pool_.pool(),
                          static_cast<uint32_t>(sets_.size()), sets_.data());
   }
 
   sets_.clear();
-  allocated_pool_ = VK_NULL_HANDLE;
 }
 
 void DescriptorSets::update(const DescriptorSetsDesc &desc) {
@@ -41,35 +45,43 @@ void DescriptorSets::update(const DescriptorSetsDesc &desc) {
 }
 
 void DescriptorSets::allocateSets() {
-  std::vector<VkDescriptorSetLayout> layouts(desc_.setCount, desc_.layout);
+  std::vector<VkDescriptorSetLayout> layouts(desc_.setCount, layout_.layout());
 
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  allocInfo.descriptorPool = desc_.pool;
+  allocInfo.descriptorPool = pool_.pool();
   allocInfo.descriptorSetCount = desc_.setCount;
   allocInfo.pSetLayouts = layouts.data();
 
-  sets_.resize(desc_.setCount);
-  VkResult result =
-      vkAllocateDescriptorSets(device_.device(), &allocInfo, sets_.data());
+  std::vector<VkDescriptorSet> sets(desc_.setCount, VK_NULL_HANDLE);
+  const VkResult result =
+      vkAllocateDescriptorSets(device_.device(), &allocInfo, sets.data());
   if (result != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to allocate descriptor sets. VkResult: {}",
-                   std::to_string(result));
+                   static_cast<int>(result));
   }
 
-  allocated_pool_ = desc_.pool;
+  sets_ = std::move(sets);
 
   VKR_PIPE_INFO("Allocated {} descriptor sets", sets_.size());
 }
 
-void DescriptorSets::updateDescriptors() {
-  if (desc_.writes.empty()) {
+void DescriptorSets::write(const std::vector<DescriptorSetWrite> &setWrites) {
+  if (setWrites.empty()) {
     return;
+  }
+  if (!valid()) {
+    VKR_PIPE_ERROR("Cannot write descriptor sets before allocation");
   }
 
   std::vector<VkWriteDescriptorSet> writes{};
+  size_t writeCount = 0;
+  for (const auto &setWrite : setWrites) {
+    writeCount += setWrite.buffers.size() + setWrite.images.size();
+  }
+  writes.reserve(writeCount);
 
-  for (const auto &setWrite : desc_.writes) {
+  for (const auto &setWrite : setWrites) {
     if (setWrite.setIndex >= sets_.size()) {
       VKR_PIPE_ERROR("Descriptor set write index {} out of range, count {}",
                      setWrite.setIndex, sets_.size());
@@ -120,8 +132,6 @@ void DescriptorSets::updateDescriptors() {
 
   vkUpdateDescriptorSets(device_.device(), static_cast<uint32_t>(writes.size()),
                          writes.data(), 0, nullptr);
-
-  VKR_PIPE_INFO("Updated descriptor sets with {} writes", writes.size());
 }
 
 auto DescriptorSets::set(uint32_t index) const -> VkDescriptorSet {

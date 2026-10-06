@@ -195,7 +195,7 @@ private:
       -> pipeline::DescriptorPoolDesc;
   [[nodiscard]] auto
   createDescriptorWrites(const std::vector<RenderPassInputDesc> &inputs)
-      -> std::vector<pipeline::DescriptorSetWriteDesc>;
+      -> std::vector<pipeline::DescriptorSetWrite>;
 };
 
 } // namespace vkr::exec

@@ -135,7 +135,11 @@ void RasterPass::record() {
   executor_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
-    executor_.bindPipeline(*pipeline_, *descriptor_sets_);
+    if (descriptor_sets_) {
+      executor_.bindPipeline(*pipeline_, *descriptor_sets_);
+    } else {
+      executor_.bindPipeline(*pipeline_);
+    }
     if (desc_.meshNames.empty()) {
       executor_.drawGeometry();
     } else {
@@ -233,8 +237,6 @@ void RasterPass::createFramebuffers() {
 }
 
 void RasterPass::createDescriptors() {
-  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
-
   if (desc_.descriptorBindings.empty() && desc_.inputs.empty()) {
     return;
   }
@@ -263,12 +265,10 @@ void RasterPass::createDescriptors() {
   descriptor_layout_->update(
       pipeline::DescriptorSetLayoutDesc{.bindings = bindings});
 
-  descriptor_sets_->update(pipeline::DescriptorSetsDesc{
-      .pool = descriptor_pool_->pool(),
-      .layout = descriptor_layout_->layout(),
-      .setCount = executor_.framesInFlight(),
-      .writes = createDescriptorWrites(),
-  });
+  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
+      device_, *descriptor_pool_, *descriptor_layout_);
+  descriptor_sets_->update({.setCount = executor_.framesInFlight()});
+  descriptor_sets_->write(createDescriptorWrites());
 }
 
 void RasterPass::createPipeline() {
@@ -298,12 +298,12 @@ void RasterPass::createPipeline() {
 }
 
 auto RasterPass::createDescriptorWrites() const
-    -> std::vector<pipeline::DescriptorSetWriteDesc> {
+    -> std::vector<pipeline::DescriptorSetWrite> {
   const uint32_t frameCount = executor_.framesInFlight();
-  std::vector<pipeline::DescriptorSetWriteDesc> writes{};
+  std::vector<pipeline::DescriptorSetWrite> writes{};
   writes.reserve(frameCount);
   for (uint32_t frame = 0; frame < frameCount; ++frame) {
-    writes.push_back(pipeline::DescriptorSetWriteDesc::forSet(frame));
+    writes.push_back(pipeline::DescriptorSetWrite::forSet(frame));
   }
 
   for (const auto &binding : desc_.descriptorBindings) {
@@ -325,7 +325,7 @@ auto RasterPass::createDescriptorWrites() const
         const auto bufferInfo = uniformBuffer.descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
-            pipeline::DescriptorBufferWriteDesc::one(
+            pipeline::DescriptorBufferWrite::one(
                 binding.layout.binding, binding.layout.descriptorType,
                 bufferInfo));
       }
@@ -355,7 +355,7 @@ auto RasterPass::createDescriptorWrites() const
 
       for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
         writes[frameIndex].images.push_back(
-            pipeline::DescriptorImageWriteDesc::one(
+            pipeline::DescriptorImageWrite::one(
                 binding.layout.binding, binding.layout.descriptorType,
                 imageInfo));
       }
@@ -382,7 +382,7 @@ auto RasterPass::createDescriptorWrites() const
       const VkDescriptorImageInfo imageInfo = sourceImageInfo(
           name(), sourceIndex, source->get().target(frameIndex), input);
       writes[frameIndex].images.push_back(
-          pipeline::DescriptorImageWriteDesc::one(
+          pipeline::DescriptorImageWrite::one(
               input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
               imageInfo));
     }

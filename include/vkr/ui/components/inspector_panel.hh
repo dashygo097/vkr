@@ -15,7 +15,8 @@ class InspectorPanel final : public UiComponent {
 public:
   InspectorPanel(const scene::Scene &scene, const exec::Graph &graph,
                  const Selection &selection,
-                 std::function<void(Selection)> onSelect);
+                 std::function<void(Selection)> onSelect,
+                 std::function<void(const scene::Texture &)> renderTexture);
 
 private:
   void render() override;
@@ -26,6 +27,7 @@ private:
   const exec::Graph &graph_;
   const Selection &selection_;
   std::function<void(Selection)> on_select_;
+  std::function<void(const scene::Texture &)> render_texture_;
 
   // Resolved once per pass selection, not once per UI frame.
   struct PassEntry {

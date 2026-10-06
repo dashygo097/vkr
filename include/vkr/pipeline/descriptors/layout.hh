@@ -2,6 +2,7 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/pipeline/descriptors/binding.hh"
+#include <vector>
 
 namespace vkr::pipeline {
 
@@ -17,6 +18,9 @@ public:
   DescriptorSetLayout(const DescriptorSetLayout &) = delete;
   auto operator=(const DescriptorSetLayout &) -> DescriptorSetLayout & = delete;
 
+  DescriptorSetLayout(DescriptorSetLayout &&) = delete;
+  auto operator=(DescriptorSetLayout &&) -> DescriptorSetLayout & = delete;
+
   void create();
   void destroy();
   void update(const DescriptorSetLayoutDesc &desc);
@@ -25,17 +29,12 @@ public:
     return desc_;
   }
 
-  [[nodiscard]] auto bindings() const noexcept
-      -> const std::vector<DescriptorBinding> & {
-    return desc_.bindings;
-  }
-
-  [[nodiscard]] auto layout() const noexcept -> const VkDescriptorSetLayout & {
+  [[nodiscard]] auto layout() const noexcept -> VkDescriptorSetLayout {
     return layout_;
   }
 
-  [[nodiscard]] auto layout() noexcept -> VkDescriptorSetLayout & {
-    return layout_;
+  [[nodiscard]] auto valid() const noexcept -> bool {
+    return layout_ != VK_NULL_HANDLE;
   }
 
 private:

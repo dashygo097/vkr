@@ -167,8 +167,7 @@ void RenderExecutor::endPass() {
   vkCmdEndRenderPass(command_buffer_);
 }
 
-void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
-                                  const pipeline::DescriptorSets &sets) {
+void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline) {
   ensureFrameActive("bindPipeline");
 
   if (pipeline.pipeline() == VK_NULL_HANDLE) {
@@ -181,6 +180,11 @@ void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
 
   vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     pipeline.pipeline());
+}
+
+void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
+                                  const pipeline::DescriptorSets &sets) {
+  bindPipeline(pipeline);
 
   if (sets.empty()) {
     return;

@@ -130,7 +130,7 @@ auto OverlayPass::target(uint32_t frameIndex) const -> const OffscreenTarget & {
 }
 
 void OverlayPass::record() {
-  if (!pipeline_ || !framebuffers_ || !descriptor_sets_) {
+  if (!pipeline_ || !framebuffers_) {
     VKR_EXEC_ERROR("OverlayPass '{}' recorded before create", name());
   }
   if (!selected_mesh_) {
@@ -141,7 +141,11 @@ void OverlayPass::record() {
   executor_.beginProfileScope(name());
   executor_.beginPass(*framebuffers_, {}, executor_.frameIndex());
   executor_.setViewportAndScissor(framebuffers_->extent());
-  executor_.bindPipeline(*pipeline_, *descriptor_sets_);
+  if (descriptor_sets_) {
+    executor_.bindPipeline(*pipeline_, *descriptor_sets_);
+  } else {
+    executor_.bindPipeline(*pipeline_);
+  }
   executor_.drawIndexed(mesh.vertices.get(), *mesh.indices);
   executor_.endPass();
   executor_.endProfileScope();
@@ -255,15 +259,14 @@ void OverlayPass::createFramebuffers() {
 
 void OverlayPass::createDescriptors() {
   const uint32_t frames = executor_.framesInFlight();
-  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(device_);
   if (desc_.descriptorBindings.empty()) {
     return;
   }
 
-  std::vector<pipeline::DescriptorSetWriteDesc> writes{};
+  std::vector<pipeline::DescriptorSetWrite> writes{};
   writes.reserve(frames);
   for (uint32_t frame = 0; frame < frames; ++frame) {
-    writes.push_back(pipeline::DescriptorSetWriteDesc::forSet(frame));
+    writes.push_back(pipeline::DescriptorSetWrite::forSet(frame));
   }
 
   std::unordered_set<uint32_t> bindings{};
@@ -305,7 +308,7 @@ void OverlayPass::createDescriptors() {
         const auto bufferInfo = uniformBuffer.descriptorInfo(frameIndex);
 
         writes[frameIndex].buffers.push_back(
-            pipeline::DescriptorBufferWriteDesc::one(
+            pipeline::DescriptorBufferWrite::one(
                 binding.layout.binding, binding.layout.descriptorType,
                 bufferInfo));
       }
@@ -335,7 +338,7 @@ void OverlayPass::createDescriptors() {
 
       for (uint32_t frameIndex = 0; frameIndex < frames; ++frameIndex) {
         writes[frameIndex].images.push_back(
-            pipeline::DescriptorImageWriteDesc::one(
+            pipeline::DescriptorImageWrite::one(
                 binding.layout.binding, binding.layout.descriptorType,
                 imageInfo));
       }
@@ -356,10 +359,10 @@ void OverlayPass::createDescriptors() {
   descriptor_pool_->update(poolDesc);
   descriptor_layout_ = std::make_unique<pipeline::DescriptorSetLayout>(device_);
   descriptor_layout_->update({.bindings = desc_.descriptorBindings});
-  descriptor_sets_->update({.pool = descriptor_pool_->pool(),
-                            .layout = descriptor_layout_->layout(),
-                            .setCount = frames,
-                            .writes = std::move(writes)});
+  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
+      device_, *descriptor_pool_, *descriptor_layout_);
+  descriptor_sets_->update({.setCount = frames});
+  descriptor_sets_->write(writes);
 }
 
 void OverlayPass::createPipeline() {

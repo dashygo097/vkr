@@ -1,13 +1,13 @@
 #pragma once
 
 #include "vkr/core/device.hh"
+#include <vector>
 
 namespace vkr::pipeline {
 
 struct DescriptorPoolDesc {
   std::vector<VkDescriptorPoolSize> poolSizes{};
   uint32_t maxSets{0};
-  uint32_t allocatedSets{0};
   VkDescriptorPoolCreateFlags flags{
       VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT};
 };
@@ -35,10 +35,6 @@ public:
 
   [[nodiscard]] auto valid() const noexcept -> bool {
     return pool_ != VK_NULL_HANDLE;
-  }
-
-  [[nodiscard]] auto canAllocate() const noexcept -> bool {
-    return pool_ != VK_NULL_HANDLE && desc_.allocatedSets < desc_.maxSets;
   }
 
 private:

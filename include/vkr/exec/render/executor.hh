@@ -73,6 +73,7 @@ public:
                  VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
   void endPass();
 
+  void bindPipeline(const pipeline::GraphicsPipeline &pipeline);
   void bindPipeline(const pipeline::GraphicsPipeline &pipeline,
                     const pipeline::DescriptorSets &sets);
   void setViewportAndScissor(VkExtent2D extent);

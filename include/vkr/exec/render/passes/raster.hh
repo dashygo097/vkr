@@ -194,7 +194,7 @@ private:
   void createPipeline();
 
   [[nodiscard]] auto createDescriptorWrites() const
-      -> std::vector<pipeline::DescriptorSetWriteDesc>;
+      -> std::vector<pipeline::DescriptorSetWrite>;
   [[nodiscard]] auto descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc;
 };
 

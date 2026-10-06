@@ -30,6 +30,7 @@ public:
 
   [[nodiscard]] auto commandBuffer() const -> VkCommandBuffer;
 
+  void bindPipeline(const pipeline::ComputePipeline &pipeline);
   void bindPipeline(const pipeline::ComputePipeline &pipeline,
                     const pipeline::DescriptorSets &sets);
   void dispatch(uint32_t groupCountX, uint32_t groupCountY,
