@@ -1,7 +1,5 @@
 #include "vkr/ui/theme.hh"
 #include "vkr/logger.hh"
-#include "vkr_ui_fonts.hh"
-#include <cstdio>
 
 namespace vkr::ui {
 
@@ -144,23 +142,11 @@ auto Theme::loadFonts()
     -> std::pair<std::reference_wrapper<ImFont>,
                  std::reference_wrapper<ImFont>> {
   auto &atlas = *ImGui::GetIO().Fonts;
-  ImFontConfig fontConfig{};
-  // Embedded bytes outlive the context; ImGui must not free them.
-  fontConfig.FontDataOwnedByAtlas = false;
-  std::snprintf(fontConfig.Name, sizeof(fontConfig.Name), "Karla (interface)");
-  if (!atlas.AddFontFromMemoryTTF(
-          interfaceFontData, static_cast<int>(sizeof(interfaceFontData)),
-          0.0f, &fontConfig)) {
-    VKR_UI_ERROR("Failed to load the interface font");
+  if (!atlas.AddFontDefaultVector()) {
+    VKR_UI_ERROR("Failed to load the default font");
   }
-  auto &interfaceFont = *atlas.Fonts.back();
-  std::snprintf(fontConfig.Name, sizeof(fontConfig.Name), "Cousine (code)");
-  if (!atlas.AddFontFromMemoryTTF(
-          codeFontData, static_cast<int>(sizeof(codeFontData)),
-          0.0f, &fontConfig)) {
-    VKR_UI_ERROR("Failed to load the code font");
-  }
-  return {interfaceFont, *atlas.Fonts.back()};
+  auto &font = *atlas.Fonts.back();
+  return {font, font};
 }
 
 void Theme::apply(const ThemeDesc &config, float dpiScale) {

@@ -134,18 +134,5 @@ function(add_vk_app TARGET_NAME)
     )
   endif()
 
-  get_target_property(vkr_ui_font_license vkr VKR_UI_FONT_LICENSE)
-  if(vkr_ui_font_license)
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory
-        "$<TARGET_FILE_DIR:${TARGET_NAME}>/licenses"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${vkr_ui_font_license}"
-        "$<TARGET_FILE_DIR:${TARGET_NAME}>/licenses/ui-fonts.txt"
-      COMMENT "Copying UI font license for ${TARGET_NAME}"
-      VERBATIM
-    )
-  endif()
-
   _vk_app_print("  -- Adding VK app: ${TARGET_NAME} -> ${app_output_dir}\n")
 endfunction()
