@@ -107,4 +107,3 @@ struct DescriptorSetWrite {
 };
 
 } // namespace vkr::pipeline
-

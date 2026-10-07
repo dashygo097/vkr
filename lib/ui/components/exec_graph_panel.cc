@@ -87,7 +87,6 @@ void ExecGraphPanel::layoutGraph() {
     alignLayer(level);
   }
 
-  // Barycentric sweeps reduce crossings without changing graph or pass order.
   auto reorderLayer = [&](size_t level, bool forward) {
     auto score = [&](size_t index) {
       const auto &neighbors =
@@ -115,15 +114,13 @@ void ExecGraphPanel::layoutGraph() {
     }
   }
 
-  const ImVec2 stride{nodeSize.x + nodeSpacing.x,
-                     nodeSize.y + nodeSpacing.y};
+  const ImVec2 stride{nodeSize.x + nodeSpacing.x, nodeSize.y + nodeSpacing.y};
   for (auto &entry : passes_) {
     entry.position.x *= stride.x;
     entry.position.y *= stride.y;
   }
-  graph_max_ = {
-      static_cast<float>(layerCount) * stride.x - nodeSpacing.x,
-      static_cast<float>(widestLayer) * stride.y - nodeSpacing.y};
+  graph_max_ = {static_cast<float>(layerCount) * stride.x - nodeSpacing.x,
+                static_cast<float>(widestLayer) * stride.y - nodeSpacing.y};
 
   edges_.reserve(edgeCount);
   size_t outerLane = 0;
@@ -132,9 +129,9 @@ void ExecGraphPanel::layoutGraph() {
     for (const size_t producer : target.dependencies) {
       const auto &source = passes_[producer];
       const ImVec2 start{source.position.x + nodeSize.x,
-                        source.position.y + nodeSize.y * 0.5f};
+                         source.position.y + nodeSize.y * 0.5f};
       const ImVec2 end{target.position.x,
-                      target.position.y + nodeSize.y * 0.5f};
+                       target.position.y + nodeSize.y * 0.5f};
       EdgeEntry edge{};
       edge.producer = producer;
       edge.consumer = consumer;
@@ -149,13 +146,16 @@ void ExecGraphPanel::layoutGraph() {
           edge.pointCount = 4;
         }
       } else {
-        // Skip-layer edges stay outside intervening nodes.
         const float lane =
             -nodeSpacing.y * 0.5f - static_cast<float>(outerLane++) * 0.7f;
         const float exitX = start.x + nodeSpacing.x * 0.35f;
         const float enterX = end.x - nodeSpacing.x * 0.35f;
-        edge.points = {{start, {exitX, start.y}, {exitX, lane}, {enterX, lane},
-                        {enterX, end.y}, end}};
+        edge.points = {{start,
+                        {exitX, start.y},
+                        {exitX, lane},
+                        {enterX, lane},
+                        {enterX, end.y},
+                        end}};
         edge.pointCount = 6;
         graph_min_.y = std::min(graph_min_.y, lane);
       }
@@ -196,8 +196,7 @@ void ExecGraphPanel::render() {
                 passes_.size(), edges_.size());
   const float summaryWidth = ImGui::CalcTextSize(summary.data()).x;
   const float summaryX = contentRight - summaryWidth;
-  if (summaryX > ImGui::GetItemRectMax().x +
-                     ImGui::GetStyle().ItemSpacing.x) {
+  if (summaryX > ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x) {
     ImGui::SameLine(summaryX - ImGui::GetWindowPos().x);
     ImGui::TextDisabled("%s", summary.data());
   }
@@ -211,10 +210,9 @@ void ExecGraphPanel::render() {
     ImGui::TextDisabled("Dependencies ->");
     const std::string_view hint{
         "Scroll to zoom / Drag to pan / Click to inspect"};
-    if (contentRight >
-        ImGui::GetItemRectMax().x +
-            ImGui::GetStyle().ItemSpacing.x +
-            ImGui::CalcTextSize(hint.data()).x) {
+    if (contentRight > ImGui::GetItemRectMax().x +
+                           ImGui::GetStyle().ItemSpacing.x +
+                           ImGui::CalcTextSize(hint.data()).x) {
       ImGui::SameLine();
       ImGui::TextDisabled("%s", hint.data());
     }
@@ -236,12 +234,12 @@ void ExecGraphPanel::renderGraph(float height) {
   const ImVec2 origin = ImGui::GetCursorScreenPos();
   const ImVec2 available = ImGui::GetContentRegionAvail();
   const ImVec2 canvasSize{std::max(1.0f, available.x),
-                        std::max(1.0f, available.y)};
+                          std::max(1.0f, available.y)};
   const ImVec2 canvasEnd{origin.x + canvasSize.x, origin.y + canvasSize.y};
   ImGui::InvisibleButton("##canvas", canvasSize,
-                        ImGuiButtonFlags_MouseButtonLeft |
-                            ImGuiButtonFlags_MouseButtonMiddle |
-                            ImGuiButtonFlags_MouseButtonRight);
+                         ImGuiButtonFlags_MouseButtonLeft |
+                             ImGuiButtonFlags_MouseButtonMiddle |
+                             ImGuiButtonFlags_MouseButtonRight);
   const bool hovered = ImGui::IsItemHovered();
   const bool active = ImGui::IsItemActive();
   const auto &io = ImGui::GetIO();
@@ -250,14 +248,12 @@ void ExecGraphPanel::renderGraph(float height) {
     const float padding = fontSize * 2.0f;
     const float width = (graph_max_.x - graph_min_.x) * fontSize;
     const float graphHeight = (graph_max_.y - graph_min_.y) * fontSize;
-    const float fittedZoom = std::clamp(
-        std::min((canvasSize.x - padding * 2.0f) / width,
-                 (canvasSize.y - padding * 2.0f) / graphHeight),
-        0.02f, 1.0f);
-    // Start at a readable scale. Fit View explicitly opts into an overview.
-    zoom_ = !view_initialized_ && !fit_view_
-                ? std::max(0.65f, fittedZoom)
-                : fittedZoom;
+    const float fittedZoom =
+        std::clamp(std::min((canvasSize.x - padding * 2.0f) / width,
+                            (canvasSize.y - padding * 2.0f) / graphHeight),
+                   0.02f, 1.0f);
+    zoom_ = !view_initialized_ && !fit_view_ ? std::max(0.65f, fittedZoom)
+                                             : fittedZoom;
     const float scale = fontSize * zoom_;
     view_offset_ = {
         (canvasSize.x - (graph_max_.x - graph_min_.x) * scale) * 0.5f -
@@ -291,14 +287,13 @@ void ExecGraphPanel::renderGraph(float height) {
   const float scale = fontSize * zoom_;
   std::optional<size_t> hoveredNode{};
   if (hovered) {
-    const ImVec2 mouse{
-        (io.MousePos.x - origin.x - view_offset_.x) / scale,
-        (io.MousePos.y - origin.y - view_offset_.y) / scale};
+    const ImVec2 mouse{(io.MousePos.x - origin.x - view_offset_.x) / scale,
+                       (io.MousePos.y - origin.y - view_offset_.y) / scale};
     for (size_t index = 0; index < passes_.size(); ++index) {
       const auto &position = passes_[index].position;
       if (mouse.x >= position.x - 0.3f &&
-          mouse.x <= position.x + nodeSize.x + 0.3f &&
-          mouse.y >= position.y && mouse.y <= position.y + nodeSize.y) {
+          mouse.x <= position.x + nodeSize.x + 0.3f && mouse.y >= position.y &&
+          mouse.y <= position.y + nodeSize.y) {
         hoveredNode = index;
         break;
       }
@@ -351,7 +346,7 @@ void ExecGraphPanel::renderGraph(float height) {
 }
 
 void ExecGraphPanel::drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
-                              std::optional<size_t> hoveredNode) {
+                               std::optional<size_t> hoveredNode) {
   auto screenPosition = [&](ImVec2 point) {
     return ImVec2(origin.x + view_offset_.x + point.x * scale,
                   origin.y + view_offset_.y + point.y * scale);
@@ -361,7 +356,6 @@ void ExecGraphPanel::drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
   const ImU32 accent = ImGui::GetColorU32(ImGuiCol_CheckMark);
   ImGui::PushClipRect(origin, canvasEnd, true);
 
-  // Screen-bounded grid: no work proportional to the graph's world extents.
   float gridStep = scale * 2.0f;
   while (gridStep < 24.0f) {
     gridStep *= 2.0f;
@@ -382,10 +376,9 @@ void ExecGraphPanel::drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
   if (passes_.empty()) {
     const std::string_view message{"No compiled passes"};
     const ImVec2 size = ImGui::CalcTextSize(message.data());
-    drawList.AddText(
-        {origin.x + (canvasEnd.x - origin.x - size.x) * 0.5f,
-         origin.y + (canvasEnd.y - origin.y - size.y) * 0.5f},
-        ImGui::GetColorU32(ImGuiCol_TextDisabled), message.data());
+    drawList.AddText({origin.x + (canvasEnd.x - origin.x - size.x) * 0.5f,
+                      origin.y + (canvasEnd.y - origin.y - size.y) * 0.5f},
+                     ImGui::GetColorU32(ImGuiCol_TextDisabled), message.data());
     ImGui::PopClipRect();
     return;
   }
@@ -402,12 +395,10 @@ void ExecGraphPanel::drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
     }
   }
 
-  // Draw selected connections last so unrelated edges cannot obscure them.
   for (int highlight = 0; highlight < 2; ++highlight) {
     for (const auto &edge : edges_) {
-      const bool selected =
-          selectedPass &&
-          (edge.producer == *selectedPass || edge.consumer == *selectedPass);
+      const bool selected = selectedPass && (edge.producer == *selectedPass ||
+                                             edge.consumer == *selectedPass);
       if (selected != (highlight != 0)) {
         continue;
       }
@@ -430,28 +421,27 @@ void ExecGraphPanel::drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
       const bool showArrow = scale >= 4.0f;
       const float arrow =
           showArrow ? std::clamp(scale * 0.28f, 2.0f, 5.0f) : 0.0f;
-      const ImVec2 arrowTip{
-          tip.x - (showArrow ? portRadius + 1.0f : 0.0f), tip.y};
+      const ImVec2 arrowTip{tip.x - (showArrow ? portRadius + 1.0f : 0.0f),
+                            tip.y};
       points[edge.pointCount - 1].x = arrowTip.x - arrow;
       const ImU32 color =
           selected ? accent
                    : ImGui::GetColorU32(ImGuiCol_TextDisabled,
-                                       selectedPass ? 0.32f : 0.65f);
+                                        selectedPass ? 0.32f : 0.65f);
       drawList.PathLineTo(points[0]);
       for (size_t index = 1; index + 1 < edge.pointCount; ++index) {
         const ImVec2 corner = points[index];
         const ImVec2 incoming{points[index - 1].x - corner.x,
-                             points[index - 1].y - corner.y};
+                              points[index - 1].y - corner.y};
         const ImVec2 outgoing{points[index + 1].x - corner.x,
-                             points[index + 1].y - corner.y};
+                              points[index + 1].y - corner.y};
         const float inLength = std::hypot(incoming.x, incoming.y);
         const float outLength = std::hypot(outgoing.x, outgoing.y);
         const float radius =
             std::min(scale * 0.3f, std::min(inLength, outLength) * 0.25f);
         if (radius > 0.0f) {
-          drawList.PathLineTo(
-              {corner.x + incoming.x / inLength * radius,
-               corner.y + incoming.y / inLength * radius});
+          drawList.PathLineTo({corner.x + incoming.x / inLength * radius,
+                               corner.y + incoming.y / inLength * radius});
           drawList.PathBezierQuadraticCurveTo(
               corner, {corner.x + outgoing.x / outLength * radius,
                        corner.y + outgoing.y / outLength * radius});
@@ -475,16 +465,16 @@ void ExecGraphPanel::drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
     const bool nodeHovered = hoveredNode && *hoveredNode == index;
     const ImVec2 start = screenPosition(entry.position);
     const ImVec2 end{start.x + nodeSize.x * scale,
-                    start.y + nodeSize.y * scale};
-    if (end.x < origin.x || start.x > canvasEnd.x ||
-        end.y < origin.y || start.y > canvasEnd.y) {
+                     start.y + nodeSize.y * scale};
+    if (end.x < origin.x || start.x > canvasEnd.x || end.y < origin.y ||
+        start.y > canvasEnd.y) {
       continue;
     }
     const bool related =
         !selectedPass || selected ||
         std::find(passes_[*selectedPass].dependencies.begin(),
-                  passes_[*selectedPass].dependencies.end(), index) !=
-            passes_[*selectedPass].dependencies.end() ||
+                  passes_[*selectedPass].dependencies.end(),
+                  index) != passes_[*selectedPass].dependencies.end() ||
         std::find(entry.dependencies.begin(), entry.dependencies.end(),
                   *selectedPass) != entry.dependencies.end();
     const float rounding = std::min(style.FrameRounding * zoom_, scale);
@@ -492,24 +482,24 @@ void ExecGraphPanel::drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
     const ImU32 border =
         selected ? accent
                  : ImGui::GetColorU32(nodeHovered ? ImGuiCol_TextDisabled
-                                                 : ImGuiCol_Border);
+                                                  : ImGuiCol_Border);
     if (selected) {
       drawList.AddRect({start.x - 2.0f, start.y - 2.0f},
                        {end.x + 2.0f, end.y + 2.0f},
                        ImGui::GetColorU32(ImGuiCol_CheckMark, 0.18f),
                        rounding + 2.0f, ImDrawFlags_None, 3.0f);
     }
-    drawList.AddRectFilled(start, end,
-                          ImGui::GetColorU32(ImGuiCol_WindowBg), rounding);
-    drawList.AddRectFilled(
-        start, {end.x, headerBottom},
-        ImGui::GetColorU32(nodeHovered ? ImGuiCol_FrameBgHovered
-                                      : ImGuiCol_FrameBg),
-        rounding, ImDrawFlags_RoundCornersTop);
+    drawList.AddRectFilled(start, end, ImGui::GetColorU32(ImGuiCol_WindowBg),
+                           rounding);
+    drawList.AddRectFilled(start, {end.x, headerBottom},
+                           ImGui::GetColorU32(nodeHovered
+                                                  ? ImGuiCol_FrameBgHovered
+                                                  : ImGuiCol_FrameBg),
+                           rounding, ImDrawFlags_RoundCornersTop);
     drawList.AddLine({start.x, headerBottom}, {end.x, headerBottom},
-                    ImGui::GetColorU32(ImGuiCol_Border, 0.65f));
+                     ImGui::GetColorU32(ImGuiCol_Border, 0.65f));
     drawList.AddRect(start, end, border, rounding, ImDrawFlags_None,
-                    selected ? 1.8f : 1.0f);
+                     selected ? 1.8f : 1.0f);
 
     if (scale < 4.0f) {
       continue;
@@ -533,32 +523,33 @@ void ExecGraphPanel::drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
     auto &font = *ImGui::GetFont();
     const float titleSize = std::max(10.0f, scale);
     const float padding = scale * 0.8f;
-    const ImVec2 titlePosition{
-        start.x + padding, start.y + (scale * 2.9f - titleSize) * 0.5f};
+    const ImVec2 titlePosition{start.x + padding,
+                               start.y + (scale * 2.9f - titleSize) * 0.5f};
     const float titleRight = end.x - padding;
     const float titleWidth = titleRight - titlePosition.x;
     const auto &name = entry.pass.get().name();
     const bool ellipsized =
         font.CalcTextSizeA(titleSize, std::numeric_limits<float>::max(), 0.0f,
-                          name.c_str()).x > titleWidth;
+                           name.c_str())
+            .x > titleWidth;
     const float ellipsisWidth =
-        ellipsized ? font.CalcTextSizeA(titleSize,
-                                       std::numeric_limits<float>::max(),
-                                       0.0f, "...").x
-                   : 0.0f;
+        ellipsized
+            ? font.CalcTextSizeA(titleSize, std::numeric_limits<float>::max(),
+                                 0.0f, "...")
+                  .x
+            : 0.0f;
     const ImU32 textColor = ImGui::GetColorU32(
         related || nodeHovered ? ImGuiCol_Text : ImGuiCol_TextDisabled);
     drawList.PushClipRect(titlePosition,
-                         {titleRight - ellipsisWidth, headerBottom}, true);
+                          {titleRight - ellipsisWidth, headerBottom}, true);
     drawList.AddText(&font, titleSize, titlePosition, textColor, name.c_str());
     drawList.PopClipRect();
     if (ellipsized) {
       drawList.AddText(&font, titleSize,
-                      {titleRight - ellipsisWidth, titlePosition.y},
-                      textColor, "...");
+                       {titleRight - ellipsisWidth, titlePosition.y}, textColor,
+                       "...");
     }
 
-    // At overview zoom, keep titles and connections; omit unreadable badges.
     if (scale < 9.0f) {
       continue;
     }
@@ -566,8 +557,8 @@ void ExecGraphPanel::drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
     const float badgeSize = std::max(8.5f, scale * 0.75f);
     const float badgePadding = scale * 0.35f;
     const float badgeHeight = badgeSize + badgePadding * 2.0f;
-    const float badgeY = headerBottom +
-                        (end.y - headerBottom - badgeHeight) * 0.5f;
+    const float badgeY =
+        headerBottom + (end.y - headerBottom - badgeHeight) * 0.5f;
     float badgeX = start.x + padding;
     const std::array<std::pair<std::string_view, bool>, 3> capabilities{{
         {"Pipeline", entry.pipeline},
@@ -575,28 +566,29 @@ void ExecGraphPanel::drawGraph(ImVec2 origin, ImVec2 canvasEnd, float scale,
         {"Present", entry.presents},
     }};
     drawList.PushClipRect({start.x + padding, headerBottom},
-                         {titleRight, end.y}, true);
+                          {titleRight, end.y}, true);
     for (const auto &[label, enabled] : capabilities) {
       if (!enabled) {
         continue;
       }
-      const float width = font.CalcTextSizeA(
-          badgeSize, std::numeric_limits<float>::max(), 0.0f,
-          label.data(), label.data() + label.size()).x + badgePadding * 2.0f;
+      const float width =
+          font.CalcTextSizeA(badgeSize, std::numeric_limits<float>::max(), 0.0f,
+                             label.data(), label.data() + label.size())
+              .x +
+          badgePadding * 2.0f;
       drawList.AddRectFilled({badgeX, badgeY},
-                            {badgeX + width, badgeY + badgeHeight},
-                            ImGui::GetColorU32(ImGuiCol_FrameBg), rounding);
-      drawList.AddText(
-          &font, badgeSize, {badgeX + badgePadding, badgeY + badgePadding},
-          ImGui::GetColorU32(ImGuiCol_TextDisabled),
-          label.data(), label.data() + label.size());
+                             {badgeX + width, badgeY + badgeHeight},
+                             ImGui::GetColorU32(ImGuiCol_FrameBg), rounding);
+      drawList.AddText(&font, badgeSize,
+                       {badgeX + badgePadding, badgeY + badgePadding},
+                       ImGui::GetColorU32(ImGuiCol_TextDisabled), label.data(),
+                       label.data() + label.size());
       badgeX += width + scale * 0.3f;
     }
     if (!entry.pipeline && !entry.target && !entry.presents) {
-      drawList.AddText(&font, badgeSize,
-                      {badgeX, badgeY + badgePadding},
-                      ImGui::GetColorU32(ImGuiCol_TextDisabled),
-                      "Custom pass");
+      drawList.AddText(&font, badgeSize, {badgeX, badgeY + badgePadding},
+                       ImGui::GetColorU32(ImGuiCol_TextDisabled),
+                       "Custom pass");
     }
     drawList.PopClipRect();
   }

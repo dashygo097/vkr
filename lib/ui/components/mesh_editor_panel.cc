@@ -14,7 +14,7 @@ void MeshEditorPanel::render() {
   const auto meshNames = scene_.listMeshNames();
   ImGui::SetNextItemWidth(-1.0f);
   if (ImGui::InputTextWithHint("##mesh_filter", "Filter meshes...",
-                              filter_.InputBuf, sizeof(filter_.InputBuf))) {
+                               filter_.InputBuf, sizeof(filter_.InputBuf))) {
     filter_.Build();
   }
 
@@ -36,8 +36,8 @@ void MeshEditorPanel::render() {
       if (!filter_.PassFilter(name.c_str())) {
         continue;
       }
-      const bool selected = selection_.type == SelectionType::Mesh &&
-                            selection_.name == name;
+      const bool selected =
+          selection_.type == SelectionType::Mesh && selection_.name == name;
       if (ImGui::Selectable(name.c_str(), selected)) {
         on_select_({SelectionType::Mesh, name});
       }

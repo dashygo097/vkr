@@ -13,7 +13,7 @@ ResourceTree::ResourceTree(const scene::Scene &scene,
 void ResourceTree::render() {
   ImGui::SetNextItemWidth(-1.0f);
   if (ImGui::InputTextWithHint("##resource_filter", "Filter resources...",
-                              filter_.InputBuf, sizeof(filter_.InputBuf))) {
+                               filter_.InputBuf, sizeof(filter_.InputBuf))) {
     filter_.Build();
   }
   ImGui::Checkbox("Empty groups", &show_empty_groups_);
@@ -29,12 +29,10 @@ void ResourceTree::render() {
                    scene_.uniformBufferCount());
 
     renderCategory(SelectionType::Texture, "Textures",
-                   scene_.listTextureNames(),
-                   scene_.textureCount());
+                   scene_.listTextureNames(), scene_.textureCount());
 
     renderCategory(SelectionType::Cubemap, "Cubemaps",
-                   scene_.listCubemapNames(),
-                   scene_.cubemapCount());
+                   scene_.listCubemapNames(), scene_.cubemapCount());
   }
 
   ImGui::EndChild();
@@ -43,11 +41,11 @@ void ResourceTree::render() {
 void ResourceTree::renderCategory(SelectionType type, std::string_view label,
                                   std::vector<std::string> names,
                                   size_t count) {
-  names.erase(std::remove_if(
-                  names.begin(), names.end(),
-                  [this](const std::string &name) -> bool {
-                    return name.empty() || !filter_.PassFilter(name.c_str());
-                  }),
+  names.erase(std::remove_if(names.begin(), names.end(),
+                             [this](const std::string &name) -> bool {
+                               return name.empty() ||
+                                      !filter_.PassFilter(name.c_str());
+                             }),
               names.end());
 
   std::sort(names.begin(), names.end());

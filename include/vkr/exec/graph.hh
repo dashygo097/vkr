@@ -45,7 +45,6 @@ public:
   [[nodiscard]] auto passes() const
       -> std::vector<std::reference_wrapper<const Pass>>;
 
-  // Read-only compiled plan; dependencies are immediate predecessors.
   [[nodiscard]] auto executionOrder() const
       -> std::vector<std::reference_wrapper<const Pass>>;
   [[nodiscard]] auto dependencies(const Pass &pass) const

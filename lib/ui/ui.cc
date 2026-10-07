@@ -40,9 +40,8 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        util::Timer &timer, const core::CommandBuffers &commandBuffers)
     : window_(window), instance_(instance), device_(device), scene_(scene),
       asset_system_(assetSystem), camera_(camera), source_(source),
-      render_pass_(renderPass),
-      descriptor_pool_(descriptorPool), graph_(graph), timer_(timer),
-      command_buffers_(commandBuffers) {}
+      render_pass_(renderPass), descriptor_pool_(descriptorPool), graph_(graph),
+      timer_(timer), command_buffers_(commandBuffers) {}
 
 UI::~UI() { destroy(); }
 
@@ -107,8 +106,7 @@ void UI::create() {
     vulkan_initialized_ = true;
 
     std::vector<pipeline::DescriptorBinding> offscreenBindings = {
-        {.name = "offscreen",
-         .layout = {
+        {.layout = {
              .binding = 0,
              .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
              .descriptorCount = 1,
@@ -164,10 +162,13 @@ void UI::create() {
     const auto onSelect = [this](Selection selection) {
       select(std::move(selection));
     };
-    inspector_panel_ = std::make_unique<InspectorPanel>(
-        scene_, graph_, selection_, onSelect,
-        [this](const scene::Texture &texture) { renderTexturePreview(texture); });
-    graph_panel_ = std::make_unique<ExecGraphPanel>(graph_, selection_, onSelect);
+    inspector_panel_ =
+        std::make_unique<InspectorPanel>(scene_, graph_, selection_, onSelect,
+                                         [this](const scene::Texture &texture) {
+                                           renderTexturePreview(texture);
+                                         });
+    graph_panel_ =
+        std::make_unique<ExecGraphPanel>(graph_, selection_, onSelect);
     assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
     camera_panel_ = std::make_unique<CameraPanel>(
         camera_, viewport_, viewport_focused_, viewport_hovered_);
@@ -188,7 +189,8 @@ void UI::create() {
     VKR_UI_INFO("Logging Panel initialized successfully.");
 
     VKR_UI_INFO("Initializing Resource Tree...");
-    resource_tree_ = std::make_unique<ResourceTree>(scene_, selection_, onSelect);
+    resource_tree_ =
+        std::make_unique<ResourceTree>(scene_, selection_, onSelect);
     VKR_UI_INFO("Resource Tree initialized successfully.");
 
     dock_components_ = {*viewport_panel_, *resource_tree_, *graph_panel_,
@@ -532,8 +534,7 @@ void UI::renderStatusBar() {
             true);
         ImGui::TextDisabled("Output: %s", source_.name().c_str());
         if (ImGui::GetCursorPosX() + ImGui::GetFontSize() * 12.0f < right) {
-          ImGui::TextDisabled("%.0f x %.0f", viewport_.width,
-                              viewport_.height);
+          ImGui::TextDisabled("%.0f x %.0f", viewport_.width, viewport_.height);
         }
         ImGui::PopClipRect();
       }
@@ -668,7 +669,6 @@ void UI::renderTexturePreview(const scene::Texture &texture) {
     const ImVec2 position{cursor.x + (available.x - size.x) * 0.5f, cursor.y};
     const ImVec2 end{position.x + size.x, position.y + size.y};
     auto &drawList = *ImGui::GetWindowDrawList();
-    // Bound checker geometry even when the enlarged window is very large.
     const float gridStep = std::max(ImGui::GetFontSize() * 0.75f,
                                     std::max(size.x, size.y) / 64.0f);
     ImGui::RenderColorRectWithAlphaCheckerboard(&drawList, position, end,
@@ -753,10 +753,9 @@ void UI::renderThemeControls() {
   ImGui::SeparatorText("Shape");
   ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
 
-  changed |= ImGui::SliderFloat("Rounding", &theme_.rounding, 0.0f, 10.0f,
-                                "%.1f");
   changed |=
-      ImGui::SliderFloat("Alpha", &theme_.alpha, 0.35f, 1.0f, "%.2f");
+      ImGui::SliderFloat("Rounding", &theme_.rounding, 0.0f, 10.0f, "%.1f");
+  changed |= ImGui::SliderFloat("Alpha", &theme_.alpha, 0.35f, 1.0f, "%.2f");
 
   ImGui::PopItemWidth();
 

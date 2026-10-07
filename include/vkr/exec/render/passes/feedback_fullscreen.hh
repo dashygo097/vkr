@@ -12,11 +12,10 @@ namespace vkr::exec {
 struct FeedbackFullscreenPassDesc {
   FrameHistoryTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
-  pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
   std::optional<RenderPassInputDesc> historyInput{};
   std::vector<RenderPassInputDesc> inputs{};
-  pipeline::GraphicsPipelineDesc graphicsPipeline{};
+  pipeline::GraphicsPipelineDesc pipeline{};
 
   auto descriptor(pipeline::DescriptorBinding binding)
       -> FeedbackFullscreenPassDesc & {
@@ -24,21 +23,19 @@ struct FeedbackFullscreenPassDesc {
     return *this;
   }
 
-  auto uniform(uint32_t binding, std::string name,
-               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-               uint32_t descriptorCount = 1) -> FeedbackFullscreenPassDesc & {
-    return descriptor({.name = std::move(name),
-                       .layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                  descriptorCount, stageFlags}});
+  auto uniform(uint32_t binding,
+               VkShaderStageFlags stages = VK_SHADER_STAGE_FRAGMENT_BIT)
+      -> FeedbackFullscreenPassDesc & {
+    return descriptor(
+        {.layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, stages}});
   }
 
-  auto texture(uint32_t binding, std::string name,
-               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-               uint32_t descriptorCount = 1) -> FeedbackFullscreenPassDesc & {
+  auto texture(uint32_t binding,
+               VkShaderStageFlags stages = VK_SHADER_STAGE_FRAGMENT_BIT)
+      -> FeedbackFullscreenPassDesc & {
     return descriptor(
-        {.name = std::move(name),
-         .layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    descriptorCount, stageFlags}});
+        {.layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                    stages}});
   }
 
   auto history(uint32_t binding,
@@ -98,7 +95,7 @@ struct FeedbackFullscreenPassDesc {
     FeedbackFullscreenPassDesc desc{};
     desc.target.target =
         OffscreenTargetDesc::sampledColorOnly(width, height, format);
-    desc.graphicsPipeline =
+    desc.pipeline =
         pipeline::GraphicsPipelineDesc::fullscreen(std::move(pipelineName));
     desc.clearColor(0.0F, 0.0F, 0.0F, 1.0F);
     return desc;
@@ -111,7 +108,7 @@ class FeedbackFullscreenPass final : public Pass,
 public:
   FeedbackFullscreenPass(
       RenderExecutor &executor, const core::Device &device,
-      const core::CommandPool &commandPool, scene::Scene &scene,
+      const core::CommandPool &commandPool,
       std::vector<std::reference_wrapper<Pass>> sources = {});
   ~FeedbackFullscreenPass() override;
 
@@ -123,6 +120,24 @@ public:
   void destroy() noexcept override;
   void update(const FeedbackFullscreenPassDesc &desc);
   void record() override;
+
+  template <typename T>
+  auto uniform(uint32_t binding, T &buffer) -> FeedbackFullscreenPass & {
+    descriptor_sets_.uniform(binding, buffer);
+    return *this;
+  }
+
+  template <typename T>
+  auto texture(uint32_t binding, T &texture) -> FeedbackFullscreenPass & {
+    descriptor_sets_.texture(binding, texture);
+    return *this;
+  }
+
+  template <typename T>
+  auto storage(uint32_t binding, T &buffer) -> FeedbackFullscreenPass & {
+    descriptor_sets_.storage(binding, buffer);
+    return *this;
+  }
 
   auto addSource(Pass &source) -> FeedbackFullscreenPass &;
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
@@ -163,7 +178,6 @@ private:
   RenderExecutor &executor_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  scene::Scene &scene_;
 
   // components
   FeedbackFullscreenPassDesc desc_{};
@@ -171,22 +185,20 @@ private:
   std::unique_ptr<FrameHistoryTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
   std::vector<std::unique_ptr<FramebufferSet>> framebuffers_{};
-  std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
-  std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
-  std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
+  pipeline::DescriptorPool descriptor_pool_;
+  pipeline::DescriptorSetLayout descriptor_layout_;
+  pipeline::DescriptorSets descriptor_sets_;
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
 
   // helpers
   void createTarget();
   void createRenderPass();
   void createFramebuffers();
+  void validate(const FeedbackFullscreenPassDesc &desc) const;
   void createDescriptors();
   void createPipeline();
 
   [[nodiscard]] auto resolvedInputs() const -> std::vector<RenderPassInputDesc>;
-  [[nodiscard]] auto
-  descriptorPoolDesc(const std::vector<RenderPassInputDesc> &inputs) const
-      -> pipeline::DescriptorPoolDesc;
   [[nodiscard]] auto
   createDescriptorWrites(const std::vector<RenderPassInputDesc> &inputs)
       -> std::vector<pipeline::DescriptorSetWrite>;

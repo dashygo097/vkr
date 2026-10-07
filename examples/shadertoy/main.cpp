@@ -47,28 +47,6 @@ private:
             mouseDown ? mousePosition.y : 0.0f};
   }
 
-  [[nodiscard]] auto shadertoyDescriptorBindings() const
-      -> std::vector<vkr::pipeline::DescriptorBinding> {
-    return {{.name = std::string(kShaderToyUniformName),
-             .layout = {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                        VK_SHADER_STAGE_FRAGMENT_BIT}}};
-  }
-
-  [[nodiscard]] auto shadertoyDescriptorBindings(
-      const std::vector<uint32_t> &fallbackChannels) const
-      -> std::vector<vkr::pipeline::DescriptorBinding> {
-    auto bindings = shadertoyDescriptorBindings();
-
-    for (uint32_t channel : fallbackChannels) {
-      bindings.push_back({.name = std::string(kFallbackTextureName),
-                          .layout = {channelInput(channel).binding,
-                                     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                     1, VK_SHADER_STAGE_FRAGMENT_BIT}});
-    }
-
-    return bindings;
-  }
-
   [[nodiscard]] static auto channelInput(uint32_t channel)
       -> vkr::exec::RenderPassInputDesc {
     return vkr::exec::RenderPassInputDesc::color(1U + channel);
@@ -132,8 +110,9 @@ private:
         swapchain->width(), swapchain->height(), VK_FORMAT_R16G16B16A16_SFLOAT,
         name);
 
-    for (auto binding : shadertoyDescriptorBindings(fallback)) {
-      desc.descriptor(std::move(binding));
+    desc.uniform(0);
+    for (uint32_t channel : fallback) {
+      desc.texture(channelInput(channel).binding);
     }
 
     if (historyChannel) {
@@ -144,7 +123,7 @@ private:
       desc.input(channelInput(channel));
     }
 
-    desc.graphicsPipeline = shadertoyPipeline(name, fragmentShader);
+    desc.pipeline = shadertoyPipeline(name, fragmentShader);
     return desc;
   }
 
@@ -156,16 +135,27 @@ private:
         swapchain->width(), swapchain->height(), VK_FORMAT_R16G16B16A16_SFLOAT,
         "shadertoy.image");
 
-    for (auto binding : shadertoyDescriptorBindings(fallback)) {
-      desc.descriptor(std::move(binding));
+    desc.uniform(0);
+    for (uint32_t channel : fallback) {
+      desc.texture(channelInput(channel).binding);
     }
 
     for (uint32_t channel : sourceChannels) {
       desc.input(channelInput(channel));
     }
 
-    desc.graphicsPipeline = shadertoyPipeline("shadertoy.image", "image.frag");
+    desc.pipeline = shadertoyPipeline("shadertoy.image", "image.frag");
     return desc;
+  }
+
+  template <typename PassT>
+  void bindChannels(PassT &pass, std::optional<uint32_t> historyChannel,
+                    const std::vector<uint32_t> &sourceChannels) {
+    pass.uniform(0, scene->uniformBuffer(kShaderToyUniformName));
+    for (uint32_t channel : fallbackChannels(historyChannel, sourceChannels)) {
+      pass.texture(channelInput(channel).binding,
+                   scene->texture(kFallbackTextureName));
+    }
   }
 
   [[nodiscard]] auto viewportMousePosition() const -> glm::vec2 {
@@ -247,6 +237,11 @@ private:
 
     auto &imagePass = graph->fullscreen(
         "image", {bufferA, bufferB, bufferC, bufferD}, imageDesc({0, 1, 2, 3}));
+    bindChannels(bufferA, 0, {});
+    bindChannels(bufferB, 1, {0});
+    bindChannels(bufferC, 2, {0, 1});
+    bindChannels(bufferD, 3, {0, 1, 2});
+    bindChannels(imagePass, std::nullopt, {0, 1, 2, 3});
     graph->present(imagePass);
     for (const auto &pass : graph->passes()) {
       const auto capability =

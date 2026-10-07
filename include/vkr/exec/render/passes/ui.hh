@@ -26,8 +26,8 @@ namespace vkr::exec {
 class UiPass final : public Pass {
 public:
   UiPass(RenderExecutor &executor, const core::Window &window,
-         const core::Instance &instance,
-         const core::Device &device, const core::CommandPool &commandPool,
+         const core::Instance &instance, const core::Device &device,
+         const core::CommandPool &commandPool,
          const core::CommandBuffers &commandBuffers,
          const core::Swapchain &swapchain, scene::Scene &scene,
          const util::AssetSystem &assetSystem, scene::Camera &camera,

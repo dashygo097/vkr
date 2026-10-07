@@ -30,7 +30,7 @@ void main() {
   pipelineDesc.colorBlend.opaque().disableLogic();
 
   OverlayPassDesc desc{};
-  desc.graphicsPipeline = std::move(pipelineDesc);
+  desc.pipeline = std::move(pipelineDesc);
   return desc;
 }
 
@@ -38,47 +38,27 @@ OverlayPass::OverlayPass(RenderExecutor &executor, const core::Device &device,
                          const core::CommandPool &commandPool,
                          scene::Scene &scene, Pass &source)
     : executor_(executor), device_(device), command_pool_(commandPool),
-      scene_(scene), source_(source) {}
+      scene_(scene), source_(source), descriptor_pool_(device),
+      descriptor_layout_(device),
+      descriptor_sets_(device, descriptor_pool_, descriptor_layout_) {}
 
 OverlayPass::~OverlayPass() { destroy(); }
 
 void OverlayPass::update(const OverlayPassDesc &desc) {
   ensureConfigurable();
-  desc_ = desc;
+  if (render_pass_ || pipeline_ || descriptor_layout_.valid()) {
+    VKR_EXEC_ERROR("OverlayPass '{}' must be destroyed before updating its "
+                   "configuration",
+                   name());
+  }
+  validate(desc);
+  auto nextDesc = desc;
+  desc_ = std::move(nextDesc);
 }
 
 void OverlayPass::create() {
+  validate(desc_);
   destroy();
-  if (desc_.meshNames.empty() || !desc_.graphicsPipeline.isValid() ||
-      desc_.graphicsPipeline.inputAssembly.topology !=
-          VK_PRIMITIVE_TOPOLOGY_LINE_LIST) {
-    VKR_EXEC_ERROR("OverlayPass '{}' requires meshes and a valid line pipeline",
-                   name());
-  }
-
-  VkShaderStageFlags stages{};
-  for (const auto &shader : desc_.graphicsPipeline.shaders) {
-    if (shader.stage != VK_SHADER_STAGE_VERTEX_BIT &&
-        shader.stage != VK_SHADER_STAGE_FRAGMENT_BIT) {
-      VKR_EXEC_ERROR("OverlayPass '{}' supports only vertex and fragment "
-                     "shader stages; received stage {}",
-                     name(), static_cast<int>(shader.stage));
-    }
-    if ((stages & shader.stage) != 0) {
-      VKR_EXEC_ERROR("OverlayPass '{}' has duplicate shader stage {}", name(),
-                     static_cast<int>(shader.stage));
-    }
-    stages |= shader.stage;
-  }
-  if (stages != (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)) {
-    VKR_EXEC_ERROR("OverlayPass '{}' requires one vertex and one fragment "
-                   "shader stage",
-                   name());
-  }
-  if (desc_.graphicsPipeline.inputAssembly.primitiveRestartEnable) {
-    VKR_EXEC_ERROR("OverlayPass '{}' line indices do not use primitive restart",
-                   name());
-  }
 
   target_source_ = source_.capability<RenderTargetCapability>();
   if (!target_source_) {
@@ -94,13 +74,12 @@ void OverlayPass::create() {
 }
 
 void OverlayPass::destroy() noexcept {
-  // The caller retires GPU work before graph teardown, as for other passes.
   selected_mesh_.reset();
   meshes_.clear();
   pipeline_.reset();
-  descriptor_sets_.reset();
-  descriptor_layout_.reset();
-  descriptor_pool_.reset();
+  descriptor_sets_.destroy();
+  descriptor_layout_.destroy();
+  descriptor_pool_.destroy();
   framebuffers_.reset();
   render_pass_.reset();
   target_source_.reset();
@@ -141,8 +120,9 @@ void OverlayPass::record() {
   executor_.beginProfileScope(name());
   executor_.beginPass(*framebuffers_, {}, executor_.frameIndex());
   executor_.setViewportAndScissor(framebuffers_->extent());
-  if (descriptor_sets_) {
-    executor_.bindPipeline(*pipeline_, *descriptor_sets_);
+  descriptor_sets_.write(executor_.frameIndex());
+  if (descriptor_sets_.valid()) {
+    executor_.bindPipeline(*pipeline_, descriptor_sets_);
   } else {
     executor_.bindPipeline(*pipeline_);
   }
@@ -158,7 +138,7 @@ void OverlayPass::createRenderPass() {
   }
 
   const auto &outputDesc = output.desc();
-  const auto &depthState = desc_.graphicsPipeline.depthStencil;
+  const auto &depthState = desc_.pipeline.depthStencil;
   const bool useDepth = depthState.depthTestEnable ||
                         depthState.depthWriteEnable ||
                         depthState.stencilTestEnable;
@@ -199,8 +179,6 @@ void OverlayPass::createRenderPass() {
     }
   }
 
-  // Synchronize LOAD with earlier attachment writes and sampling, and leave
-  // the shared output ready for downstream sampling or another attachment pass.
   VkPipelineStageFlags attachmentStages =
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
   VkAccessFlags attachmentAccess = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
@@ -257,118 +235,77 @@ void OverlayPass::createFramebuffers() {
   framebuffers_->update(desc);
 }
 
+void OverlayPass::validate(const OverlayPassDesc &desc) const {
+  if (desc.meshNames.empty() || !desc.pipeline.isValid() ||
+      desc.pipeline.inputAssembly.topology !=
+          VK_PRIMITIVE_TOPOLOGY_LINE_LIST) {
+    VKR_EXEC_ERROR("OverlayPass '{}' requires meshes and a valid line pipeline",
+                   name());
+  }
+
+  VkShaderStageFlags stages{};
+  for (const auto &shader : desc.pipeline.shaders) {
+    if (shader.stage != VK_SHADER_STAGE_VERTEX_BIT &&
+        shader.stage != VK_SHADER_STAGE_FRAGMENT_BIT) {
+      VKR_EXEC_ERROR("OverlayPass '{}' supports only vertex and fragment "
+                     "shader stages; received stage {}",
+                     name(), static_cast<int>(shader.stage));
+    }
+    if ((stages & shader.stage) != 0) {
+      VKR_EXEC_ERROR("OverlayPass '{}' has duplicate shader stage {}", name(),
+                     static_cast<int>(shader.stage));
+    }
+    stages |= shader.stage;
+  }
+  if (stages != (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)) {
+    VKR_EXEC_ERROR("OverlayPass '{}' requires one vertex and one fragment "
+                   "shader stage",
+                   name());
+  }
+  if (desc.pipeline.inputAssembly.primitiveRestartEnable) {
+    VKR_EXEC_ERROR("OverlayPass '{}' line indices do not use primitive restart",
+                   name());
+  }
+
+  pipeline::DescriptorSetLayoutDesc layoutDesc{
+      .bindings = desc.descriptorBindings};
+  if (!layoutDesc.isValid()) {
+    VKR_EXEC_ERROR("OverlayPass '{}' requires unique bindings with nonzero "
+                   "counts/stages",
+                   name());
+  }
+  for (const auto &binding : layoutDesc.bindings) {
+    const auto &layout = binding.layout;
+    if (layout.descriptorCount != 1 ||
+        (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
+         layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
+         layout.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
+      VKR_EXEC_ERROR("OverlayPass '{}' has an unsupported descriptor binding {}",
+                     name(), layout.binding);
+    }
+  }
+}
+
 void OverlayPass::createDescriptors() {
-  const uint32_t frames = executor_.framesInFlight();
   if (desc_.descriptorBindings.empty()) {
+    descriptor_sets_.update({.setCount = 0});
     return;
   }
-
-  std::vector<pipeline::DescriptorSetWrite> writes{};
-  writes.reserve(frames);
-  for (uint32_t frame = 0; frame < frames; ++frame) {
-    writes.push_back(pipeline::DescriptorSetWrite::forSet(frame));
+  const pipeline::DescriptorSetLayoutDesc layoutDesc{
+      .bindings = desc_.descriptorBindings};
+  descriptor_pool_.update(pipeline::DescriptorPoolDesc::sets(
+      layoutDesc, executor_.framesInFlight()));
+  descriptor_layout_.update(layoutDesc);
+  descriptor_sets_.update({.setCount = executor_.framesInFlight()});
+  for (uint32_t index = 0; index < descriptor_sets_.count(); ++index) {
+    descriptor_sets_.write(index);
   }
-
-  std::unordered_set<uint32_t> bindings{};
-  auto poolDesc = desc_.descriptorPool;
-  for (const auto &binding : desc_.descriptorBindings) {
-    if (binding.layout.descriptorCount != 1 ||
-        !bindings.insert(binding.layout.binding).second) {
-      VKR_EXEC_ERROR(
-          "OverlayPass '{}' requires unique single-resource bindings", name());
-    }
-    if (desc_.descriptorPool.maxSets == 0) {
-      auto size =
-          std::find_if(poolDesc.poolSizes.begin(), poolDesc.poolSizes.end(),
-                       [&binding](const auto &entry) -> bool {
-                         return entry.type == binding.layout.descriptorType;
-                       });
-      if (size == poolDesc.poolSizes.end()) {
-        poolDesc.poolSizes.push_back({binding.layout.descriptorType, frames});
-      } else {
-        size->descriptorCount += frames;
-      }
-    }
-
-    if (binding.name.empty()) {
-      VKR_EXEC_ERROR("Descriptor binding {} has empty resource name",
-                     binding.layout.binding);
-    }
-
-    switch (binding.layout.descriptorType) {
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
-      const auto &uniformBuffer = scene_.uniformBuffer(binding.name);
-
-      if (uniformBuffer.frameCount() != frames) {
-        VKR_EXEC_ERROR("Uniform buffer '{}' frame count mismatch: {} vs {}",
-                       binding.name, uniformBuffer.frameCount(), frames);
-      }
-
-      for (uint32_t frameIndex = 0; frameIndex < frames; ++frameIndex) {
-        const auto bufferInfo = uniformBuffer.descriptorInfo(frameIndex);
-
-        writes[frameIndex].buffers.push_back(
-            pipeline::DescriptorBufferWrite::one(
-                binding.layout.binding, binding.layout.descriptorType,
-                bufferInfo));
-      }
-      break;
-    }
-
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-      const auto texture = scene_.findTexture(binding.name);
-      const auto cubemap =
-          texture ? std::nullopt : scene_.findCubemap(binding.name);
-
-      if (!texture && !cubemap) {
-        VKR_EXEC_ERROR("Texture or cubemap resource not found: {}",
-                       binding.name);
-      }
-
-      if (texture && !texture->get().hasSampler()) {
-        VKR_EXEC_ERROR("Texture sampler not found: {}", binding.name);
-      }
-
-      if (cubemap && !cubemap->get().valid()) {
-        VKR_EXEC_ERROR("Cubemap resource is invalid: {}", binding.name);
-      }
-
-      const auto imageInfo = texture ? texture->get().descriptorInfo()
-                                     : cubemap->get().descriptorInfo();
-
-      for (uint32_t frameIndex = 0; frameIndex < frames; ++frameIndex) {
-        writes[frameIndex].images.push_back(
-            pipeline::DescriptorImageWrite::one(
-                binding.layout.binding, binding.layout.descriptorType,
-                imageInfo));
-      }
-      break;
-    }
-
-    default:
-      VKR_EXEC_ERROR("OverlayPass '{}' cannot create descriptor writes for "
-                     "resource '{}' with descriptor type {}",
-                     name(), binding.name,
-                     static_cast<int>(binding.layout.descriptorType));
-    }
-  }
-  if (poolDesc.maxSets == 0) {
-    poolDesc.maxSets = frames;
-  }
-  descriptor_pool_ = std::make_unique<pipeline::DescriptorPool>(device_);
-  descriptor_pool_->update(poolDesc);
-  descriptor_layout_ = std::make_unique<pipeline::DescriptorSetLayout>(device_);
-  descriptor_layout_->update({.bindings = desc_.descriptorBindings});
-  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
-      device_, *descriptor_pool_, *descriptor_layout_);
-  descriptor_sets_->update({.setCount = frames});
-  descriptor_sets_->write(writes);
 }
 
 void OverlayPass::createPipeline() {
-  auto pipelineDesc = desc_.graphicsPipeline;
-  if (descriptor_layout_ && pipelineDesc.layout.setLayouts.empty()) {
-    pipelineDesc.layout.setLayouts = {descriptor_layout_->layout()};
+  auto pipelineDesc = desc_.pipeline;
+  if (descriptor_layout_.valid() && pipelineDesc.layout.setLayouts.empty()) {
+    pipelineDesc.layout.setLayouts = {descriptor_layout_.layout()};
   }
   pipeline_ =
       std::make_unique<pipeline::GraphicsPipeline>(device_, *render_pass_);
@@ -393,7 +330,7 @@ void OverlayPass::createMeshes() {
                      this->name(), name);
     }
     const auto input = vertices->get().vertexInputDesc();
-    const auto &expected = desc_.graphicsPipeline.vertexInput;
+    const auto &expected = desc_.pipeline.vertexInput;
     const bool sameBindings =
         input.bindings.size() == expected.bindings.size() &&
         std::equal(input.bindings.begin(), input.bindings.end(),

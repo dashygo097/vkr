@@ -64,30 +64,19 @@ auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
   return imageInfo;
 }
 
-void validateUniqueDescriptorBindings(
-    std::string_view passName,
-    const std::vector<pipeline::DescriptorBinding> &bindings) {
-  for (size_t i = 0; i < bindings.size(); ++i) {
-    for (size_t j = i + 1; j < bindings.size(); ++j) {
-      if (bindings[i].layout.binding == bindings[j].layout.binding) {
-        VKR_EXEC_ERROR("RasterPass '{}' has duplicate descriptor binding {}",
-                       std::string(passName), bindings[i].layout.binding);
-      }
-    }
-  }
-}
-
 } // namespace
 
 RasterPass::RasterPass(RenderExecutor &executor, const core::Device &device,
                        const core::CommandPool &commandPool,
                        scene::Scene &scene)
     : executor_(executor), device_(device), command_pool_(commandPool),
-      scene_(scene) {}
+      scene_(scene), descriptor_pool_(device), descriptor_layout_(device),
+      descriptor_sets_(device, descriptor_pool_, descriptor_layout_) {}
 
 RasterPass::~RasterPass() { destroy(); }
 
 void RasterPass::create() {
+  validate(desc_);
   destroy();
 
   createTarget();
@@ -99,9 +88,9 @@ void RasterPass::create() {
 
 void RasterPass::destroy() noexcept {
   pipeline_.reset();
-  descriptor_sets_.reset();
-  descriptor_layout_.reset();
-  descriptor_pool_.reset();
+  descriptor_sets_.destroy();
+  descriptor_layout_.destroy();
+  descriptor_pool_.destroy();
   framebuffers_.reset();
   render_pass_.reset();
   target_.reset();
@@ -109,12 +98,19 @@ void RasterPass::destroy() noexcept {
 
 void RasterPass::update(const RasterPassDesc &desc) {
   ensureConfigurable();
-  desc_ = desc;
+  if (target_ || render_pass_ || pipeline_ || descriptor_layout_.valid()) {
+    VKR_EXEC_ERROR("RasterPass '{}' must be destroyed before updating its "
+                   "configuration",
+                   name());
+  }
+  validate(desc);
+  auto nextDesc = desc;
+  desc_ = std::move(nextDesc);
 }
 
 auto RasterPass::addSource(Pass &source) -> RasterPass & {
   ensureConfigurable();
-  sources_.push_back(source);
+  sources_.emplace_back(source);
   return *this;
 }
 
@@ -135,8 +131,9 @@ void RasterPass::record() {
   executor_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
-    if (descriptor_sets_) {
-      executor_.bindPipeline(*pipeline_, *descriptor_sets_);
+    descriptor_sets_.write(executor_.frameIndex());
+    if (descriptor_sets_.valid()) {
+      executor_.bindPipeline(*pipeline_, descriptor_sets_);
     } else {
       executor_.bindPipeline(*pipeline_);
     }
@@ -236,8 +233,42 @@ void RasterPass::createFramebuffers() {
   framebuffers_->update(framebufferDesc);
 }
 
+void RasterPass::validate(const RasterPassDesc &desc) const {
+  if (!desc.target.isValid()) {
+    VKR_EXEC_ERROR("RasterPass '{}' has an invalid target descriptor",
+                   name());
+  }
+  if (!desc.pipeline.isValid()) {
+    VKR_EXEC_ERROR("RasterPass '{}' has an invalid pipeline descriptor",
+                   name());
+  }
+  pipeline::DescriptorSetLayoutDesc layoutDesc{
+      .bindings = desc.descriptorBindings};
+  for (const auto &input : desc.inputs) {
+    layoutDesc.bindings.push_back(
+        {.layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                    input.stageFlags}});
+  }
+  if (!layoutDesc.isValid()) {
+    VKR_EXEC_ERROR("RasterPass '{}' requires unique bindings with nonzero "
+                   "counts/stages",
+                   name());
+  }
+  for (const auto &binding : layoutDesc.bindings) {
+    const auto &layout = binding.layout;
+    if (layout.descriptorCount != 1 ||
+        (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
+         layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
+         layout.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
+      VKR_EXEC_ERROR("RasterPass '{}' has an unsupported descriptor binding {}",
+                     name(), layout.binding);
+    }
+  }
+}
+
 void RasterPass::createDescriptors() {
   if (desc_.descriptorBindings.empty() && desc_.inputs.empty()) {
+    descriptor_sets_.update({.setCount = 0});
     return;
   }
 
@@ -252,39 +283,30 @@ void RasterPass::createDescriptors() {
   for (size_t index = 0; index < desc_.inputs.size(); ++index) {
     const auto &input = desc_.inputs[index];
     bindings.push_back(pipeline::DescriptorBinding{
-        .name = "source" + std::to_string(index),
         .layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                    input.stageFlags}});
   }
 
-  descriptor_pool_ = std::make_unique<pipeline::DescriptorPool>(device_);
-  descriptor_pool_->update(descriptorPoolDesc());
+  const pipeline::DescriptorSetLayoutDesc layoutDesc{.bindings = bindings};
+  descriptor_pool_.update(pipeline::DescriptorPoolDesc::sets(
+      layoutDesc, executor_.framesInFlight()));
+  descriptor_layout_.update(layoutDesc);
 
-  descriptor_layout_ = std::make_unique<pipeline::DescriptorSetLayout>(device_);
-  validateUniqueDescriptorBindings(name(), bindings);
-  descriptor_layout_->update(
-      pipeline::DescriptorSetLayoutDesc{.bindings = bindings});
-
-  descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
-      device_, *descriptor_pool_, *descriptor_layout_);
-  descriptor_sets_->update({.setCount = executor_.framesInFlight()});
-  descriptor_sets_->write(createDescriptorWrites());
+  descriptor_sets_.update({.setCount = executor_.framesInFlight()});
+  descriptor_sets_.write(createDescriptorWrites());
+  for (uint32_t index = 0; index < descriptor_sets_.count(); ++index) {
+    descriptor_sets_.write(index);
+  }
 }
 
 void RasterPass::createPipeline() {
-  auto pipelineDesc = desc_.graphicsPipeline;
+  auto pipelineDesc = desc_.pipeline;
 
   const VkDescriptorSetLayout descriptorSetLayout =
-      descriptor_layout_ ? descriptor_layout_->layout() : VK_NULL_HANDLE;
+      descriptor_layout_.valid() ? descriptor_layout_.layout() : VK_NULL_HANDLE;
   if (descriptorSetLayout != VK_NULL_HANDLE &&
       pipelineDesc.layout.setLayouts.empty()) {
     pipelineDesc.layout.setLayouts = {descriptorSetLayout};
-  }
-
-  if (!pipelineDesc.isValid()) {
-    VKR_EXEC_WARN("RasterPass '{}' has no valid graphics pipeline desc",
-                  name());
-    return;
   }
 
   pipeline_ =
@@ -306,70 +328,6 @@ auto RasterPass::createDescriptorWrites() const
     writes.push_back(pipeline::DescriptorSetWrite::forSet(frame));
   }
 
-  for (const auto &binding : desc_.descriptorBindings) {
-    if (binding.name.empty()) {
-      VKR_EXEC_ERROR("Descriptor binding {} has empty resource name",
-                     binding.layout.binding);
-    }
-
-    switch (binding.layout.descriptorType) {
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
-      const auto &uniformBuffer = scene_.uniformBuffer(binding.name);
-
-      if (uniformBuffer.frameCount() != frameCount) {
-        VKR_EXEC_ERROR("Uniform buffer '{}' frame count mismatch: {} vs {}",
-                       binding.name, uniformBuffer.frameCount(), frameCount);
-      }
-
-      for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-        const auto bufferInfo = uniformBuffer.descriptorInfo(frameIndex);
-
-        writes[frameIndex].buffers.push_back(
-            pipeline::DescriptorBufferWrite::one(
-                binding.layout.binding, binding.layout.descriptorType,
-                bufferInfo));
-      }
-      break;
-    }
-
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-      const auto texture = scene_.findTexture(binding.name);
-      const auto cubemap =
-          texture ? std::nullopt : scene_.findCubemap(binding.name);
-
-      if (!texture && !cubemap) {
-        VKR_EXEC_ERROR("Texture or cubemap resource not found: {}",
-                       binding.name);
-      }
-
-      if (texture && !texture->get().hasSampler()) {
-        VKR_EXEC_ERROR("Texture sampler not found: {}", binding.name);
-      }
-
-      if (cubemap && !cubemap->get().valid()) {
-        VKR_EXEC_ERROR("Cubemap resource is invalid: {}", binding.name);
-      }
-
-      const auto imageInfo = texture ? texture->get().descriptorInfo()
-                                     : cubemap->get().descriptorInfo();
-
-      for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-        writes[frameIndex].images.push_back(
-            pipeline::DescriptorImageWrite::one(
-                binding.layout.binding, binding.layout.descriptorType,
-                imageInfo));
-      }
-      break;
-    }
-
-    default:
-      VKR_EXEC_ERROR("RasterPass '{}' cannot create descriptor writes for "
-                     "resource '{}' with descriptor type {}",
-                     name(), binding.name,
-                     static_cast<int>(binding.layout.descriptorType));
-    }
-  }
-
   for (size_t sourceIndex = 0; sourceIndex < sources_.size(); ++sourceIndex) {
     const auto &input = desc_.inputs[sourceIndex];
     const auto source =
@@ -381,62 +339,12 @@ auto RasterPass::createDescriptorWrites() const
     for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
       const VkDescriptorImageInfo imageInfo = sourceImageInfo(
           name(), sourceIndex, source->get().target(frameIndex), input);
-      writes[frameIndex].images.push_back(
-          pipeline::DescriptorImageWrite::one(
-              input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-              imageInfo));
+      writes[frameIndex].images.push_back(pipeline::DescriptorImageWrite::one(
+          input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageInfo));
     }
   }
 
   return writes;
-}
-
-auto RasterPass::descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc {
-  auto poolDesc = desc_.descriptorPool;
-  if (poolDesc.maxSets != 0) {
-    return poolDesc;
-  }
-
-  const uint32_t frameCount = executor_.framesInFlight();
-  for (const auto &binding : desc_.descriptorBindings) {
-    const uint32_t descriptorCount = binding.layout.descriptorCount == 0
-                                         ? 1U
-                                         : binding.layout.descriptorCount;
-    const uint32_t totalCount = frameCount * descriptorCount;
-
-    auto existing =
-        std::find_if(poolDesc.poolSizes.begin(), poolDesc.poolSizes.end(),
-                     [&binding](const VkDescriptorPoolSize &poolSize) -> bool {
-                       return poolSize.type == binding.layout.descriptorType;
-                     });
-
-    if (existing != poolDesc.poolSizes.end()) {
-      existing->descriptorCount += totalCount;
-      continue;
-    }
-
-    poolDesc.poolSizes.push_back({binding.layout.descriptorType, totalCount});
-  }
-
-  if (!desc_.inputs.empty()) {
-    const uint32_t totalCount =
-        frameCount * static_cast<uint32_t>(desc_.inputs.size());
-    auto existing = std::find_if(
-        poolDesc.poolSizes.begin(), poolDesc.poolSizes.end(),
-        [](const VkDescriptorPoolSize &poolSize) -> bool {
-          return poolSize.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        });
-
-    if (existing != poolDesc.poolSizes.end()) {
-      existing->descriptorCount += totalCount;
-    } else {
-      poolDesc.poolSizes.push_back(
-          {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, totalCount});
-    }
-  }
-
-  poolDesc.maxSets = frameCount;
-  return poolDesc;
 }
 
 } // namespace vkr::exec

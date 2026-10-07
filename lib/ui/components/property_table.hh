@@ -7,20 +7,20 @@
 
 namespace vkr::ui {
 
-// Shared panel layout, kept private to the UI implementation.
 inline auto beginPropertyTable(const std::string &id) -> bool {
   const float width = ImGui::GetContentRegionAvail().x;
   const bool stacked = width < ImGui::GetFontSize() * 16.0f;
   if (!ImGui::BeginTable(id.c_str(), stacked ? 1 : 2,
-                        ImGuiTableFlags_SizingStretchProp |
-                            ImGuiTableFlags_NoSavedSettings |
-                            ImGuiTableFlags_NoPadOuterX)) {
+                         ImGuiTableFlags_SizingStretchProp |
+                             ImGuiTableFlags_NoSavedSettings |
+                             ImGuiTableFlags_NoPadOuterX)) {
     return false;
   }
   if (!stacked) {
-    const float labelWidth = std::min(ImGui::GetFontSize() * 9.0f, width * 0.4f);
+    const float labelWidth =
+        std::min(ImGui::GetFontSize() * 9.0f, width * 0.4f);
     ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed,
-                           labelWidth);
+                            labelWidth);
   }
   ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
   return true;

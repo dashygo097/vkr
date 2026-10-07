@@ -119,10 +119,10 @@ private:
 
   void buildGraph() override {
     vkr::exec::ComputePassDesc passDesc{};
-    passDesc.storage(0, *input_a_)
-        .storage(1, *input_b_)
-        .storage(2, *output_c_)
-        .uniform(3, *params_)
+    passDesc.storage(0)
+        .storage(1)
+        .storage(2)
+        .uniform(3)
         .shader(
             "vector_ops",
 #ifdef VKR_HAS_SLANG
@@ -139,6 +139,10 @@ private:
         .setReads({"input_a", "input_b"})
         .setWrites({"output_c"});
     pass.update(passDesc);
+    pass.storage(0, *input_a_)
+        .storage(1, *input_b_)
+        .storage(2, *output_c_)
+        .uniform(3, *params_);
   }
 
   void afterExecute() override {

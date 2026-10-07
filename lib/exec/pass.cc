@@ -36,7 +36,8 @@ auto Pass::write(std::string resource) -> Pass & {
 void Pass::ensureConfigurable() const {
   if (configuration_locked_) {
     VKR_EXEC_ERROR("Pass '{}' configuration is frozen; destroy the graph "
-                   "before changing it", name_);
+                   "before changing it",
+                   name_);
   }
 }
 

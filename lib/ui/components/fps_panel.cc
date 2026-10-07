@@ -55,12 +55,10 @@ void FPSPanel::render() {
 
   const ImVec4 goodColor =
       withAlpha(mixColor(textColor, accentColor, 0.65f), 0.90f);
-  const ImVec4 warnColor = lightBackground
-      ? ImVec4(0.68f, 0.38f, 0.07f, 1.0f)
-      : ImVec4(1.00f, 0.82f, 0.35f, 1.0f);
-  const ImVec4 badColor = lightBackground
-      ? ImVec4(0.72f, 0.16f, 0.18f, 1.0f)
-      : ImVec4(1.00f, 0.48f, 0.48f, 1.0f);
+  const ImVec4 warnColor = lightBackground ? ImVec4(0.68f, 0.38f, 0.07f, 1.0f)
+                                           : ImVec4(1.00f, 0.82f, 0.35f, 1.0f);
+  const ImVec4 badColor = lightBackground ? ImVec4(0.72f, 0.16f, 0.18f, 1.0f)
+                                          : ImVec4(1.00f, 0.48f, 0.48f, 1.0f);
 
   ImVec4 fpsColor = fps > 59.0f   ? goodColor
                     : fps > 29.0f ? warnColor

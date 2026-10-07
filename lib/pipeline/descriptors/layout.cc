@@ -1,5 +1,6 @@
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/logger.hh"
+#include <utility>
 
 namespace vkr::pipeline {
 
@@ -9,6 +10,10 @@ DescriptorSetLayout::DescriptorSetLayout(const core::Device &device)
 DescriptorSetLayout::~DescriptorSetLayout() { destroy(); }
 
 void DescriptorSetLayout::create() {
+  if (!desc_.isValid()) {
+    VKR_PIPE_ERROR("Descriptor bindings require nonzero counts/stages and "
+                   "unique indices");
+  }
   destroy();
 
   VKR_PIPE_INFO("Creating descriptor set layout({} bindings)",
@@ -43,7 +48,12 @@ void DescriptorSetLayout::destroy() {
 }
 
 void DescriptorSetLayout::update(const DescriptorSetLayoutDesc &desc) {
-  desc_ = desc;
+  if (!desc.isValid()) {
+    VKR_PIPE_ERROR("Descriptor bindings require nonzero counts/stages and "
+                   "unique indices");
+  }
+  auto nextDesc = desc;
+  desc_ = std::move(nextDesc);
   create();
 }
 

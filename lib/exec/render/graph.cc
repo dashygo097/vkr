@@ -73,7 +73,7 @@ auto RenderGraph::fullscreen(std::string name,
     validateSource(source.get());
   }
   auto pass = std::make_unique<FullscreenPass>(executor_, device_,
-                                               command_pool_, scene_, sources);
+                                               command_pool_, sources);
   pass->setName(std::move(name));
   pass->update(desc);
 
@@ -91,8 +91,8 @@ auto RenderGraph::feedback(std::string name,
   for (const auto &source : sources) {
     validateSource(source.get());
   }
-  auto pass = std::make_unique<FeedbackFullscreenPass>(
-      executor_, device_, command_pool_, scene_, sources);
+  auto pass = std::make_unique<FeedbackFullscreenPass>(executor_, device_,
+                                                       command_pool_, sources);
   pass->setName(std::move(name));
   pass->update(desc);
 

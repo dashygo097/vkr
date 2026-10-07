@@ -33,7 +33,7 @@ AssetsPanel::AssetsPanel(const util::AssetSystem &assetSystem)
 
 void AssetsPanel::refresh() {
   root_ = normalizeRoot(selected_root_ == 0 ? asset_system_.desc().appRoot
-                                          : asset_system_.desc().userRoot);
+                                            : asset_system_.desc().userRoot);
   files_.clear();
   filtered_files_.clear();
   selected_file_.reset();
@@ -49,7 +49,6 @@ void AssetsPanel::refresh() {
     return;
   }
 
-  // Bound both traversal and results, including a project root with many folders.
   size_t visited = 0;
   for (; iterator != end; iterator.increment(error)) {
     if (error) {
@@ -64,13 +63,14 @@ void AssetsPanel::refresh() {
     const auto filename = entry.path().filename().string();
     std::error_code entryError;
     if (entry.is_directory(entryError)) {
-      if (filename == ".git" || filename == "build" ||
-          filename == "3rdparty" || filename == ".cache" ||
+      if (filename == ".git" || filename == "build" || filename == "3rdparty" ||
+          filename == ".cache" ||
           (selected_root_ == 1 && iterator.depth() == 0 &&
            filename == "assets")) {
         iterator.disable_recursion_pending();
       }
-    } else if (!entryError && entry.is_regular_file(entryError) && !entryError) {
+    } else if (!entryError && entry.is_regular_file(entryError) &&
+               !entryError) {
       files_.push_back(entry.path().lexically_relative(root_).generic_string());
     }
   }
@@ -90,7 +90,8 @@ void AssetsPanel::render() {
   const float refreshWidth = ImGui::CalcTextSize("Refresh").x +
                              ImGui::GetStyle().FramePadding.x * 2.0f;
   ImGui::SetNextItemWidth(std::max(1.0f, ImGui::GetContentRegionAvail().x -
-      refreshWidth - ImGui::GetStyle().ItemSpacing.x));
+                                             refreshWidth -
+                                             ImGui::GetStyle().ItemSpacing.x));
   bool refreshRequested = ImGui::Combo("##asset_root", &selected_root_,
                                        "Application assets\0Project files\0");
   ImGui::SameLine();
@@ -101,7 +102,7 @@ void AssetsPanel::render() {
 
   ImGui::SetNextItemWidth(-1.0f);
   if (ImGui::InputTextWithHint("##asset_filter", "Filter files...",
-                              filter_.InputBuf, sizeof(filter_.InputBuf))) {
+                               filter_.InputBuf, sizeof(filter_.InputBuf))) {
     filter_.Build();
     filtered_files_.clear();
     for (size_t index = 0; index < files_.size(); ++index) {
@@ -118,19 +119,21 @@ void AssetsPanel::render() {
   }
 
   if (!scan_error_.empty()) {
-    ImGui::TextWrapped("Cannot fully inspect this root: %s", scan_error_.c_str());
+    ImGui::TextWrapped("Cannot fully inspect this root: %s",
+                       scan_error_.c_str());
   }
   if (filtered_files_.empty()) {
     ImGui::TextDisabled(files_.empty() ? "No files in this root"
-                                      : "No matching files");
+                                       : "No matching files");
     return;
   }
 
-  const ImGuiTableFlags flags = ImGuiTableFlags_Resizable |
-      ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg |
-      ImGuiTableFlags_BordersInnerV;
-  if (ImGui::BeginTable("##asset_files", 2, flags,
-                        ImVec2(0.0f, std::max(1.0f, ImGui::GetContentRegionAvail().y)))) {
+  const ImGuiTableFlags flags =
+      ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY |
+      ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV;
+  if (ImGui::BeginTable(
+          "##asset_files", 2, flags,
+          ImVec2(0.0f, std::max(1.0f, ImGui::GetContentRegionAvail().y)))) {
     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 0.6f);
     ImGui::TableSetupColumn("Folder", ImGuiTableColumnFlags_WidthStretch, 0.4f);
     ImGui::TableSetupScrollFreeze(0, 1);
@@ -148,8 +151,7 @@ void AssetsPanel::render() {
         ImGui::PushID(static_cast<int>(index));
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
-        if (ImGui::Selectable(path.c_str() + nameStart,
-                              selected_file_ == index,
+        if (ImGui::Selectable(path.c_str() + nameStart, selected_file_ == index,
                               ImGuiSelectableFlags_SpanAllColumns)) {
           selected_file_ = index;
         }

@@ -7,7 +7,6 @@
 namespace vkr::pipeline {
 
 struct DescriptorBinding {
-  std::string name{};
   VkDescriptorSetLayoutBinding layout{};
 
   [[nodiscard]] auto toString() const -> std::string {
@@ -55,8 +54,7 @@ struct DescriptorBinding {
     return "layout(binding=" + std::to_string(layout.binding) +
            ", type=" + typeStr +
            ", count=" + std::to_string(layout.descriptorCount) +
-           ", stageFlags=" + std::to_string(layout.stageFlags) +
-           ", resource=" + name + ")";
+           ", stageFlags=" + std::to_string(layout.stageFlags) + ")";
   }
 };
 

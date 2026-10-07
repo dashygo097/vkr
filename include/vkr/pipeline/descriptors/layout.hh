@@ -2,12 +2,28 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/pipeline/descriptors/binding.hh"
+#include <cstddef>
 #include <vector>
 
 namespace vkr::pipeline {
 
 struct DescriptorSetLayoutDesc {
   std::vector<DescriptorBinding> bindings{};
+
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    for (std::size_t index = 0; index < bindings.size(); ++index) {
+      const auto &binding = bindings[index].layout;
+      if (binding.descriptorCount == 0 || binding.stageFlags == 0) {
+        return false;
+      }
+      for (std::size_t previous = 0; previous < index; ++previous) {
+        if (bindings[previous].layout.binding == binding.binding) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 };
 
 class DescriptorSetLayout {

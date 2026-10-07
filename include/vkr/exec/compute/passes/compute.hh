@@ -7,8 +7,6 @@
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
-#include "vkr/resource/buffer/storage_buffer.hh"
-#include "vkr/resource/buffer/uniform_buffer.hh"
 #include "vkr/resource/shader/module.hh"
 #include <memory>
 #include <string>
@@ -86,35 +84,27 @@ struct ComputeDispatchDesc {
 
 struct ComputePassDesc {
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
-  pipeline::DescriptorPoolDesc descriptorPool{};
-  uint32_t descriptorSetCount{1};
-  std::vector<pipeline::DescriptorSetWrite> descriptorWrites{};
   pipeline::ComputePipelineDesc pipeline{};
   ComputeDispatchDesc dispatch{};
 
-  template <typename ElementType>
-  auto storage(uint32_t binding,
-               const resource::StorageBuffer<ElementType> &buffer,
-               uint32_t setIndex = 0) -> ComputePassDesc & {
-    descriptorBindings.push_back(pipeline::DescriptorBinding{
-        .layout = {binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-                   VK_SHADER_STAGE_COMPUTE_BIT}});
-    descriptorWrite(setIndex).buffers.push_back(
-        pipeline::DescriptorBufferWrite::storage(
-            binding, buffer.descriptorInfo(0, buffer.bufferSize())));
+  auto storage(uint32_t binding) -> ComputePassDesc & {
+    descriptorBindings.push_back(
+        {.layout = {binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
+                    VK_SHADER_STAGE_COMPUTE_BIT}});
     return *this;
   }
 
-  template <typename UniformType>
-  auto uniform(uint32_t binding,
-               const resource::UniformBuffer<UniformType> &buffer,
-               uint32_t setIndex = 0) -> ComputePassDesc & {
-    descriptorBindings.push_back(pipeline::DescriptorBinding{
-        .layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                   VK_SHADER_STAGE_COMPUTE_BIT}});
-    descriptorWrite(setIndex).buffers.push_back(
-        pipeline::DescriptorBufferWrite::uniform(binding,
-                                                     buffer.descriptorInfo()));
+  auto uniform(uint32_t binding) -> ComputePassDesc & {
+    descriptorBindings.push_back(
+        {.layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                    VK_SHADER_STAGE_COMPUTE_BIT}});
+    return *this;
+  }
+
+  auto texture(uint32_t binding) -> ComputePassDesc & {
+    descriptorBindings.push_back(
+        {.layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                    VK_SHADER_STAGE_COMPUTE_BIT}});
     return *this;
   }
 
@@ -163,20 +153,6 @@ struct ComputePassDesc {
                                                localSizeZ, elementCountZ);
     return *this;
   }
-
-private:
-  auto descriptorWrite(uint32_t setIndex)
-      -> pipeline::DescriptorSetWrite & {
-    for (auto &write : descriptorWrites) {
-      if (write.setIndex == setIndex) {
-        return write;
-      }
-    }
-
-    descriptorWrites.push_back(
-        pipeline::DescriptorSetWrite::forSet(setIndex));
-    return descriptorWrites.back();
-  }
 };
 
 class ComputePass final : public Pass {
@@ -192,6 +168,24 @@ public:
   void update(const ComputePassDesc &desc);
   void record() override;
 
+  template <typename T>
+  auto storage(uint32_t binding, T &buffer) -> ComputePass & {
+    descriptor_sets_.storage(binding, buffer);
+    return *this;
+  }
+
+  template <typename T>
+  auto uniform(uint32_t binding, T &buffer) -> ComputePass & {
+    descriptor_sets_.uniform(binding, buffer);
+    return *this;
+  }
+
+  template <typename T>
+  auto texture(uint32_t binding, T &texture) -> ComputePass & {
+    descriptor_sets_.texture(binding, texture);
+    return *this;
+  }
+
 private:
   // dependencies
   ComputeExecutor &executor_;
@@ -199,21 +193,15 @@ private:
 
   // components
   ComputePassDesc desc_{};
-  std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
-  std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
-  std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
+  pipeline::DescriptorPool descriptor_pool_;
+  pipeline::DescriptorSetLayout descriptor_layout_;
+  pipeline::DescriptorSets descriptor_sets_;
   std::unique_ptr<pipeline::ComputePipeline> pipeline_{};
 
   // helpers
+  void validate(const ComputePassDesc &desc) const;
   void createDescriptors();
   void createPipeline();
-
-  [[nodiscard]] auto descriptorSetCount() const -> uint32_t;
-  [[nodiscard]] auto descriptorPoolDesc(uint32_t setCount) const
-      -> pipeline::DescriptorPoolDesc;
-  [[nodiscard]] auto descriptorBindings() const
-      -> std::vector<pipeline::DescriptorBinding>;
-  void validateDescriptorWrites(uint32_t setCount) const;
 };
 
 } // namespace vkr::exec

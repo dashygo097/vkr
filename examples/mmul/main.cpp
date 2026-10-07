@@ -121,10 +121,10 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
 
   void buildGraph() override {
     vkr::exec::ComputePassDesc passDesc{};
-    passDesc.storage(0, *input_A_)
-        .storage(1, *input_B_)
-        .storage(2, *output_C_)
-        .uniform(3, *params_)
+    passDesc.storage(0)
+        .storage(1)
+        .storage(2)
+        .uniform(3)
         .shader("mmul",
 #ifdef VKR_HAS_SLANG
                 vkr::resource::ShaderModuleDesc::computeSlangFile(
@@ -140,6 +140,10 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
         .setReads({"input_A", "input_B"})
         .setWrites({"output_C"});
     pass.update(passDesc);
+    pass.storage(0, *input_A_)
+        .storage(1, *input_B_)
+        .storage(2, *output_C_)
+        .uniform(3, *params_);
   }
 
   void afterExecute() override {

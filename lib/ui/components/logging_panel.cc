@@ -27,7 +27,7 @@ void LoggingPanel::render() {
   }
   ImGui::SetNextItemWidth(-1.0f);
   if (ImGui::InputTextWithHint("##log_filter", "Filter messages...",
-                              filter_.InputBuf, sizeof(filter_.InputBuf))) {
+                               filter_.InputBuf, sizeof(filter_.InputBuf))) {
     filter_.Build();
   }
 

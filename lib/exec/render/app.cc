@@ -143,8 +143,7 @@ void RenderApplication::initVulkan() {
   timer = std::make_unique<util::Timer>();
 
   // camera
-  camera =
-      std::make_unique<vkr::scene::Camera>(*timer, *inputTracer);
+  camera = std::make_unique<vkr::scene::Camera>(*timer, *inputTracer);
   camera->update(ctx.camera);
 
   // executor
@@ -166,9 +165,8 @@ auto RenderApplication::buildPresentation() -> UiPass & {
   auto &source = graph->presentationSource();
 
   auto &uiPass = graph->addPass<UiPass>(
-      *executor, *window, *instance, *device, *commandPool,
-      *commandBuffers, *swapchain, *scene, *assetSystem, *camera, source,
-      *graph, *timer);
+      *executor, *window, *instance, *device, *commandPool, *commandBuffers,
+      *swapchain, *scene, *assetSystem, *camera, source, *graph, *timer);
   uiPass.setName("ui");
   uiPass.update(ctx.ui);
   graph->addDependency(source.name(), uiPass.name());

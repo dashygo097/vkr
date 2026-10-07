@@ -95,15 +95,18 @@ void InspectorPanel::renderResource() {
 
     if (beginPropertyTable("##mesh_summary")) {
       propertyRow("State", "Valid");
-      propertyRow("Vertices", std::to_string(vertexBuffer->get().vertexCount()));
-      propertyRow("Indices", std::to_string(indexBuffer->get().indices().size()));
+      propertyRow("Vertices",
+                  std::to_string(vertexBuffer->get().vertexCount()));
+      propertyRow("Indices",
+                  std::to_string(indexBuffer->get().indices().size()));
       ImGui::EndTable();
     }
     if (ImGui::CollapsingHeader("Advanced")) {
       const auto vertexInput = vertexBuffer->get().vertexInputDesc();
       if (beginPropertyTable("##mesh_advanced")) {
         propertyRow("Bindings", std::to_string(vertexInput.bindings.size()));
-        propertyRow("Attributes", std::to_string(vertexInput.attributes.size()));
+        propertyRow("Attributes",
+                    std::to_string(vertexInput.attributes.size()));
         ImGui::EndTable();
       }
     }
@@ -179,13 +182,14 @@ void InspectorPanel::renderResource() {
       propertyRow("State", value.valid() ? "Valid" : "Invalid");
       propertyRow("Face size", std::to_string(value.width()) + " x " +
                                    std::to_string(value.height()));
-      propertyRow("Format", vk::to_string(static_cast<vk::Format>(desc.format)));
+      propertyRow("Format",
+                  vk::to_string(static_cast<vk::Format>(desc.format)));
       ImGui::EndTable();
     }
     if (ImGui::CollapsingHeader("Source files") &&
         beginPropertyTable("##cubemap_sources")) {
-      constexpr std::array<std::string_view, 6> faces{
-          "+X", "-X", "+Y", "-Y", "+Z", "-Z"};
+      constexpr std::array<std::string_view, 6> faces{"+X", "-X", "+Y",
+                                                      "-Y", "+Z", "-Z"};
       for (size_t index = 0; index < faces.size(); ++index) {
         const std::string_view path = desc.facePaths[index];
         propertyRow(faces[index], path.empty() ? "None" : path);
@@ -220,9 +224,8 @@ void InspectorPanel::renderPass() {
   }
   const auto &entry = *inspected_pass_;
   const auto &pass = entry.pass.get();
-  const auto pipeline = entry.pipeline
-                            ? entry.pipeline->get().editablePipeline()
-                            : std::nullopt;
+  const auto pipeline =
+      entry.pipeline ? entry.pipeline->get().editablePipeline() : std::nullopt;
 
   if (beginPropertyTable("##pass_summary")) {
     if (pipeline) {
@@ -242,14 +245,14 @@ void InspectorPanel::renderPass() {
     if (beginPropertyTable("##target_summary")) {
       propertyRow("Extent", std::to_string(target.width()) + " x " +
                                 std::to_string(target.height()));
-      propertyRow("Color format",
-                  target.hasColor()
-                      ? vk::to_string(static_cast<vk::Format>(desc.color.format))
-                      : "None");
+      propertyRow("Color format", target.hasColor()
+                                      ? vk::to_string(static_cast<vk::Format>(
+                                            desc.color.format))
+                                      : "None");
       propertyRow("Depth format",
-                  desc.depth
-                      ? vk::to_string(static_cast<vk::Format>(desc.depth->format))
-                      : "None");
+                  desc.depth ? vk::to_string(
+                                   static_cast<vk::Format>(desc.depth->format))
+                             : "None");
       ImGui::EndTable();
     }
     ImGui::PushTextWrapPos();

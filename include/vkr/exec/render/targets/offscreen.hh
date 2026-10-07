@@ -77,6 +77,15 @@ struct OffscreenTargetDesc {
     return depth.has_value();
   }
 
+  [[nodiscard]] auto isValid() const noexcept -> bool {
+    if ((!colorEnabled && !depth) || (colorEnabled && !color.isValid()) ||
+        (depth && !depth->isValid())) {
+      return false;
+    }
+    return !colorEnabled || !depth ||
+           (color.width == depth->width && color.height == depth->height);
+  }
+
   [[nodiscard]] auto width() const noexcept -> uint32_t {
     return colorEnabled ? color.width : (depth ? depth->width : 0U);
   }

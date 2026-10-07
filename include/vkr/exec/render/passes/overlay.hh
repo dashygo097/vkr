@@ -22,9 +22,28 @@ namespace vkr::exec {
 
 struct OverlayPassDesc {
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
-  pipeline::DescriptorPoolDesc descriptorPool{};
-  pipeline::GraphicsPipelineDesc graphicsPipeline{};
+  pipeline::GraphicsPipelineDesc pipeline{};
   std::vector<std::string> meshNames{};
+
+  auto descriptor(pipeline::DescriptorBinding binding) -> OverlayPassDesc & {
+    descriptorBindings.push_back(std::move(binding));
+    return *this;
+  }
+
+  auto uniform(uint32_t binding,
+               VkShaderStageFlags stages = VK_SHADER_STAGE_VERTEX_BIT)
+      -> OverlayPassDesc & {
+    return descriptor(
+        {.layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, stages}});
+  }
+
+  auto texture(uint32_t binding,
+               VkShaderStageFlags stages = VK_SHADER_STAGE_FRAGMENT_BIT)
+      -> OverlayPassDesc & {
+    return descriptor(
+        {.layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                    stages}});
+  }
 
   [[nodiscard]] static auto
   wireframe(pipeline::GraphicsPipelineDesc pipelineDesc) -> OverlayPassDesc;
@@ -46,6 +65,24 @@ public:
   void destroy() noexcept override;
   void update(const OverlayPassDesc &desc);
   void record() override;
+
+  template <typename T>
+  auto uniform(uint32_t binding, T &buffer) -> OverlayPass & {
+    descriptor_sets_.uniform(binding, buffer);
+    return *this;
+  }
+
+  template <typename T>
+  auto texture(uint32_t binding, T &texture) -> OverlayPass & {
+    descriptor_sets_.texture(binding, texture);
+    return *this;
+  }
+
+  template <typename T>
+  auto storage(uint32_t binding, T &buffer) -> OverlayPass & {
+    descriptor_sets_.storage(binding, buffer);
+    return *this;
+  }
 
   void selectMesh(const std::string &name) noexcept;
 
@@ -86,9 +123,9 @@ private:
   OverlayPassDesc desc_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
   std::unique_ptr<FramebufferSet> framebuffers_{};
-  std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
-  std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
-  std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
+  pipeline::DescriptorPool descriptor_pool_;
+  pipeline::DescriptorSetLayout descriptor_layout_;
+  pipeline::DescriptorSets descriptor_sets_;
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
   std::unordered_map<std::string, MeshEntry> meshes_{};
 
@@ -99,6 +136,7 @@ private:
 
   void createRenderPass();
   void createFramebuffers();
+  void validate(const OverlayPassDesc &desc) const;
   void createDescriptors();
   void createPipeline();
   void createMeshes();

@@ -12,6 +12,28 @@ namespace vkr::pipeline {
 struct ComputePipelineLayoutDesc {
   std::vector<VkDescriptorSetLayout> setLayouts{};
   std::vector<VkPushConstantRange> pushConstants{};
+
+  auto pushConstant(VkPushConstantRange range) -> ComputePipelineLayoutDesc & {
+    pushConstants.push_back(range);
+    return *this;
+  }
+
+  auto pushConstant(VkShaderStageFlags stageFlags, uint32_t offset,
+                    uint32_t size) -> ComputePipelineLayoutDesc & {
+    pushConstants.push_back({stageFlags, offset, size});
+    return *this;
+  }
+
+  auto pushConstantRanges(std::vector<VkPushConstantRange> ranges)
+      -> ComputePipelineLayoutDesc & {
+    pushConstants = std::move(ranges);
+    return *this;
+  }
+
+  auto clearPushConstants() noexcept -> ComputePipelineLayoutDesc & {
+    pushConstants.clear();
+    return *this;
+  }
 };
 
 struct ComputePipelineDesc {
@@ -19,6 +41,17 @@ struct ComputePipelineDesc {
   resource::ShaderModuleDesc shader{};
   std::string entryPoint{"main"};
   ComputePipelineLayoutDesc layout{};
+
+  auto pushConstant(VkPushConstantRange range) -> ComputePipelineDesc & {
+    layout.pushConstant(range);
+    return *this;
+  }
+
+  auto pushConstant(VkShaderStageFlags stageFlags, uint32_t offset,
+                    uint32_t size) -> ComputePipelineDesc & {
+    layout.pushConstant(stageFlags, offset, size);
+    return *this;
+  }
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return !name.empty() && !entryPoint.empty() && shader.isValid();

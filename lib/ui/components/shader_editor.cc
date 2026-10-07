@@ -1480,14 +1480,14 @@ auto ShaderEditor::render() -> void {
   auto &editor = currentEditor();
   auto &fileState = currentFileState();
   const bool fileBacked = fileState.file_backed;
-  const std::string_view applyLabel = fileBacked ? "Save & Apply" : "Compile & Apply";
+  const std::string_view applyLabel =
+      fileBacked ? "Save & Apply" : "Compile & Apply";
   const float availableWidth = ImGui::GetContentRegionAvail().x;
-  const float actionWidth = ImGui::CalcTextSize(applyLabel.data()).x +
-                            style.FramePadding.x * 2.0f;
-  const float historyWidth = ImGui::CalcTextSize("Undo").x +
-                            ImGui::CalcTextSize("Redo").x +
-                            style.FramePadding.x * 4.0f +
-                            style.ItemSpacing.x * 2.0f;
+  const float actionWidth =
+      ImGui::CalcTextSize(applyLabel.data()).x + style.FramePadding.x * 2.0f;
+  const float historyWidth =
+      ImGui::CalcTextSize("Undo").x + ImGui::CalcTextSize("Redo").x +
+      style.FramePadding.x * 4.0f + style.ItemSpacing.x * 2.0f;
 
   ImGui::BeginDisabled(!hasPipeline());
   if (ImGui::Button(applyLabel.data())) {
@@ -1517,24 +1517,25 @@ auto ShaderEditor::render() -> void {
     editor.SetErrorMarkers({});
   }
 
-  // The header has already been submitted: reserve only the actual footer.
   const float spacingY = style.ItemSpacing.y;
   const float footerHeight = ImGui::GetTextLineHeightWithSpacing();
   const float availableHeight = ImGui::GetContentRegionAvail().y;
-  const size_t statusLines = 1 + static_cast<size_t>(
-      std::count(status_message_.begin(), status_message_.end(), '\n'));
-  const float statusHeight = status_message_.empty() ? 0.0f :
-      std::min(ImGui::GetTextLineHeightWithSpacing() *
-                   static_cast<float>(std::min(statusLines, size_t{5})),
-               std::max(1.0f, availableHeight * 0.25f));
-  const float codeHeight = std::max(1.0f,
-      availableHeight - footerHeight - statusHeight - spacingY * 2.0f);
+  const size_t statusLines =
+      1 + static_cast<size_t>(
+              std::count(status_message_.begin(), status_message_.end(), '\n'));
+  const float statusHeight =
+      status_message_.empty()
+          ? 0.0f
+          : std::min(ImGui::GetTextLineHeightWithSpacing() *
+                         static_cast<float>(std::min(statusLines, size_t{5})),
+                     std::max(1.0f, availableHeight * 0.25f));
+  const float codeHeight = std::max(1.0f, availableHeight - footerHeight -
+                                              statusHeight - spacingY * 2.0f);
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-  if (ImGui::BeginChild("##shader_code_area", ImVec2(0.0f, codeHeight),
-                        ImGuiChildFlags_None,
-                        ImGuiWindowFlags_NoScrollbar |
-                            ImGuiWindowFlags_NoScrollWithMouse)) {
+  if (ImGui::BeginChild(
+          "##shader_code_area", ImVec2(0.0f, codeHeight), ImGuiChildFlags_None,
+          ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
     ImGui::PushFont(&code_font_, 0.0f);
     editor.Render("##shader_source", ImVec2(0.0f, 0.0f));
     ImGui::PopFont();
@@ -1543,10 +1544,10 @@ auto ShaderEditor::render() -> void {
   ImGui::PopStyleVar();
 
   if (!status_message_.empty()) {
-    const ImVec4 statusColor = status_is_error_
-        ? (lightBackground ? ImVec4(0.72f, 0.16f, 0.18f, 1.0f)
-                           : ImVec4(1.0f, 0.48f, 0.48f, 1.0f))
-        : textDisabled;
+    const ImVec4 statusColor =
+        status_is_error_ ? (lightBackground ? ImVec4(0.72f, 0.16f, 0.18f, 1.0f)
+                                            : ImVec4(1.0f, 0.48f, 0.48f, 1.0f))
+                         : textDisabled;
     if (ImGui::BeginChild("##shader_status", ImVec2(0.0f, statusHeight),
                           ImGuiChildFlags_None,
                           ImGuiWindowFlags_HorizontalScrollbar)) {
@@ -1562,8 +1563,8 @@ auto ShaderEditor::render() -> void {
   std::array<char, 96> info{};
   std::snprintf(info.data(), info.size(), "%s%sLn %d   Col %d",
                 dirty ? "Modified   " : "",
-                fileState.conflict ? "Disk conflict   " : "",
-                coords.mLine + 1, coords.mColumn + 1);
+                fileState.conflict ? "Disk conflict   " : "", coords.mLine + 1,
+                coords.mColumn + 1);
   ImGui::TextDisabled("%s", info.data());
 }
 

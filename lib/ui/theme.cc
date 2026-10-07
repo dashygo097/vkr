@@ -138,9 +138,8 @@ void Theme::applyLightBase(ImGuiStyle &style) {
   colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.24f, 0.31f, 0.35f);
 }
 
-auto Theme::loadFonts()
-    -> std::pair<std::reference_wrapper<ImFont>,
-                 std::reference_wrapper<ImFont>> {
+auto Theme::loadFonts() -> std::pair<std::reference_wrapper<ImFont>,
+                                     std::reference_wrapper<ImFont>> {
   auto &atlas = *ImGui::GetIO().Fonts;
   if (!atlas.AddFontDefaultVector()) {
     VKR_UI_ERROR("Failed to load the default font");
@@ -155,7 +154,6 @@ void Theme::apply(const ThemeDesc &config, float dpiScale) {
   }
 
   auto &style = ImGui::GetStyle();
-  // Rebuild from unscaled metrics: repeated DPI/density changes cannot drift.
   style = ImGuiStyle{};
   if (config.dark) {
     ImGui::StyleColorsDark(&style);
@@ -183,7 +181,6 @@ void Theme::apply(const ThemeDesc &config, float dpiScale) {
   colors[ImGuiCol_SliderGrab] = accent;
   colors[ImGuiCol_SliderGrabActive] = accentActive;
 
-  // Neutral controls keep the image and code dominant; accent marks state.
   colors[ImGuiCol_Button] = colors[ImGuiCol_FrameBg];
   colors[ImGuiCol_ButtonHovered] = colors[ImGuiCol_FrameBgHovered];
   colors[ImGuiCol_ButtonActive] = colors[ImGuiCol_FrameBgActive];

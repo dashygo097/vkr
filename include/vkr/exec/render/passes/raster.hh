@@ -24,9 +24,8 @@ namespace vkr::exec {
 struct RasterPassDesc {
   OffscreenTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
-  pipeline::DescriptorPoolDesc descriptorPool{};
   std::vector<VkClearValue> clearValues{};
-  pipeline::GraphicsPipelineDesc graphicsPipeline{};
+  pipeline::GraphicsPipelineDesc pipeline{};
   std::vector<std::string> meshNames{};
   std::vector<RenderPassInputDesc> inputs{};
 
@@ -35,27 +34,19 @@ struct RasterPassDesc {
     return *this;
   }
 
-  auto uniform(uint32_t binding, std::string name,
-               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-               uint32_t descriptorCount = 1) -> RasterPassDesc & {
-    return descriptor({.name = std::move(name),
-                       .layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                  descriptorCount, stageFlags}});
-  }
-
-  auto texture(uint32_t binding, std::string name,
-               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-               uint32_t descriptorCount = 1) -> RasterPassDesc & {
+  auto uniform(uint32_t binding,
+               VkShaderStageFlags stages = VK_SHADER_STAGE_VERTEX_BIT)
+      -> RasterPassDesc & {
     return descriptor(
-        {.name = std::move(name),
-         .layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    descriptorCount, stageFlags}});
+        {.layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, stages}});
   }
 
-  auto cubemap(uint32_t binding, std::string name,
-               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-               uint32_t descriptorCount = 1) -> RasterPassDesc & {
-    return texture(binding, std::move(name), stageFlags, descriptorCount);
+  auto texture(uint32_t binding,
+               VkShaderStageFlags stages = VK_SHADER_STAGE_FRAGMENT_BIT)
+      -> RasterPassDesc & {
+    return descriptor(
+        {.layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                    stages}});
   }
 
   auto input(uint32_t binding,
@@ -100,7 +91,7 @@ struct RasterPassDesc {
     RasterPassDesc desc{};
     desc.target = OffscreenTargetDesc::sampledColorDepth(
         width, height, colorFormat, depthFormat);
-    desc.graphicsPipeline = pipeline::GraphicsPipelineDesc::mesh(
+    desc.pipeline = pipeline::GraphicsPipelineDesc::mesh(
         std::move(pipelineName), std::move(vertexInputDesc));
     return desc;
   }
@@ -113,7 +104,7 @@ struct RasterPassDesc {
             VkCompareOp compareOp = VK_COMPARE_OP_LESS) -> RasterPassDesc {
     RasterPassDesc desc{};
     desc.target = OffscreenTargetDesc::shadowMap(width, height, depthFormat);
-    desc.graphicsPipeline = pipeline::GraphicsPipelineDesc::shadowMap(
+    desc.pipeline = pipeline::GraphicsPipelineDesc::shadowMap(
         std::move(pipelineName), std::move(vertexInputDesc), depthBiasConstant,
         depthBiasSlope, shadowCullMode, compareOp);
     desc.clearDepth();
@@ -136,6 +127,25 @@ public:
   void destroy() noexcept override;
   void update(const RasterPassDesc &desc);
   void record() override;
+
+  template <typename T>
+  auto uniform(uint32_t binding, T &buffer) -> RasterPass & {
+    descriptor_sets_.uniform(binding, buffer);
+    return *this;
+  }
+
+  template <typename T>
+  auto texture(uint32_t binding, T &texture) -> RasterPass & {
+    descriptor_sets_.texture(binding, texture);
+    return *this;
+  }
+
+  template <typename T>
+  auto storage(uint32_t binding, T &buffer) -> RasterPass & {
+    descriptor_sets_.storage(binding, buffer);
+    return *this;
+  }
+
   auto addSource(Pass &source) -> RasterPass &;
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
       -> RasterPass &;
@@ -180,9 +190,9 @@ private:
   std::unique_ptr<OffscreenTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
   std::unique_ptr<FramebufferSet> framebuffers_{};
-  std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
-  std::unique_ptr<pipeline::DescriptorSetLayout> descriptor_layout_{};
-  std::unique_ptr<pipeline::DescriptorSets> descriptor_sets_{};
+  pipeline::DescriptorPool descriptor_pool_;
+  pipeline::DescriptorSetLayout descriptor_layout_;
+  pipeline::DescriptorSets descriptor_sets_;
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
   std::vector<std::reference_wrapper<Pass>> sources_{};
 
@@ -190,12 +200,12 @@ private:
   void createTarget();
   void createRenderPass();
   void createFramebuffers();
+  void validate(const RasterPassDesc &desc) const;
   void createDescriptors();
   void createPipeline();
 
   [[nodiscard]] auto createDescriptorWrites() const
       -> std::vector<pipeline::DescriptorSetWrite>;
-  [[nodiscard]] auto descriptorPoolDesc() const -> pipeline::DescriptorPoolDesc;
 };
 
 } // namespace vkr::exec

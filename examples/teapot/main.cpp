@@ -31,11 +31,11 @@ private:
         swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
         VK_FORMAT_D32_SFLOAT, "teapot-local",
         vkr::scene::VertexNormalTexture3D::vertexInputDesc());
-    desc.uniform(0, "default", VK_SHADER_STAGE_VERTEX_BIT)
-        .texture(1, "teapot_texture", VK_SHADER_STAGE_FRAGMENT_BIT)
+    desc.uniform(0, VK_SHADER_STAGE_VERTEX_BIT)
+        .texture(1, VK_SHADER_STAGE_FRAGMENT_BIT)
         .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
         .clearDepth();
-    desc.graphicsPipeline
+    desc.pipeline
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolve("shaders/teapot/teapot.vert").string()))
         .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
@@ -43,11 +43,13 @@ private:
         .noCull();
 
     auto &rasterPass = graph->raster("raster", std::move(desc));
+    rasterPass.uniform(0, scene->uniformBuffer("default"))
+        .texture(1, scene->texture("teapot_texture"));
 
     auto postDesc = vkr::exec::FullscreenPassDesc::postProcess(
         swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
         "postprocess");
-    postDesc.graphicsPipeline
+    postDesc.pipeline
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolve("shaders/postprocess/postprocess.vert")
                 .string()))
@@ -63,11 +65,10 @@ private:
   void onDraw() override {
     const uint32_t frameIndex = executor->frameIndex();
     const auto &viewport = ui().viewport();
-    camera->aspect(
-        ui().layoutMode() == vkr::ui::LayoutMode::Standard &&
-                viewport.height > 0.0f
-            ? viewport.width / viewport.height
-            : ctx.window.ratio());
+    camera->aspect(ui().layoutMode() == vkr::ui::LayoutMode::Standard &&
+                           viewport.height > 0.0f
+                       ? viewport.width / viewport.height
+                       : ctx.window.ratio());
 
     UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.4f, -7.0f));

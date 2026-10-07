@@ -43,7 +43,6 @@ public:
   auto operator=(const ComputeApplication &) -> ComputeApplication & = delete;
 
   void run();
-  // Repeats the workload, including warmup; resource state is not reset.
   void benchmark(uint32_t warmupRuns, uint32_t measuredRuns);
 
   ComputeAppDesc ctx;
