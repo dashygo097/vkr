@@ -102,12 +102,16 @@ private:
     VkPipelineLayout layout{VK_NULL_HANDLE};
   };
 
+  // dependencies
   const core::Device &device_;
 
+  // components
   ComputePipelineDesc desc_{};
   std::unique_ptr<resource::ShaderModule> shader_module_{};
   VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
   VkPipeline vk_compute_pipeline_{VK_NULL_HANDLE};
+
+  // states
   std::vector<RetiredPipeline> retired_pipelines_{};
   uint64_t revision_{0};
 };

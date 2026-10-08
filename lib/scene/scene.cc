@@ -13,7 +13,7 @@ Scene::Scene(const core::Device &device, const core::CommandPool &commandPool,
 
 Scene::~Scene() = default;
 
-auto Scene::uniformBuffer(std::string_view name) -> IFrameUniformBufferSet & {
+auto Scene::uniformBuffer(std::string_view name) -> IFrameUniformBuffers & {
   const auto resource = findUniformBuffer(name);
   if (!resource) {
     VKR_RES_ERROR("Uniform buffer resource not found: {}", name);
@@ -22,7 +22,7 @@ auto Scene::uniformBuffer(std::string_view name) -> IFrameUniformBufferSet & {
 }
 
 auto Scene::uniformBuffer(std::string_view name) const
-    -> const IFrameUniformBufferSet & {
+    -> const IFrameUniformBuffers & {
   const auto resource = findUniformBuffer(name);
   if (!resource) {
     VKR_RES_ERROR("Uniform buffer resource not found: {}", name);
@@ -31,12 +31,12 @@ auto Scene::uniformBuffer(std::string_view name) const
 }
 
 auto Scene::findUniformBuffer(std::string_view name)
-    -> std::optional<std::reference_wrapper<IFrameUniformBufferSet>> {
+    -> std::optional<std::reference_wrapper<IFrameUniformBuffers>> {
   return findResource(uniform_buffers_, name);
 }
 
 auto Scene::findUniformBuffer(std::string_view name) const
-    -> std::optional<std::reference_wrapper<const IFrameUniformBufferSet>> {
+    -> std::optional<std::reference_wrapper<const IFrameUniformBuffers>> {
   return findResource(uniform_buffers_, name);
 }
 

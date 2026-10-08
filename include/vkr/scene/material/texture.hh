@@ -123,7 +123,8 @@ struct TextureDesc {
 
 class Texture {
 public:
-  Texture(const core::Device &device, const core::CommandPool &commandPool);
+  explicit Texture(const core::Device &device,
+                   const core::CommandPool &commandPool);
   ~Texture();
 
   Texture(const Texture &) = delete;

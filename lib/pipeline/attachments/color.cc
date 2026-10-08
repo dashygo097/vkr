@@ -1,11 +1,9 @@
-#include "vkr/exec/render/attachments/color.hh"
+#include "vkr/pipeline/attachments/color.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::exec {
+namespace vkr::pipeline {
 
-ColorAttachment::ColorAttachment(const core::Device &device,
-                                 const core::CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {
+ColorAttachment::ColorAttachment(const core::Device &device) : device_(device) {
   image_ = std::make_unique<resource::Image>(device_);
   image_view_ = std::make_unique<resource::ImageView>(device_);
 }
@@ -28,9 +26,9 @@ void ColorAttachment::create() {
   imageDesc.usage = desc_.usage;
 
   image_->update(imageDesc);
-  image_->setLayout(desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
-                        ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-                        : desc_.finalLayout);
+  image_->layout(desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+                     ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+                     : desc_.finalLayout);
   image_view_->update(
       resource::ImageViewDesc::color2D(image_->image(), desc_.format));
 
@@ -62,4 +60,4 @@ void ColorAttachment::update(const ColorAttachmentDesc &desc) {
   create();
 }
 
-} // namespace vkr::exec
+} // namespace vkr::pipeline

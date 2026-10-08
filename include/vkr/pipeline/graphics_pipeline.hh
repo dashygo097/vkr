@@ -1537,6 +1537,8 @@ private:
   std::vector<std::unique_ptr<resource::ShaderModule>> shader_modules_{};
   VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
   VkPipeline vk_graphics_pipeline_{VK_NULL_HANDLE};
+
+  // states
   std::vector<RetiredPipeline> retired_pipelines_{};
   uint64_t revision_{0};
 };

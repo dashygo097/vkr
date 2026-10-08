@@ -4,7 +4,7 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/scene/frame_uniform_buffer_set.hh"
+#include "vkr/scene/frame_uniform_buffers.hh"
 #include "vkr/scene/geometry/mesh.hh"
 #include "vkr/scene/material/cubemap.hh"
 #include "vkr/scene/material/texture.hh"
@@ -25,23 +25,26 @@ namespace vkr::scene {
 
 class Scene {
 public:
-  Scene(const core::Device &device, const core::CommandPool &commandPool,
-        const core::CommandBuffers &commandBuffers);
+  explicit Scene(const core::Device &device,
+                 const core::CommandPool &commandPool,
+                 const core::CommandBuffers &commandBuffers);
   ~Scene();
 
   Scene(const Scene &) = delete;
   auto operator=(const Scene &) -> Scene & = delete;
 
   [[nodiscard]] auto world() noexcept -> Transform & { return world_; }
-  [[nodiscard]] auto world() const noexcept -> const Transform & { return world_; }
+  [[nodiscard]] auto world() const noexcept -> const Transform & {
+    return world_;
+  }
 
   // Uniform buffer management
   template <typename UniformType>
   auto createUniformBuffer(std::string name, const UniformType &initial)
-      -> FrameUniformBufferSet<UniformType> & {
+      -> FrameUniformBuffers<UniformType> & {
     validateNewResource(uniform_buffers_, name, "uniform buffer");
 
-    auto buffer = std::make_unique<FrameUniformBufferSet<UniformType>>(
+    auto buffer = std::make_unique<FrameUniformBuffers<UniformType>>(
         device_, command_buffers_.size());
     for (uint32_t frameIndex = 0; frameIndex < command_buffers_.size();
          ++frameIndex) {
@@ -55,9 +58,9 @@ public:
 
   template <typename UniformType>
   [[nodiscard]] auto uniformBuffer(std::string_view name)
-      -> FrameUniformBufferSet<UniformType> & {
+      -> FrameUniformBuffers<UniformType> & {
     try {
-      return dynamic_cast<FrameUniformBufferSet<UniformType> &>(
+      return dynamic_cast<FrameUniformBuffers<UniformType> &>(
           uniformBuffer(name));
     } catch (const std::bad_cast &) {
       VKR_RES_ERROR("Uniform buffer '{}' has a different type", name);
@@ -66,9 +69,9 @@ public:
 
   template <typename UniformType>
   [[nodiscard]] auto uniformBuffer(std::string_view name) const
-      -> const FrameUniformBufferSet<UniformType> & {
+      -> const FrameUniformBuffers<UniformType> & {
     try {
-      return dynamic_cast<const FrameUniformBufferSet<UniformType> &>(
+      return dynamic_cast<const FrameUniformBuffers<UniformType> &>(
           uniformBuffer(name));
     } catch (const std::bad_cast &) {
       VKR_RES_ERROR("Uniform buffer '{}' has a different type", name);
@@ -76,16 +79,16 @@ public:
   }
 
   [[nodiscard]] auto uniformBuffer(std::string_view name)
-      -> IFrameUniformBufferSet &;
+      -> IFrameUniformBuffers &;
 
   [[nodiscard]] auto uniformBuffer(std::string_view name) const
-      -> const IFrameUniformBufferSet &;
+      -> const IFrameUniformBuffers &;
 
   [[nodiscard]] auto findUniformBuffer(std::string_view name)
-      -> std::optional<std::reference_wrapper<IFrameUniformBufferSet>>;
+      -> std::optional<std::reference_wrapper<IFrameUniformBuffers>>;
 
   [[nodiscard]] auto findUniformBuffer(std::string_view name) const
-      -> std::optional<std::reference_wrapper<const IFrameUniformBufferSet>>;
+      -> std::optional<std::reference_wrapper<const IFrameUniformBuffers>>;
 
   void destroyUniformBuffer(std::string_view name);
 
@@ -272,7 +275,7 @@ private:
 
   // components
   Transform world_{};
-  ResourceMap<IFrameUniformBufferSet> uniform_buffers_{};
+  ResourceMap<IFrameUniformBuffers> uniform_buffers_{};
   ResourceMap<Texture> textures_{};
   ResourceMap<Cubemap> cubemaps_{};
   ResourceMap<IMesh> meshes_{};

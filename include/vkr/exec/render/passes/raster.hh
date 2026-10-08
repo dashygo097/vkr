@@ -5,14 +5,14 @@
 #include "vkr/exec/capability.hh"
 #include "vkr/exec/pass.hh"
 #include "vkr/exec/render/executor.hh"
-#include "vkr/exec/render/frame_buffer_set.hh"
+#include "vkr/exec/render/framebuffers.hh"
 #include "vkr/exec/render/passes/input.hh"
-#include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
+#include "vkr/pipeline/targets/offscreen.hh"
 #include "vkr/scene/scene.hh"
 #include <memory>
 #include <string>
@@ -22,7 +22,7 @@
 namespace vkr::exec {
 
 struct RasterPassDesc {
-  OffscreenTargetDesc target{};
+  pipeline::OffscreenTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   std::vector<VkClearValue> clearValues{};
   pipeline::GraphicsPipelineDesc pipeline{};
@@ -89,7 +89,7 @@ struct RasterPassDesc {
             VkFormat depthFormat, std::string pipelineName,
             scene::VertexInputDesc vertexInputDesc) -> RasterPassDesc {
     RasterPassDesc desc{};
-    desc.target = OffscreenTargetDesc::sampledColorDepth(
+    desc.target = pipeline::OffscreenTargetDesc::sampledColorDepth(
         width, height, colorFormat, depthFormat);
     desc.pipeline = pipeline::GraphicsPipelineDesc::mesh(
         std::move(pipelineName), std::move(vertexInputDesc));
@@ -103,7 +103,8 @@ struct RasterPassDesc {
             VkCullModeFlags shadowCullMode = VK_CULL_MODE_BACK_BIT,
             VkCompareOp compareOp = VK_COMPARE_OP_LESS) -> RasterPassDesc {
     RasterPassDesc desc{};
-    desc.target = OffscreenTargetDesc::shadowMap(width, height, depthFormat);
+    desc.target =
+        pipeline::OffscreenTargetDesc::shadowMap(width, height, depthFormat);
     desc.pipeline = pipeline::GraphicsPipelineDesc::shadowMap(
         std::move(pipelineName), std::move(vertexInputDesc), depthBiasConstant,
         depthBiasSlope, shadowCullMode, compareOp);
@@ -116,8 +117,8 @@ class RasterPass final : public Pass,
                          public GraphicsPipelineCapability,
                          public RenderTargetCapability {
 public:
-  RasterPass(RenderExecutor &executor, const core::Device &device,
-             const core::CommandPool &commandPool, scene::Scene &scene);
+  explicit RasterPass(RenderExecutor &executor, const core::Device &device,
+                      scene::Scene &scene);
   ~RasterPass() override;
 
   RasterPass(const RasterPass &) = delete;
@@ -150,13 +151,13 @@ public:
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
       -> RasterPass &;
 
-  [[nodiscard]] auto target() -> OffscreenTarget &;
-  [[nodiscard]] auto target() const -> const OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t) -> OffscreenTarget & override {
+  [[nodiscard]] auto target() -> pipeline::OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const pipeline::OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t) -> pipeline::OffscreenTarget & override {
     return target();
   }
   [[nodiscard]] auto target(uint32_t) const
-      -> const OffscreenTarget & override {
+      -> const pipeline::OffscreenTarget & override {
     return target();
   }
 
@@ -182,14 +183,13 @@ private:
   // dependencies
   RenderExecutor &executor_;
   const core::Device &device_;
-  const core::CommandPool &command_pool_;
   scene::Scene &scene_;
 
   // components
   RasterPassDesc desc_{};
-  std::unique_ptr<OffscreenTarget> target_{};
+  std::unique_ptr<pipeline::OffscreenTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
-  std::unique_ptr<FramebufferSet> framebuffers_{};
+  std::unique_ptr<Framebuffers> framebuffers_{};
   pipeline::DescriptorPool descriptor_pool_;
   pipeline::DescriptorSetLayout descriptor_layout_;
   pipeline::DescriptorSets descriptor_sets_;

@@ -5,7 +5,6 @@
 #include <string>
 #include <type_traits>
 #include <typeinfo>
-#include <utility>
 #include <vector>
 
 namespace vkr::exec {

@@ -135,7 +135,7 @@ void transitionImageLayout(const core::Device &device,
                        nullptr, 0, nullptr, 1, &barrier);
 
   endSingleTimeCommands(device, commandPool, commandBuffer);
-  image.setLayout(newLayout);
+  image.layout(newLayout);
 }
 
 void copyBufferToImage(const core::Device &device,

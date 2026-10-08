@@ -1,12 +1,11 @@
-#include "vkr/exec/render/targets/offscreen.hh"
+#include "vkr/pipeline/targets/offscreen.hh"
 #include "vkr/logger.hh"
 #include <vulkan/vulkan_core.h>
 
-namespace vkr::exec {
+namespace vkr::pipeline {
 
-OffscreenTarget::OffscreenTarget(const core::Device &device,
-                                 const core::CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {}
+OffscreenTarget::OffscreenTarget(const core::Device &device)
+    : device_(device) {}
 
 OffscreenTarget::~OffscreenTarget() { destory(); }
 
@@ -52,7 +51,7 @@ void OffscreenTarget::create() {
 
   if (desc_.colorEnabled) {
     if (!color_) {
-      color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
+      color_ = std::make_unique<ColorAttachment>(device_);
       color_->update(desc_.color);
     }
 
@@ -63,7 +62,7 @@ void OffscreenTarget::create() {
 
   if (desc_.depth) {
     if (!depth_) {
-      depth_ = std::make_unique<DepthAttachment>(device_, command_pool_);
+      depth_ = std::make_unique<DepthAttachment>(device_);
       depth_->update(*desc_.depth);
     }
 
@@ -87,7 +86,7 @@ void OffscreenTarget::update(const OffscreenTargetDesc &desc) {
 
   if (desc_.colorEnabled) {
     if (!color_) {
-      color_ = std::make_unique<ColorAttachment>(device_, command_pool_);
+      color_ = std::make_unique<ColorAttachment>(device_);
     }
 
     color_->update(desc_.color);
@@ -97,7 +96,7 @@ void OffscreenTarget::update(const OffscreenTargetDesc &desc) {
 
   if (desc_.depth) {
     if (!depth_) {
-      depth_ = std::make_unique<DepthAttachment>(device_, command_pool_);
+      depth_ = std::make_unique<DepthAttachment>(device_);
     }
 
     depth_->update(*desc_.depth);
@@ -121,4 +120,4 @@ auto OffscreenTarget::attachmentViews() const -> std::vector<VkImageView> {
   return views;
 }
 
-} // namespace vkr::exec
+} // namespace vkr::pipeline

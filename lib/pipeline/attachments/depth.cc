@@ -1,11 +1,9 @@
-#include "vkr/exec/render/attachments/depth.hh"
+#include "vkr/pipeline/attachments/depth.hh"
 #include "vkr/logger.hh"
 #include <vulkan/vulkan_core.h>
 
-namespace vkr::exec {
-DepthAttachment::DepthAttachment(const core::Device &device,
-                                 const core::CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {
+namespace vkr::pipeline {
+DepthAttachment::DepthAttachment(const core::Device &device) : device_(device) {
   image_ = std::make_unique<resource::Image>(device_);
   image_view_ = std::make_unique<resource::ImageView>(device_);
 }
@@ -28,9 +26,9 @@ void DepthAttachment::create() {
   imageDesc.usage = desc_.usage;
 
   image_->update(imageDesc);
-  image_->setLayout(desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
-                        ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-                        : desc_.finalLayout);
+  image_->layout(desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+                     ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+                     : desc_.finalLayout);
   image_view_->update(
       resource::ImageViewDesc::depth2D(image_->image(), desc_.format));
 
@@ -62,4 +60,4 @@ void DepthAttachment::update(const DepthAttachmentDesc &desc) {
   create();
 }
 
-} // namespace vkr::exec
+} // namespace vkr::pipeline

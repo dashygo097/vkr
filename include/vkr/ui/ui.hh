@@ -5,11 +5,11 @@
 #include "vkr/core/instance.hh"
 #include "vkr/core/window.hh"
 #include "vkr/exec/graph.hh"
-#include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/render_pass.hh"
+#include "vkr/pipeline/targets/offscreen.hh"
 #include "vkr/scene/camera.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/ui/components/assets_panel.hh"
@@ -61,12 +61,13 @@ struct UiDesc {
 
 class UI {
 public:
-  UI(const core::Window &window, const core::Instance &instance,
-     const core::Device &device, scene::Scene &scene,
-     const util::AssetSystem &assetSystem, scene::Camera &camera,
-     exec::Pass &source, const pipeline::RenderPass &renderPass,
-     const pipeline::DescriptorPool &descriptorPool, exec::Graph &graph,
-     util::Timer &timer, const core::CommandBuffers &commandBuffers);
+  explicit UI(const core::Window &window, const core::Instance &instance,
+              const core::Device &device, scene::Scene &scene,
+              const util::AssetSystem &assetSystem, scene::Camera &camera,
+              exec::Pass &source, const pipeline::RenderPass &renderPass,
+              const pipeline::DescriptorPool &descriptorPool,
+              exec::Graph &graph, util::Timer &timer,
+              const core::CommandBuffers &commandBuffers);
   ~UI();
 
   UI(const UI &) = delete;

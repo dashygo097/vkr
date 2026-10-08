@@ -5,14 +5,14 @@
 #include "vkr/exec/capability.hh"
 #include "vkr/exec/pass.hh"
 #include "vkr/exec/render/executor.hh"
-#include "vkr/exec/render/frame_buffer_set.hh"
+#include "vkr/exec/render/framebuffers.hh"
 #include "vkr/exec/render/passes/input.hh"
-#include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
+#include "vkr/pipeline/targets/offscreen.hh"
 #include <functional>
 #include <memory>
 #include <optional>
@@ -23,7 +23,7 @@
 namespace vkr::exec {
 
 struct FullscreenPassDesc {
-  OffscreenTargetDesc target{};
+  pipeline::OffscreenTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   std::vector<VkClearValue> clearValues{};
   std::vector<RenderPassInputDesc> inputs{};
@@ -82,7 +82,8 @@ struct FullscreenPassDesc {
   [[nodiscard]] static auto offscreen(uint32_t width, uint32_t height,
                                       VkFormat format) -> FullscreenPassDesc {
     FullscreenPassDesc desc{};
-    desc.target = OffscreenTargetDesc::colorOnly(width, height, format);
+    desc.target =
+        pipeline::OffscreenTargetDesc::colorOnly(width, height, format);
     desc.pipeline = pipeline::GraphicsPipelineDesc::fullscreen("fullscreen");
     return desc;
   }
@@ -91,7 +92,8 @@ struct FullscreenPassDesc {
                                              VkFormat format)
       -> FullscreenPassDesc {
     FullscreenPassDesc desc{};
-    desc.target = OffscreenTargetDesc::sampledColorOnly(width, height, format);
+    desc.target =
+        pipeline::OffscreenTargetDesc::sampledColorOnly(width, height, format);
     desc.pipeline = pipeline::GraphicsPipelineDesc::fullscreen("fullscreen");
     return desc;
   }
@@ -101,7 +103,8 @@ struct FullscreenPassDesc {
                                         std::string pipelineName)
       -> FullscreenPassDesc {
     FullscreenPassDesc desc{};
-    desc.target = OffscreenTargetDesc::sampledColorOnly(width, height, format);
+    desc.target =
+        pipeline::OffscreenTargetDesc::sampledColorOnly(width, height, format);
     desc.pipeline =
         pipeline::GraphicsPipelineDesc::fullscreen(std::move(pipelineName));
     desc.clearColor(0.0F, 0.0F, 0.0F, 1.0F);
@@ -113,9 +116,9 @@ class FullscreenPass : public Pass,
                        public GraphicsPipelineCapability,
                        public RenderTargetCapability {
 public:
-  FullscreenPass(RenderExecutor &executor, const core::Device &device,
-                 const core::CommandPool &commandPool,
-                 std::vector<std::reference_wrapper<Pass>> sources = {});
+  explicit FullscreenPass(
+      RenderExecutor &executor, const core::Device &device,
+      std::vector<std::reference_wrapper<Pass>> sources = {});
   ~FullscreenPass() override;
 
   FullscreenPass(const FullscreenPass &) = delete;
@@ -148,13 +151,13 @@ public:
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
       -> FullscreenPass &;
 
-  [[nodiscard]] auto target() -> OffscreenTarget &;
-  [[nodiscard]] auto target() const -> const OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t) -> OffscreenTarget & override {
+  [[nodiscard]] auto target() -> pipeline::OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const pipeline::OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t) -> pipeline::OffscreenTarget & override {
     return target();
   }
   [[nodiscard]] auto target(uint32_t) const
-      -> const OffscreenTarget & override {
+      -> const pipeline::OffscreenTarget & override {
     return target();
   }
 
@@ -180,14 +183,13 @@ private:
   // dependencies
   RenderExecutor &executor_;
   const core::Device &device_;
-  const core::CommandPool &command_pool_;
 
   // components
   FullscreenPassDesc desc_{};
   std::vector<std::reference_wrapper<Pass>> sources_{};
-  std::unique_ptr<OffscreenTarget> target_{};
+  std::unique_ptr<pipeline::OffscreenTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
-  std::unique_ptr<FramebufferSet> framebuffers_{};
+  std::unique_ptr<Framebuffers> framebuffers_{};
   pipeline::DescriptorPool descriptor_pool_;
   pipeline::DescriptorSetLayout descriptor_layout_;
   pipeline::DescriptorSets descriptor_sets_;

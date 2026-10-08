@@ -32,7 +32,6 @@ public:
   void create();
   void destroy();
   void update(const DescriptorSetsDesc &desc);
-  // Explicit writes supersede borrowed resources at the written bindings.
   void write(const std::vector<DescriptorSetWrite> &writes);
 
   template <typename T>
@@ -70,7 +69,6 @@ public:
     return *this;
   }
 
-  // Apply borrowed resources to an idle set and check interface completeness.
   void write(uint32_t setIndex);
 
   [[nodiscard]] auto desc() const noexcept -> const DescriptorSetsDesc & {

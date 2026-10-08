@@ -134,27 +134,28 @@ auto RenderExecutor::framesInFlight() const noexcept -> uint32_t {
   return command_buffers_.size();
 }
 
-void RenderExecutor::beginPass(const FramebufferSet &framebufferSet,
+void RenderExecutor::beginPass(const pipeline::RenderPass &renderPass,
+                               const Framebuffers &framebuffers,
                                const std::vector<VkClearValue> &clearValues,
                                uint32_t framebufferIndex,
                                VkSubpassContents contents) {
   ensureFrameActive("beginPass");
 
-  if (framebufferIndex >= framebufferSet.buffers().size()) {
+  if (framebufferIndex >= framebuffers.buffers().size()) {
     VKR_EXEC_ERROR("Framebuffer index {} out of range, framebuffer count {}",
-                   framebufferIndex, framebufferSet.buffers().size());
+                   framebufferIndex, framebuffers.buffers().size());
   }
 
-  const auto extent = framebufferSet.extent();
+  const auto extent = framebuffers.extent();
   if (extent.width == 0 || extent.height == 0) {
-    VKR_EXEC_ERROR("FramebufferSet has invalid extent: {}x{}", extent.width,
+    VKR_EXEC_ERROR("Framebuffers has invalid extent: {}x{}", extent.width,
                    extent.height);
   }
 
   VkRenderPassBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  info.renderPass = framebufferSet.renderPass().renderPass();
-  info.framebuffer = framebufferSet.buffer(framebufferIndex);
+  info.renderPass = renderPass.renderPass();
+  info.framebuffer = framebuffers.buffer(framebufferIndex);
   info.renderArea = {.offset = {0, 0}, .extent = extent};
   info.clearValueCount = static_cast<uint32_t>(clearValues.size());
   info.pClearValues = clearValues.empty() ? nullptr : clearValues.data();
@@ -229,10 +230,11 @@ void RenderExecutor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
     return;
   }
 
-  VkDeviceSize offsets[] = {0};
-  VkBuffer vertexBuffers[] = {vertexBuffer.buffer()};
+  std::array<VkDeviceSize, 1> offsets = {0};
+  std::array<VkBuffer, 1> vertexBuffers = {vertexBuffer.buffer()};
 
-  vkCmdBindVertexBuffers(command_buffer_, 0, 1, vertexBuffers, offsets);
+  vkCmdBindVertexBuffers(command_buffer_, 0, 1, vertexBuffers.data(),
+                         offsets.data());
   vkCmdBindIndexBuffer(command_buffer_, indexBuffer.buffer(), 0,
                        VK_INDEX_TYPE_UINT16);
   vkCmdDrawIndexed(command_buffer_,
@@ -320,23 +322,23 @@ void RenderExecutor::submitCommandBuffer() {
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-  VkSemaphore waitSemaphores[] = {
+  std::array<VkSemaphore, 1> waitSemaphores = {
       image_available_.at(frame_index_).semaphore()};
 
-  VkPipelineStageFlags waitStages[] = {
+  std::array<VkPipelineStageFlags, 1> waitStages = {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
-  submitInfo.waitSemaphoreCount = 1;
-  submitInfo.pWaitSemaphores = waitSemaphores;
-  submitInfo.pWaitDstStageMask = waitStages;
+  submitInfo.waitSemaphoreCount = waitSemaphores.size();
+  submitInfo.pWaitSemaphores = waitSemaphores.data();
+  submitInfo.pWaitDstStageMask = waitStages.data();
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &command_buffer_;
 
-  VkSemaphore signalSemaphores[] = {
+  std::array<VkSemaphore, 1> signalSemaphores = {
       render_finished_.at(image_index_).semaphore()};
 
-  submitInfo.signalSemaphoreCount = 1;
-  submitInfo.pSignalSemaphores = signalSemaphores;
+  submitInfo.signalSemaphoreCount = signalSemaphores.size();
+  submitInfo.pSignalSemaphores = signalSemaphores.data();
 
   if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo,
                     in_flight_.at(frame_index_).fence()) != VK_SUCCESS) {
@@ -348,15 +350,15 @@ void RenderExecutor::present(uint32_t imageIndex) {
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-  VkSemaphore signalSemaphores[] = {
+  std::array<VkSemaphore, 1> signalSemaphores = {
       render_finished_.at(imageIndex).semaphore()};
 
-  presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = signalSemaphores;
+  presentInfo.waitSemaphoreCount = signalSemaphores.size();
+  presentInfo.pWaitSemaphores = signalSemaphores.data();
 
-  VkSwapchainKHR swapchains[] = {swapchain_.swapchain()};
-  presentInfo.swapchainCount = 1;
-  presentInfo.pSwapchains = swapchains;
+  std::array<VkSwapchainKHR, 1> swapchains = {swapchain_.swapchain()};
+  presentInfo.swapchainCount = swapchains.size();
+  presentInfo.pSwapchains = swapchains.data();
   presentInfo.pImageIndices = &imageIndex;
 
   VkResult result = vkQueuePresentKHR(device_.presentQueue(), &presentInfo);

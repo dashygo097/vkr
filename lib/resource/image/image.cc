@@ -6,11 +6,6 @@ namespace vkr::resource {
 
 Image::Image(const core::Device &device) : device_(device) {}
 
-Image::Image(const core::Device &device, const ImageDesc &desc)
-    : device_(device), desc_(desc) {
-  create();
-}
-
 Image::~Image() { destroy(); }
 
 void Image::update(const ImageDesc &desc) {

@@ -8,16 +8,14 @@ namespace vkr::exec {
 
 UiPass::UiPass(RenderExecutor &executor, const core::Window &window,
                const core::Instance &instance, const core::Device &device,
-               const core::CommandPool &commandPool,
                const core::CommandBuffers &commandBuffers,
                const core::Swapchain &swapchain, scene::Scene &scene,
                const util::AssetSystem &assetSystem, scene::Camera &camera,
                Pass &source, Graph &graph, util::Timer &timer)
     : executor_(executor), window_(window), instance_(instance),
-      device_(device), command_pool_(commandPool),
-      command_buffers_(commandBuffers), swapchain_(swapchain), scene_(scene),
-      asset_system_(assetSystem), camera_(camera), source_(source),
-      graph_(graph), timer_(timer) {}
+      device_(device), command_buffers_(commandBuffers), swapchain_(swapchain),
+      scene_(scene), asset_system_(assetSystem), camera_(camera),
+      source_(source), graph_(graph), timer_(timer) {}
 
 UiPass::~UiPass() { destroy(); }
 
@@ -57,21 +55,20 @@ void UiPass::create() {
                    name(), source_.name());
   }
 
-  target_ =
-      std::make_unique<SwapchainTarget>(device_, command_pool_, swapchain_);
-  target_->update(SwapchainTargetDesc{});
+  target_ = std::make_unique<pipeline::SwapchainTarget>(device_, swapchain_);
+  target_->update(pipeline::SwapchainTargetDesc{});
 
   render_pass_ = std::make_unique<pipeline::RenderPass>(device_);
   render_pass_->update(pipeline::RenderPassDesc::makeSwapchain(
       target_->format(), target_->depth() ? target_->depth()->desc().format
                                           : VK_FORMAT_UNDEFINED));
 
-  FramebufferDesc framebufferDesc{.width = target_->width(),
-                                  .height = target_->height(),
-                                  .layers = 1,
-                                  .attachments = target_->attachmentViews()};
+  FramebuffersDesc framebufferDesc{.width = target_->width(),
+                                   .height = target_->height(),
+                                   .layers = 1,
+                                   .attachments = target_->attachmentViews()};
 
-  framebuffers_ = std::make_unique<FramebufferSet>(device_, *render_pass_);
+  framebuffers_ = std::make_unique<Framebuffers>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
 
   descriptor_pool_ = std::make_unique<pipeline::DescriptorPool>(device_);
@@ -104,7 +101,7 @@ void UiPass::record() {
   }
 
   executor_.beginProfileScope(name());
-  executor_.beginPass(*framebuffers_,
+  executor_.beginPass(*render_pass_, *framebuffers_,
                       {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}},
                       executor_.imageIndex());
   executor_.setViewportAndScissor({target_->width(), target_->height()});

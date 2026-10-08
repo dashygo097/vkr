@@ -81,7 +81,6 @@ struct ImageDesc {
 class Image {
 public:
   explicit Image(const core::Device &device);
-  Image(const core::Device &device, const ImageDesc &desc);
   ~Image();
 
   Image(const Image &) = delete;
@@ -98,10 +97,11 @@ public:
     return desc_.height;
   }
   [[nodiscard]] auto depth() const noexcept -> uint32_t { return desc_.depth; }
+
   [[nodiscard]] auto layout() const noexcept -> VkImageLayout {
     return layout_;
   }
-  void setLayout(VkImageLayout layout) noexcept { layout_ = layout; }
+  void layout(VkImageLayout layout) noexcept { layout_ = layout; }
 
   [[nodiscard]] auto image() const noexcept -> VkImage { return vk_image_; }
   [[nodiscard]] auto memory() const noexcept -> VkDeviceMemory {

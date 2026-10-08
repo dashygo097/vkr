@@ -7,7 +7,7 @@
 #include "vkr/core/sync/fence.hh"
 #include "vkr/core/sync/semaphore.hh"
 #include "vkr/exec/profiler.hh"
-#include "vkr/exec/render/frame_buffer_set.hh"
+#include "vkr/exec/render/framebuffers.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
@@ -67,7 +67,8 @@ public:
 
   [[nodiscard]] auto framesInFlight() const noexcept -> uint32_t;
 
-  void beginPass(const FramebufferSet &framebufferSet,
+  void beginPass(const pipeline::RenderPass &renderPass,
+                 const Framebuffers &framebuffers,
                  const std::vector<VkClearValue> &clearValues,
                  uint32_t framebufferIndex = 0,
                  VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);

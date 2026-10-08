@@ -23,28 +23,29 @@ void DescriptorSets::create() {
   }
 
   if (!pool_.valid() || !layout_.valid()) {
-    VKR_PIPE_ERROR("Cannot allocate descriptor sets without a valid pool/layout");
+    VKR_PIPE_ERROR(
+        "Cannot allocate descriptor sets without a valid pool/layout");
   }
-  if ((pool_.desc().flags & VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT) ==
-      0) {
-    VKR_PIPE_ERROR("DescriptorSets requires a pool supporting individual frees");
+  if ((pool_.desc().flags &
+       VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT) == 0) {
+    VKR_PIPE_ERROR(
+        "DescriptorSets requires a pool supporting individual frees");
   }
 
   auto nextBindings = bindings_;
   const auto &declarations = layout_.desc().bindings;
   nextBindings.erase(
-      std::remove_if(nextBindings.begin(), nextBindings.end(),
-                     [&declarations](const Binding &binding) {
-                       return std::none_of(
-                           declarations.begin(), declarations.end(),
-                           [&binding](const DescriptorBinding &declaration) {
-                             return declaration.layout.binding ==
-                                        binding.binding &&
-                                    declaration.layout.descriptorType ==
-                                        binding.type &&
-                                    declaration.layout.descriptorCount == 1;
-                           });
-                     }),
+      std::remove_if(
+          nextBindings.begin(), nextBindings.end(),
+          [&declarations](const Binding &binding) -> bool {
+            return std::none_of(
+                declarations.begin(), declarations.end(),
+                [&binding](const DescriptorBinding &declaration) -> bool {
+                  return declaration.layout.binding == binding.binding &&
+                         declaration.layout.descriptorType == binding.type &&
+                         declaration.layout.descriptorCount == 1;
+                });
+          }),
       nextBindings.end());
 
   allocateSets();
@@ -61,8 +62,6 @@ void DescriptorSets::destroy() {
   sets_.clear();
   written_revisions_.clear();
   initialized_.clear();
-  // Keep borrowed resources for the next creation; create() reconciles them
-  // against the new layout before any provider is invoked.
 }
 
 void DescriptorSets::update(const DescriptorSetsDesc &desc) {
@@ -98,24 +97,20 @@ void DescriptorSets::allocateSets() {
 void DescriptorSets::write(const std::vector<DescriptorSetWrite> &setWrites) {
   apply(setWrites);
 
-  // Explicit writes replace borrowed providers at the same binding. In
-  // particular, graph inputs must not be overwritten by a retained texture.
   for (const auto &setWrite : setWrites) {
     for (const auto &buffer : setWrite.buffers) {
-      bindings_.erase(
-          std::remove_if(bindings_.begin(), bindings_.end(),
-                         [&buffer](const Binding &binding) {
-                           return binding.binding == buffer.binding;
-                         }),
-          bindings_.end());
+      bindings_.erase(std::remove_if(bindings_.begin(), bindings_.end(),
+                                     [&buffer](const Binding &binding) -> bool {
+                                       return binding.binding == buffer.binding;
+                                     }),
+                      bindings_.end());
     }
     for (const auto &image : setWrite.images) {
-      bindings_.erase(
-          std::remove_if(bindings_.begin(), bindings_.end(),
-                         [&image](const Binding &binding) {
-                           return binding.binding == image.binding;
-                         }),
-          bindings_.end());
+      bindings_.erase(std::remove_if(bindings_.begin(), bindings_.end(),
+                                     [&image](const Binding &binding) -> bool {
+                                       return binding.binding == image.binding;
+                                     }),
+                      bindings_.end());
     }
   }
   if (!setWrites.empty()) {
@@ -152,7 +147,8 @@ void DescriptorSets::apply(const std::vector<DescriptorSetWrite> &setWrites) {
       }
 
       (void)bindingIndex(bufferWrite.binding, bufferWrite.type,
-                   bufferWrite.arrayElement, bufferWrite.descriptorCount());
+                         bufferWrite.arrayElement,
+                         bufferWrite.descriptorCount());
 
       VkWriteDescriptorSet write{};
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -174,7 +170,7 @@ void DescriptorSets::apply(const std::vector<DescriptorSetWrite> &setWrites) {
       }
 
       (void)bindingIndex(imageWrite.binding, imageWrite.type,
-                   imageWrite.arrayElement, imageWrite.descriptorCount());
+                         imageWrite.arrayElement, imageWrite.descriptorCount());
 
       VkWriteDescriptorSet write{};
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -222,7 +218,7 @@ void DescriptorSets::apply(const std::vector<DescriptorSetWrite> &setWrites) {
 }
 
 auto DescriptorSets::bindingIndex(uint32_t binding, VkDescriptorType type,
-                                 uint32_t arrayElement, uint32_t count) const
+                                  uint32_t arrayElement, uint32_t count) const
     -> size_t {
   const auto &declarations = layout_.desc().bindings;
   for (size_t index = 0; index < declarations.size(); ++index) {
@@ -245,11 +241,12 @@ void DescriptorSets::bind(uint32_t binding, VkDescriptorType type,
   if (layout_.valid()) {
     const auto index = bindingIndex(binding, type, 0, 1);
     if (layout_.desc().bindings[index].layout.descriptorCount != 1) {
-      VKR_PIPE_ERROR("Resource binding {} requires a single descriptor", binding);
+      VKR_PIPE_ERROR("Resource binding {} requires a single descriptor",
+                     binding);
     }
   }
   auto existing = std::find_if(bindings_.begin(), bindings_.end(),
-                               [binding](const Binding &value) {
+                               [binding](const Binding &value) -> bool {
                                  return value.binding == binding;
                                });
   if (existing == bindings_.end()) {
@@ -281,10 +278,11 @@ void DescriptorSets::write(uint32_t setIndex) {
     if (std::holds_alternative<BufferInfo>(binding.info)) {
       const auto info = std::get<BufferInfo>(binding.info)(setIndex);
       if (info.buffer == VK_NULL_HANDLE || info.range == 0) {
-        VKR_PIPE_ERROR("Resource binding {} has no valid buffer", binding.binding);
+        VKR_PIPE_ERROR("Resource binding {} has no valid buffer",
+                       binding.binding);
       }
-      write.buffers.push_back(DescriptorBufferWrite::one(
-          binding.binding, binding.type, info));
+      write.buffers.push_back(
+          DescriptorBufferWrite::one(binding.binding, binding.type, info));
     } else {
       const auto info = std::get<ImageInfo>(binding.info)(setIndex);
       if (info.imageView == VK_NULL_HANDLE || info.sampler == VK_NULL_HANDLE ||
@@ -292,16 +290,15 @@ void DescriptorSets::write(uint32_t setIndex) {
         VKR_PIPE_ERROR("Resource binding {} has no valid sampled image",
                        binding.binding);
       }
-      write.images.push_back(DescriptorImageWrite::one(
-          binding.binding, binding.type, info));
+      write.images.push_back(
+          DescriptorImageWrite::one(binding.binding, binding.type, info));
     }
   }
-  // Check completeness before modifying the Vulkan set.
   for (size_t index = 0; index < initialized_[setIndex].size(); ++index) {
     const auto binding = layout_.desc().bindings[index].layout.binding;
     if (!initialized_[setIndex][index] &&
         std::none_of(bindings_.begin(), bindings_.end(),
-                     [binding](const Binding &value) {
+                     [binding](const Binding &value) -> bool {
                        return value.binding == binding;
                      })) {
       VKR_PIPE_ERROR("Descriptor binding {} has no resource", binding);

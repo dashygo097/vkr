@@ -2,7 +2,7 @@
 
 #include "vkr/exec/capability.hh"
 #include "vkr/exec/render/passes/fullscreen.hh"
-#include "vkr/exec/render/targets/frame_history.hh"
+#include "vkr/pipeline/targets/frame_history.hh"
 #include <optional>
 #include <string>
 #include <utility>
@@ -10,7 +10,7 @@
 namespace vkr::exec {
 
 struct FeedbackFullscreenPassDesc {
-  FrameHistoryTargetDesc target{};
+  pipeline::FrameHistoryTargetDesc target{};
   std::vector<pipeline::DescriptorBinding> descriptorBindings{};
   std::vector<VkClearValue> clearValues{};
   std::optional<RenderPassInputDesc> historyInput{};
@@ -94,7 +94,7 @@ struct FeedbackFullscreenPassDesc {
       -> FeedbackFullscreenPassDesc {
     FeedbackFullscreenPassDesc desc{};
     desc.target.target =
-        OffscreenTargetDesc::sampledColorOnly(width, height, format);
+        pipeline::OffscreenTargetDesc::sampledColorOnly(width, height, format);
     desc.pipeline =
         pipeline::GraphicsPipelineDesc::fullscreen(std::move(pipelineName));
     desc.clearColor(0.0F, 0.0F, 0.0F, 1.0F);
@@ -106,9 +106,8 @@ class FeedbackFullscreenPass final : public Pass,
                                      public GraphicsPipelineCapability,
                                      public RenderTargetCapability {
 public:
-  FeedbackFullscreenPass(
+  explicit FeedbackFullscreenPass(
       RenderExecutor &executor, const core::Device &device,
-      const core::CommandPool &commandPool,
       std::vector<std::reference_wrapper<Pass>> sources = {});
   ~FeedbackFullscreenPass() override;
 
@@ -143,17 +142,19 @@ public:
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
       -> FeedbackFullscreenPass &;
 
-  [[nodiscard]] auto target() -> OffscreenTarget &;
-  [[nodiscard]] auto target() const -> const OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t frameIndex) -> OffscreenTarget & override;
+  [[nodiscard]] auto target() -> pipeline::OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const pipeline::OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t frameIndex)
+      -> pipeline::OffscreenTarget & override;
   [[nodiscard]] auto target(uint32_t frameIndex) const
-      -> const OffscreenTarget & override;
+      -> const pipeline::OffscreenTarget & override;
 
-  [[nodiscard]] auto historyTarget() -> OffscreenTarget &;
-  [[nodiscard]] auto historyTarget() const -> const OffscreenTarget &;
-  [[nodiscard]] auto historyTarget(uint32_t frameIndex) -> OffscreenTarget &;
+  [[nodiscard]] auto historyTarget() -> pipeline::OffscreenTarget &;
+  [[nodiscard]] auto historyTarget() const -> const pipeline::OffscreenTarget &;
+  [[nodiscard]] auto historyTarget(uint32_t frameIndex)
+      -> pipeline::OffscreenTarget &;
   [[nodiscard]] auto historyTarget(uint32_t frameIndex) const
-      -> const OffscreenTarget &;
+      -> const pipeline::OffscreenTarget &;
 
   [[nodiscard]] auto editablePipeline() noexcept -> std::optional<
       std::reference_wrapper<pipeline::GraphicsPipeline>> override {
@@ -177,14 +178,13 @@ private:
   // dependencies
   RenderExecutor &executor_;
   const core::Device &device_;
-  const core::CommandPool &command_pool_;
 
   // components
   FeedbackFullscreenPassDesc desc_{};
   std::vector<std::reference_wrapper<Pass>> sources_{};
-  std::unique_ptr<FrameHistoryTarget> target_{};
+  std::unique_ptr<pipeline::FrameHistoryTarget> target_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
-  std::vector<std::unique_ptr<FramebufferSet>> framebuffers_{};
+  std::vector<std::unique_ptr<Framebuffers>> framebuffers_{};
   pipeline::DescriptorPool descriptor_pool_;
   pipeline::DescriptorSetLayout descriptor_layout_;
   pipeline::DescriptorSets descriptor_sets_;

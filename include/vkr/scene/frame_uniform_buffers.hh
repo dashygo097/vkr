@@ -9,9 +9,9 @@
 
 namespace vkr::scene {
 
-class IFrameUniformBufferSet {
+class IFrameUniformBuffers {
 public:
-  virtual ~IFrameUniformBufferSet() = default;
+  virtual ~IFrameUniformBuffers() = default;
 
   [[nodiscard]] virtual auto descriptorInfo(uint32_t frameIndex) const
       -> VkDescriptorBufferInfo = 0;
@@ -21,13 +21,12 @@ public:
 };
 
 template <typename UniformType>
-class FrameUniformBufferSet final : public IFrameUniformBufferSet {
+class FrameUniformBuffers final : public IFrameUniformBuffers {
 public:
-  explicit FrameUniformBufferSet(const core::Device &device,
-                                 uint32_t frameCount)
+  explicit FrameUniformBuffers(const core::Device &device, uint32_t frameCount)
       : device_(device) {
     if (frameCount == 0) {
-      VKR_RES_ERROR("FrameUniformBufferSet frame count must be greater than "
+      VKR_RES_ERROR("FrameUniformBuffers frame count must be greater than "
                     "zero");
     }
 
@@ -38,11 +37,10 @@ public:
     }
   }
 
-  ~FrameUniformBufferSet() override = default;
+  ~FrameUniformBuffers() override = default;
 
-  FrameUniformBufferSet(const FrameUniformBufferSet &) = delete;
-  auto operator=(const FrameUniformBufferSet &)
-      -> FrameUniformBufferSet & = delete;
+  FrameUniformBuffers(const FrameUniformBuffers &) = delete;
+  auto operator=(const FrameUniformBuffers &) -> FrameUniformBuffers & = delete;
 
   [[nodiscard]] auto descriptorInfo(uint32_t frameIndex) const
       -> VkDescriptorBufferInfo override {

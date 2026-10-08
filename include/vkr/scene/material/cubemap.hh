@@ -47,7 +47,8 @@ struct CubemapDesc {
 
 class Cubemap {
 public:
-  Cubemap(const core::Device &device, const core::CommandPool &commandPool);
+  explicit Cubemap(const core::Device &device,
+                   const core::CommandPool &commandPool);
   ~Cubemap();
 
   Cubemap(const Cubemap &) = delete;

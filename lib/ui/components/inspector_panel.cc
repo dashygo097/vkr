@@ -1,7 +1,7 @@
 #include "vkr/ui/components/inspector_panel.hh"
 #include "property_table.hh"
-#include "vkr/exec/render/targets/offscreen.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
+#include "vkr/pipeline/targets/offscreen.hh"
 #include <array>
 #include <imgui.h>
 #include <string>

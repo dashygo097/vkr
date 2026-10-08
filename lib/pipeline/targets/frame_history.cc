@@ -1,11 +1,10 @@
-#include "vkr/exec/render/targets/frame_history.hh"
+#include "vkr/pipeline/targets/frame_history.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::exec {
+namespace vkr::pipeline {
 
-FrameHistoryTarget::FrameHistoryTarget(const core::Device &device,
-                                       const core::CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {}
+FrameHistoryTarget::FrameHistoryTarget(const core::Device &device)
+    : device_(device) {}
 
 FrameHistoryTarget::~FrameHistoryTarget() { destroy(); }
 
@@ -87,9 +86,9 @@ void FrameHistoryTarget::ensureTargets() {
 
   for (auto &target : targets_) {
     if (!target) {
-      target = std::make_unique<OffscreenTarget>(device_, command_pool_);
+      target = std::make_unique<OffscreenTarget>(device_);
     }
   }
 }
 
-} // namespace vkr::exec
+} // namespace vkr::pipeline

@@ -64,8 +64,8 @@ void IndexBuffer::create() {
   uploadBarrier.buffer = target_->buffer();
   uploadBarrier.size = bufferSize;
   vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                       VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr,
-                       1, &uploadBarrier, 0, nullptr);
+                       VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 1,
+                       &uploadBarrier, 0, nullptr);
 
   if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
     vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,

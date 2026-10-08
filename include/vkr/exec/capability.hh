@@ -6,11 +6,10 @@
 
 namespace vkr::pipeline {
 class GraphicsPipeline;
-}
+class OffscreenTarget;
+} // namespace vkr::pipeline
 
 namespace vkr::exec {
-
-class OffscreenTarget;
 
 class PresentCapability {
 public:
@@ -33,9 +32,9 @@ public:
   virtual ~RenderTargetCapability() = default;
 
   [[nodiscard]] virtual auto target(uint32_t frameIndex)
-      -> OffscreenTarget & = 0;
+      -> pipeline::OffscreenTarget & = 0;
   [[nodiscard]] virtual auto target(uint32_t frameIndex) const
-      -> const OffscreenTarget & = 0;
+      -> const pipeline::OffscreenTarget & = 0;
 };
 
 } // namespace vkr::exec

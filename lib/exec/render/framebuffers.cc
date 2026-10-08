@@ -1,15 +1,15 @@
-#include "vkr/exec/render/frame_buffer_set.hh"
+#include "vkr/exec/render/framebuffers.hh"
 #include "vkr/logger.hh"
 
 namespace vkr::exec {
 
-FramebufferSet::FramebufferSet(const core::Device &device,
-                               const pipeline::RenderPass &renderPass)
+Framebuffers::Framebuffers(const core::Device &device,
+                           const pipeline::RenderPass &renderPass)
     : device_(device), render_pass_(renderPass) {}
 
-FramebufferSet::~FramebufferSet() { destroy(); }
+Framebuffers::~Framebuffers() { destroy(); }
 
-void FramebufferSet::create() {
+void Framebuffers::create() {
   vk_framebuffers_.resize(desc_.attachments.size(), VK_NULL_HANDLE);
 
   for (size_t i = 0; i < desc_.attachments.size(); i++) {
@@ -31,7 +31,7 @@ void FramebufferSet::create() {
   }
 }
 
-void FramebufferSet::destroy() {
+void Framebuffers::destroy() {
   for (auto framebuffer : vk_framebuffers_) {
     if (framebuffer != VK_NULL_HANDLE) {
       vkDestroyFramebuffer(device_.device(), framebuffer, nullptr);
@@ -41,7 +41,7 @@ void FramebufferSet::destroy() {
   vk_framebuffers_.clear();
 }
 
-void FramebufferSet::update(const FramebufferDesc &desc) {
+void Framebuffers::update(const FramebuffersDesc &desc) {
   destroy();
   desc_ = desc;
   create();

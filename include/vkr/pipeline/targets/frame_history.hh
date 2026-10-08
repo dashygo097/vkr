@@ -1,14 +1,13 @@
 #pragma once
 
-#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/exec/render/targets/offscreen.hh"
+#include "vkr/pipeline/targets/offscreen.hh"
 #include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
 
-namespace vkr::exec {
+namespace vkr::pipeline {
 
 struct FrameHistoryTargetDesc {
   OffscreenTargetDesc target{};
@@ -26,8 +25,7 @@ struct FrameHistoryTargetDesc {
 
 class FrameHistoryTarget {
 public:
-  FrameHistoryTarget(const core::Device &device,
-                     const core::CommandPool &commandPool);
+  explicit FrameHistoryTarget(const core::Device &device);
   ~FrameHistoryTarget();
 
   FrameHistoryTarget(const FrameHistoryTarget &) = delete;
@@ -78,13 +76,15 @@ public:
   }
 
 private:
+  // dependencies
   const core::Device &device_;
-  const core::CommandPool &command_pool_;
 
+  // components
   FrameHistoryTargetDesc desc_{};
   std::vector<std::unique_ptr<OffscreenTarget>> targets_{};
 
+  // helpers
   void ensureTargets();
 };
 
-} // namespace vkr::exec
+} // namespace vkr::pipeline

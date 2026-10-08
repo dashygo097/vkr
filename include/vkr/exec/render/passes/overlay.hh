@@ -3,13 +3,13 @@
 #include "vkr/exec/capability.hh"
 #include "vkr/exec/pass.hh"
 #include "vkr/exec/render/executor.hh"
-#include "vkr/exec/render/frame_buffer_set.hh"
-#include "vkr/exec/render/targets/offscreen.hh"
+#include "vkr/exec/render/framebuffers.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
+#include "vkr/pipeline/targets/offscreen.hh"
 #include "vkr/scene/scene.hh"
 #include <functional>
 #include <memory>
@@ -53,9 +53,9 @@ class OverlayPass final : public Pass,
                           public GraphicsPipelineCapability,
                           public RenderTargetCapability {
 public:
-  OverlayPass(RenderExecutor &executor, const core::Device &device,
-              const core::CommandPool &commandPool, scene::Scene &scene,
-              Pass &source);
+  explicit OverlayPass(RenderExecutor &executor, const core::Device &device,
+                       const core::CommandPool &commandPool,
+                       scene::Scene &scene, Pass &source);
   ~OverlayPass() override;
 
   OverlayPass(const OverlayPass &) = delete;
@@ -86,9 +86,10 @@ public:
 
   void selectMesh(const std::string &name) noexcept;
 
-  [[nodiscard]] auto target(uint32_t frameIndex) -> OffscreenTarget & override;
+  [[nodiscard]] auto target(uint32_t frameIndex)
+      -> pipeline::OffscreenTarget & override;
   [[nodiscard]] auto target(uint32_t frameIndex) const
-      -> const OffscreenTarget & override;
+      -> const pipeline::OffscreenTarget & override;
 
   [[nodiscard]] auto editablePipeline() noexcept -> std::optional<
       std::reference_wrapper<pipeline::GraphicsPipeline>> override {
@@ -122,7 +123,7 @@ private:
   // components
   OverlayPassDesc desc_{};
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
-  std::unique_ptr<FramebufferSet> framebuffers_{};
+  std::unique_ptr<Framebuffers> framebuffers_{};
   pipeline::DescriptorPool descriptor_pool_;
   pipeline::DescriptorSetLayout descriptor_layout_;
   pipeline::DescriptorSets descriptor_sets_;

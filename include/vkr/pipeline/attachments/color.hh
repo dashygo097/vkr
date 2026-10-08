@@ -1,13 +1,12 @@
 #pragma once
 
-#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/resource/image/image.hh"
 #include "vkr/resource/image/image_view.hh"
 #include "vkr/resource/image/sampler.hh"
 #include <utility>
 
-namespace vkr::exec {
+namespace vkr::pipeline {
 
 struct ColorAttachmentDesc {
   uint32_t width{};
@@ -107,9 +106,7 @@ struct ColorAttachmentDesc {
 
 class ColorAttachment {
 public:
-  explicit ColorAttachment(const core::Device &device,
-                           const core::CommandPool &commandPool);
-
+  explicit ColorAttachment(const core::Device &device);
   ~ColorAttachment();
 
   ColorAttachment(const ColorAttachment &) = delete;
@@ -142,7 +139,6 @@ public:
 private:
   // dependencies
   const core::Device &device_;
-  const core::CommandPool &command_pool_;
 
   // components
   ColorAttachmentDesc desc_{};
@@ -151,4 +147,4 @@ private:
   std::unique_ptr<resource::Sampler> sampler_;
 };
 
-} // namespace vkr::exec
+} // namespace vkr::pipeline

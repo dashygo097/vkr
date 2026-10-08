@@ -1,13 +1,12 @@
 #include "vkr/exec/render/passes/raster.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/logger.hh"
-#include <algorithm>
 #include <string_view>
 
 namespace vkr::exec {
 namespace {
 
-auto imageLayoutForAttachment(const ColorAttachment &attachment)
+auto imageLayoutForAttachment(const pipeline::ColorAttachment &attachment)
     -> VkImageLayout {
   return attachment.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
              ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -15,7 +14,7 @@ auto imageLayoutForAttachment(const ColorAttachment &attachment)
 }
 
 auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
-                     const OffscreenTarget &source,
+                     const pipeline::OffscreenTarget &source,
                      const RenderPassInputDesc &input)
     -> VkDescriptorImageInfo {
   VkDescriptorImageInfo imageInfo{};
@@ -67,10 +66,9 @@ auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
 } // namespace
 
 RasterPass::RasterPass(RenderExecutor &executor, const core::Device &device,
-                       const core::CommandPool &commandPool,
                        scene::Scene &scene)
-    : executor_(executor), device_(device), command_pool_(commandPool),
-      scene_(scene), descriptor_pool_(device), descriptor_layout_(device),
+    : executor_(executor), device_(device), scene_(scene),
+      descriptor_pool_(device), descriptor_layout_(device),
       descriptor_sets_(device, descriptor_pool_, descriptor_layout_) {}
 
 RasterPass::~RasterPass() { destroy(); }
@@ -127,7 +125,7 @@ void RasterPass::record() {
   }
 
   executor_.beginProfileScope(name());
-  executor_.beginPass(*framebuffers_, desc_.clearValues);
+  executor_.beginPass(*render_pass_, *framebuffers_, desc_.clearValues);
   executor_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
@@ -163,7 +161,7 @@ void RasterPass::record() {
   executor_.endProfileScope();
 }
 
-auto RasterPass::target() -> OffscreenTarget & {
+auto RasterPass::target() -> pipeline::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("RasterPass '{}' target requested before create", name());
   }
@@ -171,7 +169,7 @@ auto RasterPass::target() -> OffscreenTarget & {
   return *target_;
 }
 
-auto RasterPass::target() const -> const OffscreenTarget & {
+auto RasterPass::target() const -> const pipeline::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("RasterPass '{}' target requested before create", name());
   }
@@ -180,7 +178,7 @@ auto RasterPass::target() const -> const OffscreenTarget & {
 }
 
 void RasterPass::createTarget() {
-  target_ = std::make_unique<OffscreenTarget>(device_, command_pool_);
+  target_ = std::make_unique<pipeline::OffscreenTarget>(device_);
   target_->update(desc_.target);
 }
 
@@ -226,24 +224,23 @@ void RasterPass::createRenderPass() {
 }
 
 void RasterPass::createFramebuffers() {
-  auto framebufferDesc = FramebufferDesc::single(
+  auto framebufferDesc = FramebuffersDesc::single(
       target_->width(), target_->height(), target_->attachmentViews());
 
-  framebuffers_ = std::make_unique<FramebufferSet>(device_, *render_pass_);
+  framebuffers_ = std::make_unique<Framebuffers>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
 }
 
 void RasterPass::validate(const RasterPassDesc &desc) const {
   if (!desc.target.isValid()) {
-    VKR_EXEC_ERROR("RasterPass '{}' has an invalid target descriptor",
-                   name());
+    VKR_EXEC_ERROR("RasterPass '{}' has an invalid target descriptor", name());
   }
   if (!desc.pipeline.isValid()) {
     VKR_EXEC_ERROR("RasterPass '{}' has an invalid pipeline descriptor",
                    name());
   }
-  pipeline::DescriptorSetLayoutDesc layoutDesc{
-      .bindings = desc.descriptorBindings};
+  pipeline::DescriptorSetLayoutDesc layoutDesc{.bindings =
+                                                   desc.descriptorBindings};
   for (const auto &input : desc.inputs) {
     layoutDesc.bindings.push_back(
         {.layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
@@ -280,8 +277,7 @@ void RasterPass::createDescriptors() {
   std::vector<pipeline::DescriptorBinding> bindings = desc_.descriptorBindings;
   bindings.reserve(desc_.descriptorBindings.size() + desc_.inputs.size());
 
-  for (size_t index = 0; index < desc_.inputs.size(); ++index) {
-    const auto &input = desc_.inputs[index];
+  for (const auto &input : desc_.inputs) {
     bindings.push_back(pipeline::DescriptorBinding{
         .layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                    input.stageFlags}});

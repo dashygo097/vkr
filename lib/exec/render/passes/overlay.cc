@@ -94,14 +94,15 @@ void OverlayPass::selectMesh(const std::string &name) noexcept {
   }
 }
 
-auto OverlayPass::target(uint32_t frameIndex) -> OffscreenTarget & {
+auto OverlayPass::target(uint32_t frameIndex) -> pipeline::OffscreenTarget & {
   if (!target_source_) {
     VKR_EXEC_ERROR("OverlayPass '{}' target requested before create", name());
   }
   return target_source_->get().target(frameIndex);
 }
 
-auto OverlayPass::target(uint32_t frameIndex) const -> const OffscreenTarget & {
+auto OverlayPass::target(uint32_t frameIndex) const
+    -> const pipeline::OffscreenTarget & {
   if (!target_source_) {
     VKR_EXEC_ERROR("OverlayPass '{}' target requested before create", name());
   }
@@ -118,7 +119,8 @@ void OverlayPass::record() {
 
   const auto &mesh = selected_mesh_->get();
   executor_.beginProfileScope(name());
-  executor_.beginPass(*framebuffers_, {}, executor_.frameIndex());
+  executor_.beginPass(*render_pass_, *framebuffers_, {},
+                      executor_.frameIndex());
   executor_.setViewportAndScissor(framebuffers_->extent());
   descriptor_sets_.write(executor_.frameIndex());
   if (descriptor_sets_.valid()) {
@@ -208,7 +210,7 @@ void OverlayPass::createRenderPass() {
 
 void OverlayPass::createFramebuffers() {
   const auto &first = target(0);
-  FramebufferDesc desc{};
+  FramebuffersDesc desc{};
   desc.extent(first.width(), first.height());
   const bool useDepth = render_pass_->desc().hasDepth();
   for (uint32_t frame = 0; frame < executor_.framesInFlight(); ++frame) {
@@ -231,14 +233,13 @@ void OverlayPass::createFramebuffers() {
           std::vector<VkImageView>{output.color().imageView()});
     }
   }
-  framebuffers_ = std::make_unique<FramebufferSet>(device_, *render_pass_);
+  framebuffers_ = std::make_unique<Framebuffers>(device_, *render_pass_);
   framebuffers_->update(desc);
 }
 
 void OverlayPass::validate(const OverlayPassDesc &desc) const {
   if (desc.meshNames.empty() || !desc.pipeline.isValid() ||
-      desc.pipeline.inputAssembly.topology !=
-          VK_PRIMITIVE_TOPOLOGY_LINE_LIST) {
+      desc.pipeline.inputAssembly.topology != VK_PRIMITIVE_TOPOLOGY_LINE_LIST) {
     VKR_EXEC_ERROR("OverlayPass '{}' requires meshes and a valid line pipeline",
                    name());
   }
@@ -267,8 +268,8 @@ void OverlayPass::validate(const OverlayPassDesc &desc) const {
                    name());
   }
 
-  pipeline::DescriptorSetLayoutDesc layoutDesc{
-      .bindings = desc.descriptorBindings};
+  pipeline::DescriptorSetLayoutDesc layoutDesc{.bindings =
+                                                   desc.descriptorBindings};
   if (!layoutDesc.isValid()) {
     VKR_EXEC_ERROR("OverlayPass '{}' requires unique bindings with nonzero "
                    "counts/stages",
@@ -280,8 +281,9 @@ void OverlayPass::validate(const OverlayPassDesc &desc) const {
         (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
          layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
          layout.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
-      VKR_EXEC_ERROR("OverlayPass '{}' has an unsupported descriptor binding {}",
-                     name(), layout.binding);
+      VKR_EXEC_ERROR(
+          "OverlayPass '{}' has an unsupported descriptor binding {}", name(),
+          layout.binding);
     }
   }
 }

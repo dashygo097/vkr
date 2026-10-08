@@ -165,8 +165,8 @@ auto RenderApplication::buildPresentation() -> UiPass & {
   auto &source = graph->presentationSource();
 
   auto &uiPass = graph->addPass<UiPass>(
-      *executor, *window, *instance, *device, *commandPool, *commandBuffers,
-      *swapchain, *scene, *assetSystem, *camera, source, *graph, *timer);
+      *executor, *window, *instance, *device, *commandBuffers, *swapchain,
+      *scene, *assetSystem, *camera, source, *graph, *timer);
   uiPass.setName("ui");
   uiPass.update(ctx.ui);
   graph->addDependency(source.name(), uiPass.name());

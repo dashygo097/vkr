@@ -1,12 +1,11 @@
-#include "vkr/exec/render/targets/swapchain.hh"
+#include "vkr/pipeline/targets/swapchain.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::exec {
+namespace vkr::pipeline {
 
 SwapchainTarget::SwapchainTarget(const core::Device &device,
-                                 const core::CommandPool &commandPool,
                                  const core::Swapchain &swapchain)
-    : device_(device), command_pool_(commandPool), swapchain_(swapchain) {}
+    : device_(device), swapchain_(swapchain) {}
 
 SwapchainTarget::~SwapchainTarget() { destory(); }
 
@@ -48,7 +47,7 @@ void SwapchainTarget::create() {
       VKR_RES_ERROR("SwapchainTarget depth attachment has undefined format");
     }
 
-    depth_ = std::make_unique<DepthAttachment>(device_, command_pool_);
+    depth_ = std::make_unique<DepthAttachment>(device_);
     depth_->update(depthDesc);
     desc_.depth = depthDesc;
   }
@@ -116,4 +115,4 @@ auto SwapchainTarget::attachmentViews() const
   return views;
 }
 
-} // namespace vkr::exec
+} // namespace vkr::pipeline

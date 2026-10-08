@@ -2,12 +2,12 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/exec/render/attachments/color.hh"
-#include "vkr/exec/render/attachments/depth.hh"
+#include "vkr/pipeline/attachments/color.hh"
+#include "vkr/pipeline/attachments/depth.hh"
 #include <optional>
 #include <utility>
 
-namespace vkr::exec {
+namespace vkr::pipeline {
 
 struct OffscreenTargetDesc {
   bool colorEnabled{true};
@@ -144,9 +144,7 @@ struct OffscreenTargetDesc {
 
 class OffscreenTarget {
 public:
-  OffscreenTarget(const core::Device &device,
-                  const core::CommandPool &commandPool);
-
+  explicit OffscreenTarget(const core::Device &device);
   ~OffscreenTarget();
 
   OffscreenTarget(const OffscreenTarget &) = delete;
@@ -195,7 +193,6 @@ public:
 private:
   // dependencies
   const core::Device &device_;
-  const core::CommandPool &command_pool_;
 
   // components
   OffscreenTargetDesc desc_{};
@@ -207,4 +204,4 @@ private:
   void validate() const;
 };
 
-} // namespace vkr::exec
+} // namespace vkr::pipeline

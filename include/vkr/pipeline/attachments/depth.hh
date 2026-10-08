@@ -1,13 +1,12 @@
 #pragma once
 
-#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/resource/image/image.hh"
 #include "vkr/resource/image/image_view.hh"
 #include "vkr/resource/image/sampler.hh"
 #include <utility>
 
-namespace vkr::exec {
+namespace vkr::pipeline {
 
 struct DepthAttachmentDesc {
   uint32_t width{};
@@ -109,9 +108,7 @@ struct DepthAttachmentDesc {
 
 class DepthAttachment {
 public:
-  explicit DepthAttachment(const core::Device &device,
-                           const core::CommandPool &commandPool);
-
+  explicit DepthAttachment(const core::Device &device);
   ~DepthAttachment();
 
   DepthAttachment(const DepthAttachment &) = delete;
@@ -143,7 +140,6 @@ public:
 private:
   // dependencies
   const core::Device &device_;
-  const core::CommandPool &command_pool_;
 
   // components
   DepthAttachmentDesc desc_{};
@@ -152,4 +148,4 @@ private:
   std::unique_ptr<resource::Sampler> sampler_;
 };
 
-} // namespace vkr::exec
+} // namespace vkr::pipeline

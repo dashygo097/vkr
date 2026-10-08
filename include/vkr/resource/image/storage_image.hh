@@ -41,8 +41,8 @@ public:
   StorageImage(const StorageImage &) = delete;
   auto operator=(const StorageImage &) -> StorageImage & = delete;
 
-  void update(const StorageImageDesc &desc);
   void destroy();
+  void update(const StorageImageDesc &desc);
 
   [[nodiscard]] auto desc() const noexcept -> const StorageImageDesc & {
     return desc_;

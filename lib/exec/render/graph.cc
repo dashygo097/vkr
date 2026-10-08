@@ -36,8 +36,7 @@ void RenderGraph::destroy() noexcept {
 
 auto RenderGraph::raster(std::string name, RasterPassDesc desc)
     -> RasterPass & {
-  auto pass =
-      std::make_unique<RasterPass>(executor_, device_, command_pool_, scene_);
+  auto pass = std::make_unique<RasterPass>(executor_, device_, scene_);
   pass->setName(std::move(name));
   pass->update(desc);
 
@@ -72,8 +71,7 @@ auto RenderGraph::fullscreen(std::string name,
   for (const auto &source : sources) {
     validateSource(source.get());
   }
-  auto pass = std::make_unique<FullscreenPass>(executor_, device_,
-                                               command_pool_, sources);
+  auto pass = std::make_unique<FullscreenPass>(executor_, device_, sources);
   pass->setName(std::move(name));
   pass->update(desc);
 
@@ -91,8 +89,8 @@ auto RenderGraph::feedback(std::string name,
   for (const auto &source : sources) {
     validateSource(source.get());
   }
-  auto pass = std::make_unique<FeedbackFullscreenPass>(executor_, device_,
-                                                       command_pool_, sources);
+  auto pass =
+      std::make_unique<FeedbackFullscreenPass>(executor_, device_, sources);
   pass->setName(std::move(name));
   pass->update(desc);
 

@@ -163,11 +163,13 @@ auto ShaderCompiler::compileSlang(const SlangCompileDesc &desc)
     return result;
   }
 
-  slang::IComponentType *components[] = {module.get(), entryPoint.get()};
+  std::array<slang::IComponentType *, 2> components = {module.get(),
+                                                       entryPoint.get()};
   Slang::ComPtr<slang::IComponentType> program;
   diagnostics.setNull();
   if (SLANG_FAILED(session->createCompositeComponentType(
-          components, 2, program.writeRef(), diagnostics.writeRef()))) {
+          components.data(), components.size(), program.writeRef(),
+          diagnostics.writeRef()))) {
     result.error = blobString(diagnostics.get());
     if (result.error.empty()) {
       result.error = "failed to compose Slang program";

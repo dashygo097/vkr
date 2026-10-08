@@ -6,14 +6,15 @@
 namespace vkr::exec {
 namespace {
 
-auto imageLayoutForColor(const ColorAttachment &color) -> VkImageLayout {
+auto imageLayoutForColor(const pipeline::ColorAttachment &color)
+    -> VkImageLayout {
   return color.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
              ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
              : color.desc().finalLayout;
 }
 
 auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
-                     const OffscreenTarget &source,
+                     const pipeline::OffscreenTarget &source,
                      const RenderPassInputDesc &input)
     -> VkDescriptorImageInfo {
   VkDescriptorImageInfo imageInfo{};
@@ -66,11 +67,9 @@ auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
 
 FullscreenPass::FullscreenPass(
     RenderExecutor &executor, const core::Device &device,
-    const core::CommandPool &commandPool,
     std::vector<std::reference_wrapper<Pass>> sources)
-    : executor_(executor), device_(device), command_pool_(commandPool),
-      sources_(std::move(sources)), descriptor_pool_(device),
-      descriptor_layout_(device),
+    : executor_(executor), device_(device), sources_(std::move(sources)),
+      descriptor_pool_(device), descriptor_layout_(device),
       descriptor_sets_(device, descriptor_pool_, descriptor_layout_) {}
 
 FullscreenPass::~FullscreenPass() { destroy(); }
@@ -114,7 +113,7 @@ void FullscreenPass::record() {
   }
 
   executor_.beginProfileScope(name());
-  executor_.beginPass(*framebuffers_, desc_.clearValues);
+  executor_.beginPass(*render_pass_, *framebuffers_, desc_.clearValues);
   executor_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
@@ -133,7 +132,7 @@ void FullscreenPass::record() {
 
 auto FullscreenPass::addSource(Pass &source) -> FullscreenPass & {
   ensureConfigurable();
-  sources_.push_back(source);
+  sources_.emplace_back(source);
   return *this;
 }
 
@@ -144,7 +143,7 @@ auto FullscreenPass::setSources(
   return *this;
 }
 
-auto FullscreenPass::target() -> OffscreenTarget & {
+auto FullscreenPass::target() -> pipeline::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FullscreenPass '{}' target requested before create",
                    name());
@@ -153,7 +152,7 @@ auto FullscreenPass::target() -> OffscreenTarget & {
   return *target_;
 }
 
-auto FullscreenPass::target() const -> const OffscreenTarget & {
+auto FullscreenPass::target() const -> const pipeline::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FullscreenPass '{}' target requested before create",
                    name());
@@ -163,7 +162,7 @@ auto FullscreenPass::target() const -> const OffscreenTarget & {
 }
 
 void FullscreenPass::createTarget() {
-  target_ = std::make_unique<OffscreenTarget>(device_, command_pool_);
+  target_ = std::make_unique<pipeline::OffscreenTarget>(device_);
   target_->update(desc_.target);
 }
 
@@ -208,10 +207,10 @@ void FullscreenPass::createRenderPass() {
 }
 
 void FullscreenPass::createFramebuffers() {
-  auto framebufferDesc = FramebufferDesc::single(
+  auto framebufferDesc = FramebuffersDesc::single(
       target_->width(), target_->height(), target_->attachmentViews());
 
-  framebuffers_ = std::make_unique<FramebufferSet>(device_, *render_pass_);
+  framebuffers_ = std::make_unique<Framebuffers>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
 }
 
@@ -224,8 +223,8 @@ void FullscreenPass::validate(const FullscreenPassDesc &desc) const {
     VKR_EXEC_ERROR("FullscreenPass '{}' has an invalid pipeline descriptor",
                    name());
   }
-  pipeline::DescriptorSetLayoutDesc layoutDesc{
-      .bindings = desc.descriptorBindings};
+  pipeline::DescriptorSetLayoutDesc layoutDesc{.bindings =
+                                                   desc.descriptorBindings};
   for (const auto &input : desc.inputs) {
     layoutDesc.bindings.push_back(
         {.layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
@@ -242,8 +241,9 @@ void FullscreenPass::validate(const FullscreenPassDesc &desc) const {
         (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
          layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
          layout.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
-      VKR_EXEC_ERROR("FullscreenPass '{}' has an unsupported descriptor binding {}",
-                     name(), layout.binding);
+      VKR_EXEC_ERROR(
+          "FullscreenPass '{}' has an unsupported descriptor binding {}",
+          name(), layout.binding);
     }
   }
 }
@@ -258,8 +258,7 @@ void FullscreenPass::createDescriptors() {
   std::vector<pipeline::DescriptorBinding> bindings = desc_.descriptorBindings;
   bindings.reserve(desc_.descriptorBindings.size() + inputs.size());
 
-  for (size_t index = 0; index < inputs.size(); ++index) {
-    const auto &input = inputs[index];
+  for (const auto &input : inputs) {
     bindings.push_back(pipeline::DescriptorBinding{
         .layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                    input.stageFlags}});

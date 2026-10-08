@@ -9,60 +9,60 @@
 
 namespace vkr::exec {
 
-struct FramebufferDesc {
+struct FramebuffersDesc {
   uint32_t width{};
   uint32_t height{};
   uint32_t layers{1};
   std::vector<std::vector<VkImageView>> attachments{};
 
   auto extent(uint32_t framebufferWidth, uint32_t framebufferHeight) noexcept
-      -> FramebufferDesc & {
+      -> FramebuffersDesc & {
     width = framebufferWidth;
     height = framebufferHeight;
     return *this;
   }
 
-  auto layerCount(uint32_t count) noexcept -> FramebufferDesc & {
+  auto layerCount(uint32_t count) noexcept -> FramebuffersDesc & {
     layers = count;
     return *this;
   }
 
-  auto attachmentViews(std::vector<VkImageView> views) -> FramebufferDesc & {
+  auto attachmentViews(std::vector<VkImageView> views) -> FramebuffersDesc & {
     attachments.push_back(std::move(views));
     return *this;
   }
 
   auto attachmentViews(std::vector<std::vector<VkImageView>> views)
-      -> FramebufferDesc & {
+      -> FramebuffersDesc & {
     attachments = std::move(views);
     return *this;
   }
 
   [[nodiscard]] static auto single(uint32_t width, uint32_t height,
                                    std::vector<VkImageView> views)
-      -> FramebufferDesc {
-    FramebufferDesc desc{};
+      -> FramebuffersDesc {
+    FramebuffersDesc desc{};
     return desc.extent(width, height)
         .layerCount(1)
         .attachmentViews(std::move(views));
   }
 };
 
-class FramebufferSet {
+class Framebuffers {
 public:
-  explicit FramebufferSet(const core::Device &device,
-                          const pipeline::RenderPass &renderPass);
+  explicit Framebuffers(const core::Device &device,
+                        const pipeline::RenderPass &renderPass);
 
-  ~FramebufferSet();
+  ~Framebuffers();
 
-  FramebufferSet(const FramebufferSet &) = delete;
-  auto operator=(const FramebufferSet &) -> FramebufferSet & = delete;
+  Framebuffers(const Framebuffers &) = delete;
+  auto operator=(const Framebuffers &) -> Framebuffers & = delete;
 
   void create();
   void destroy();
-  void update(const FramebufferDesc &desc);
+  void update(const FramebuffersDesc &desc);
 
-  [[nodiscard]] auto desc() const noexcept -> const FramebufferDesc & {
+  [[nodiscard]] auto desc() const noexcept -> const FramebuffersDesc & {
     return desc_;
   }
 
@@ -75,11 +75,6 @@ public:
     return vk_framebuffers_.at(index);
   }
 
-  [[nodiscard]] auto renderPass() const noexcept
-      -> const pipeline::RenderPass & {
-    return render_pass_;
-  }
-
   [[nodiscard]] auto extent() const noexcept -> VkExtent2D {
     return {desc_.width, desc_.height};
   }
@@ -90,7 +85,7 @@ private:
   const pipeline::RenderPass &render_pass_;
 
   // components
-  FramebufferDesc desc_{};
+  FramebuffersDesc desc_{};
   std::vector<VkFramebuffer> vk_framebuffers_{};
 };
 

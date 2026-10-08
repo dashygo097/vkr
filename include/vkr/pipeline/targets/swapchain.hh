@@ -1,14 +1,13 @@
 #pragma once
 
-#include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
-#include "vkr/exec/render/attachments/depth.hh"
+#include "vkr/pipeline/attachments/depth.hh"
 #include "vkr/resource/image/image_view.hh"
 #include <optional>
 #include <utility>
 
-namespace vkr::exec {
+namespace vkr::pipeline {
 
 struct SwapchainTargetDesc {
   std::optional<DepthAttachmentDesc> depth{};
@@ -41,10 +40,8 @@ struct SwapchainTargetDesc {
 
 class SwapchainTarget {
 public:
-  SwapchainTarget(const core::Device &device,
-                  const core::CommandPool &commandPool,
-                  const core::Swapchain &swapchain);
-
+  explicit SwapchainTarget(const core::Device &device,
+                           const core::Swapchain &swapchain);
   ~SwapchainTarget();
 
   SwapchainTarget(const SwapchainTarget &) = delete;
@@ -109,7 +106,6 @@ public:
 private:
   // dependencies
   const core::Device &device_;
-  const core::CommandPool &command_pool_;
   const core::Swapchain &swapchain_;
 
   // components
@@ -119,4 +115,4 @@ private:
   std::unique_ptr<DepthAttachment> depth_;
 };
 
-} // namespace vkr::exec
+} // namespace vkr::pipeline
