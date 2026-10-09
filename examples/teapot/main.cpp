@@ -28,8 +28,8 @@ private:
 
   void buildGraph() override {
     auto desc = vkr::exec::RasterPassDesc::offscreen(
-        swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
-        VK_FORMAT_D32_SFLOAT, "teapot-local",
+        "teapot-local", swapchain->width(), swapchain->height(),
+        VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D32_SFLOAT,
         vkr::scene::VertexNormalTexture3D::vertexInputDesc());
     desc.uniform(0, VK_SHADER_STAGE_VERTEX_BIT)
         .texture(1, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -47,8 +47,8 @@ private:
         .texture(1, scene->texture("teapot_texture"));
 
     auto postDesc = vkr::exec::FullscreenPassDesc::postProcess(
-        swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
-        "postprocess");
+        "postprocess", swapchain->width(), swapchain->height(),
+        VK_FORMAT_R8G8B8A8_UNORM);
     postDesc.pipeline
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolve("shaders/postprocess/postprocess.vert")

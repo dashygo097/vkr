@@ -45,8 +45,8 @@ private:
 
   void buildGraph() override {
     auto skyboxDesc = vkr::exec::RasterPassDesc::offscreen(
-        swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
-        VK_FORMAT_D32_SFLOAT, "skybox",
+        "skybox", swapchain->width(), swapchain->height(),
+        VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D32_SFLOAT,
         vkr::scene::VertexSkybox3D::vertexInputDesc());
     skyboxDesc.uniform(0, VK_SHADER_STAGE_VERTEX_BIT)
         .texture(1, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -66,8 +66,8 @@ private:
         .texture(1, scene->cubemap("skybox"));
 
     auto cornellDesc = vkr::exec::RasterPassDesc::offscreen(
-        swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
-        VK_FORMAT_D32_SFLOAT, "cornellbox",
+        "cornellbox", swapchain->width(), swapchain->height(),
+        VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D32_SFLOAT,
         vkr::scene::Vertex3D::vertexInputDesc());
     cornellDesc.uniform(0, VK_SHADER_STAGE_VERTEX_BIT)
         .clearColor(0.0f, 0.0f, 0.0f, 0.0f)
@@ -89,8 +89,8 @@ private:
     cornellPass.uniform(0, scene->uniformBuffer("cornellbox"));
 
     auto compositeDesc = vkr::exec::FullscreenPassDesc::postProcess(
-        swapchain->width(), swapchain->height(), VK_FORMAT_R8G8B8A8_UNORM,
-        "skybox-cornell-composite");
+        "skybox-cornell-composite", swapchain->extent2D(),
+        VK_FORMAT_R8G8B8A8_UNORM);
     compositeDesc.pipeline
         .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
             assetSystem->resolveApp("shaders/composite/composite.vert")

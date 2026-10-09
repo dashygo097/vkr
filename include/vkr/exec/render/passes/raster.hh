@@ -84,10 +84,11 @@ struct RasterPassDesc {
     return *this;
   }
 
-  [[nodiscard]] static auto
-  offscreen(uint32_t width, uint32_t height, VkFormat colorFormat,
-            VkFormat depthFormat, std::string pipelineName,
-            scene::VertexInputDesc vertexInputDesc) -> RasterPassDesc {
+  [[nodiscard]] static auto offscreen(std::string pipelineName, uint32_t width,
+                                      uint32_t height, VkFormat colorFormat,
+                                      VkFormat depthFormat,
+                                      scene::VertexInputDesc vertexInputDesc)
+      -> RasterPassDesc {
     RasterPassDesc desc{};
     desc.target = pipeline::OffscreenTargetDesc::sampledColorDepth(
         width, height, colorFormat, depthFormat);
@@ -97,8 +98,17 @@ struct RasterPassDesc {
   }
 
   [[nodiscard]] static auto
-  shadowMap(uint32_t width, uint32_t height, VkFormat depthFormat,
-            std::string pipelineName, scene::VertexInputDesc vertexInputDesc,
+  offscreen(std::string pipelineName, VkExtent2D extent2D, VkFormat colorFormat,
+            VkFormat depthFormat, scene::VertexInputDesc vertexInputDesc)
+      -> RasterPassDesc {
+    return RasterPassDesc::offscreen(pipelineName, extent2D.width,
+                                     extent2D.height, colorFormat, depthFormat,
+                                     vertexInputDesc);
+  }
+
+  [[nodiscard]] static auto
+  shadowMap(std::string pipelineName, uint32_t width, uint32_t height,
+            VkFormat depthFormat, scene::VertexInputDesc vertexInputDesc,
             float depthBiasConstant = 1.25F, float depthBiasSlope = 1.75F,
             VkCullModeFlags shadowCullMode = VK_CULL_MODE_BACK_BIT,
             VkCompareOp compareOp = VK_COMPARE_OP_LESS) -> RasterPassDesc {
@@ -110,6 +120,18 @@ struct RasterPassDesc {
         depthBiasSlope, shadowCullMode, compareOp);
     desc.clearDepth();
     return desc;
+  }
+
+  [[nodiscard]] static auto
+  shadowMap(std::string pipelineName, VkExtent2D extent2D, VkFormat depthFormat,
+            scene::VertexInputDesc vertexInputDesc,
+            float depthBiasConstant = 1.25F, float depthBiasSlope = 1.75F,
+            VkCullModeFlags shadowCullMode = VK_CULL_MODE_BACK_BIT,
+            VkCompareOp compareOp = VK_COMPARE_OP_LESS) -> RasterPassDesc {
+    return RasterPassDesc::shadowMap(pipelineName, extent2D.width,
+                                     extent2D.height, depthFormat,
+                                     vertexInputDesc, depthBiasConstant,
+                                     depthBiasSlope, shadowCullMode, compareOp);
   }
 };
 

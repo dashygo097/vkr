@@ -8,24 +8,6 @@
 
 namespace vkr::exec {
 
-auto RenderAppDesc::windowed(std::string appName, std::string windowTitle,
-                             uint32_t width, uint32_t height,
-                             uint32_t framesInFlight) -> RenderAppDesc {
-  RenderAppDesc desc{};
-  desc.window = {
-      .title = std::move(windowTitle),
-      .width = width,
-      .height = height,
-  };
-  desc.instance = {
-      .name = std::move(appName),
-      .version = VK_MAKE_VERSION(1, 0, 0),
-      .surfaceIntegration = core::SurfaceIntegration::GLFW,
-  };
-  desc.commandBuffers.size = framesInFlight;
-  return desc;
-}
-
 void RenderApplication::run() {
   initVulkan();
 
@@ -36,51 +18,6 @@ void RenderApplication::run() {
     device->waitIdle();
     saveSnapshot();
     throw;
-  }
-}
-
-void RenderApplication::loadSnapshot() {
-  const auto path = snapshotPath();
-
-  if (!std::filesystem::exists(path)) {
-    VKR_UTIL_INFO("snapshot not found, using default config: {}",
-                  path.string());
-    return;
-  }
-
-  if (!vkr::util::loadTomlFile(path, ctx)) {
-    VKR_UTIL_WARN("failed to load snapshot, using default config: {}",
-                  path.string());
-  }
-}
-
-auto RenderApplication::ui() -> ui::UI & {
-  if (!ui_) {
-    VKR_EXEC_ERROR("UI requested before initialization");
-  }
-  return ui_->get();
-}
-
-auto RenderApplication::ui() const -> const ui::UI & {
-  if (!ui_) {
-    VKR_EXEC_ERROR("UI requested before initialization");
-  }
-  return ui_->get();
-}
-
-void RenderApplication::saveSnapshot() {
-  if (camera && camera->valid()) {
-    ctx.camera = camera->desc();
-  }
-  if (ui_) {
-    ctx.ui = ui().desc();
-    ctx.ui.layoutMode = ui().layoutMode();
-    ctx.ui.theme = ui().theme();
-  }
-  const auto path = snapshotPath();
-
-  if (!vkr::util::saveTomlFile(path, ctx)) {
-    VKR_UTIL_WARN("failed to save snapshot: {}", path.string());
   }
 }
 
@@ -266,6 +203,51 @@ void RenderApplication::recreateSwapchain() {
   graph->compile();
   graph->create();
   ui_ = uiPass.ui();
+}
+
+void RenderApplication::loadSnapshot() {
+  const auto path = snapshotPath();
+
+  if (!std::filesystem::exists(path)) {
+    VKR_UTIL_INFO("snapshot not found, using default config: {}",
+                  path.string());
+    return;
+  }
+
+  if (!vkr::util::loadTomlFile(path, ctx)) {
+    VKR_UTIL_WARN("failed to load snapshot, using default config: {}",
+                  path.string());
+  }
+}
+
+auto RenderApplication::ui() -> ui::UI & {
+  if (!ui_) {
+    VKR_EXEC_ERROR("UI requested before initialization");
+  }
+  return ui_->get();
+}
+
+auto RenderApplication::ui() const -> const ui::UI & {
+  if (!ui_) {
+    VKR_EXEC_ERROR("UI requested before initialization");
+  }
+  return ui_->get();
+}
+
+void RenderApplication::saveSnapshot() {
+  if (camera && camera->valid()) {
+    ctx.camera = camera->desc();
+  }
+  if (ui_) {
+    ctx.ui = ui().desc();
+    ctx.ui.layoutMode = ui().layoutMode();
+    ctx.ui.theme = ui().theme();
+  }
+  const auto path = snapshotPath();
+
+  if (!vkr::util::saveTomlFile(path, ctx)) {
+    VKR_UTIL_WARN("failed to save snapshot: {}", path.string());
+  }
 }
 
 } // namespace vkr::exec

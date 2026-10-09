@@ -88,6 +88,12 @@ struct FullscreenPassDesc {
     return desc;
   }
 
+  [[nodiscard]] static auto offscreen(VkExtent2D extent2D, VkFormat format)
+      -> FullscreenPassDesc {
+    return FullscreenPassDesc::offscreen(extent2D.width, extent2D.height,
+                                         format);
+  }
+
   [[nodiscard]] static auto sampledOffscreen(uint32_t width, uint32_t height,
                                              VkFormat format)
       -> FullscreenPassDesc {
@@ -98,10 +104,16 @@ struct FullscreenPassDesc {
     return desc;
   }
 
-  [[nodiscard]] static auto postProcess(uint32_t width, uint32_t height,
-                                        VkFormat format,
-                                        std::string pipelineName)
+  [[nodiscard]] static auto sampledOffscreen(VkExtent2D extent2D,
+                                             VkFormat format)
       -> FullscreenPassDesc {
+    return FullscreenPassDesc::sampledOffscreen(extent2D.width, extent2D.height,
+                                                format);
+  }
+
+  [[nodiscard]] static auto postProcess(std::string pipelineName,
+                                        uint32_t width, uint32_t height,
+                                        VkFormat format) -> FullscreenPassDesc {
     FullscreenPassDesc desc{};
     desc.target =
         pipeline::OffscreenTargetDesc::sampledColorOnly(width, height, format);
@@ -109,6 +121,13 @@ struct FullscreenPassDesc {
         pipeline::GraphicsPipelineDesc::fullscreen(std::move(pipelineName));
     desc.clearColor(0.0F, 0.0F, 0.0F, 1.0F);
     return desc;
+  }
+
+  [[nodiscard]] static auto postProcess(std::string pipelineName,
+                                        VkExtent2D extent2D, VkFormat format)
+      -> FullscreenPassDesc {
+    return FullscreenPassDesc::postProcess(pipelineName, extent2D.width,
+                                           extent2D.height, format);
   }
 };
 

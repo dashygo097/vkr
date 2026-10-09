@@ -132,8 +132,8 @@ private:
     const auto fallback = fallbackChannels(std::nullopt, sourceChannels);
 
     auto desc = vkr::exec::FullscreenPassDesc::postProcess(
-        swapchain->width(), swapchain->height(), VK_FORMAT_R16G16B16A16_SFLOAT,
-        "shadertoy.image");
+        "shadertoy.image", swapchain->width(), swapchain->height(),
+        VK_FORMAT_R16G16B16A16_SFLOAT);
 
     desc.uniform(0);
     for (uint32_t channel : fallback) {

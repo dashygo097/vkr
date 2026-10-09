@@ -67,6 +67,10 @@ public:
     return desc_.height;
   }
 
+  [[nodiscard]] auto extent2D() const noexcept -> VkExtent2D {
+    return {desc_.width, desc_.height};
+  }
+
   [[nodiscard]] auto imageCount() const noexcept -> size_t {
     return desc_.imageCount;
   }

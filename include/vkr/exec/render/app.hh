@@ -41,7 +41,22 @@ struct RenderAppDesc {
 
   [[nodiscard]] static auto
   windowed(std::string appName, std::string windowTitle, uint32_t width = 1200,
-           uint32_t height = 900, uint32_t framesInFlight = 2) -> RenderAppDesc;
+           uint32_t height = 900, uint32_t framesInFlight = 2)
+      -> RenderAppDesc {
+    RenderAppDesc desc{};
+    desc.window = {
+        .title = std::move(windowTitle),
+        .width = width,
+        .height = height,
+    };
+    desc.instance = {
+        .name = std::move(appName),
+        .version = VK_MAKE_VERSION(1, 0, 0),
+        .surfaceIntegration = core::SurfaceIntegration::GLFW,
+    };
+    desc.commandBuffers.size = framesInFlight;
+    return desc;
+  }
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     return asset.isValid() && window.isValid() && instance.isValid() &&
