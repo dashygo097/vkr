@@ -2,6 +2,7 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/util/compiler.hh"
+#include <filesystem>
 
 namespace vkr::resource {
 
@@ -28,11 +29,11 @@ struct ShaderModuleDesc {
     return desc;
   }
 
-  [[nodiscard]] static auto spirvFile(const std::string &path)
+  [[nodiscard]] static auto spirvFile(const std::filesystem::path &path)
       -> ShaderModuleDesc {
     ShaderModuleDesc desc{};
     desc.sourceKind = ShaderModuleSourceKind::SpirvFile;
-    desc.spirvPath = path;
+    desc.spirvPath = path.string();
     return desc;
   }
 
@@ -68,27 +69,27 @@ struct ShaderModuleDesc {
     return desc;
   }
 
-  [[nodiscard]] static auto vertexGlslFile(const std::string &path)
+  [[nodiscard]] static auto vertexGlslFile(const std::filesystem::path &path)
       -> ShaderModuleDesc {
-    return glsl(
-        util::GlslCompileDesc::glslFile(shaderc_glsl_vertex_shader, path));
+    return glsl(util::GlslCompileDesc::glslFile(
+        shaderc_glsl_vertex_shader, path.string()));
   }
 
-  [[nodiscard]] static auto fragmentGlslFile(const std::string &path)
+  [[nodiscard]] static auto fragmentGlslFile(const std::filesystem::path &path)
       -> ShaderModuleDesc {
-    return glsl(
-        util::GlslCompileDesc::glslFile(shaderc_glsl_fragment_shader, path));
+    return glsl(util::GlslCompileDesc::glslFile(
+        shaderc_glsl_fragment_shader, path.string()));
   }
 
-  [[nodiscard]] static auto computeGlslFile(const std::string &path)
+  [[nodiscard]] static auto computeGlslFile(const std::filesystem::path &path)
       -> ShaderModuleDesc {
-    return glsl(
-        util::GlslCompileDesc::glslFile(shaderc_glsl_compute_shader, path));
+    return glsl(util::GlslCompileDesc::glslFile(
+        shaderc_glsl_compute_shader, path.string()));
   }
 
-  [[nodiscard]] static auto computeSlangFile(const std::string &path)
+  [[nodiscard]] static auto computeSlangFile(const std::filesystem::path &path)
       -> ShaderModuleDesc {
-    return slang(util::SlangCompileDesc::computeFile(path));
+    return slang(util::SlangCompileDesc::computeFile(path.string()));
   }
 
   [[nodiscard]] static auto

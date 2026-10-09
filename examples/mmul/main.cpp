@@ -9,6 +9,9 @@
 #include <vector>
 #include <vkr.hh>
 
+using namespace vkr::exec;
+using namespace vkr::resource;
+
 namespace {
 
 constexpr uint32_t M{1U << 10};
@@ -53,14 +56,14 @@ auto timingStats(std::vector<double> samples) -> TimingStats {
 
 } // namespace
 
-class MMulApplication final : public vkr::exec::ComputeApplication {
+class MMulApplication final : public ComputeApplication {
   std::vector<float> A_{};
   std::vector<float> B_{};
   std::vector<float> C_{};
-  std::unique_ptr<vkr::resource::StorageBuffer<float>> input_A_{};
-  std::unique_ptr<vkr::resource::StorageBuffer<float>> input_B_{};
-  std::unique_ptr<vkr::resource::StorageBuffer<float>> output_C_{};
-  std::unique_ptr<vkr::resource::UniformBuffer<MMulParams>> params_{};
+  std::unique_ptr<StorageBuffer<float>> input_A_{};
+  std::unique_ptr<StorageBuffer<float>> input_B_{};
+  std::unique_ptr<StorageBuffer<float>> output_C_{};
+  std::unique_ptr<UniformBuffer<MMulParams>> params_{};
 
   void createResources() override {
     A_.resize(M * K);
@@ -79,7 +82,7 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
       }
     }
 
-    vkr::resource::StorageBufferDesc descA{}, descB{}, descC{};
+    StorageBufferDesc descA{}, descB{}, descC{};
     descA.elements(M * K)
         .hostVisible()
         .storage()
@@ -101,17 +104,10 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
         .transfer()
         .mapped();
 
-    input_A_ =
-        std::make_unique<vkr::resource::StorageBuffer<float>>(*device, descA);
-
-    input_B_ =
-        std::make_unique<vkr::resource::StorageBuffer<float>>(*device, descB);
-
-    output_C_ =
-        std::make_unique<vkr::resource::StorageBuffer<float>>(*device, descC);
-
-    params_ =
-        std::make_unique<vkr::resource::UniformBuffer<MMulParams>>(*device);
+    input_A_ = std::make_unique<StorageBuffer<float>>(device(), descA);
+    input_B_ = std::make_unique<StorageBuffer<float>>(device(), descB);
+    output_C_ = std::make_unique<StorageBuffer<float>>(device(), descC);
+    params_ = std::make_unique<UniformBuffer<MMulParams>>(device());
 
     input_A_->write(A_);
     input_B_->write(B_);
@@ -120,22 +116,21 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
   }
 
   void buildGraph() override {
-    vkr::exec::ComputePassDesc passDesc{};
+    ComputePassDesc passDesc{};
     passDesc.storage(0)
         .storage(1)
         .storage(2)
         .uniform(3)
-        .shader("mmul",
+        .shader(
+            "mmul",
 #ifdef VKR_HAS_SLANG
-                vkr::resource::ShaderModuleDesc::computeSlangFile(
-                    assetSystem->resolveApp("shaders/mmul.slang").string()))
+            ShaderModuleDesc::computeSlangFile(resolve("shaders/mmul.slang")))
 #else
-                vkr::resource::ShaderModuleDesc::computeGlslFile(
-                    assetSystem->resolveApp("shaders/mmul.comp").string()))
+            ShaderModuleDesc::computeGlslFile(resolve("shaders/mmul.comp")))
 #endif
         .dispatch2D(LocalSize, M, LocalSize, N);
 
-    auto &pass = graph->addPass<vkr::exec::ComputePass>(*executor, *device);
+    auto &pass = graph().addPass<ComputePass>(executor(), device());
     pass.setName("mmul")
         .setReads({"input_A", "input_B"})
         .setWrites({"output_C"});
@@ -146,7 +141,7 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
         .uniform(3, *params_);
   }
 
-  void afterExecute() override {
+  void afterExecute(const ProfileReport &report) override {
     output_C_->read(C_);
 
     std::vector<float> cpuResult(M * N, 0.0f);
@@ -165,10 +160,10 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
     std::vector<double> cpuSamples{};
     cpuSamples.reserve(MeasuredRuns);
     for (uint32_t i = 0; i < MeasuredRuns; ++i) {
-      timer->reset();
+      timer().reset();
       runCpuMMul();
-      timer->update();
-      cpuSamples.push_back(timer->elapsedMilliseconds());
+      timer().update();
+      cpuSamples.push_back(timer().elapsedMilliseconds());
     }
 
     const auto cpuStats = timingStats(cpuSamples);
@@ -189,15 +184,11 @@ class MMulApplication final : public vkr::exec::ComputeApplication {
               << " ms, median=" << cpuStats.medianMs
               << " ms, max=" << cpuStats.maxMs << " ms\n";
 
-    const vkr::exec::ProfileSample *gpuSample = nullptr;
-    for (const auto &sample : profileReport.gpuSamples) {
-      if (sample.name == "mmul") {
-        gpuSample = &sample;
-        break;
-      }
-    }
+    const auto gpuSample = std::find_if(
+        report.gpuSamples.begin(), report.gpuSamples.end(),
+        [](const ProfileSample &sample) { return sample.name == "mmul"; });
 
-    if (gpuSample != nullptr && gpuSample->milliseconds > 0.0) {
+    if (gpuSample != report.gpuSamples.end() && gpuSample->milliseconds > 0.0) {
       std::cout << "gpu dispatch:   min=" << gpuSample->minMilliseconds
                 << " ms, mean=" << gpuSample->milliseconds
                 << " ms, median=" << gpuSample->medianMilliseconds

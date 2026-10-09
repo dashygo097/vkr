@@ -6,13 +6,13 @@ namespace vkr::exec {
 void ComputeApplication::run() {
   initCompute();
   try {
-    profileReport = execute(true);
+    const auto report = execute(true);
     if (ctx.profiler.logReport) {
-      profileReport.log();
+      report.log();
     }
-    afterExecute();
+    afterExecute(report);
   } catch (...) {
-    device->waitIdle();
+    device_->waitIdle();
     throw;
   }
 }
@@ -34,19 +34,19 @@ void ComputeApplication::benchmark(uint32_t warmupRuns, uint32_t measuredRuns) {
       captures.push_back(execute(true));
     }
 
-    profileReport = ProfileReport::aggregate(captures);
+    const auto report = ProfileReport::aggregate(captures);
     if (ctx.profiler.logReport) {
-      profileReport.log();
+      report.log();
     }
-    afterExecute();
+    afterExecute(report);
   } catch (...) {
-    device->waitIdle();
+    device_->waitIdle();
     throw;
   }
 }
 
 void ComputeApplication::initCompute() {
-  if (instance) {
+  if (instance_) {
     VKR_EXEC_ERROR("ComputeApplication has already been initialized");
   }
 
@@ -59,62 +59,62 @@ void ComputeApplication::initCompute() {
     VKR_CORE_ERROR("invalid compute app config");
   }
 
-  assetSystem = std::make_unique<util::AssetSystem>(ctx.asset);
-  timer = std::make_unique<util::Timer>();
+  asset_system_ = std::make_unique<util::AssetSystem>(ctx.asset);
+  timer_ = std::make_unique<util::Timer>();
 
-  instance = std::make_unique<core::Instance>(ctx.instance);
-  device = std::make_unique<core::Device>(*instance, ctx.device);
-  if (!device->supportsCompute()) {
+  instance_ = std::make_unique<core::Instance>(ctx.instance);
+  device_ = std::make_unique<core::Device>(*instance_, ctx.device);
+  if (!device_->supportsCompute()) {
     VKR_CORE_ERROR("compute application requires compute queue support");
   }
 
-  commandPool = std::make_unique<core::CommandPool>(*device, ctx.commandPool);
-  profiler = std::make_unique<Profiler>(*device, *commandPool, ctx.profiler);
-  executor = std::make_unique<ComputeExecutor>(*device, *commandPool);
+  command_pool_ = std::make_unique<core::CommandPool>(*device_, ctx.commandPool);
+  profiler_ = std::make_unique<Profiler>(*device_, *command_pool_, ctx.profiler);
+  executor_ = std::make_unique<ComputeExecutor>(*device_, *command_pool_);
 
   createResources();
 
-  graph = std::make_unique<ComputeGraph>();
+  graph_ = std::make_unique<ComputeGraph>();
   buildGraph();
-  graph->compile();
-  graph->create();
+  graph_->compile();
+  graph_->create();
 }
 
 auto ComputeApplication::execute(bool capture) -> ProfileReport {
   if (capture) {
-    executor->setProfiler(*profiler);
+    executor_->setProfiler(*profiler_);
   } else {
-    executor->clearProfiler();
+    executor_->clearProfiler();
   }
 
-  executor->begin();
+  executor_->begin();
   if (capture) {
-    timer->reset();
+    timer_->reset();
   }
-  executor->beginProfileScope("compute_graph");
-  graph->record();
-  executor->endProfileScope();
+  executor_->beginProfileScope("compute_graph");
+  graph_->record();
+  executor_->endProfileScope();
 
   double recordMs = 0.0;
   if (capture) {
-    timer->update();
-    recordMs = timer->elapsedMilliseconds();
-    timer->reset();
+    timer_->update();
+    recordMs = timer_->elapsedMilliseconds();
+    timer_->reset();
   }
 
-  executor->submitAndWait();
+  executor_->submitAndWait();
   double submitWaitMs = 0.0;
   if (capture) {
-    timer->update();
-    submitWaitMs = timer->elapsedMilliseconds();
+    timer_->update();
+    submitWaitMs = timer_->elapsedMilliseconds();
   }
-  executor->end();
+  executor_->end();
 
   if (!capture) {
     return {};
   }
 
-  auto report = profiler->collect();
+  auto report = profiler_->collect();
   report.cpuSamples.push_back(ProfileSample{
       .name = "compute_graph.record",
       .milliseconds = recordMs,

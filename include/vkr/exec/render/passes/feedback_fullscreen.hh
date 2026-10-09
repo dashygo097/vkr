@@ -89,8 +89,8 @@ struct FeedbackFullscreenPassDesc {
     return *this;
   }
 
-  [[nodiscard]] static auto feedback(uint32_t width, uint32_t height,
-                                     VkFormat format, std::string pipelineName)
+  [[nodiscard]] static auto feedback(std::string pipelineName, uint32_t width,
+                                     uint32_t height, VkFormat format)
       -> FeedbackFullscreenPassDesc {
     FeedbackFullscreenPassDesc desc{};
     desc.target.target =
@@ -99,6 +99,13 @@ struct FeedbackFullscreenPassDesc {
         pipeline::GraphicsPipelineDesc::fullscreen(std::move(pipelineName));
     desc.clearColor(0.0F, 0.0F, 0.0F, 1.0F);
     return desc;
+  }
+
+  [[nodiscard]] static auto feedback(std::string pipelineName,
+                                     VkExtent2D extent2D, VkFormat format)
+      -> FeedbackFullscreenPassDesc {
+    return FeedbackFullscreenPassDesc::feedback(pipelineName, extent2D.width,
+                                                extent2D.height, format);
   }
 };
 

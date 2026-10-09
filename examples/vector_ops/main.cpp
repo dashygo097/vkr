@@ -9,6 +9,9 @@
 #include <vector>
 #include <vkr.hh>
 
+using namespace vkr::exec;
+using namespace vkr::resource;
+
 namespace {
 
 constexpr uint32_t ElementCount = 1U << 18U;
@@ -66,15 +69,15 @@ auto nonlinearOp(float a, float b, uint32_t iterations) -> float {
 
 } // namespace
 
-class VectorOpsApp final : public vkr::exec::ComputeApplication {
+class VectorOpsApp final : public ComputeApplication {
 private:
   std::vector<float> a_{};
   std::vector<float> b_{};
   std::vector<float> c_{};
-  std::unique_ptr<vkr::resource::StorageBuffer<float>> input_a_{};
-  std::unique_ptr<vkr::resource::StorageBuffer<float>> input_b_{};
-  std::unique_ptr<vkr::resource::StorageBuffer<float>> output_c_{};
-  std::unique_ptr<vkr::resource::UniformBuffer<VectorOpsParams>> params_{};
+  std::unique_ptr<StorageBuffer<float>> input_a_{};
+  std::unique_ptr<StorageBuffer<float>> input_b_{};
+  std::unique_ptr<StorageBuffer<float>> output_c_{};
+  std::unique_ptr<UniformBuffer<VectorOpsParams>> params_{};
 
   void createResources() override {
     a_.resize(ElementCount);
@@ -86,7 +89,7 @@ private:
       b_[i] = static_cast<float>(ElementCount - i);
     }
 
-    auto inputDesc = vkr::resource::StorageBufferDesc{};
+    auto inputDesc = StorageBufferDesc{};
     inputDesc.reserve(ElementCount)
         .readonly()
         .storage()
@@ -94,7 +97,7 @@ private:
         .hostVisible()
         .mapped();
 
-    auto outputDesc = vkr::resource::StorageBufferDesc{};
+    auto outputDesc = StorageBufferDesc{};
     outputDesc.reserve(ElementCount)
         .writeonly()
         .storage()
@@ -102,14 +105,10 @@ private:
         .hostVisible()
         .mapped();
 
-    input_a_ = std::make_unique<vkr::resource::StorageBuffer<float>>(*device,
-                                                                     inputDesc);
-    input_b_ = std::make_unique<vkr::resource::StorageBuffer<float>>(*device,
-                                                                     inputDesc);
-    output_c_ = std::make_unique<vkr::resource::StorageBuffer<float>>(
-        *device, outputDesc);
-    params_ = std::make_unique<vkr::resource::UniformBuffer<VectorOpsParams>>(
-        *device);
+    input_a_ = std::make_unique<StorageBuffer<float>>(device(), inputDesc);
+    input_b_ = std::make_unique<StorageBuffer<float>>(device(), inputDesc);
+    output_c_ = std::make_unique<StorageBuffer<float>>(device(), outputDesc);
+    params_ = std::make_unique<UniformBuffer<VectorOpsParams>>(device());
 
     input_a_->write(a_);
     input_b_->write(b_);
@@ -118,23 +117,22 @@ private:
   }
 
   void buildGraph() override {
-    vkr::exec::ComputePassDesc passDesc{};
+    ComputePassDesc passDesc{};
     passDesc.storage(0)
         .storage(1)
         .storage(2)
         .uniform(3)
-        .shader(
-            "vector_ops",
+        .shader("vector_ops",
 #ifdef VKR_HAS_SLANG
-            vkr::resource::ShaderModuleDesc::computeSlangFile(
-                assetSystem->resolveApp("shaders/vector_ops.slang").string()))
+                ShaderModuleDesc::computeSlangFile(
+                    resolve("shaders/vector_ops.slang")))
 #else
-            vkr::resource::ShaderModuleDesc::computeGlslFile(
-                assetSystem->resolveApp("shaders/vector_ops.comp").string()))
+                ShaderModuleDesc::computeGlslFile(
+                    resolve("shaders/vector_ops.comp")))
 #endif
         .dispatch1D(LocalSize, ElementCount);
 
-    auto &pass = graph->addPass<vkr::exec::ComputePass>(*executor, *device);
+    auto &pass = graph().addPass<ComputePass>(executor(), device());
     pass.setName("vector_ops")
         .setReads({"input_a", "input_b"})
         .setWrites({"output_c"});
@@ -145,7 +143,7 @@ private:
         .uniform(3, *params_);
   }
 
-  void afterExecute() override {
+  void afterExecute(const ProfileReport &report) override {
     output_c_->read(c_);
 
     std::vector<float> cpuResult(ElementCount, 0.0f);
@@ -162,10 +160,10 @@ private:
     std::vector<double> cpuSamples{};
     cpuSamples.reserve(MeasuredRuns);
     for (uint32_t i = 0; i < MeasuredRuns; ++i) {
-      timer->reset();
+      timer().reset();
       runCpuVectorOps();
-      timer->update();
-      cpuSamples.push_back(timer->elapsedMilliseconds());
+      timer().update();
+      cpuSamples.push_back(timer().elapsedMilliseconds());
     }
 
     const auto cpuStats = timingStats(cpuSamples);
@@ -187,15 +185,11 @@ private:
               << " ms, median=" << cpuStats.medianMs
               << " ms, max=" << cpuStats.maxMs << " ms\n";
 
-    const vkr::exec::ProfileSample *gpuSample = nullptr;
-    for (const auto &sample : profileReport.gpuSamples) {
-      if (sample.name == "vector_ops") {
-        gpuSample = &sample;
-        break;
-      }
-    }
+    const auto gpuSample = std::find_if(
+        report.gpuSamples.begin(), report.gpuSamples.end(),
+        [](const ProfileSample &sample) { return sample.name == "vector_ops"; });
 
-    if (gpuSample != nullptr && gpuSample->milliseconds > 0.0) {
+    if (gpuSample != report.gpuSamples.end() && gpuSample->milliseconds > 0.0) {
       std::cout << "gpu dispatch:   min=" << gpuSample->minMilliseconds
                 << " ms, mean=" << gpuSample->milliseconds
                 << " ms, median=" << gpuSample->medianMilliseconds

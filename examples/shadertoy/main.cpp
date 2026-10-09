@@ -9,6 +9,11 @@
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
+using namespace vkr::exec;
+using namespace vkr::resource;
+using namespace vkr::scene;
+using namespace vkr::pipeline;
+
 namespace {
 
 struct UniformBufferShaderToyObject {
@@ -25,7 +30,7 @@ struct UniformBufferShaderToyObject {
 
 } // namespace
 
-class ShaderToyApp : public vkr::exec::RenderApplication {
+class ShaderToyApp : public RenderApplication {
 private:
   static constexpr uint32_t kShaderToyChannelCount = 4;
   static constexpr std::string_view kShaderToyUniformName{"shadertoy"};
@@ -34,13 +39,13 @@ private:
   uint64_t shadertoy_pipeline_revision_{0};
   uint64_t shadertoy_frame_offset_{0};
   float shadertoy_time_offset_{0.0f};
-  std::vector<std::reference_wrapper<vkr::exec::GraphicsPipelineCapability>>
+  std::vector<std::reference_wrapper<GraphicsPipelineCapability>>
       shader_pipelines_{};
 
   glm::vec4 shadertoyMouse() const {
     const auto mousePosition = viewportMousePosition();
     const bool mouseDown =
-        inputTracer->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
+        inputTracer().isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
 
     return {mousePosition.x, mousePosition.y,
             mouseDown ? mousePosition.x : 0.0f,
@@ -48,8 +53,8 @@ private:
   }
 
   [[nodiscard]] static auto channelInput(uint32_t channel)
-      -> vkr::exec::RenderPassInputDesc {
-    return vkr::exec::RenderPassInputDesc::color(1U + channel);
+      -> RenderPassInputDesc {
+    return RenderPassInputDesc::color(1U + channel);
   }
 
   [[nodiscard]] static auto hasChannel(const std::vector<uint32_t> &channels,
@@ -87,15 +92,13 @@ private:
 
   [[nodiscard]] auto shadertoyPipeline(const std::string &name,
                                        const std::string &fragmentShader) const
-      -> vkr::pipeline::GraphicsPipelineDesc {
-    auto pipeline = vkr::pipeline::GraphicsPipelineDesc::fullscreen(name);
+      -> GraphicsPipelineDesc {
+    auto pipeline = GraphicsPipelineDesc::fullscreen(name);
     pipeline
-        .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
-            assetSystem->resolveApp("shaders/shadertoy/shadertoy.vert")
-                .string()))
-        .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-            assetSystem->resolveApp("shaders/shadertoy/" + fragmentShader)
-                .string()));
+        .vertexShader(ShaderModuleDesc::vertexGlslFile(
+            resolve("shaders/shadertoy/shadertoy.vert")))
+        .fragmentShader(ShaderModuleDesc::fragmentGlslFile(
+            resolve("shaders/shadertoy/" + fragmentShader)));
     return pipeline;
   }
 
@@ -103,12 +106,11 @@ private:
                                   const std::string &fragmentShader,
                                   std::optional<uint32_t> historyChannel,
                                   const std::vector<uint32_t> &sourceChannels)
-      -> vkr::exec::FeedbackFullscreenPassDesc {
+      -> FeedbackFullscreenPassDesc {
     const auto fallback = fallbackChannels(historyChannel, sourceChannels);
 
-    auto desc = vkr::exec::FeedbackFullscreenPassDesc::feedback(
-        swapchain->width(), swapchain->height(), VK_FORMAT_R16G16B16A16_SFLOAT,
-        name);
+    auto desc = FeedbackFullscreenPassDesc::feedback(
+        name, swapchain().extent2D(), VK_FORMAT_R16G16B16A16_SFLOAT);
 
     desc.uniform(0);
     for (uint32_t channel : fallback) {
@@ -128,12 +130,12 @@ private:
   }
 
   [[nodiscard]] auto imageDesc(const std::vector<uint32_t> &sourceChannels)
-      -> vkr::exec::FullscreenPassDesc {
+      -> FullscreenPassDesc {
     const auto fallback = fallbackChannels(std::nullopt, sourceChannels);
 
-    auto desc = vkr::exec::FullscreenPassDesc::postProcess(
-        "shadertoy.image", swapchain->width(), swapchain->height(),
-        VK_FORMAT_R16G16B16A16_SFLOAT);
+    auto desc = FullscreenPassDesc::postProcess("shadertoy.image",
+                                                swapchain().extent2D(),
+                                                VK_FORMAT_R16G16B16A16_SFLOAT);
 
     desc.uniform(0);
     for (uint32_t channel : fallback) {
@@ -151,15 +153,15 @@ private:
   template <typename PassT>
   void bindChannels(PassT &pass, std::optional<uint32_t> historyChannel,
                     const std::vector<uint32_t> &sourceChannels) {
-    pass.uniform(0, scene->uniformBuffer(kShaderToyUniformName));
+    pass.uniform(0, scene().uniformBuffer(kShaderToyUniformName));
     for (uint32_t channel : fallbackChannels(historyChannel, sourceChannels)) {
       pass.texture(channelInput(channel).binding,
-                   scene->texture(kFallbackTextureName));
+                   scene().texture(kFallbackTextureName));
     }
   }
 
   [[nodiscard]] auto viewportMousePosition() const -> glm::vec2 {
-    const auto cursor = inputTracer->cursorPosition();
+    const auto cursor = inputTracer().cursorPosition();
 
     if (ui().layoutMode() == vkr::ui::LayoutMode::FullScreen) {
       return {static_cast<float>(cursor.x),
@@ -210,42 +212,42 @@ private:
   }
 
   void createResources() override {
-    scene->createUniformBuffer<UniformBufferShaderToyObject>(
+    scene().createUniformBuffer<UniformBufferShaderToyObject>(
         std::string(kShaderToyUniformName), {});
-    scene->createTexture(
+    scene().createTexture(
         std::string(kFallbackTextureName),
-        vkr::scene::TextureDesc::sampled2D(1, 1, VK_FORMAT_R8G8B8A8_UNORM));
+        TextureDesc::sampled2D(1, 1, VK_FORMAT_R8G8B8A8_UNORM));
   }
 
   void buildGraph() override {
     shader_pipelines_.clear();
-    auto &bufferA = graph->feedback(
+    auto &bufferA = graph().feedback(
         "buffer.a", {},
         feedbackDesc("shadertoy.buffer.a", "buffer_a.frag", 0, {}));
 
-    auto &bufferB = graph->feedback(
+    auto &bufferB = graph().feedback(
         "buffer.b", {bufferA},
         feedbackDesc("shadertoy.buffer.b", "buffer_b.frag", 1, {0}));
 
-    auto &bufferC = graph->feedback(
+    auto &bufferC = graph().feedback(
         "buffer.c", {bufferA, bufferB},
         feedbackDesc("shadertoy.buffer.c", "buffer_c.frag", 2, {0, 1}));
 
-    auto &bufferD = graph->feedback(
+    auto &bufferD = graph().feedback(
         "buffer.d", {bufferA, bufferB, bufferC},
         feedbackDesc("shadertoy.buffer.d", "buffer_d.frag", 3, {0, 1, 2}));
 
-    auto &imagePass = graph->fullscreen(
+    auto &imagePass = graph().fullscreen(
         "image", {bufferA, bufferB, bufferC, bufferD}, imageDesc({0, 1, 2, 3}));
     bindChannels(bufferA, 0, {});
     bindChannels(bufferB, 1, {0});
     bindChannels(bufferC, 2, {0, 1});
     bindChannels(bufferD, 3, {0, 1, 2});
     bindChannels(imagePass, std::nullopt, {0, 1, 2, 3});
-    graph->present(imagePass);
-    for (const auto &pass : graph->passes()) {
+    graph().present(imagePass);
+    for (const auto &pass : graph().passes()) {
       const auto capability =
-          pass.get().capability<vkr::exec::GraphicsPipelineCapability>();
+          pass.get().capability<GraphicsPipelineCapability>();
       if (capability) {
         shader_pipelines_.emplace_back(capability->get());
       }
@@ -253,31 +255,31 @@ private:
   }
 
   void onDraw() override {
-    auto &shadertoyUBO = scene->uniformBuffer<UniformBufferShaderToyObject>(
+    auto &shadertoyUBO = scene().uniformBuffer<UniformBufferShaderToyObject>(
         kShaderToyUniformName);
 
     const uint64_t revision = shadertoyPipelineRevision();
     if (revision != shadertoy_pipeline_revision_) {
       shadertoy_pipeline_revision_ = revision;
-      shadertoy_frame_offset_ = timer->frameCount();
-      shadertoy_time_offset_ = timer->elapsedTime();
+      shadertoy_frame_offset_ = timer().frameCount();
+      shadertoy_time_offset_ = timer().elapsedTime();
     }
 
     std::time_t t = std::time(nullptr);
     std::tm *now = std::localtime(&t);
-    const uint64_t frameCount = timer->frameCount();
+    const uint64_t frameCount = timer().frameCount();
     const uint64_t shadertoyFrame = frameCount >= shadertoy_frame_offset_
                                         ? frameCount - shadertoy_frame_offset_
                                         : 0;
-    const float shadertoyTime = timer->elapsedTime() - shadertoy_time_offset_;
+    const float shadertoyTime = timer().elapsedTime() - shadertoy_time_offset_;
 
     UniformBufferShaderToyObject ubo{};
     ubo.iResolution = glm::vec3(static_cast<float>(ctx.window.width),
                                 static_cast<float>(ctx.window.height),
                                 static_cast<float>(ctx.window.ratio()));
     ubo.iTime = shadertoyTime;
-    ubo.iTimeDelta = timer->deltaTime();
-    ubo.iFrameRate = timer->fps();
+    ubo.iTimeDelta = timer().deltaTime();
+    ubo.iFrameRate = timer().fps();
     ubo.iFrame = static_cast<int>(shadertoyFrame);
     ubo.iMouse = isViewportMouseActive() ? shadertoyMouse() : glm::vec4{0.0f};
     ubo.iDate = glm::vec4(static_cast<float>(now->tm_year + 1900),
@@ -297,11 +299,11 @@ private:
       resolution = channelResolution;
     }
 
-    shadertoyUBO.update(executor->frameIndex(), ubo);
+    shadertoyUBO.update(executor().frameIndex(), ubo);
   }
 
   void configure() override {
-    ctx = vkr::exec::RenderAppDesc::windowed("shadertoy", "ShaderToy Viewer");
+    ctx = RenderAppDesc::windowed("shadertoy", "ShaderToy Viewer");
     ctx.swapchain = {
         .presentMode = VK_PRESENT_MODE_FIFO_KHR,
     };

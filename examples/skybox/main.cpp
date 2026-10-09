@@ -6,6 +6,10 @@
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
+using namespace vkr::exec;
+using namespace vkr::resource;
+using namespace vkr::scene;
+
 namespace {
 
 struct UniformBuffer3DObject {
@@ -19,15 +23,13 @@ constexpr std::array<const char *, 6> CornellBoxParts{
 
 } // namespace
 
-class SkyboxApp : public vkr::exec::RenderApplication {
+class SkyboxApp : public RenderApplication {
 private:
   void createResources() override {
-    scene->createCubemap("skybox", skyboxFaces(), VK_FORMAT_R8G8B8A8_SRGB);
-
-    scene->createMesh<vkr::scene::VertexSkybox3D>(
-        "skybox", vkr::scene::skyboxCubeVertices(),
-        vkr::scene::skyboxCubeIndices());
-    scene->createUniformBuffer<UniformBuffer3DObject>("skybox", {});
+    scene().createCubemap("skybox", skyboxFaces(), VK_FORMAT_R8G8B8A8_SRGB);
+    scene().createMesh<VertexSkybox3D>("skybox", skyboxCubeVertices(),
+                                       skyboxCubeIndices());
+    scene().createUniformBuffer<UniformBuffer3DObject>("skybox", {});
 
     for (const char *part : CornellBoxParts) {
       std::string path = "objects/cornellbox/";
@@ -36,47 +38,44 @@ private:
 
       std::string meshName = "cornellbox.";
       meshName += part;
-      scene->loadMesh<vkr::scene::Vertex3D>(std::move(meshName),
-                                            assetSystem->resolveApp(path));
+      scene().loadMesh<Vertex3D>(std::move(meshName), resolve(path));
     }
 
-    scene->createUniformBuffer<UniformBuffer3DObject>("cornellbox", {});
+    scene().createUniformBuffer<UniformBuffer3DObject>("cornellbox", {});
   }
 
   void buildGraph() override {
-    auto skyboxDesc = vkr::exec::RasterPassDesc::offscreen(
-        "skybox", swapchain->width(), swapchain->height(),
-        VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D32_SFLOAT,
-        vkr::scene::VertexSkybox3D::vertexInputDesc());
+    auto skyboxDesc = RasterPassDesc::offscreen(
+        "skybox", swapchain().extent2D(), VK_FORMAT_R8G8B8A8_UNORM,
+        VK_FORMAT_D32_SFLOAT, VertexSkybox3D::vertexInputDesc());
     skyboxDesc.uniform(0, VK_SHADER_STAGE_VERTEX_BIT)
         .texture(1, VK_SHADER_STAGE_FRAGMENT_BIT)
         .mesh("skybox")
         .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
         .clearDepth();
     skyboxDesc.pipeline
-        .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
-            assetSystem->resolveApp("shaders/skybox/skybox.vert").string()))
-        .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-            assetSystem->resolveApp("shaders/skybox/skybox.frag").string()))
+        .vertexShader(ShaderModuleDesc::vertexGlslFile(
+            resolve("shaders/skybox/skybox.vert")))
+        .fragmentShader(ShaderModuleDesc::fragmentGlslFile(
+            resolve("shaders/skybox/skybox.frag")))
         .readOnlyDepth()
         .noCull();
 
-    auto &skyboxPass = graph->raster("skybox", std::move(skyboxDesc));
-    skyboxPass.uniform(0, scene->uniformBuffer("skybox"))
-        .texture(1, scene->cubemap("skybox"));
+    auto &skyboxPass = graph().raster("skybox", std::move(skyboxDesc));
+    skyboxPass.uniform(0, scene().uniformBuffer("skybox"))
+        .texture(1, scene().cubemap("skybox"));
 
-    auto cornellDesc = vkr::exec::RasterPassDesc::offscreen(
-        "cornellbox", swapchain->width(), swapchain->height(),
-        VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D32_SFLOAT,
-        vkr::scene::Vertex3D::vertexInputDesc());
+    auto cornellDesc = RasterPassDesc::offscreen(
+        "cornellbox", swapchain().extent2D(), VK_FORMAT_R8G8B8A8_UNORM,
+        VK_FORMAT_D32_SFLOAT, Vertex3D::vertexInputDesc());
     cornellDesc.uniform(0, VK_SHADER_STAGE_VERTEX_BIT)
         .clearColor(0.0f, 0.0f, 0.0f, 0.0f)
         .clearDepth();
     cornellDesc.pipeline
-        .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
-            assetSystem->resolveApp("shaders/cornell/cornell.vert").string()))
-        .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-            assetSystem->resolveApp("shaders/cornell/cornell.frag").string()))
+        .vertexShader(ShaderModuleDesc::vertexGlslFile(
+            resolve("shaders/cornell/cornell.vert")))
+        .fragmentShader(ShaderModuleDesc::fragmentGlslFile(
+            resolve("shaders/cornell/cornell.frag")))
         .noCull();
 
     for (const char *part : CornellBoxParts) {
@@ -85,46 +84,45 @@ private:
       cornellDesc.mesh(meshName);
     }
 
-    auto &cornellPass = graph->raster("cornellbox", std::move(cornellDesc));
-    cornellPass.uniform(0, scene->uniformBuffer("cornellbox"));
+    auto &cornellPass = graph().raster("cornellbox", std::move(cornellDesc));
+    cornellPass.uniform(0, scene().uniformBuffer("cornellbox"));
 
-    auto compositeDesc = vkr::exec::FullscreenPassDesc::postProcess(
-        "skybox-cornell-composite", swapchain->extent2D(),
+    auto compositeDesc = FullscreenPassDesc::postProcess(
+        "skybox-cornell-composite", swapchain().extent2D(),
         VK_FORMAT_R8G8B8A8_UNORM);
     compositeDesc.pipeline
-        .vertexShader(vkr::resource::ShaderModuleDesc::vertexGlslFile(
-            assetSystem->resolveApp("shaders/composite/composite.vert")
-                .string()))
-        .fragmentShader(vkr::resource::ShaderModuleDesc::fragmentGlslFile(
-            assetSystem->resolveApp("shaders/composite/composite.frag")
-                .string()));
+        .vertexShader(ShaderModuleDesc::vertexGlslFile(
+            resolve("shaders/composite/composite.vert")))
+        .fragmentShader(ShaderModuleDesc::fragmentGlslFile(
+            resolve("shaders/composite/composite.frag")));
 
-    auto &compositePass = graph->composite(
+    auto &compositePass = graph().composite(
         "composite", {skyboxPass, cornellPass}, std::move(compositeDesc));
-    graph->present(compositePass);
+    graph().present(compositePass);
   }
 
   void onDraw() override {
-    const uint32_t frameIndex = executor->frameIndex();
+    const uint32_t frameIndex = executor().frameIndex();
     const auto &viewport = ui().viewport();
-    camera->aspect(ui().layoutMode() == vkr::ui::LayoutMode::Standard &&
-                           viewport.height > 0.0f
-                       ? viewport.width / viewport.height
-                       : ctx.window.ratio());
+    camera().aspect(ui().layoutMode() == vkr::ui::LayoutMode::Standard &&
+                            viewport.height > 0.0f
+                        ? viewport.width / viewport.height
+                        : ctx.window.ratio());
 
     UniformBuffer3DObject ubo{};
     ubo.model = glm::mat4(1.0f);
-    ubo.view = camera->getView();
-    ubo.proj = camera->getProjection();
+    ubo.view = camera().getView();
+    ubo.proj = camera().getProjection();
 
-    scene->uniformBuffer<UniformBuffer3DObject>("skybox").update(frameIndex,
-                                                                 ubo);
-    scene->uniformBuffer<UniformBuffer3DObject>("cornellbox")
+    scene().uniformBuffer<UniformBuffer3DObject>("skybox").update(frameIndex,
+                                                                  ubo);
+    scene()
+        .uniformBuffer<UniformBuffer3DObject>("cornellbox")
         .update(frameIndex, ubo);
   }
 
   void configure() override {
-    ctx = vkr::exec::RenderAppDesc::windowed("cornellbox", "Cornell Box");
+    ctx = RenderAppDesc::windowed("cornellbox", "Cornell Box");
     ctx.camera = {
         .movementSpeed = 5.0f,
         .mouseSensitivity = 0.5f,
@@ -137,12 +135,12 @@ private:
 
   [[nodiscard]] auto skyboxFaces() const -> std::array<std::string, 6> {
     return {
-        assetSystem->resolveApp("textures/skybox/right.ppm").string(),
-        assetSystem->resolveApp("textures/skybox/left.ppm").string(),
-        assetSystem->resolveApp("textures/skybox/top.ppm").string(),
-        assetSystem->resolveApp("textures/skybox/bottom.ppm").string(),
-        assetSystem->resolveApp("textures/skybox/front.ppm").string(),
-        assetSystem->resolveApp("textures/skybox/back.ppm").string(),
+        resolve("textures/skybox/right.ppm").string(),
+        resolve("textures/skybox/left.ppm").string(),
+        resolve("textures/skybox/top.ppm").string(),
+        resolve("textures/skybox/bottom.ppm").string(),
+        resolve("textures/skybox/front.ppm").string(),
+        resolve("textures/skybox/back.ppm").string(),
     };
   }
 };
