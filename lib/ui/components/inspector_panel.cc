@@ -1,5 +1,6 @@
 #include "vkr/ui/components/inspector_panel.hh"
 #include "property_table.hh"
+#include "texture_preview.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/targets/offscreen.hh"
 #include <array>
@@ -11,13 +12,23 @@
 
 namespace vkr::ui {
 
-InspectorPanel::InspectorPanel(
-    const scene::Scene &scene, const exec::Graph &graph,
-    const Selection &selection, std::function<void(Selection)> onSelect,
-    std::function<void(const scene::Texture &)> renderTexture)
+InspectorPanel::InspectorPanel(const core::Device &device,
+                               const pipeline::RenderPass &renderPass,
+                               const core::CommandBuffers &commandBuffers,
+                               const scene::Scene &scene,
+                               const exec::Graph &graph,
+                               const Selection &selection,
+                               std::function<void(Selection)> onSelect)
     : UiComponent("Inspector"), scene_(scene), graph_(graph),
       selection_(selection), on_select_(std::move(onSelect)),
-      render_texture_(std::move(renderTexture)) {}
+      texture_preview_(std::make_unique<TexturePreview>(
+          device, renderPass, commandBuffers, scene, selection)) {}
+
+InspectorPanel::~InspectorPanel() = default;
+
+void InspectorPanel::prepare(uint32_t frameIndex) {
+  texture_preview_->prepare(frameIndex);
+}
 
 void InspectorPanel::render() {
   if (selection_.type == SelectionType::None) {
@@ -155,7 +166,7 @@ void InspectorPanel::renderResource() {
       ImGui::EndTable();
     }
     if (ImGui::CollapsingHeader("Preview", ImGuiTreeNodeFlags_DefaultOpen)) {
-      render_texture_(value);
+      texture_preview_->render();
     }
     if (ImGui::CollapsingHeader("Advanced") &&
         beginPropertyTable("##texture_advanced")) {
@@ -185,6 +196,9 @@ void InspectorPanel::renderResource() {
       propertyRow("Format",
                   vk::to_string(static_cast<vk::Format>(desc.format)));
       ImGui::EndTable();
+    }
+    if (ImGui::CollapsingHeader("Preview", ImGuiTreeNodeFlags_DefaultOpen)) {
+      texture_preview_->render();
     }
     if (ImGui::CollapsingHeader("Source files") &&
         beginPropertyTable("##cubemap_sources")) {

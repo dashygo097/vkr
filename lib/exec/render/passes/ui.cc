@@ -73,7 +73,7 @@ void UiPass::create() {
 
   descriptor_pool_ = std::make_unique<pipeline::DescriptorPool>(device_);
   const uint32_t descriptorCount =
-      command_buffers_.size() * 2U +
+      command_buffers_.size() +
       IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE;
   descriptor_pool_->update({
       .poolSizes = {{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -101,6 +101,7 @@ void UiPass::record() {
   }
 
   executor_.beginProfileScope(name());
+  ui_->prepare(executor_.frameIndex());
   executor_.beginPass(*render_pass_, *framebuffers_,
                       {VkClearValue{.color = {{0.0f, 0.0f, 0.0f, 1.0f}}}},
                       executor_.imageIndex());

@@ -13,8 +13,6 @@
 #include <string_view>
 #include <utility>
 #include <vector>
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_format_traits.hpp>
 
 namespace vkr::ui {
 namespace {
@@ -147,12 +145,6 @@ void UI::create() {
     });
     offscreen_descriptor_sets_->write(writes);
 
-    preview_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
-        device_, descriptor_pool_, *offscreen_descriptor_layout_);
-    preview_descriptor_sets_->update(pipeline::DescriptorSetsDesc{
-        .setCount = command_buffers_.size(),
-    });
-
     viewport_panel_ = std::make_unique<ViewportPanel>(
         viewport_, viewport_focused_, viewport_hovered_);
     viewport_panel_->flipY(desc_.viewportFlipY);
@@ -162,11 +154,9 @@ void UI::create() {
     const auto onSelect = [this](Selection selection) {
       select(std::move(selection));
     };
-    inspector_panel_ =
-        std::make_unique<InspectorPanel>(scene_, graph_, selection_, onSelect,
-                                         [this](const scene::Texture &texture) {
-                                           renderTexturePreview(texture);
-                                         });
+    inspector_panel_ = std::make_unique<InspectorPanel>(
+        device_, render_pass_, command_buffers_, scene_, graph_, selection_,
+        onSelect);
     graph_panel_ =
         std::make_unique<ExecGraphPanel>(graph_, selection_, onSelect);
     assets_panel_ = std::make_unique<AssetsPanel>(asset_system_);
@@ -225,7 +215,6 @@ void UI::destroy() noexcept {
   resource_tree_.reset();
   viewport_panel_.reset();
 
-  preview_descriptor_sets_.reset();
   offscreen_descriptor_sets_.reset();
   offscreen_descriptor_layout_.reset();
 
@@ -248,6 +237,13 @@ void UI::destroy() noexcept {
   dock_layout_dirty_ = false;
   dpi_scale_ = 1.0f;
   theme_dirty_ = true;
+}
+
+void UI::prepare(uint32_t frameIndex) {
+  if (!created_ || frameIndex >= command_buffers_.size()) {
+    VKR_UI_ERROR("UI prepared with invalid state or frame index {}", frameIndex);
+  }
+  inspector_panel_->prepare(frameIndex);
 }
 
 void UI::render(VkCommandBuffer commandBuffer, uint32_t frameIndex) {
@@ -587,118 +583,6 @@ void UI::renderWorkspacePanels() {
     if (panel.open()) {
       panel.renderWindow();
     }
-  }
-}
-
-void UI::renderTexturePreview(const scene::Texture &texture) {
-  if (!texture.valid() || !texture.hasSampler() || texture.width() == 0 ||
-      texture.height() == 0) {
-    ImGui::TextWrapped("Preview requires an image, view and sampler.");
-    return;
-  }
-
-  const auto &desc = texture.desc();
-  const auto viewType =
-      desc.useDefaultView ? desc.image.defaultViewType : desc.view.viewType;
-  const auto aspect =
-      desc.useDefaultView ? desc.image.aspectMask : desc.view.aspectMask;
-  if (desc.image.type != VK_IMAGE_TYPE_2D ||
-      desc.image.samples != VK_SAMPLE_COUNT_1_BIT ||
-      viewType != VK_IMAGE_VIEW_TYPE_2D ||
-      aspect != VK_IMAGE_ASPECT_COLOR_BIT ||
-      (!desc.useDefaultView && desc.view.image != texture.image()) ||
-      (desc.image.usage & VK_IMAGE_USAGE_SAMPLED_BIT) == 0) {
-    ImGui::TextWrapped(
-        "Preview supports sampled, single-sample 2D color views.");
-    return;
-  }
-
-  if ((desc.image.usage & (VK_IMAGE_USAGE_STORAGE_BIT |
-                           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)) != 0 ||
-      texture.layout() != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-    ImGui::TextWrapped(
-        "Preview requires a read-only texture in shader-read-only "
-        "layout. Live render/storage images are not supported.");
-    return;
-  }
-
-  const auto format = static_cast<vk::Format>(
-      desc.useDefaultView ? desc.image.format : desc.view.format);
-  if (!vk::isColor(format) || vk::planeCount(format) != 1 ||
-      vk::componentCount(format) == 0) {
-    ImGui::TextWrapped("This image format requires a specialized preview.");
-    return;
-  }
-  const auto blockExtent = vk::blockExtent(format);
-  if (!vk::isCompressed(format) &&
-      (blockExtent[0] != 1 || blockExtent[1] != 1)) {
-    ImGui::TextWrapped("Packed chroma formats require a specialized preview.");
-    return;
-  }
-  const std::string_view numericFormat = vk::componentNumericFormat(format, 0);
-  if (numericFormat != "UNORM" && numericFormat != "SRGB") {
-    ImGui::TextWrapped(
-        "Preview currently supports UNORM and sRGB color formats. "
-        "HDR, signed and integer formats need display conversion.");
-    return;
-  }
-  if (desc.sampler.compareEnable || desc.sampler.unnormalizedCoordinates) {
-    ImGui::TextWrapped(
-        "Preview requires a non-comparison sampler with normalized "
-        "coordinates.");
-    return;
-  }
-
-  auto write = pipeline::DescriptorSetWrite::forSet(frame_index_);
-  write.images.push_back(pipeline::DescriptorImageWrite::combinedImageSampler(
-      0, texture.descriptorInfo()));
-  preview_descriptor_sets_->write({write});
-
-  const auto drawPreview = [this, &texture](ImVec2 available) {
-    available.x = std::max(1.0f, available.x);
-    available.y = std::max(1.0f, available.y);
-    const uint32_t mip =
-        texture.desc().useDefaultView ? 0U : texture.desc().view.baseMipLevel;
-    const float width =
-        static_cast<float>(std::max(1U, texture.width() >> std::min(mip, 31U)));
-    const float height = static_cast<float>(
-        std::max(1U, texture.height() >> std::min(mip, 31U)));
-    const float scale = std::min(available.x / width, available.y / height);
-    const ImVec2 size{width * scale, height * scale};
-    const auto cursor = ImGui::GetCursorScreenPos();
-    const ImVec2 position{cursor.x + (available.x - size.x) * 0.5f, cursor.y};
-    const ImVec2 end{position.x + size.x, position.y + size.y};
-    auto &drawList = *ImGui::GetWindowDrawList();
-    const float gridStep = std::max(ImGui::GetFontSize() * 0.75f,
-                                    std::max(size.x, size.y) / 64.0f);
-    ImGui::RenderColorRectWithAlphaCheckerboard(&drawList, position, end,
-                                                IM_COL32(0, 0, 0, 0), gridStep,
-                                                ImVec2{0.0f, 0.0f}, 0.0f);
-    ImGui::SetCursorScreenPos(position);
-    ImGui::Image(reinterpret_cast<ImTextureID>(
-                     preview_descriptor_sets_->set(frame_index_)),
-                 size);
-  };
-
-  drawPreview({ImGui::GetContentRegionAvail().x, ImGui::GetFontSize() * 14.0f});
-  if (ImGui::IsItemClicked()) {
-    ImGui::OpenPopup("Texture preview");
-  }
-  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
-    ImGui::SetTooltip("Click to enlarge");
-  }
-
-  const auto workSize = ImGui::GetMainViewport()->WorkSize;
-  ImGui::SetNextWindowSize(
-      {std::min(workSize.x * 0.85f, ImGui::GetFontSize() * 48.0f),
-       std::min(workSize.y * 0.85f, ImGui::GetFontSize() * 36.0f)},
-      ImGuiCond_Appearing);
-  if (ImGui::BeginPopup("Texture preview", ImGuiWindowFlags_NoSavedSettings)) {
-    ImGui::TextWrapped("%s", selection_.name.c_str());
-    ImGui::TextDisabled("%u x %u", texture.width(), texture.height());
-    ImGui::Separator();
-    drawPreview(ImGui::GetContentRegionAvail());
-    ImGui::EndPopup();
   }
 }
 
