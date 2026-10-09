@@ -1,12 +1,11 @@
 #include "vkr/exec/compute/passes/compute.hh"
 #include "vkr/logger.hh"
+#include <algorithm>
 
 namespace vkr::exec {
 
 ComputePass::ComputePass(ComputeExecutor &executor, const core::Device &device)
-    : executor_(executor), device_(device), descriptor_pool_(device),
-      descriptor_layout_(device),
-      descriptor_sets_(device, descriptor_pool_, descriptor_layout_) {}
+    : executor_(executor), device_(device), descriptor_pool_(device) {}
 
 ComputePass::~ComputePass() { destroy(); }
 
@@ -19,20 +18,35 @@ void ComputePass::create() {
 
 void ComputePass::destroy() noexcept {
   pipeline_.reset();
-  descriptor_sets_.destroy();
-  descriptor_layout_.destroy();
+  for (auto &set : descriptor_sets_) {
+    set.destroy();
+  }
+  for (auto &layout : descriptor_layouts_) {
+    layout->destroy();
+  }
   descriptor_pool_.destroy();
 }
 
 void ComputePass::update(const ComputePassDesc &desc) {
   ensureConfigurable();
-  if (pipeline_ || descriptor_layout_.valid() || descriptor_pool_.valid()) {
+  if (pipeline_ || descriptor_pool_.valid()) {
     VKR_EXEC_ERROR("ComputePass '{}' must be destroyed before updating its "
                    "configuration",
                    name());
   }
   validate(desc);
   auto nextDesc = desc;
+  const auto setCount = std::max<size_t>(1, nextDesc.descriptorLayouts.size());
+  while (descriptor_layouts_.size() > setCount) {
+    descriptor_sets_.pop_back();
+    descriptor_layouts_.pop_back();
+  }
+  while (descriptor_layouts_.size() < setCount) {
+    descriptor_layouts_.push_back(
+        std::make_unique<pipeline::DescriptorSetLayout>(device_));
+    descriptor_sets_.emplace_back(device_, descriptor_pool_,
+                                  *descriptor_layouts_.back());
+  }
   desc_ = std::move(nextDesc);
 }
 
@@ -48,8 +62,7 @@ void ComputePass::record() {
   }
 
   executor_.beginProfileScope(name());
-  descriptor_sets_.write(uint32_t{0});
-  if (descriptor_sets_.valid()) {
+  if (!descriptor_layouts_.empty() && descriptor_layouts_.front()->valid()) {
     executor_.bindPipeline(*pipeline_, descriptor_sets_);
   } else {
     executor_.bindPipeline(*pipeline_);
@@ -68,47 +81,51 @@ void ComputePass::validate(const ComputePassDesc &desc) const {
     VKR_EXEC_ERROR("ComputePass '{}' has invalid dispatch group counts",
                    name());
   }
-  pipeline::DescriptorSetLayoutDesc layoutDesc{.bindings =
-                                                   desc.descriptorBindings};
-  if (!layoutDesc.isValid()) {
-    VKR_EXEC_ERROR("ComputePass '{}' requires unique bindings with nonzero "
-                   "counts/stages",
-                   name());
+  VkPhysicalDeviceProperties properties{};
+  vkGetPhysicalDeviceProperties(device_.physicalDevice(), &properties);
+  auto layouts = desc.descriptorLayouts;
+  if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
+    VKR_EXEC_ERROR("ComputePass '{}' exceeds maxBoundDescriptorSets", name());
   }
-  for (const auto &binding : layoutDesc.bindings) {
-    const auto &layout = binding.layout;
-    if (layout.descriptorCount != 1 ||
-        (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
-         layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
-         layout.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
-      VKR_EXEC_ERROR(
-          "ComputePass '{}' has an unsupported descriptor binding {}", name(),
-          layout.binding);
+  for (const auto &layoutDesc : layouts) {
+    if (!layoutDesc.isValid()) {
+      VKR_EXEC_ERROR("ComputePass '{}' requires unique bindings within each set "
+                     "with nonzero counts/stages", name());
+    }
+    for (const auto &binding : layoutDesc.bindings) {
+      const auto &layout = binding.layout;
+      if (layout.descriptorCount != 1 ||
+          (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
+           layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
+           layout.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
+        VKR_EXEC_ERROR("ComputePass '{}' has an unsupported descriptor binding {}",
+                       name(), layout.binding);
+      }
     }
   }
 }
 
 void ComputePass::createDescriptors() {
-  if (desc_.descriptorBindings.empty()) {
-    descriptor_sets_.update({.setCount = 0});
+  auto layouts = desc_.descriptorLayouts;
+  if (layouts.empty()) {
     return;
   }
-  const pipeline::DescriptorSetLayoutDesc layoutDesc{
-      .bindings = desc_.descriptorBindings};
-  descriptor_pool_.update(pipeline::DescriptorPoolDesc::sets(layoutDesc, 1));
-  descriptor_layout_.update(layoutDesc);
-  descriptor_sets_.update({.setCount = 1});
-  descriptor_sets_.write(uint32_t{0});
+  descriptor_pool_.update(pipeline::DescriptorPoolDesc::sets(layouts, 1));
+  for (uint32_t setIndex = 0; setIndex < layouts.size(); ++setIndex) {
+    descriptor_layouts_[setIndex]->update(layouts[setIndex]);
+    descriptor_sets_[setIndex].create();
+  }
 }
 
 void ComputePass::createPipeline() {
   auto pipelineDesc = desc_.pipeline;
 
-  const VkDescriptorSetLayout descriptorSetLayout =
-      descriptor_layout_.valid() ? descriptor_layout_.layout() : VK_NULL_HANDLE;
-  if (descriptorSetLayout != VK_NULL_HANDLE &&
-      pipelineDesc.layout.setLayouts.empty()) {
-    pipelineDesc.layout.setLayouts = {descriptorSetLayout};
+  if (pipelineDesc.layout.setLayouts.empty()) {
+    for (const auto &layout : descriptor_layouts_) {
+      if (layout->valid()) {
+        pipelineDesc.layout.setLayouts.push_back(layout->layout());
+      }
+    }
   }
 
   pipeline_ = std::make_unique<pipeline::ComputePipeline>(device_);

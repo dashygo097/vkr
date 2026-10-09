@@ -8,6 +8,7 @@
 #include <functional>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 namespace vkr::exec {
 
@@ -32,7 +33,9 @@ public:
 
   void bindPipeline(const pipeline::ComputePipeline &pipeline);
   void bindPipeline(const pipeline::ComputePipeline &pipeline,
-                    const pipeline::DescriptorSets &sets);
+                    pipeline::DescriptorSet &set, uint32_t setIndex);
+  void bindPipeline(const pipeline::ComputePipeline &pipeline,
+                    std::vector<pipeline::DescriptorSet> &sets);
   void dispatch(uint32_t groupCountX, uint32_t groupCountY,
                 uint32_t groupCountZ);
   void beginProfileScope(std::string_view name);
@@ -46,6 +49,7 @@ private:
 
   // components
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
+  std::vector<VkDescriptorSet> bound_descriptors_{};
 
   // state
   bool active_{false};

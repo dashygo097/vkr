@@ -54,7 +54,7 @@ private:
 
   [[nodiscard]] static auto channelInput(uint32_t channel)
       -> RenderPassInputDesc {
-    return RenderPassInputDesc::color(1U + channel);
+    return RenderPassInputDesc::color(0, 1U + channel);
   }
 
   [[nodiscard]] static auto hasChannel(const std::vector<uint32_t> &channels,
@@ -112,9 +112,9 @@ private:
     auto desc = FeedbackFullscreenPassDesc::feedback(
         name, swapchain().extent2D(), VK_FORMAT_R16G16B16A16_SFLOAT);
 
-    desc.uniform(0);
+    desc.uniform(0, 0);
     for (uint32_t channel : fallback) {
-      desc.texture(channelInput(channel).binding);
+      desc.texture(0, channelInput(channel).binding);
     }
 
     if (historyChannel) {
@@ -137,9 +137,9 @@ private:
                                                 swapchain().extent2D(),
                                                 VK_FORMAT_R16G16B16A16_SFLOAT);
 
-    desc.uniform(0);
+    desc.uniform(0, 0);
     for (uint32_t channel : fallback) {
-      desc.texture(channelInput(channel).binding);
+      desc.texture(0, channelInput(channel).binding);
     }
 
     for (uint32_t channel : sourceChannels) {
@@ -153,9 +153,9 @@ private:
   template <typename PassT>
   void bindChannels(PassT &pass, std::optional<uint32_t> historyChannel,
                     const std::vector<uint32_t> &sourceChannels) {
-    pass.uniform(0, scene().uniformBuffer(kShaderToyUniformName));
+    pass.uniform(0, 0, scene().uniformBuffer(kShaderToyUniformName));
     for (uint32_t channel : fallbackChannels(historyChannel, sourceChannels)) {
-      pass.texture(channelInput(channel).binding,
+      pass.texture(0, channelInput(channel).binding,
                    scene().texture(kFallbackTextureName));
     }
   }

@@ -117,10 +117,10 @@ class MMulApplication final : public ComputeApplication {
 
   void buildGraph() override {
     ComputePassDesc passDesc{};
-    passDesc.storage(0)
-        .storage(1)
-        .storage(2)
-        .uniform(3)
+    passDesc.storage(0, 0)
+        .storage(0, 1)
+        .storage(0, 2)
+        .uniform(1, 0)
         .shader(
             "mmul",
 #ifdef VKR_HAS_SLANG
@@ -135,10 +135,10 @@ class MMulApplication final : public ComputeApplication {
         .setReads({"input_A", "input_B"})
         .setWrites({"output_C"});
     pass.update(passDesc);
-    pass.storage(0, *input_A_)
-        .storage(1, *input_B_)
-        .storage(2, *output_C_)
-        .uniform(3, *params_);
+    pass.storage(0, 0, *input_A_)
+        .storage(0, 1, *input_B_)
+        .storage(0, 2, *output_C_)
+        .uniform(1, 0, *params_);
   }
 
   void afterExecute(const ProfileReport &report) override {

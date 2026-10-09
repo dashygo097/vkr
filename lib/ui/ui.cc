@@ -119,31 +119,18 @@ void UI::create() {
     if (!target) {
       VKR_UI_ERROR("UI source '{}' has no offscreen target", source_.name());
     }
-    std::vector<pipeline::DescriptorSetWrite> writes{};
+    offscreen_descriptor_sets_.reserve(command_buffers_.size());
     for (uint32_t frame = 0; frame < command_buffers_.size(); ++frame) {
       const auto &color = target->get().target(frame).color();
       if (!color.hasSampler()) {
         VKR_UI_ERROR("UI source '{}' color has no sampler", source_.name());
       }
-      VkDescriptorImageInfo imageInfo{};
-      imageInfo.sampler = color.sampler();
-      imageInfo.imageView = color.imageView();
-      imageInfo.imageLayout = color.desc().finalLayout;
-      if (imageInfo.imageLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      }
-      auto write = pipeline::DescriptorSetWrite::forSet(frame);
-      write.images.push_back(pipeline::DescriptorImageWrite::one(
-          0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageInfo));
-      writes.push_back(std::move(write));
+      offscreen_descriptor_sets_.emplace_back(
+          device_, descriptor_pool_, *offscreen_descriptor_layout_);
+      auto &set = offscreen_descriptor_sets_.back();
+      set.texture(0, color);
+      set.create();
     }
-
-    offscreen_descriptor_sets_ = std::make_unique<pipeline::DescriptorSets>(
-        device_, descriptor_pool_, *offscreen_descriptor_layout_);
-    offscreen_descriptor_sets_->update(pipeline::DescriptorSetsDesc{
-        .setCount = command_buffers_.size(),
-    });
-    offscreen_descriptor_sets_->write(writes);
 
     viewport_panel_ = std::make_unique<ViewportPanel>(
         viewport_, viewport_focused_, viewport_hovered_);
@@ -215,7 +202,7 @@ void UI::destroy() noexcept {
   resource_tree_.reset();
   viewport_panel_.reset();
 
-  offscreen_descriptor_sets_.reset();
+  offscreen_descriptor_sets_.clear();
   offscreen_descriptor_layout_.reset();
 
   if (vulkan_initialized_) {
@@ -243,6 +230,7 @@ void UI::prepare(uint32_t frameIndex) {
   if (!created_ || frameIndex >= command_buffers_.size()) {
     VKR_UI_ERROR("UI prepared with invalid state or frame index {}", frameIndex);
   }
+  offscreen_descriptor_sets_.at(frameIndex).update();
   inspector_panel_->prepare(frameIndex);
 }
 
@@ -304,9 +292,8 @@ void UI::renderFullScreen() {
   if (ImGui::Begin("Fullscreen Viewport", nullptr, flags)) {
     if (viewport_panel_) {
       VkDescriptorSet texture = VK_NULL_HANDLE;
-      if (offscreen_descriptor_sets_ &&
-          !offscreen_descriptor_sets_->sets().empty()) {
-        texture = offscreen_descriptor_sets_->set(frame_index_);
+      if (!offscreen_descriptor_sets_.empty()) {
+        texture = offscreen_descriptor_sets_.at(frame_index_).set();
       }
 
       viewport_panel_->renderFullscreen(texture);
@@ -569,9 +556,8 @@ void UI::renderWorkspacePanels() {
   viewport_focused_ = false;
   viewport_hovered_ = false;
   VkDescriptorSet texture = VK_NULL_HANDLE;
-  if (offscreen_descriptor_sets_ &&
-      !offscreen_descriptor_sets_->sets().empty()) {
-    texture = offscreen_descriptor_sets_->set(frame_index_);
+  if (!offscreen_descriptor_sets_.empty()) {
+    texture = offscreen_descriptor_sets_.at(frame_index_).set();
   }
 
   if (viewport_panel_) {

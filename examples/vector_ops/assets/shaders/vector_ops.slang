@@ -12,7 +12,7 @@ StructuredBuffer<float> inputB;
 [[vk::binding(2, 0)]]
 RWStructuredBuffer<float> outputC;
 
-[[vk::binding(3, 0)]]
+[[vk::binding(0, 1)]]
 ConstantBuffer<VectorOpsParams> params;
 
 float nonlinearOp(float a, float b) {

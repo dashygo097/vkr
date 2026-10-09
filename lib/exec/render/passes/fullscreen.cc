@@ -6,61 +6,30 @@
 namespace vkr::exec {
 namespace {
 
-auto imageLayoutForColor(const pipeline::ColorAttachment &color)
-    -> VkImageLayout {
-  return color.desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
-             ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-             : color.desc().finalLayout;
-}
-
-auto sourceImageInfo(std::string_view passName, size_t sourceIndex,
-                     const pipeline::OffscreenTarget &source,
-                     const RenderPassInputDesc &input)
-    -> VkDescriptorImageInfo {
-  VkDescriptorImageInfo imageInfo{};
-
+void bindSource(pipeline::DescriptorSet &set, std::string_view passName,
+                size_t sourceIndex, const pipeline::OffscreenTarget &source,
+                const RenderPassInputDesc &input) {
   switch (input.kind) {
   case RenderPassInputKind::Color: {
-    if (!source.hasColor()) {
-      VKR_EXEC_ERROR("FullscreenPass '{}' source {} has no color attachment",
-                     std::string(passName), sourceIndex);
+    if (!source.hasColor() || !source.color().hasSampler()) {
+      VKR_EXEC_ERROR(
+          "FullscreenPass '{}' source {} needs a sampled color attachment",
+          std::string(passName), sourceIndex);
     }
-
-    const auto &color = source.color();
-    if (!color.hasSampler()) {
-      VKR_EXEC_ERROR("FullscreenPass '{}' source {} color has no sampler",
-                     std::string(passName), sourceIndex);
-    }
-
-    imageInfo.imageLayout = imageLayoutForColor(color);
-    imageInfo.imageView = color.imageView();
-    imageInfo.sampler = color.sampler();
+    set.texture(input.binding, source.color());
     break;
   }
-
   case RenderPassInputKind::Depth: {
     const auto *depth = source.depth();
-    if (depth == nullptr) {
-      VKR_EXEC_ERROR("FullscreenPass '{}' source {} has no depth attachment",
-                     std::string(passName), sourceIndex);
+    if (depth == nullptr || !depth->hasSampler()) {
+      VKR_EXEC_ERROR(
+          "FullscreenPass '{}' source {} needs a sampled depth attachment",
+          std::string(passName), sourceIndex);
     }
-
-    if (!depth->hasSampler()) {
-      VKR_EXEC_ERROR("FullscreenPass '{}' source {} depth has no sampler",
-                     std::string(passName), sourceIndex);
-    }
-
-    imageInfo.imageLayout =
-        depth->desc().finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
-            ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-            : depth->desc().finalLayout;
-    imageInfo.imageView = depth->imageView();
-    imageInfo.sampler = depth->sampler();
+    set.texture(input.binding, *depth);
     break;
   }
   }
-
-  return imageInfo;
 }
 
 } // namespace
@@ -69,8 +38,9 @@ FullscreenPass::FullscreenPass(
     RenderExecutor &executor, const core::Device &device,
     std::vector<std::reference_wrapper<Pass>> sources)
     : executor_(executor), device_(device), sources_(std::move(sources)),
-      descriptor_pool_(device), descriptor_layout_(device),
-      descriptor_sets_(device, descriptor_pool_, descriptor_layout_) {}
+      descriptor_pool_(device) {
+  descriptor_sets_.resize(executor_.framesInFlight());
+}
 
 FullscreenPass::~FullscreenPass() { destroy(); }
 
@@ -87,8 +57,14 @@ void FullscreenPass::create() {
 
 void FullscreenPass::destroy() noexcept {
   pipeline_.reset();
-  descriptor_sets_.destroy();
-  descriptor_layout_.destroy();
+  for (auto &frame : descriptor_sets_) {
+    for (auto &set : frame) {
+      set.destroy();
+    }
+  }
+  for (auto &layout : descriptor_layouts_) {
+    layout->destroy();
+  }
   descriptor_pool_.destroy();
   framebuffers_.reset();
   render_pass_.reset();
@@ -97,13 +73,34 @@ void FullscreenPass::destroy() noexcept {
 
 void FullscreenPass::update(const FullscreenPassDesc &desc) {
   ensureConfigurable();
-  if (target_ || render_pass_ || pipeline_ || descriptor_layout_.valid()) {
+  if (target_ || render_pass_ || pipeline_ || descriptor_pool_.valid()) {
     VKR_EXEC_ERROR("FullscreenPass '{}' must be destroyed before updating its "
                    "configuration",
                    name());
   }
   validate(desc);
   auto nextDesc = desc;
+  for (const auto &input : nextDesc.inputs) {
+    if (input.setIndex >= nextDesc.descriptorLayouts.size()) {
+      nextDesc.descriptorLayouts.resize(static_cast<size_t>(input.setIndex) +
+                                        1);
+    }
+  }
+  const auto setCount = std::max<size_t>(1, nextDesc.descriptorLayouts.size());
+  while (descriptor_layouts_.size() > setCount) {
+    for (auto &frame : descriptor_sets_) {
+      frame.pop_back();
+    }
+    descriptor_layouts_.pop_back();
+  }
+  while (descriptor_layouts_.size() < setCount) {
+    descriptor_layouts_.push_back(
+        std::make_unique<pipeline::DescriptorSetLayout>(device_));
+    for (auto &frame : descriptor_sets_) {
+      frame.emplace_back(device_, descriptor_pool_,
+                         *descriptor_layouts_.back());
+    }
+  }
   desc_ = std::move(nextDesc);
 }
 
@@ -117,9 +114,9 @@ void FullscreenPass::record() {
   executor_.setViewportAndScissor({target_->width(), target_->height()});
 
   if (pipeline_ && pipeline_->valid()) {
-    descriptor_sets_.write(executor_.frameIndex());
-    if (descriptor_sets_.valid()) {
-      executor_.bindPipeline(*pipeline_, descriptor_sets_);
+    if (descriptor_pool_.valid()) {
+      executor_.bindPipeline(*pipeline_,
+                             descriptor_sets_.at(executor_.frameIndex()));
     } else {
       executor_.bindPipeline(*pipeline_);
     }
@@ -223,67 +220,95 @@ void FullscreenPass::validate(const FullscreenPassDesc &desc) const {
     VKR_EXEC_ERROR("FullscreenPass '{}' has an invalid pipeline descriptor",
                    name());
   }
-  pipeline::DescriptorSetLayoutDesc layoutDesc{.bindings =
-                                                   desc.descriptorBindings};
+  VkPhysicalDeviceProperties properties{};
+  vkGetPhysicalDeviceProperties(device_.physicalDevice(), &properties);
+  auto layouts = desc.descriptorLayouts;
+  if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
+    VKR_EXEC_ERROR("FullscreenPass '{}' exceeds maxBoundDescriptorSets",
+                   name());
+  }
   for (const auto &input : desc.inputs) {
-    layoutDesc.bindings.push_back(
+    if (input.setIndex >= properties.limits.maxBoundDescriptorSets) {
+      VKR_EXEC_ERROR("FullscreenPass '{}' input set index is out of range",
+                     name());
+    }
+    if (input.setIndex >= layouts.size()) {
+      layouts.resize(static_cast<size_t>(input.setIndex) + 1);
+    }
+    layouts[input.setIndex].bindings.push_back(
         {.layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                     input.stageFlags}});
   }
-  if (!layoutDesc.isValid()) {
-    VKR_EXEC_ERROR("FullscreenPass '{}' requires unique bindings with nonzero "
-                   "counts/stages",
-                   name());
-  }
-  for (const auto &binding : layoutDesc.bindings) {
-    const auto &layout = binding.layout;
-    if (layout.descriptorCount != 1 ||
-        (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
-         layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
-         layout.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
+  for (const auto &layoutDesc : layouts) {
+    if (!layoutDesc.isValid()) {
       VKR_EXEC_ERROR(
-          "FullscreenPass '{}' has an unsupported descriptor binding {}",
-          name(), layout.binding);
+          "FullscreenPass '{}' requires unique bindings within each set "
+          "with nonzero counts/stages",
+          name());
+    }
+    for (const auto &binding : layoutDesc.bindings) {
+      const auto &layout = binding.layout;
+      if (layout.descriptorCount != 1 ||
+          (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
+           layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
+           layout.descriptorType !=
+               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
+        VKR_EXEC_ERROR(
+            "FullscreenPass '{}' has an unsupported descriptor binding {}",
+            name(), layout.binding);
+      }
     }
   }
 }
 
 void FullscreenPass::createDescriptors() {
   const auto inputs = resolvedInputs();
-  if (inputs.empty() && desc_.descriptorBindings.empty()) {
-    descriptor_sets_.update({.setCount = 0});
+  if (inputs.size() != sources_.size()) {
+    VKR_EXEC_ERROR("FullscreenPass '{}' input count mismatch", name());
+  }
+  auto layouts = desc_.descriptorLayouts;
+  for (const auto &input : inputs) {
+    if (input.setIndex >= layouts.size()) {
+      layouts.resize(static_cast<size_t>(input.setIndex) + 1);
+    }
+    layouts[input.setIndex].bindings.push_back(
+        {.layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                    input.stageFlags}});
+  }
+  if (layouts.empty()) {
     return;
   }
-
-  std::vector<pipeline::DescriptorBinding> bindings = desc_.descriptorBindings;
-  bindings.reserve(desc_.descriptorBindings.size() + inputs.size());
-
-  for (const auto &input : inputs) {
-    bindings.push_back(pipeline::DescriptorBinding{
-        .layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                   input.stageFlags}});
+  descriptor_pool_.update(
+      pipeline::DescriptorPoolDesc::sets(layouts, executor_.framesInFlight()));
+  for (uint32_t setIndex = 0; setIndex < layouts.size(); ++setIndex) {
+    descriptor_layouts_[setIndex]->update(layouts[setIndex]);
+    for (auto &frame : descriptor_sets_) {
+      frame[setIndex].create();
+    }
   }
-
-  const pipeline::DescriptorSetLayoutDesc layoutDesc{.bindings = bindings};
-  descriptor_pool_.update(pipeline::DescriptorPoolDesc::sets(
-      layoutDesc, executor_.framesInFlight()));
-  descriptor_layout_.update(layoutDesc);
-
-  descriptor_sets_.update({.setCount = executor_.framesInFlight()});
-  descriptor_sets_.write(createDescriptorWrites(inputs));
-  for (uint32_t index = 0; index < descriptor_sets_.count(); ++index) {
-    descriptor_sets_.write(index);
+  for (size_t index = 0; index < sources_.size(); ++index) {
+    const auto source =
+        sources_[index].get().capability<RenderTargetCapability>();
+    if (!source) {
+      VKR_EXEC_ERROR("FullscreenPass '{}' source '{}' has no render target",
+                     name(), sources_[index].get().name());
+    }
+    for (uint32_t frame = 0; frame < descriptor_sets_.size(); ++frame) {
+      bindSource(descriptor_sets_[frame].at(inputs[index].setIndex), name(),
+                 index, source->get().target(frame), inputs[index]);
+    }
   }
 }
 
 void FullscreenPass::createPipeline() {
   auto pipelineDesc = desc_.pipeline;
 
-  const VkDescriptorSetLayout descriptorSetLayout =
-      descriptor_layout_.valid() ? descriptor_layout_.layout() : VK_NULL_HANDLE;
-  if (descriptorSetLayout != VK_NULL_HANDLE &&
-      pipelineDesc.layout.setLayouts.empty()) {
-    pipelineDesc.layout.setLayouts = {descriptorSetLayout};
+  if (pipelineDesc.layout.setLayouts.empty()) {
+    for (const auto &layout : descriptor_layouts_) {
+      if (layout->valid()) {
+        pipelineDesc.layout.setLayouts.push_back(layout->layout());
+      }
+    }
   }
 
   pipeline_ =
@@ -304,12 +329,15 @@ auto FullscreenPass::resolvedInputs() const
     inputs.reserve(sources_.size());
 
     uint32_t firstBinding = 0;
-    for (const auto &binding : desc_.descriptorBindings) {
-      firstBinding = std::max(firstBinding, binding.layout.binding + 1U);
+    if (!desc_.descriptorLayouts.empty()) {
+      for (const auto &binding : desc_.descriptorLayouts[0].bindings) {
+        firstBinding = std::max(firstBinding, binding.layout.binding + 1U);
+      }
     }
 
     for (uint32_t index = 0; index < sources_.size(); ++index) {
-      inputs.push_back(RenderPassInputDesc{.binding = firstBinding + index});
+      inputs.push_back(
+          RenderPassInputDesc{.setIndex = 0, .binding = firstBinding + index});
     }
 
     return inputs;
@@ -322,38 +350,6 @@ auto FullscreenPass::resolvedInputs() const
   }
 
   return desc_.inputs;
-}
-
-auto FullscreenPass::createDescriptorWrites(
-    const std::vector<RenderPassInputDesc> &inputs)
-    -> std::vector<pipeline::DescriptorSetWrite> {
-  std::vector<pipeline::DescriptorSetWrite> writes{};
-  const uint32_t frameCount = executor_.framesInFlight();
-  writes.reserve(frameCount);
-
-  for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-    writes.push_back(pipeline::DescriptorSetWrite::forSet(frameIndex));
-  }
-
-  for (size_t index = 0; index < sources_.size(); ++index) {
-    const auto source =
-        sources_[index].get().capability<RenderTargetCapability>();
-    if (!source) {
-      VKR_EXEC_ERROR("FullscreenPass '{}' source '{}' has no render target",
-                     name(), sources_[index].get().name());
-    }
-    for (uint32_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-      const VkDescriptorImageInfo imageInfo = sourceImageInfo(
-          name(), index, source->get().target(frameIndex), inputs[index]);
-
-      auto &write = writes[frameIndex];
-      write.images.push_back(pipeline::DescriptorImageWrite::one(
-          inputs[index].binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-          imageInfo));
-    }
-  }
-
-  return writes;
 }
 
 } // namespace vkr::exec

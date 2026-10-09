@@ -46,6 +46,36 @@ struct DescriptorPoolDesc {
     }
     return desc;
   }
+  [[nodiscard]] static auto
+  sets(const std::vector<DescriptorSetLayoutDesc> &layouts, uint32_t count)
+      -> DescriptorPoolDesc {
+    if (layouts.empty() || count == 0 ||
+        layouts.size() > std::numeric_limits<uint32_t>::max() / count) {
+      VKR_PIPE_ERROR("Invalid descriptor pool set count");
+    }
+    DescriptorPoolDesc desc{};
+    desc.maxSets = static_cast<uint32_t>(layouts.size()) * count;
+    for (const auto &layout : layouts) {
+      const auto allocation = sets(layout, count);
+      for (const auto &entry : allocation.poolSizes) {
+        const auto size =
+            std::find_if(desc.poolSizes.begin(), desc.poolSizes.end(),
+                         [&entry](const VkDescriptorPoolSize &value) -> bool {
+                           return value.type == entry.type;
+                         });
+        if (size == desc.poolSizes.end()) {
+          desc.poolSizes.push_back(entry);
+        } else {
+          if (entry.descriptorCount >
+              std::numeric_limits<uint32_t>::max() - size->descriptorCount) {
+            VKR_PIPE_ERROR("Descriptor pool size overflow");
+          }
+          size->descriptorCount += entry.descriptorCount;
+        }
+      }
+    }
+    return desc;
+  }
 };
 
 class DescriptorPool {

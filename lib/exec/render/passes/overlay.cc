@@ -38,21 +38,36 @@ OverlayPass::OverlayPass(RenderExecutor &executor, const core::Device &device,
                          const core::CommandPool &commandPool,
                          scene::Scene &scene, Pass &source)
     : executor_(executor), device_(device), command_pool_(commandPool),
-      scene_(scene), source_(source), descriptor_pool_(device),
-      descriptor_layout_(device),
-      descriptor_sets_(device, descriptor_pool_, descriptor_layout_) {}
+      scene_(scene), source_(source), descriptor_pool_(device) {
+  descriptor_sets_.resize(executor_.framesInFlight());
+}
 
 OverlayPass::~OverlayPass() { destroy(); }
 
 void OverlayPass::update(const OverlayPassDesc &desc) {
   ensureConfigurable();
-  if (render_pass_ || pipeline_ || descriptor_layout_.valid()) {
+  if (render_pass_ || pipeline_ || descriptor_pool_.valid()) {
     VKR_EXEC_ERROR("OverlayPass '{}' must be destroyed before updating its "
                    "configuration",
                    name());
   }
   validate(desc);
   auto nextDesc = desc;
+  const auto setCount = std::max<size_t>(1, nextDesc.descriptorLayouts.size());
+  while (descriptor_layouts_.size() > setCount) {
+    for (auto &frame : descriptor_sets_) {
+      frame.pop_back();
+    }
+    descriptor_layouts_.pop_back();
+  }
+  while (descriptor_layouts_.size() < setCount) {
+    descriptor_layouts_.push_back(
+        std::make_unique<pipeline::DescriptorSetLayout>(device_));
+    for (auto &frame : descriptor_sets_) {
+      frame.emplace_back(device_, descriptor_pool_,
+                         *descriptor_layouts_.back());
+    }
+  }
   desc_ = std::move(nextDesc);
 }
 
@@ -77,8 +92,14 @@ void OverlayPass::destroy() noexcept {
   selected_mesh_.reset();
   meshes_.clear();
   pipeline_.reset();
-  descriptor_sets_.destroy();
-  descriptor_layout_.destroy();
+  for (auto &frame : descriptor_sets_) {
+    for (auto &set : frame) {
+      set.destroy();
+    }
+  }
+  for (auto &layout : descriptor_layouts_) {
+    layout->destroy();
+  }
   descriptor_pool_.destroy();
   framebuffers_.reset();
   render_pass_.reset();
@@ -122,9 +143,9 @@ void OverlayPass::record() {
   executor_.beginPass(*render_pass_, *framebuffers_, {},
                       executor_.frameIndex());
   executor_.setViewportAndScissor(framebuffers_->extent());
-  descriptor_sets_.write(executor_.frameIndex());
-  if (descriptor_sets_.valid()) {
-    executor_.bindPipeline(*pipeline_, descriptor_sets_);
+  if (descriptor_pool_.valid()) {
+    executor_.bindPipeline(*pipeline_,
+                           descriptor_sets_.at(executor_.frameIndex()));
   } else {
     executor_.bindPipeline(*pipeline_);
   }
@@ -268,46 +289,57 @@ void OverlayPass::validate(const OverlayPassDesc &desc) const {
                    name());
   }
 
-  pipeline::DescriptorSetLayoutDesc layoutDesc{.bindings =
-                                                   desc.descriptorBindings};
-  if (!layoutDesc.isValid()) {
-    VKR_EXEC_ERROR("OverlayPass '{}' requires unique bindings with nonzero "
-                   "counts/stages",
-                   name());
+  VkPhysicalDeviceProperties properties{};
+  vkGetPhysicalDeviceProperties(device_.physicalDevice(), &properties);
+  auto layouts = desc.descriptorLayouts;
+  if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
+    VKR_EXEC_ERROR("OverlayPass '{}' exceeds maxBoundDescriptorSets", name());
   }
-  for (const auto &binding : layoutDesc.bindings) {
-    const auto &layout = binding.layout;
-    if (layout.descriptorCount != 1 ||
-        (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
-         layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
-         layout.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
+  for (const auto &layoutDesc : layouts) {
+    if (!layoutDesc.isValid()) {
       VKR_EXEC_ERROR(
-          "OverlayPass '{}' has an unsupported descriptor binding {}", name(),
-          layout.binding);
+          "OverlayPass '{}' requires unique bindings within each set "
+          "with nonzero counts/stages",
+          name());
+    }
+    for (const auto &binding : layoutDesc.bindings) {
+      const auto &layout = binding.layout;
+      if (layout.descriptorCount != 1 ||
+          (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
+           layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
+           layout.descriptorType !=
+               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
+        VKR_EXEC_ERROR(
+            "OverlayPass '{}' has an unsupported descriptor binding {}", name(),
+            layout.binding);
+      }
     }
   }
 }
 
 void OverlayPass::createDescriptors() {
-  if (desc_.descriptorBindings.empty()) {
-    descriptor_sets_.update({.setCount = 0});
+  auto layouts = desc_.descriptorLayouts;
+  if (layouts.empty()) {
     return;
   }
-  const pipeline::DescriptorSetLayoutDesc layoutDesc{
-      .bindings = desc_.descriptorBindings};
-  descriptor_pool_.update(pipeline::DescriptorPoolDesc::sets(
-      layoutDesc, executor_.framesInFlight()));
-  descriptor_layout_.update(layoutDesc);
-  descriptor_sets_.update({.setCount = executor_.framesInFlight()});
-  for (uint32_t index = 0; index < descriptor_sets_.count(); ++index) {
-    descriptor_sets_.write(index);
+  descriptor_pool_.update(
+      pipeline::DescriptorPoolDesc::sets(layouts, executor_.framesInFlight()));
+  for (uint32_t setIndex = 0; setIndex < layouts.size(); ++setIndex) {
+    descriptor_layouts_[setIndex]->update(layouts[setIndex]);
+    for (auto &frame : descriptor_sets_) {
+      frame[setIndex].create();
+    }
   }
 }
 
 void OverlayPass::createPipeline() {
   auto pipelineDesc = desc_.pipeline;
-  if (descriptor_layout_.valid() && pipelineDesc.layout.setLayouts.empty()) {
-    pipelineDesc.layout.setLayouts = {descriptor_layout_.layout()};
+  if (pipelineDesc.layout.setLayouts.empty()) {
+    for (const auto &layout : descriptor_layouts_) {
+      if (layout->valid()) {
+        pipelineDesc.layout.setLayouts.push_back(layout->layout());
+      }
+    }
   }
   pipeline_ =
       std::make_unique<pipeline::GraphicsPipeline>(device_, *render_pass_);

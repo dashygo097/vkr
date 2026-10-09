@@ -83,29 +83,36 @@ struct ComputeDispatchDesc {
 };
 
 struct ComputePassDesc {
-  std::vector<pipeline::DescriptorBinding> descriptorBindings{};
+  std::vector<pipeline::DescriptorSetLayoutDesc> descriptorLayouts{};
   pipeline::ComputePipelineDesc pipeline{};
   ComputeDispatchDesc dispatch{};
 
-  auto storage(uint32_t binding) -> ComputePassDesc & {
-    descriptorBindings.push_back(
-        {.layout = {binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-                    VK_SHADER_STAGE_COMPUTE_BIT}});
+  auto descriptor(uint32_t setIndex, pipeline::DescriptorBinding binding)
+      -> ComputePassDesc & {
+    if (setIndex >= descriptorLayouts.size()) {
+      descriptorLayouts.resize(static_cast<size_t>(setIndex) + 1);
+    }
+    descriptorLayouts[setIndex].bindings.push_back(std::move(binding));
     return *this;
   }
 
-  auto uniform(uint32_t binding) -> ComputePassDesc & {
-    descriptorBindings.push_back(
-        {.layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                    VK_SHADER_STAGE_COMPUTE_BIT}});
-    return *this;
+  auto storage(uint32_t setIndex, uint32_t binding) -> ComputePassDesc & {
+    return descriptor(setIndex,
+                      {.layout = {binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
+                                  VK_SHADER_STAGE_COMPUTE_BIT}});
   }
 
-  auto texture(uint32_t binding) -> ComputePassDesc & {
-    descriptorBindings.push_back(
+  auto uniform(uint32_t setIndex, uint32_t binding) -> ComputePassDesc & {
+    return descriptor(setIndex,
+                      {.layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                                  VK_SHADER_STAGE_COMPUTE_BIT}});
+  }
+
+  auto texture(uint32_t setIndex, uint32_t binding) -> ComputePassDesc & {
+    return descriptor(
+        setIndex,
         {.layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                     VK_SHADER_STAGE_COMPUTE_BIT}});
-    return *this;
   }
 
   auto shader(std::string name, resource::ShaderModuleDesc shaderDesc)
@@ -169,20 +176,23 @@ public:
   void record() override;
 
   template <typename T>
-  auto storage(uint32_t binding, T &buffer) -> ComputePass & {
-    descriptor_sets_.storage(binding, buffer);
+  auto storage(uint32_t setIndex, uint32_t binding, T &buffer)
+      -> ComputePass & {
+    descriptor_sets_.at(setIndex).storage(binding, buffer);
     return *this;
   }
 
   template <typename T>
-  auto uniform(uint32_t binding, T &buffer) -> ComputePass & {
-    descriptor_sets_.uniform(binding, buffer);
+  auto uniform(uint32_t setIndex, uint32_t binding, T &buffer)
+      -> ComputePass & {
+    descriptor_sets_.at(setIndex).uniform(binding, buffer);
     return *this;
   }
 
   template <typename T>
-  auto texture(uint32_t binding, T &texture) -> ComputePass & {
-    descriptor_sets_.texture(binding, texture);
+  auto texture(uint32_t setIndex, uint32_t binding, T &texture)
+      -> ComputePass & {
+    descriptor_sets_.at(setIndex).texture(binding, texture);
     return *this;
   }
 
@@ -194,8 +204,9 @@ private:
   // components
   ComputePassDesc desc_{};
   pipeline::DescriptorPool descriptor_pool_;
-  pipeline::DescriptorSetLayout descriptor_layout_;
-  pipeline::DescriptorSets descriptor_sets_;
+  std::vector<std::unique_ptr<pipeline::DescriptorSetLayout>>
+      descriptor_layouts_{};
+  std::vector<pipeline::DescriptorSet> descriptor_sets_{};
   std::unique_ptr<pipeline::ComputePipeline> pipeline_{};
 
   // helpers

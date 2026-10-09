@@ -133,6 +133,13 @@ public:
     return sampler_ ? sampler_->sampler() : VK_NULL_HANDLE;
   }
 
+  [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
+    return {sampler(), image_view_ ? image_view_->imageView() : VK_NULL_HANDLE,
+            desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+                ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                : desc_.finalLayout};
+  }
+
   [[nodiscard]] auto hasSampler() const noexcept -> bool {
     return sampler_ && sampler_->sampler() != VK_NULL_HANDLE;
   }

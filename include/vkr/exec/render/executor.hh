@@ -76,7 +76,9 @@ public:
 
   void bindPipeline(const pipeline::GraphicsPipeline &pipeline);
   void bindPipeline(const pipeline::GraphicsPipeline &pipeline,
-                    const pipeline::DescriptorSets &sets);
+                    pipeline::DescriptorSet &set, uint32_t setIndex);
+  void bindPipeline(const pipeline::GraphicsPipeline &pipeline,
+                    std::vector<pipeline::DescriptorSet> &sets);
   void setViewportAndScissor(VkExtent2D extent);
 
   void drawIndexed(const scene::IVertexBuffer &vertexBuffer,
@@ -105,6 +107,7 @@ private:
   uint32_t image_index_{0};
   uint32_t frame_index_{0};
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
+  std::vector<VkDescriptorSet> bound_descriptors_{};
   bool frame_active_{false};
   bool frame_submitted_{false};
   bool frame_presented_{false};

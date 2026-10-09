@@ -21,26 +21,32 @@
 namespace vkr::exec {
 
 struct OverlayPassDesc {
-  std::vector<pipeline::DescriptorBinding> descriptorBindings{};
+  std::vector<pipeline::DescriptorSetLayoutDesc> descriptorLayouts{};
   pipeline::GraphicsPipelineDesc pipeline{};
   std::vector<std::string> meshNames{};
 
-  auto descriptor(pipeline::DescriptorBinding binding) -> OverlayPassDesc & {
-    descriptorBindings.push_back(std::move(binding));
+  auto descriptor(uint32_t setIndex, pipeline::DescriptorBinding binding)
+      -> OverlayPassDesc & {
+    if (setIndex >= descriptorLayouts.size()) {
+      descriptorLayouts.resize(static_cast<size_t>(setIndex) + 1);
+    }
+    descriptorLayouts[setIndex].bindings.push_back(std::move(binding));
     return *this;
   }
 
-  auto uniform(uint32_t binding,
+  auto uniform(uint32_t setIndex, uint32_t binding,
                VkShaderStageFlags stages = VK_SHADER_STAGE_VERTEX_BIT)
       -> OverlayPassDesc & {
     return descriptor(
+        setIndex,
         {.layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, stages}});
   }
 
-  auto texture(uint32_t binding,
+  auto texture(uint32_t setIndex, uint32_t binding,
                VkShaderStageFlags stages = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> OverlayPassDesc & {
     return descriptor(
+        setIndex,
         {.layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                     stages}});
   }
@@ -67,20 +73,29 @@ public:
   void record() override;
 
   template <typename T>
-  auto uniform(uint32_t binding, T &buffer) -> OverlayPass & {
-    descriptor_sets_.uniform(binding, buffer);
+  auto uniform(uint32_t setIndex, uint32_t binding, T &buffer)
+      -> OverlayPass & {
+    for (uint32_t frame = 0; frame < descriptor_sets_.size(); ++frame) {
+      descriptor_sets_[frame].at(setIndex).uniform(binding, buffer, frame);
+    }
     return *this;
   }
 
   template <typename T>
-  auto texture(uint32_t binding, T &texture) -> OverlayPass & {
-    descriptor_sets_.texture(binding, texture);
+  auto texture(uint32_t setIndex, uint32_t binding, T &texture)
+      -> OverlayPass & {
+    for (auto &frame : descriptor_sets_) {
+      frame.at(setIndex).texture(binding, texture);
+    }
     return *this;
   }
 
   template <typename T>
-  auto storage(uint32_t binding, T &buffer) -> OverlayPass & {
-    descriptor_sets_.storage(binding, buffer);
+  auto storage(uint32_t setIndex, uint32_t binding, T &buffer)
+      -> OverlayPass & {
+    for (auto &frame : descriptor_sets_) {
+      frame.at(setIndex).storage(binding, buffer);
+    }
     return *this;
   }
 
@@ -125,8 +140,9 @@ private:
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
   std::unique_ptr<Framebuffers> framebuffers_{};
   pipeline::DescriptorPool descriptor_pool_;
-  pipeline::DescriptorSetLayout descriptor_layout_;
-  pipeline::DescriptorSets descriptor_sets_;
+  std::vector<std::unique_ptr<pipeline::DescriptorSetLayout>>
+      descriptor_layouts_{};
+  std::vector<std::vector<pipeline::DescriptorSet>> descriptor_sets_{};
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
   std::unordered_map<std::string, MeshEntry> meshes_{};
 

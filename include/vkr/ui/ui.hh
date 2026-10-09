@@ -148,7 +148,7 @@ private:
   std::unique_ptr<ShaderEditor> shader_editor_;
   std::unique_ptr<LoggingPanel> logging_panel_;
   std::unique_ptr<pipeline::DescriptorSetLayout> offscreen_descriptor_layout_;
-  std::unique_ptr<pipeline::DescriptorSets> offscreen_descriptor_sets_;
+  std::vector<pipeline::DescriptorSet> offscreen_descriptor_sets_{};
 
   // state
   Selection selection_{};

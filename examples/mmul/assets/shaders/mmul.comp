@@ -12,7 +12,7 @@ struct MMulParams_0
 };
 
 #line 17
-layout(binding = 3)
+layout(set = 1, binding = 0)
 layout(std140) uniform block_MMulParams_0
 {
     uint M_0;
@@ -21,13 +21,13 @@ layout(std140) uniform block_MMulParams_0
 } params_0;
 
 #line 8
-layout(std430, binding = 0) readonly buffer StructuredBuffer_float_t_0 {
+layout(std430, set = 0, binding = 0) readonly buffer StructuredBuffer_float_t_0 {
     float _data[];
 } A_0;
-layout(std430, binding = 1) readonly buffer StructuredBuffer_float_t_1 {
+layout(std430, set = 0, binding = 1) readonly buffer StructuredBuffer_float_t_1 {
     float _data[];
 } B_0;
-layout(std430, binding = 2) buffer StructuredBuffer_float_t_2 {
+layout(std430, set = 0, binding = 2) buffer StructuredBuffer_float_t_2 {
     float _data[];
 } C_0;
 

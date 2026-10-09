@@ -5,6 +5,8 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/resource/buffer/uniform_buffer.hh"
+#include "vkr/resource/image/image_view.hh"
+#include "vkr/resource/image/sampler.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/ui/selection.hh"
 #include <array>
@@ -74,9 +76,8 @@ private:
 
   struct Draw {
     std::reference_wrapper<const pipeline::GraphicsPipeline> pipeline;
-    std::reference_wrapper<const pipeline::DescriptorSets> images;
-    std::reference_wrapper<const pipeline::DescriptorSets> parameters;
-    uint32_t index{0};
+    std::reference_wrapper<const pipeline::DescriptorSet> images;
+    std::reference_wrapper<const pipeline::DescriptorSet> parameters;
   };
 
   const core::Device &device_;
@@ -88,8 +89,8 @@ private:
   pipeline::DescriptorSetLayout image_layout_;
   pipeline::DescriptorSetLayout parameter_layout_;
   pipeline::DescriptorPool descriptor_pool_;
-  pipeline::DescriptorSets image_sets_;
-  pipeline::DescriptorSets parameter_sets_;
+  std::vector<pipeline::DescriptorSet> image_sets_{};
+  std::vector<pipeline::DescriptorSet> parameter_sets_{};
   resource::Sampler nearest_sampler_;
   resource::Sampler linear_sampler_;
   pipeline::GraphicsPipeline pipeline_;

@@ -33,8 +33,8 @@ private:
     auto desc = RasterPassDesc::offscreen(
         "teapot-local", swapchain().extent2D(), VK_FORMAT_R8G8B8A8_UNORM,
         VK_FORMAT_D32_SFLOAT, VertexNormalTexture3D::vertexInputDesc());
-    desc.uniform(0, VK_SHADER_STAGE_VERTEX_BIT)
-        .texture(1, VK_SHADER_STAGE_FRAGMENT_BIT)
+    desc.uniform(0, 0, VK_SHADER_STAGE_VERTEX_BIT)
+        .texture(1, 0, VK_SHADER_STAGE_FRAGMENT_BIT)
         .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
         .clearDepth();
     desc.pipeline
@@ -45,11 +45,12 @@ private:
         .noCull();
 
     auto &rasterPass = graph().raster("raster", std::move(desc));
-    rasterPass.uniform(0, scene().uniformBuffer("default"))
-        .texture(1, scene().texture("teapot_texture"));
+    rasterPass.uniform(0, 0, scene().uniformBuffer("default"))
+        .texture(1, 0, scene().texture("teapot_texture"));
 
     auto postDesc = FullscreenPassDesc::postProcess(
         "postprocess", swapchain().extent2D(), VK_FORMAT_R8G8B8A8_UNORM);
+    postDesc.input(1, 0);
     postDesc.pipeline
         .vertexShader(ShaderModuleDesc::vertexGlslFile(
             resolve("shaders/postprocess/postprocess.vert")))

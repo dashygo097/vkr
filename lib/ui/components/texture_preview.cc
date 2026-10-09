@@ -13,6 +13,17 @@
 namespace vkr::ui {
 namespace {
 
+// Borrows the preview's selected view and sampler; owns no GPU resources.
+struct PreviewTexture {
+  const resource::ImageView &view;
+  const resource::Sampler &sampler;
+  VkImageLayout layout;
+
+  [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
+    return {sampler.sampler(), view.imageView(), layout};
+  }
+};
+
 constexpr auto VertexShader = R"glsl(
 #version 450
 layout(location = 0) in vec2 position;
@@ -159,8 +170,6 @@ TexturePreview::TexturePreview(const core::Device &device,
       command_buffers_(commandBuffers), scene_(scene), selection_(selection),
       image_layout_(device), parameter_layout_(device),
       descriptor_pool_(device),
-      image_sets_(device, descriptor_pool_, image_layout_),
-      parameter_sets_(device, descriptor_pool_, parameter_layout_),
       nearest_sampler_(device), linear_sampler_(device),
       pipeline_(device, renderPass) {
   static_assert(sizeof(Parameters) == 32);
@@ -187,20 +196,21 @@ TexturePreview::TexturePreview(const core::Device &device,
                      commandBuffers.size() * 2U}},
       .maxSets = commandBuffers.size() * 4U,
   });
-  image_sets_.update({.setCount = commandBuffers.size() * 2U});
-  parameter_sets_.update({.setCount = commandBuffers.size() * 2U});
+  image_sets_.reserve(commandBuffers.size() * 2U);
+  parameter_sets_.reserve(commandBuffers.size() * 2U);
   nearest_sampler_.update(resource::SamplerDesc::nearestClampToEdge());
   linear_sampler_.update(resource::SamplerDesc::linearClampToEdge());
   draws_.reserve(commandBuffers.size() * 2U);
   for (uint32_t frame = 0; frame < commandBuffers.size(); ++frame) {
     frames_.push_back(std::make_unique<Frame>(device));
     for (uint32_t slot = 0; slot < 2; ++slot) {
-      auto write = pipeline::DescriptorSetWrite::forSet(frame * 2 + slot);
-      write.buffers.push_back(pipeline::DescriptorBufferWrite::uniform(
-          0, frames_.back()->parameters[slot].descriptorInfo()));
-      parameter_sets_.write({write});
-      draws_.push_back(
-          {pipeline_, image_sets_, parameter_sets_, frame * 2 + slot});
+      image_sets_.emplace_back(device_, descriptor_pool_, image_layout_);
+      image_sets_.back().create();
+      parameter_sets_.emplace_back(device_, descriptor_pool_, parameter_layout_);
+      auto &parameters = parameter_sets_.back();
+      parameters.uniform(0, frames_.back()->parameters[slot]);
+      parameters.create();
+      draws_.push_back({pipeline_, image_sets_.back(), parameters});
     }
   }
 }
@@ -508,7 +518,7 @@ void TexturePreview::bind(const ImDrawList *, const ImDrawCmd *command) {
   // Bind both sets with our layout first. ImGui may then rebind set 0 with its
   // compatible layout without disturbing the display parameters in set 1.
   const std::array<VkDescriptorSet, 2> sets{
-      draw.images.get().set(draw.index), draw.parameters.get().set(draw.index)};
+      draw.images.get().set(), draw.parameters.get().set()};
   vkCmdBindDescriptorSets(state.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           draw.pipeline.get().layout(), 0,
                           static_cast<uint32_t>(sets.size()), sets.data(), 0,
@@ -596,16 +606,17 @@ void TexturePreview::draw(const Image &value, ImVec2 available,
       previous.components.a != view.components.a) {
     imageView.update(view);
   }
-  const auto sampler =
+  const auto &sampler =
       linear_ && (value.features &
                   VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
-          ? linear_sampler_.sampler()
-          : nearest_sampler_.sampler();
+          ? linear_sampler_
+          : nearest_sampler_;
   const auto index = frame_index_ * 2 + slot;
-  auto write = pipeline::DescriptorSetWrite::forSet(index);
-  write.images.push_back(pipeline::DescriptorImageWrite::combinedImageSampler(
-      0, {sampler, imageView.imageView(), value.layout}));
-  image_sets_.write({write});
+  auto &imageSet = image_sets_.at(index);
+  const PreviewTexture texture{imageView, sampler, value.layout};
+  imageSet.texture(0, texture);
+  imageSet.update();
+  parameter_sets_.at(index).update();
   Parameters parameters{};
   parameters.channel = channel_;
   parameters.exposure = exposure_;
@@ -636,7 +647,7 @@ void TexturePreview::draw(const Image &value, ImVec2 available,
         ImGui::GetFontSize() * 0.75f, ImVec2{}, 0.0f);
     drawList.AddCallback(bind, &draws_.at(index));
     const bool flip = flip_y_;
-    drawList.AddImage(reinterpret_cast<ImTextureID>(image_sets_.set(index)),
+    drawList.AddImage(reinterpret_cast<ImTextureID>(imageSet.set()),
                       position, end, {0.0f, flip ? 1.0f : 0.0f},
                       {1.0f, flip ? 0.0f : 1.0f});
     drawList.AddCallback(ImDrawCallback_ResetRenderState, nullptr);

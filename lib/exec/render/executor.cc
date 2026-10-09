@@ -184,22 +184,37 @@ void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline) {
 }
 
 void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
-                                  const pipeline::DescriptorSets &sets) {
+                                  pipeline::DescriptorSet &set,
+                                  uint32_t setIndex) {
+  if (setIndex >= pipeline.desc().layout.setLayouts.size()) {
+    VKR_EXEC_ERROR("Descriptor set index {} is not declared in the pipeline",
+                   setIndex);
+  }
   bindPipeline(pipeline);
-
-  if (sets.empty()) {
-    return;
-  }
-
-  if (frame_index_ >= sets.count()) {
-    VKR_EXEC_ERROR("Descriptor set frame index {} out of range, count {}",
-                   frame_index_, sets.count());
-  }
-
-  VkDescriptorSet descriptorSet = sets.set(frame_index_);
-
+  set.update();
+  const auto descriptorSet = set.set();
   vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          pipeline.layout(), 0, 1, &descriptorSet, 0, nullptr);
+                          pipeline.layout(), setIndex, 1, &descriptorSet, 0,
+                          nullptr);
+}
+
+void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
+                                  std::vector<pipeline::DescriptorSet> &sets) {
+  bindPipeline(pipeline);
+  if (sets.size() > pipeline.desc().layout.setLayouts.size()) {
+    VKR_EXEC_ERROR("Descriptor set count exceeds the pipeline layout");
+  }
+  bound_descriptors_.clear();
+  for (auto &set : sets) {
+    set.update();
+    bound_descriptors_.push_back(set.set());
+  }
+  if (!bound_descriptors_.empty()) {
+    vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            pipeline.layout(), 0,
+                            static_cast<uint32_t>(bound_descriptors_.size()),
+                            bound_descriptors_.data(), 0, nullptr);
+  }
 }
 
 void RenderExecutor::setViewportAndScissor(VkExtent2D extent) {

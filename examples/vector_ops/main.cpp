@@ -118,10 +118,10 @@ private:
 
   void buildGraph() override {
     ComputePassDesc passDesc{};
-    passDesc.storage(0)
-        .storage(1)
-        .storage(2)
-        .uniform(3)
+    passDesc.storage(0, 0)
+        .storage(0, 1)
+        .storage(0, 2)
+        .uniform(1, 0)
         .shader("vector_ops",
 #ifdef VKR_HAS_SLANG
                 ShaderModuleDesc::computeSlangFile(
@@ -137,10 +137,10 @@ private:
         .setReads({"input_a", "input_b"})
         .setWrites({"output_c"});
     pass.update(passDesc);
-    pass.storage(0, *input_a_)
-        .storage(1, *input_b_)
-        .storage(2, *output_c_)
-        .uniform(3, *params_);
+    pass.storage(0, 0, *input_a_)
+        .storage(0, 1, *input_b_)
+        .storage(0, 2, *output_c_)
+        .uniform(1, 0, *params_);
   }
 
   void afterExecute(const ProfileReport &report) override {
@@ -185,9 +185,11 @@ private:
               << " ms, median=" << cpuStats.medianMs
               << " ms, max=" << cpuStats.maxMs << " ms\n";
 
-    const auto gpuSample = std::find_if(
-        report.gpuSamples.begin(), report.gpuSamples.end(),
-        [](const ProfileSample &sample) { return sample.name == "vector_ops"; });
+    const auto gpuSample =
+        std::find_if(report.gpuSamples.begin(), report.gpuSamples.end(),
+                     [](const ProfileSample &sample) {
+                       return sample.name == "vector_ops";
+                     });
 
     if (gpuSample != report.gpuSamples.end() && gpuSample->milliseconds > 0.0) {
       std::cout << "gpu dispatch:   min=" << gpuSample->minMilliseconds

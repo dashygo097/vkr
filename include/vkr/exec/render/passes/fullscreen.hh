@@ -24,42 +24,48 @@ namespace vkr::exec {
 
 struct FullscreenPassDesc {
   pipeline::OffscreenTargetDesc target{};
-  std::vector<pipeline::DescriptorBinding> descriptorBindings{};
+  std::vector<pipeline::DescriptorSetLayoutDesc> descriptorLayouts{};
   std::vector<VkClearValue> clearValues{};
   std::vector<RenderPassInputDesc> inputs{};
   pipeline::GraphicsPipelineDesc pipeline{};
 
-  auto descriptor(pipeline::DescriptorBinding binding) -> FullscreenPassDesc & {
-    descriptorBindings.push_back(std::move(binding));
+  auto descriptor(uint32_t setIndex, pipeline::DescriptorBinding binding)
+      -> FullscreenPassDesc & {
+    if (setIndex >= descriptorLayouts.size()) {
+      descriptorLayouts.resize(static_cast<size_t>(setIndex) + 1);
+    }
+    descriptorLayouts[setIndex].bindings.push_back(std::move(binding));
     return *this;
   }
 
-  auto uniform(uint32_t binding,
+  auto uniform(uint32_t setIndex, uint32_t binding,
                VkShaderStageFlags stages = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FullscreenPassDesc & {
     return descriptor(
+        setIndex,
         {.layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, stages}});
   }
 
-  auto texture(uint32_t binding,
+  auto texture(uint32_t setIndex, uint32_t binding,
                VkShaderStageFlags stages = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FullscreenPassDesc & {
     return descriptor(
+        setIndex,
         {.layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
                     stages}});
   }
 
-  auto input(uint32_t binding,
+  auto input(uint32_t setIndex, uint32_t binding,
              VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FullscreenPassDesc & {
-    inputs.push_back(RenderPassInputDesc::color(binding, stageFlags));
+    inputs.push_back(RenderPassInputDesc::color(setIndex, binding, stageFlags));
     return *this;
   }
 
-  auto inputDepth(uint32_t binding,
+  auto inputDepth(uint32_t setIndex, uint32_t binding,
                   VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FullscreenPassDesc & {
-    inputs.push_back(RenderPassInputDesc::depth(binding, stageFlags));
+    inputs.push_back(RenderPassInputDesc::depth(setIndex, binding, stageFlags));
     return *this;
   }
 
@@ -149,20 +155,29 @@ public:
   void record() override;
 
   template <typename T>
-  auto uniform(uint32_t binding, T &buffer) -> FullscreenPass & {
-    descriptor_sets_.uniform(binding, buffer);
+  auto uniform(uint32_t setIndex, uint32_t binding, T &buffer)
+      -> FullscreenPass & {
+    for (uint32_t frame = 0; frame < descriptor_sets_.size(); ++frame) {
+      descriptor_sets_[frame].at(setIndex).uniform(binding, buffer, frame);
+    }
     return *this;
   }
 
   template <typename T>
-  auto texture(uint32_t binding, T &texture) -> FullscreenPass & {
-    descriptor_sets_.texture(binding, texture);
+  auto texture(uint32_t setIndex, uint32_t binding, T &texture)
+      -> FullscreenPass & {
+    for (auto &frame : descriptor_sets_) {
+      frame.at(setIndex).texture(binding, texture);
+    }
     return *this;
   }
 
   template <typename T>
-  auto storage(uint32_t binding, T &buffer) -> FullscreenPass & {
-    descriptor_sets_.storage(binding, buffer);
+  auto storage(uint32_t setIndex, uint32_t binding, T &buffer)
+      -> FullscreenPass & {
+    for (auto &frame : descriptor_sets_) {
+      frame.at(setIndex).storage(binding, buffer);
+    }
     return *this;
   }
 
@@ -210,8 +225,9 @@ private:
   std::unique_ptr<pipeline::RenderPass> render_pass_{};
   std::unique_ptr<Framebuffers> framebuffers_{};
   pipeline::DescriptorPool descriptor_pool_;
-  pipeline::DescriptorSetLayout descriptor_layout_;
-  pipeline::DescriptorSets descriptor_sets_;
+  std::vector<std::unique_ptr<pipeline::DescriptorSetLayout>>
+      descriptor_layouts_{};
+  std::vector<std::vector<pipeline::DescriptorSet>> descriptor_sets_{};
   std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
 
   // helpers
@@ -223,9 +239,6 @@ private:
   void createPipeline();
 
   [[nodiscard]] auto resolvedInputs() const -> std::vector<RenderPassInputDesc>;
-  [[nodiscard]] auto
-  createDescriptorWrites(const std::vector<RenderPassInputDesc> &inputs)
-      -> std::vector<pipeline::DescriptorSetWrite>;
 };
 
 } // namespace vkr::exec

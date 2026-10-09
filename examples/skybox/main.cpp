@@ -48,8 +48,8 @@ private:
     auto skyboxDesc = RasterPassDesc::offscreen(
         "skybox", swapchain().extent2D(), VK_FORMAT_R8G8B8A8_UNORM,
         VK_FORMAT_D32_SFLOAT, VertexSkybox3D::vertexInputDesc());
-    skyboxDesc.uniform(0, VK_SHADER_STAGE_VERTEX_BIT)
-        .texture(1, VK_SHADER_STAGE_FRAGMENT_BIT)
+    skyboxDesc.uniform(0, 0, VK_SHADER_STAGE_VERTEX_BIT)
+        .texture(1, 0, VK_SHADER_STAGE_FRAGMENT_BIT)
         .mesh("skybox")
         .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
         .clearDepth();
@@ -62,13 +62,13 @@ private:
         .noCull();
 
     auto &skyboxPass = graph().raster("skybox", std::move(skyboxDesc));
-    skyboxPass.uniform(0, scene().uniformBuffer("skybox"))
-        .texture(1, scene().cubemap("skybox"));
+    skyboxPass.uniform(0, 0, scene().uniformBuffer("skybox"))
+        .texture(1, 0, scene().cubemap("skybox"));
 
     auto cornellDesc = RasterPassDesc::offscreen(
         "cornellbox", swapchain().extent2D(), VK_FORMAT_R8G8B8A8_UNORM,
         VK_FORMAT_D32_SFLOAT, Vertex3D::vertexInputDesc());
-    cornellDesc.uniform(0, VK_SHADER_STAGE_VERTEX_BIT)
+    cornellDesc.uniform(0, 0, VK_SHADER_STAGE_VERTEX_BIT)
         .clearColor(0.0f, 0.0f, 0.0f, 0.0f)
         .clearDepth();
     cornellDesc.pipeline
@@ -85,11 +85,12 @@ private:
     }
 
     auto &cornellPass = graph().raster("cornellbox", std::move(cornellDesc));
-    cornellPass.uniform(0, scene().uniformBuffer("cornellbox"));
+    cornellPass.uniform(0, 0, scene().uniformBuffer("cornellbox"));
 
     auto compositeDesc = FullscreenPassDesc::postProcess(
         "skybox-cornell-composite", swapchain().extent2D(),
         VK_FORMAT_R8G8B8A8_UNORM);
+    compositeDesc.input(0, 0).input(0, 1);
     compositeDesc.pipeline
         .vertexShader(ShaderModuleDesc::vertexGlslFile(
             resolve("shaders/composite/composite.vert")))

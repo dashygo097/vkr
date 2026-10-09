@@ -1,6 +1,6 @@
 #version 450
 
-layout(binding = 0) uniform ShaderToyUBO {
+layout(set = 0, binding = 0) uniform ShaderToyUBO {
   vec3 iResolution;
   float iTime;
   float iTimeDelta;
@@ -12,10 +12,10 @@ layout(binding = 0) uniform ShaderToyUBO {
   vec3 iChannelResolution[4];
 };
 
-layout(binding = 1) uniform sampler2D iChannel0;
-layout(binding = 2) uniform sampler2D iChannel1;
-layout(binding = 3) uniform sampler2D iChannel2;
-layout(binding = 4) uniform sampler2D iChannel3;
+layout(set = 0, binding = 1) uniform sampler2D iChannel0;
+layout(set = 0, binding = 2) uniform sampler2D iChannel1;
+layout(set = 0, binding = 3) uniform sampler2D iChannel2;
+layout(set = 0, binding = 4) uniform sampler2D iChannel3;
 
 layout(location = 0) in vec2 fragUV;
 layout(location = 0) out vec4 outColor;

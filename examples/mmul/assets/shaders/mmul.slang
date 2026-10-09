@@ -13,7 +13,7 @@ StructuredBuffer<float> B;
 [[vk::binding(2, 0)]]
 RWStructuredBuffer<float> C;
 
-[[vk::binding(3, 0)]]
+[[vk::binding(0, 1)]]
 ConstantBuffer<MMulParams> params;
 
 static const uint LOCAL_SIZE = 16;
