@@ -101,10 +101,10 @@ protected:
       VKR_RES_ERROR("Cannot upload empty vertex buffer data!");
     }
 
-    resource::Buffer staging{device_, bufferSize,
-                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+    resource::Buffer staging(device_);
+    staging.update(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     staging.write(vertices, bufferSize);
 
     VkCommandBufferAllocateInfo allocInfo{};

@@ -6,170 +6,15 @@
 #include "vkr/scene/geometry/index_buffer.hh"
 #include "vkr/scene/geometry/vertex_buffer.hh"
 #include "vkr/scene/transform.hh"
-#include <algorithm>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <tiny_obj_loader.h>
-#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
 namespace vkr::scene {
-
-namespace detail {
-
-template <typename...> struct AlwaysFalse : std::false_type {};
-
-template <typename VertexType, typename = void>
-struct HasPosition : std::false_type {};
-
-template <typename VertexType>
-struct HasPosition<VertexType,
-                   std::void_t<decltype(std::declval<VertexType &>().pos)>>
-    : std::true_type {};
-
-template <typename VertexType, typename = void>
-struct HasColor : std::false_type {};
-
-template <typename VertexType>
-struct HasColor<VertexType,
-                std::void_t<decltype(std::declval<VertexType &>().color)>>
-    : std::true_type {};
-
-template <typename VertexType, typename = void>
-struct HasNormal : std::false_type {};
-
-template <typename VertexType>
-struct HasNormal<VertexType,
-                 std::void_t<decltype(std::declval<VertexType &>().normal)>>
-    : std::true_type {};
-
-template <typename VertexType, typename = void>
-struct HasTexCoord : std::false_type {};
-
-template <typename VertexType>
-struct HasTexCoord<VertexType,
-                   std::void_t<decltype(std::declval<VertexType &>().texCoord)>>
-    : std::true_type {};
-
-template <typename VertexType>
-constexpr bool UseHashDedup =
-    std::is_default_constructible_v<std::hash<VertexType>> &&
-    std::is_invocable_r_v<size_t, std::hash<VertexType>, const VertexType &>;
-
-template <typename VertexType>
-void assignPosition(VertexType &vertex, glm::vec3 pos) {
-  static_assert(HasPosition<VertexType>::value,
-                "Mesh OBJ loading requires vertex types to expose a pos field");
-
-  using PositionType = std::decay_t<decltype(vertex.pos)>;
-
-  if constexpr (std::is_same_v<PositionType, glm::vec3>) {
-    vertex.pos = pos;
-  } else if constexpr (std::is_same_v<PositionType, glm::vec2>) {
-    vertex.pos = {pos.x, pos.y};
-  } else {
-    static_assert(
-        AlwaysFalse<PositionType>::value,
-        "Mesh OBJ loading only supports glm::vec2/glm::vec3 pos fields");
-  }
-}
-
-template <typename VertexType>
-void assignColor(VertexType &vertex, glm::vec3 color) {
-  if constexpr (HasColor<VertexType>::value) {
-    using ColorType = std::decay_t<decltype(vertex.color)>;
-
-    if constexpr (std::is_same_v<ColorType, glm::vec3>) {
-      vertex.color = color;
-    } else if constexpr (std::is_same_v<ColorType, glm::vec4>) {
-      vertex.color = {color, 1.0f};
-    } else {
-      static_assert(
-          AlwaysFalse<ColorType>::value,
-          "Mesh OBJ loading only supports glm::vec3/glm::vec4 color fields");
-    }
-  }
-}
-
-template <typename VertexType>
-void assignNormal(VertexType &vertex, glm::vec3 normal) {
-  if constexpr (HasNormal<VertexType>::value) {
-    using NormalType = std::decay_t<decltype(vertex.normal)>;
-
-    if constexpr (std::is_same_v<NormalType, glm::vec3>) {
-      vertex.normal = normal;
-    } else {
-      static_assert(AlwaysFalse<NormalType>::value,
-                    "Mesh OBJ loading only supports glm::vec3 normal fields");
-    }
-  }
-}
-
-template <typename VertexType>
-void assignTexCoord(VertexType &vertex, glm::vec2 texCoord) {
-  if constexpr (HasTexCoord<VertexType>::value) {
-    using TexCoordType = std::decay_t<decltype(vertex.texCoord)>;
-
-    if constexpr (std::is_same_v<TexCoordType, glm::vec2>) {
-      vertex.texCoord = texCoord;
-    } else if constexpr (std::is_same_v<TexCoordType, glm::vec3>) {
-      vertex.texCoord = {texCoord.x, texCoord.y, 0.0f};
-    } else {
-      static_assert(
-          AlwaysFalse<TexCoordType>::value,
-          "Mesh OBJ loading only supports glm::vec2/glm::vec3 texCoord fields");
-    }
-  }
-}
-
-template <typename VertexType, bool UseHash = UseHashDedup<VertexType>>
-class VertexDeduplicator {
-public:
-  auto indexFor(const VertexType &vertex, std::vector<VertexType> &vertices)
-      -> uint16_t {
-    auto it = std::find(vertices.begin(), vertices.end(), vertex);
-    if (it != vertices.end()) {
-      return static_cast<uint16_t>(std::distance(vertices.begin(), it));
-    }
-
-    if (vertices.size() > std::numeric_limits<uint16_t>::max()) {
-      VKR_RES_ERROR("Mesh has more than {} unique vertices",
-                    std::numeric_limits<uint16_t>::max());
-    }
-
-    vertices.push_back(vertex);
-    return static_cast<uint16_t>(vertices.size() - 1);
-  }
-};
-
-template <typename VertexType> class VertexDeduplicator<VertexType, true> {
-public:
-  auto indexFor(const VertexType &vertex, std::vector<VertexType> &vertices)
-      -> uint16_t {
-    auto it = unique_vertices_.find(vertex);
-    if (it != unique_vertices_.end()) {
-      return it->second;
-    }
-
-    if (vertices.size() > std::numeric_limits<uint16_t>::max()) {
-      VKR_RES_ERROR("Mesh has more than {} unique vertices",
-                    std::numeric_limits<uint16_t>::max());
-    }
-
-    const auto index = static_cast<uint16_t>(vertices.size());
-    vertices.push_back(vertex);
-    unique_vertices_.emplace(vertex, index);
-    return index;
-  }
-
-private:
-  std::unordered_map<VertexType, uint16_t> unique_vertices_{};
-};
-
-} // namespace detail
 
 class IMesh {
 public:
@@ -247,7 +92,7 @@ public:
 
     std::vector<VBOType> vertices;
     std::vector<uint16_t> indices;
-    detail::VertexDeduplicator<VBOType> uniqueVertices;
+    std::unordered_map<VBOType, uint16_t> uniqueVertices;
 
     for (const auto &shape : shapes) {
       for (const auto &index : shape.mesh.indices) {
@@ -289,13 +134,24 @@ public:
           }
         }
 
-        VBOType vertex{};
-        detail::assignPosition(vertex, pos);
-        detail::assignColor(vertex, color);
-        detail::assignNormal(vertex, normal);
-        detail::assignTexCoord(vertex, texCoord);
+        const VBOType vertex{
+            VertexNormalTexture3D{pos, color, normal, texCoord}};
+        const auto existing = uniqueVertices.find(vertex);
+        if (existing != uniqueVertices.end()) {
+          indices.push_back(existing->second);
+          continue;
+        }
 
-        indices.push_back(uniqueVertices.indexFor(vertex, vertices));
+        if (vertices.size() > std::numeric_limits<uint16_t>::max()) {
+          VKR_RES_ERROR("Mesh exceeds the 16-bit index capacity of {} vertices",
+                        static_cast<size_t>(
+                            std::numeric_limits<uint16_t>::max()) + 1);
+        }
+
+        const auto vertexIndex = static_cast<uint16_t>(vertices.size());
+        uniqueVertices.emplace(vertex, vertexIndex);
+        vertices.push_back(vertex);
+        indices.push_back(vertexIndex);
       }
     }
 

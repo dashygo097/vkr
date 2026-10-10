@@ -7,12 +7,6 @@ namespace vkr::resource {
 
 Buffer::Buffer(const core::Device &device) : device_(device) {}
 
-Buffer::Buffer(const core::Device &device, VkDeviceSize size,
-               VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-    : device_(device) {
-  create(size, usage, properties);
-}
-
 Buffer::~Buffer() { destroy(); }
 
 Buffer::Buffer(Buffer &&other) noexcept

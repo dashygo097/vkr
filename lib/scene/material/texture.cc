@@ -253,10 +253,9 @@ void Texture::createFromFile() {
     VKR_RES_ERROR("Failed to load texture image from file: {}", desc_.filePath);
   }
 
-  const uint32_t width = static_cast<uint32_t>(loadedWidth);
-  const uint32_t height = static_cast<uint32_t>(loadedHeight);
-  const uint32_t channels =
-      desc_.forceRgba ? 4U : static_cast<uint32_t>(loadedChannels);
+  auto width = static_cast<uint32_t>(loadedWidth);
+  auto height = static_cast<uint32_t>(loadedHeight);
+  auto channels = desc_.forceRgba ? 4U : static_cast<uint32_t>(loadedChannels);
 
   if (width == 0 || height == 0 || channels == 0) {
     VKR_RES_ERROR("Loaded image '{}' has invalid size/channels",
@@ -267,9 +266,10 @@ void Texture::createFromFile() {
                                  static_cast<VkDeviceSize>(height) *
                                  static_cast<VkDeviceSize>(channels);
 
-  resource::Buffer staging{device_, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+  resource::Buffer staging(device_);
+  staging.update(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   staging.write(pixels.get(), imageSize);
 
   auto imageDesc = desc_.image;

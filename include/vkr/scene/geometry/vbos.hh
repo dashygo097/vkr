@@ -9,6 +9,8 @@
 
 namespace vkr::scene {
 
+struct VertexNormalTexture3D;
+
 struct VertexInputDesc {
   std::vector<VkVertexInputBindingDescription> bindings{};
   std::vector<VkVertexInputAttributeDescription> attributes{};
@@ -41,6 +43,7 @@ struct Vertex2D {
   Vertex2D() = default;
   explicit Vertex2D(glm::vec2 pos, glm::vec3 color = glm::vec3{0.0f})
       : pos(pos), color(color) {}
+  explicit Vertex2D(const VertexNormalTexture3D &v);
 
   [[nodiscard]] auto operator==(const Vertex2D &other) const -> bool {
     return pos == other.pos && color == other.color;
@@ -93,6 +96,7 @@ struct VertexTextured2D {
 
   explicit VertexTextured2D(const Vertex2D &v)
       : pos(v.pos), color(v.color), texCoord(glm::vec2{0.0f}) {}
+  explicit VertexTextured2D(const VertexNormalTexture3D &v);
 
   [[nodiscard]] auto operator==(const VertexTextured2D &other) const -> bool {
     return pos == other.pos && color == other.color &&
@@ -147,6 +151,7 @@ struct Vertex3D {
   Vertex3D() = default;
   explicit Vertex3D(glm::vec3 pos, glm::vec3 color = glm::vec3{0.0f})
       : pos(pos), color(color) {}
+  explicit Vertex3D(const VertexNormalTexture3D &v);
 
   [[nodiscard]] auto operator==(const Vertex3D &other) const -> bool {
     return pos == other.pos && color == other.color;
@@ -199,6 +204,7 @@ struct VertexNormal3D {
 
   explicit VertexNormal3D(const Vertex3D &v)
       : pos(v.pos), color(v.color), normal(glm::vec3{0.0f}) {}
+  explicit VertexNormal3D(const VertexNormalTexture3D &v);
 
   [[nodiscard]] auto operator==(const VertexNormal3D &other) const -> bool {
     return pos == other.pos && color == other.color && normal == other.normal;
@@ -257,6 +263,7 @@ struct VertexTextured3D {
 
   explicit VertexTextured3D(const Vertex3D &v)
       : pos(v.pos), color(v.color), texCoord(glm::vec2{0.0f}) {}
+  explicit VertexTextured3D(const VertexNormalTexture3D &v);
 
   [[nodiscard]] auto operator==(const VertexTextured3D &other) const -> bool {
     return pos == other.pos && color == other.color &&
@@ -382,11 +389,27 @@ struct VertexNormalTexture3D {
   }
 };
 
+inline Vertex2D::Vertex2D(const VertexNormalTexture3D &v)
+    : pos(v.pos.x, v.pos.y), color(v.color) {}
+
+inline VertexTextured2D::VertexTextured2D(const VertexNormalTexture3D &v)
+    : pos(v.pos.x, v.pos.y), color(v.color), texCoord(v.texCoord) {}
+
+inline Vertex3D::Vertex3D(const VertexNormalTexture3D &v)
+    : pos(v.pos), color(v.color) {}
+
+inline VertexNormal3D::VertexNormal3D(const VertexNormalTexture3D &v)
+    : pos(v.pos), color(v.color), normal(v.normal) {}
+
+inline VertexTextured3D::VertexTextured3D(const VertexNormalTexture3D &v)
+    : pos(v.pos), color(v.color), texCoord(v.texCoord) {}
+
 struct VertexSkybox3D {
   glm::vec3 pos{};
 
   VertexSkybox3D() = default;
   explicit VertexSkybox3D(glm::vec3 pos) : pos(pos) {}
+  explicit VertexSkybox3D(const VertexNormalTexture3D &v) : pos(v.pos) {}
 
   [[nodiscard]] auto operator==(const VertexSkybox3D &other) const -> bool {
     return pos == other.pos;
@@ -459,6 +482,22 @@ template <typename T, glm::qualifier Q> struct hash<glm::vec<3, T, Q>> {
     size_t h2 = hash<T>{}(vec.y);
     size_t h3 = hash<T>{}(vec.z);
     return ((h1 ^ (h2 << 1)) >> 1) ^ (h3 << 1);
+  }
+};
+
+template <> struct hash<vkr::scene::Vertex2D> {
+  auto operator()(const vkr::scene::Vertex2D &vertex) const noexcept -> size_t {
+    return hash<glm::vec2>{}(vertex.pos) ^
+           (hash<glm::vec3>{}(vertex.color) << 1);
+  }
+};
+
+template <> struct hash<vkr::scene::VertexTextured2D> {
+  auto operator()(const vkr::scene::VertexTextured2D &vertex) const noexcept
+      -> size_t {
+    return hash<glm::vec2>{}(vertex.pos) ^
+           (hash<glm::vec3>{}(vertex.color) << 1) ^
+           (hash<glm::vec2>{}(vertex.texCoord) << 2);
   }
 };
 

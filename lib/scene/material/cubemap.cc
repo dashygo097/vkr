@@ -241,18 +241,19 @@ void Cubemap::create() {
     }
   }
 
-  const uint32_t width = static_cast<uint32_t>(loadedWidth);
-  const uint32_t height = static_cast<uint32_t>(loadedHeight);
-  const uint32_t channels = static_cast<uint32_t>(loadedChannels);
+  auto width = static_cast<uint32_t>(loadedWidth);
+  auto height = static_cast<uint32_t>(loadedHeight);
+  auto channels = static_cast<uint32_t>(loadedChannels);
 
   const VkDeviceSize faceSize = static_cast<VkDeviceSize>(width) *
                                 static_cast<VkDeviceSize>(height) *
                                 static_cast<VkDeviceSize>(channels);
   const VkDeviceSize imageSize = faceSize * FaceCount;
 
-  resource::Buffer staging{device_, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+  resource::Buffer staging(device_);
+  staging.update(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
   auto *data = static_cast<std::byte *>(staging.map(imageSize));
   for (uint32_t face = 0; face < FaceCount; ++face) {

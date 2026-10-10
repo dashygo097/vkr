@@ -8,8 +8,6 @@ namespace vkr::resource {
 class Buffer {
 public:
   explicit Buffer(const core::Device &device);
-  Buffer(const core::Device &device, VkDeviceSize size,
-         VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
   ~Buffer();
 
   Buffer(const Buffer &) = delete;
