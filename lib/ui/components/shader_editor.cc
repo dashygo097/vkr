@@ -584,6 +584,12 @@ ShaderEditor::ShaderEditor(exec::Graph &graph, ImFont &codeFont)
   reloadFromPipeline();
 }
 
+void ShaderEditor::update() {
+  reloadFromPipelineIfChanged();
+  const auto targets = collectTargets();
+  refreshFileBackedShaders(targets);
+}
+
 auto ShaderEditor::collectTargets() -> std::vector<PipelineTarget> {
   std::vector<PipelineTarget> targets{};
 
@@ -1381,9 +1387,7 @@ auto ShaderEditor::parseErrors(const std::string &log)
 }
 
 auto ShaderEditor::render() -> void {
-  reloadFromPipelineIfChanged();
   const auto targets = collectTargets();
-  refreshFileBackedShaders(targets);
 
   const ImGuiStyle &style = ImGui::GetStyle();
   const ImVec4 bg = style.Colors[ImGuiCol_WindowBg];

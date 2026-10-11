@@ -125,8 +125,8 @@ void UI::create() {
       if (!color.hasSampler()) {
         VKR_UI_ERROR("UI source '{}' color has no sampler", source_.name());
       }
-      offscreen_descriptor_sets_.emplace_back(
-          device_, descriptor_pool_, *offscreen_descriptor_layout_);
+      offscreen_descriptor_sets_.emplace_back(device_, descriptor_pool_,
+                                              *offscreen_descriptor_layout_);
       auto &set = offscreen_descriptor_sets_.back();
       set.texture(0, color);
       set.create();
@@ -228,8 +228,11 @@ void UI::destroy() noexcept {
 
 void UI::prepare(uint32_t frameIndex) {
   if (!created_ || frameIndex >= command_buffers_.size()) {
-    VKR_UI_ERROR("UI prepared with invalid state or frame index {}", frameIndex);
+    VKR_UI_ERROR("UI prepared with invalid state or frame index {}",
+                 frameIndex);
   }
+  ImGui::SetCurrentContext(context_.get());
+  shader_editor_->update();
   offscreen_descriptor_sets_.at(frameIndex).update();
   inspector_panel_->prepare(frameIndex);
 }

@@ -33,6 +33,8 @@ class ShaderEditor final : public UiComponent {
 public:
   ShaderEditor(exec::Graph &graph, ImFont &codeFont);
 
+  void update();
+
 private:
   void render() override;
 

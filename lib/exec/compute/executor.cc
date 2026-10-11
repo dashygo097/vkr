@@ -112,8 +112,8 @@ void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline) {
 }
 
 void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline,
-                                  pipeline::DescriptorSet &set,
-                                  uint32_t setIndex) {
+                                   pipeline::DescriptorSet &set,
+                                   uint32_t setIndex) {
   if (setIndex >= pipeline.desc().layout.setLayouts.size()) {
     VKR_EXEC_ERROR("Descriptor set index {} is not declared in the pipeline",
                    setIndex);
@@ -127,7 +127,7 @@ void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline,
 }
 
 void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline,
-                                  std::vector<pipeline::DescriptorSet> &sets) {
+                                   std::vector<pipeline::DescriptorSet> &sets) {
   bindPipeline(pipeline);
   if (sets.size() > pipeline.desc().layout.setLayouts.size()) {
     VKR_EXEC_ERROR("Descriptor set count exceeds the pipeline layout");
