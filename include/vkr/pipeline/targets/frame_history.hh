@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 struct FrameHistoryTargetDesc {
   OffscreenTargetDesc target{};
@@ -87,4 +87,4 @@ private:
   void ensureTargets();
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

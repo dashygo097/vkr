@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 struct DescriptorSetLayoutDesc {
   std::vector<DescriptorBinding> bindings{};
@@ -62,4 +62,4 @@ private:
   VkDescriptorSetLayout layout_{VK_NULL_HANDLE};
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

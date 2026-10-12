@@ -1,7 +1,7 @@
 #include "vkr/pipeline/compute_pipeline.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 ComputePipeline::ComputePipeline(const core::Device &device)
     : device_(device) {}
@@ -48,7 +48,7 @@ auto ComputePipeline::update(const ComputePipelineDesc &desc) -> bool {
   auto shaderDesc = desc_.shader;
   shaderDesc.setEntryPoint(desc_.entryPoint);
 
-  auto nextShaderModule = std::make_unique<resource::ShaderModule>(device_);
+  auto nextShaderModule = std::make_unique<res::ShaderModule>(device_);
   nextShaderModule->update(shaderDesc);
 
   if (!nextShaderModule->valid()) {
@@ -114,4 +114,4 @@ auto ComputePipeline::update(const ComputePipelineDesc &desc) -> bool {
   return true;
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

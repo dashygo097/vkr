@@ -1,15 +1,15 @@
 #include "vkr/exec/render/executor.hh"
 #include "vkr/logger.hh"
+#include <array>
 
 namespace vkr::exec {
 
 RenderExecutor::RenderExecutor(const core::Device &device,
                                const core::Swapchain &swapchain,
                                const core::CommandPool &commandPool,
-                               scene::Scene &scene,
                                core::CommandBuffers &commandBuffers)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
-      scene_(scene), command_buffers_(commandBuffers) {
+      command_buffers_(commandBuffers) {
   if (command_pool_.queueRole() != core::CommandQueueRole::Graphics) {
     VKR_EXEC_ERROR("RenderExecutor requires a graphics command pool");
   }
@@ -134,7 +134,7 @@ auto RenderExecutor::framesInFlight() const noexcept -> uint32_t {
   return command_buffers_.size();
 }
 
-void RenderExecutor::beginPass(const pipeline::RenderPass &renderPass,
+void RenderExecutor::beginPass(const pipe::RenderPass &renderPass,
                                const Framebuffers &framebuffers,
                                const std::vector<VkClearValue> &clearValues,
                                uint32_t framebufferIndex,
@@ -168,7 +168,7 @@ void RenderExecutor::endPass() {
   vkCmdEndRenderPass(command_buffer_);
 }
 
-void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline) {
+void RenderExecutor::bindPipeline(const pipe::GraphicsPipeline &pipeline) {
   ensureFrameActive("bindPipeline");
 
   if (pipeline.pipeline() == VK_NULL_HANDLE) {
@@ -183,9 +183,8 @@ void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline) {
                     pipeline.pipeline());
 }
 
-void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
-                                  pipeline::DescriptorSet &set,
-                                  uint32_t setIndex) {
+void RenderExecutor::bindPipeline(const pipe::GraphicsPipeline &pipeline,
+                                  pipe::DescriptorSet &set, uint32_t setIndex) {
   if (setIndex >= pipeline.desc().layout.setLayouts.size()) {
     VKR_EXEC_ERROR("Descriptor set index {} is not declared in the pipeline",
                    setIndex);
@@ -198,8 +197,8 @@ void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
                           nullptr);
 }
 
-void RenderExecutor::bindPipeline(const pipeline::GraphicsPipeline &pipeline,
-                                  std::vector<pipeline::DescriptorSet> &sets) {
+void RenderExecutor::bindPipeline(const pipe::GraphicsPipeline &pipeline,
+                                  std::vector<pipe::DescriptorSet> &sets) {
   bindPipeline(pipeline);
   if (sets.size() > pipeline.desc().layout.setLayouts.size()) {
     VKR_EXEC_ERROR("Descriptor set count exceeds the pipeline layout");
@@ -255,32 +254,6 @@ void RenderExecutor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
   vkCmdDrawIndexed(command_buffer_,
                    static_cast<uint32_t>(indexBuffer.indices().size()), 1, 0, 0,
                    0);
-}
-
-void RenderExecutor::drawGeometry() {
-  ensureFrameActive("drawGeometry");
-
-  auto meshNames = scene_.listMeshNames();
-
-  if (meshNames.empty()) {
-    vkCmdDraw(command_buffer_, 3, 1, 0, 0);
-    return;
-  }
-
-  for (const auto &name : meshNames) {
-    const auto mesh = scene_.findMesh(name);
-    if (!mesh || !mesh->get().isValid()) {
-      continue;
-    }
-
-    const auto vertexBuffer = mesh->get().vertexBufferBase();
-    const auto indexBuffer = mesh->get().indexBuffer();
-    if (!vertexBuffer || !indexBuffer) {
-      continue;
-    }
-
-    drawIndexed(vertexBuffer->get(), indexBuffer->get());
-  }
 }
 
 void RenderExecutor::drawFullscreenTriangle() {

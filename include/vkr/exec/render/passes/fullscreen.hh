@@ -23,13 +23,13 @@
 namespace vkr::exec {
 
 struct FullscreenPassDesc {
-  pipeline::OffscreenTargetDesc target{};
-  std::vector<pipeline::DescriptorSetLayoutDesc> descriptorLayouts{};
+  pipe::OffscreenTargetDesc target{};
+  std::vector<pipe::DescriptorSetLayoutDesc> descriptorLayouts{};
   std::vector<VkClearValue> clearValues{};
   std::vector<RenderPassInputDesc> inputs{};
-  pipeline::GraphicsPipelineDesc pipeline{};
+  pipe::GraphicsPipelineDesc pipeline{};
 
-  auto descriptor(uint32_t setIndex, pipeline::DescriptorBinding binding)
+  auto descriptor(uint32_t setIndex, pipe::DescriptorBinding binding)
       -> FullscreenPassDesc & {
     if (setIndex >= descriptorLayouts.size()) {
       descriptorLayouts.resize(static_cast<size_t>(setIndex) + 1);
@@ -89,8 +89,8 @@ struct FullscreenPassDesc {
                                       VkFormat format) -> FullscreenPassDesc {
     FullscreenPassDesc desc{};
     desc.target =
-        pipeline::OffscreenTargetDesc::colorOnly(width, height, format);
-    desc.pipeline = pipeline::GraphicsPipelineDesc::fullscreen("fullscreen");
+        pipe::OffscreenTargetDesc::colorOnly(width, height, format);
+    desc.pipeline = pipe::GraphicsPipelineDesc::fullscreen("fullscreen");
     return desc;
   }
 
@@ -105,8 +105,8 @@ struct FullscreenPassDesc {
       -> FullscreenPassDesc {
     FullscreenPassDesc desc{};
     desc.target =
-        pipeline::OffscreenTargetDesc::sampledColorOnly(width, height, format);
-    desc.pipeline = pipeline::GraphicsPipelineDesc::fullscreen("fullscreen");
+        pipe::OffscreenTargetDesc::sampledColorOnly(width, height, format);
+    desc.pipeline = pipe::GraphicsPipelineDesc::fullscreen("fullscreen");
     return desc;
   }
 
@@ -122,9 +122,9 @@ struct FullscreenPassDesc {
                                         VkFormat format) -> FullscreenPassDesc {
     FullscreenPassDesc desc{};
     desc.target =
-        pipeline::OffscreenTargetDesc::sampledColorOnly(width, height, format);
+        pipe::OffscreenTargetDesc::sampledColorOnly(width, height, format);
     desc.pipeline =
-        pipeline::GraphicsPipelineDesc::fullscreen(std::move(pipelineName));
+        pipe::GraphicsPipelineDesc::fullscreen(std::move(pipelineName));
     desc.clearColor(0.0F, 0.0F, 0.0F, 1.0F);
     return desc;
   }
@@ -185,18 +185,18 @@ public:
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
       -> FullscreenPass &;
 
-  [[nodiscard]] auto target() -> pipeline::OffscreenTarget &;
-  [[nodiscard]] auto target() const -> const pipeline::OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t) -> pipeline::OffscreenTarget & override {
+  [[nodiscard]] auto target() -> pipe::OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const pipe::OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t) -> pipe::OffscreenTarget & override {
     return target();
   }
   [[nodiscard]] auto target(uint32_t) const
-      -> const pipeline::OffscreenTarget & override {
+      -> const pipe::OffscreenTarget & override {
     return target();
   }
 
   [[nodiscard]] auto editablePipeline() noexcept -> std::optional<
-      std::reference_wrapper<pipeline::GraphicsPipeline>> override {
+      std::reference_wrapper<pipe::GraphicsPipeline>> override {
     if (!pipeline_) {
       return std::nullopt;
     }
@@ -205,7 +205,7 @@ public:
   }
 
   [[nodiscard]] auto editablePipeline() const noexcept -> std::optional<
-      std::reference_wrapper<const pipeline::GraphicsPipeline>> override {
+      std::reference_wrapper<const pipe::GraphicsPipeline>> override {
     if (!pipeline_) {
       return std::nullopt;
     }
@@ -221,14 +221,14 @@ private:
   // components
   FullscreenPassDesc desc_{};
   std::vector<std::reference_wrapper<Pass>> sources_{};
-  std::unique_ptr<pipeline::OffscreenTarget> target_{};
-  std::unique_ptr<pipeline::RenderPass> render_pass_{};
+  std::unique_ptr<pipe::OffscreenTarget> target_{};
+  std::unique_ptr<pipe::RenderPass> render_pass_{};
   std::unique_ptr<Framebuffers> framebuffers_{};
-  pipeline::DescriptorPool descriptor_pool_;
-  std::vector<std::unique_ptr<pipeline::DescriptorSetLayout>>
+  pipe::DescriptorPool descriptor_pool_;
+  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>>
       descriptor_layouts_{};
-  std::vector<std::vector<pipeline::DescriptorSet>> descriptor_sets_{};
-  std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
+  std::vector<std::vector<pipe::DescriptorSet>> descriptor_sets_{};
+  std::unique_ptr<pipe::GraphicsPipeline> pipeline_{};
 
   // helpers
   void createTarget();

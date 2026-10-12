@@ -15,8 +15,8 @@ namespace {
 
 // Borrows the preview's selected view and sampler; owns no GPU resources.
 struct PreviewTexture {
-  const resource::ImageView &view;
-  const resource::Sampler &sampler;
+  const res::ImageView &view;
+  const res::Sampler &sampler;
   VkImageLayout layout;
 
   [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
@@ -111,7 +111,7 @@ auto texelFormat(VkFormat format) -> bool {
   return bytes == vk::blockSize(value);
 }
 
-auto readTexel(VkFormat format, const resource::Buffer &buffer)
+auto readTexel(VkFormat format, const res::Buffer &buffer)
     -> std::array<float, 4> {
   const auto value = static_cast<vk::Format>(format);
   std::array<float, 4> result{0.0f, 0.0f, 0.0f, 1.0f};
@@ -156,13 +156,13 @@ auto readTexel(VkFormat format, const resource::Buffer &buffer)
 } // namespace
 
 TexturePreview::Frame::Frame(const core::Device &device)
-    : views{resource::ImageView{device}, resource::ImageView{device}},
-      parameters{resource::UniformBuffer<Parameters>{device},
-                 resource::UniformBuffer<Parameters>{device}},
+    : views{res::ImageView{device}, res::ImageView{device}},
+      parameters{res::UniformBuffer<Parameters>{device},
+                 res::UniformBuffer<Parameters>{device}},
       readback(device) {}
 
 TexturePreview::TexturePreview(const core::Device &device,
-                               const pipeline::RenderPass &renderPass,
+                               const pipe::RenderPass &renderPass,
                                const core::CommandBuffers &commandBuffers,
                                const scene::Scene &scene,
                                const Selection &selection)
@@ -198,8 +198,8 @@ TexturePreview::TexturePreview(const core::Device &device,
   });
   image_sets_.reserve(commandBuffers.size() * 2U);
   parameter_sets_.reserve(commandBuffers.size() * 2U);
-  nearest_sampler_.update(resource::SamplerDesc::nearestClampToEdge());
-  linear_sampler_.update(resource::SamplerDesc::linearClampToEdge());
+  nearest_sampler_.update(res::SamplerDesc::nearestClampToEdge());
+  linear_sampler_.update(res::SamplerDesc::linearClampToEdge());
   draws_.reserve(commandBuffers.size() * 2U);
   for (uint32_t frame = 0; frame < commandBuffers.size(); ++frame) {
     frames_.push_back(std::make_unique<Frame>(device));
@@ -254,11 +254,11 @@ auto TexturePreview::image() const -> std::optional<Image> {
       return std::nullopt;
     }
     const auto &value = cubemap->get();
-    result.image = resource::ImageDesc::sampled2D(value.width(), value.height(),
+    result.image = res::ImageDesc::sampled2D(value.width(), value.height(),
                                                   value.desc().format);
     result.image.arrayLayers = 6;
     result.view =
-        resource::ImageViewDesc::cubemap(value.image(), value.desc().format);
+        res::ImageViewDesc::cubemap(value.image(), value.desc().format);
     result.layout = value.layout();
     result.cubemap = true;
   } else {
@@ -355,11 +355,11 @@ void TexturePreview::createPipeline() {
       {1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},
   };
   auto desc =
-      pipeline::GraphicsPipelineDesc::fullscreen("Inspector preview")
+      pipe::GraphicsPipelineDesc::fullscreen("Inspector preview")
           .vertexInputDesc(std::move(input))
-          .vertexShader(resource::ShaderModuleDesc::vertexGlslSource(
+          .vertexShader(res::ShaderModuleDesc::vertexGlslSource(
               VertexShader, "inspector_preview.vert"))
-          .fragmentShader(resource::ShaderModuleDesc::fragmentGlslSource(
+          .fragmentShader(res::ShaderModuleDesc::fragmentGlslSource(
               FragmentShader, "inspector_preview.frag"))
           .descriptorSetLayout(image_layout_.layout())
           .descriptorSetLayout(parameter_layout_.layout())

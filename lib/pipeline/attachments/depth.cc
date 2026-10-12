@@ -2,10 +2,10 @@
 #include "vkr/logger.hh"
 #include <vulkan/vulkan_core.h>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 DepthAttachment::DepthAttachment(const core::Device &device) : device_(device) {
-  image_ = std::make_unique<resource::Image>(device_);
-  image_view_ = std::make_unique<resource::ImageView>(device_);
+  image_ = std::make_unique<res::Image>(device_);
+  image_view_ = std::make_unique<res::ImageView>(device_);
 }
 
 DepthAttachment::~DepthAttachment() { destory(); };
@@ -20,7 +20,7 @@ void DepthAttachment::create() {
                   desc_.height);
   }
 
-  auto imageDesc = resource::ImageDesc::depthAttachment(
+  auto imageDesc = res::ImageDesc::depthAttachment(
       desc_.width, desc_.height, desc_.format);
 
   imageDesc.usage = desc_.usage;
@@ -30,11 +30,11 @@ void DepthAttachment::create() {
                      ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
                      : desc_.finalLayout);
   image_view_->update(
-      resource::ImageViewDesc::depth2D(image_->image(), desc_.format));
+      res::ImageViewDesc::depth2D(image_->image(), desc_.format));
 
   if (desc_.createSampler) {
     if (!sampler_) {
-      sampler_ = std::make_unique<resource::Sampler>(device_);
+      sampler_ = std::make_unique<res::Sampler>(device_);
     }
 
     sampler_->update(desc_.sampler);
@@ -60,4 +60,4 @@ void DepthAttachment::update(const DepthAttachmentDesc &desc) {
   create();
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

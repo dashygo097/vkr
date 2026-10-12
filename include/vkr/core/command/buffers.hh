@@ -24,9 +24,9 @@ public:
   CommandBuffers(const CommandBuffers &) = delete;
   auto operator=(const CommandBuffers &) -> CommandBuffers & = delete;
 
-  void update(const CommandBuffersDesc &desc);
   void create();
   void destroy();
+  void update(const CommandBuffersDesc &desc);
 
   [[nodiscard]] auto desc() const noexcept -> const CommandBuffersDesc & {
     return desc_;

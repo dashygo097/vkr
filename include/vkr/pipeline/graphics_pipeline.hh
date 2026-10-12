@@ -10,13 +10,13 @@
 #include <utility>
 #include <vector>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 class RenderPass;
 
 struct GraphicsShaderStageDesc {
   VkShaderStageFlagBits stage{VK_SHADER_STAGE_VERTEX_BIT};
-  resource::ShaderModuleDesc module{};
+  res::ShaderModuleDesc module{};
   std::string entryPoint{"main"};
 
   auto shaderStage(VkShaderStageFlagBits shaderStage) noexcept
@@ -25,7 +25,7 @@ struct GraphicsShaderStageDesc {
     return *this;
   }
 
-  auto shaderModule(resource::ShaderModuleDesc shaderModule)
+  auto shaderModule(res::ShaderModuleDesc shaderModule)
       -> GraphicsShaderStageDesc & {
     module = std::move(shaderModule);
     return *this;
@@ -37,7 +37,7 @@ struct GraphicsShaderStageDesc {
   }
 
   [[nodiscard]] static auto make(VkShaderStageFlagBits stage,
-                                 resource::ShaderModuleDesc module,
+                                 res::ShaderModuleDesc module,
                                  std::string entryPoint = "main")
       -> GraphicsShaderStageDesc {
     GraphicsShaderStageDesc desc{};
@@ -47,35 +47,35 @@ struct GraphicsShaderStageDesc {
     return desc;
   }
 
-  [[nodiscard]] static auto vertex(resource::ShaderModuleDesc module,
+  [[nodiscard]] static auto vertex(res::ShaderModuleDesc module,
                                    std::string entryPoint = "main")
       -> GraphicsShaderStageDesc {
     return make(VK_SHADER_STAGE_VERTEX_BIT, std::move(module),
                 std::move(entryPoint));
   }
 
-  [[nodiscard]] static auto fragment(resource::ShaderModuleDesc module,
+  [[nodiscard]] static auto fragment(res::ShaderModuleDesc module,
                                      std::string entryPoint = "main")
       -> GraphicsShaderStageDesc {
     return make(VK_SHADER_STAGE_FRAGMENT_BIT, std::move(module),
                 std::move(entryPoint));
   }
 
-  [[nodiscard]] static auto geometry(resource::ShaderModuleDesc module,
+  [[nodiscard]] static auto geometry(res::ShaderModuleDesc module,
                                      std::string entryPoint = "main")
       -> GraphicsShaderStageDesc {
     return make(VK_SHADER_STAGE_GEOMETRY_BIT, std::move(module),
                 std::move(entryPoint));
   }
 
-  [[nodiscard]] static auto tessControl(resource::ShaderModuleDesc module,
+  [[nodiscard]] static auto tessControl(res::ShaderModuleDesc module,
                                         std::string entryPoint = "main")
       -> GraphicsShaderStageDesc {
     return make(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, std::move(module),
                 std::move(entryPoint));
   }
 
-  [[nodiscard]] static auto tessEvaluation(resource::ShaderModuleDesc module,
+  [[nodiscard]] static auto tessEvaluation(res::ShaderModuleDesc module,
                                            std::string entryPoint = "main")
       -> GraphicsShaderStageDesc {
     return make(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, std::move(module),
@@ -1051,7 +1051,7 @@ struct GraphicsPipelineDesc {
   }
 
   auto shader(VkShaderStageFlagBits stage,
-              resource::ShaderModuleDesc shaderDesc,
+              res::ShaderModuleDesc shaderDesc,
               std::string entryPoint = "main") -> GraphicsPipelineDesc & {
     shaders.push_back(GraphicsShaderStageDesc::make(
         stage, std::move(shaderDesc), std::move(entryPoint)));
@@ -1069,14 +1069,14 @@ struct GraphicsPipelineDesc {
     return *this;
   }
 
-  auto vertexShader(resource::ShaderModuleDesc shaderDesc,
+  auto vertexShader(res::ShaderModuleDesc shaderDesc,
                     std::string entryPoint = "main") -> GraphicsPipelineDesc & {
     shaders.push_back(GraphicsShaderStageDesc::vertex(std::move(shaderDesc),
                                                       std::move(entryPoint)));
     return *this;
   }
 
-  auto fragmentShader(resource::ShaderModuleDesc shaderDesc,
+  auto fragmentShader(res::ShaderModuleDesc shaderDesc,
                       std::string entryPoint = "main")
       -> GraphicsPipelineDesc & {
     shaders.push_back(GraphicsShaderStageDesc::fragment(std::move(shaderDesc),
@@ -1084,7 +1084,7 @@ struct GraphicsPipelineDesc {
     return *this;
   }
 
-  auto geometryShader(resource::ShaderModuleDesc shaderDesc,
+  auto geometryShader(res::ShaderModuleDesc shaderDesc,
                       std::string entryPoint = "main")
       -> GraphicsPipelineDesc & {
     shaders.push_back(GraphicsShaderStageDesc::geometry(std::move(shaderDesc),
@@ -1092,7 +1092,7 @@ struct GraphicsPipelineDesc {
     return *this;
   }
 
-  auto tessControlShader(resource::ShaderModuleDesc shaderDesc,
+  auto tessControlShader(res::ShaderModuleDesc shaderDesc,
                          std::string entryPoint = "main")
       -> GraphicsPipelineDesc & {
     shaders.push_back(GraphicsShaderStageDesc::tessControl(
@@ -1100,7 +1100,7 @@ struct GraphicsPipelineDesc {
     return *this;
   }
 
-  auto tessEvaluationShader(resource::ShaderModuleDesc shaderDesc,
+  auto tessEvaluationShader(res::ShaderModuleDesc shaderDesc,
                             std::string entryPoint = "main")
       -> GraphicsPipelineDesc & {
     shaders.push_back(GraphicsShaderStageDesc::tessEvaluation(
@@ -1504,7 +1504,7 @@ public:
   }
 
   [[nodiscard]] auto shaderModules() const noexcept
-      -> const std::vector<std::unique_ptr<resource::ShaderModule>> & {
+      -> const std::vector<std::unique_ptr<res::ShaderModule>> & {
     return shader_modules_;
   }
 
@@ -1534,7 +1534,7 @@ private:
 
   // components
   GraphicsPipelineDesc desc_{};
-  std::vector<std::unique_ptr<resource::ShaderModule>> shader_modules_{};
+  std::vector<std::unique_ptr<res::ShaderModule>> shader_modules_{};
   VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
   VkPipeline vk_graphics_pipeline_{VK_NULL_HANDLE};
 
@@ -1543,4 +1543,4 @@ private:
   uint64_t revision_{0};
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

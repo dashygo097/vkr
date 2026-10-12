@@ -632,7 +632,7 @@ auto ShaderEditor::activeTarget() -> std::optional<PipelineTarget> {
 }
 
 auto ShaderEditor::activePipeline()
-    -> std::optional<std::reference_wrapper<pipeline::GraphicsPipeline>> {
+    -> std::optional<std::reference_wrapper<pipe::GraphicsPipeline>> {
   const auto target = activeTarget();
   if (!target) {
     return std::nullopt;
@@ -682,10 +682,10 @@ void ShaderEditor::setStatus(std::string msg, bool isError) {
   status_is_error_ = isError;
 }
 
-auto ShaderEditor::findShader(pipeline::GraphicsPipelineDesc &desc,
+auto ShaderEditor::findShader(pipe::GraphicsPipelineDesc &desc,
                               VkShaderStageFlagBits stage)
     -> std::optional<
-        std::reference_wrapper<pipeline::GraphicsShaderStageDesc>> {
+        std::reference_wrapper<pipe::GraphicsShaderStageDesc>> {
   for (auto &shader : desc.shaders) {
     if (shader.stage == stage) {
       return shader;
@@ -695,10 +695,10 @@ auto ShaderEditor::findShader(pipeline::GraphicsPipelineDesc &desc,
   return std::nullopt;
 }
 
-auto ShaderEditor::findShader(const pipeline::GraphicsPipelineDesc &desc,
+auto ShaderEditor::findShader(const pipe::GraphicsPipelineDesc &desc,
                               VkShaderStageFlagBits stage)
     -> std::optional<
-        std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>> {
+        std::reference_wrapper<const pipe::GraphicsShaderStageDesc>> {
   for (const auto &shader : desc.shaders) {
     if (shader.stage == stage) {
       return shader;
@@ -755,14 +755,14 @@ auto ShaderEditor::fileWriteTime(const std::string &path)
 
 auto ShaderEditor::shaderPath(
     std::optional<
-        std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>
+        std::reference_wrapper<const pipe::GraphicsShaderStageDesc>>
         shader) -> std::string {
   if (!shader) {
     return {};
   }
 
   const auto &module = shader->get().module;
-  if (module.sourceKind != resource::ShaderModuleSourceKind::Glsl) {
+  if (module.sourceKind != res::ShaderModuleSourceKind::Glsl) {
     return {};
   }
 
@@ -771,7 +771,7 @@ auto ShaderEditor::shaderPath(
 
 auto ShaderEditor::shaderSource(
     std::optional<
-        std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>
+        std::reference_wrapper<const pipe::GraphicsShaderStageDesc>>
         shader) -> std::string {
   if (!shader) {
     return {};
@@ -779,7 +779,7 @@ auto ShaderEditor::shaderSource(
 
   const auto &module = shader->get().module;
 
-  if (module.sourceKind != resource::ShaderModuleSourceKind::Glsl) {
+  if (module.sourceKind != res::ShaderModuleSourceKind::Glsl) {
     return {};
   }
 
@@ -790,9 +790,9 @@ auto ShaderEditor::shaderSource(
   return readTextFile(module.glslCompile.path);
 }
 
-auto ShaderEditor::shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
+auto ShaderEditor::shaderLabel(const pipe::GraphicsShaderStageDesc &shader,
                                const std::string &fallback) -> std::string {
-  if (shader.module.sourceKind == resource::ShaderModuleSourceKind::Glsl &&
+  if (shader.module.sourceKind == res::ShaderModuleSourceKind::Glsl &&
       !shader.module.glslCompile.label.empty()) {
     return shader.module.glslCompile.label;
   }
@@ -803,19 +803,19 @@ auto ShaderEditor::shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
 auto ShaderEditor::makeShaderModule(VkShaderStageFlagBits stage,
                                     std::string source, std::string label,
                                     std::string entryPoint, bool fileBacked)
-    -> resource::ShaderModuleDesc {
-  resource::ShaderModuleDesc desc{};
+    -> res::ShaderModuleDesc {
+  res::ShaderModuleDesc desc{};
 
   switch (stage) {
   case VK_SHADER_STAGE_VERTEX_BIT:
     desc = fileBacked
-               ? resource::ShaderModuleDesc::vertexGlslFile(label)
-               : resource::ShaderModuleDesc::vertexGlslSource(source, label);
+               ? res::ShaderModuleDesc::vertexGlslFile(label)
+               : res::ShaderModuleDesc::vertexGlslSource(source, label);
     break;
   case VK_SHADER_STAGE_FRAGMENT_BIT:
     desc = fileBacked
-               ? resource::ShaderModuleDesc::fragmentGlslFile(label)
-               : resource::ShaderModuleDesc::fragmentGlslSource(source, label);
+               ? res::ShaderModuleDesc::fragmentGlslFile(label)
+               : res::ShaderModuleDesc::fragmentGlslSource(source, label);
     break;
   default:
     return {};
@@ -952,7 +952,7 @@ void ShaderEditor::refreshFileBackedShaders(
   auto initFileState =
       [](ShaderEditorFileState &state,
          std::optional<
-             std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>
+             std::reference_wrapper<const pipe::GraphicsShaderStageDesc>>
              shader) -> void {
     const std::string path = shaderPath(shader);
     if (path.empty()) {

@@ -13,7 +13,7 @@
 namespace vkr::ui {
 
 InspectorPanel::InspectorPanel(const core::Device &device,
-                               const pipeline::RenderPass &renderPass,
+                               const pipe::RenderPass &renderPass,
                                const core::CommandBuffers &commandBuffers,
                                const scene::Scene &scene,
                                const exec::Graph &graph,

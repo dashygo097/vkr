@@ -6,7 +6,7 @@
 
 namespace vkr::exec {
 
-auto OverlayPassDesc::wireframe(pipeline::GraphicsPipelineDesc pipelineDesc)
+auto OverlayPassDesc::wireframe(pipe::GraphicsPipelineDesc pipelineDesc)
     -> OverlayPassDesc {
   pipelineDesc.name += "-wireframe";
   pipelineDesc.shaders.erase(
@@ -15,7 +15,7 @@ auto OverlayPassDesc::wireframe(pipeline::GraphicsPipelineDesc pipelineDesc)
                        return shader.stage == VK_SHADER_STAGE_FRAGMENT_BIT;
                      }),
       pipelineDesc.shaders.end());
-  pipelineDesc.fragmentShader(resource::ShaderModuleDesc::fragmentGlslSource(
+  pipelineDesc.fragmentShader(res::ShaderModuleDesc::fragmentGlslSource(
       R"glsl(#version 450
 layout(location = 0) out vec4 outColor;
 
@@ -25,8 +25,8 @@ void main() {
 )glsl",
       pipelineDesc.name + ".frag"));
   pipelineDesc.inputAssembly.lines();
-  pipelineDesc.rasterization = pipeline::GraphicsRasterizationDesc::noCull();
-  pipelineDesc.depthStencil = pipeline::GraphicsDepthStencilDesc::readOnly();
+  pipelineDesc.rasterization = pipe::GraphicsRasterizationDesc::noCull();
+  pipelineDesc.depthStencil = pipe::GraphicsDepthStencilDesc::readOnly();
   pipelineDesc.colorBlend.opaque().disableLogic();
 
   OverlayPassDesc desc{};
@@ -36,9 +36,9 @@ void main() {
 
 OverlayPass::OverlayPass(RenderExecutor &executor, const core::Device &device,
                          const core::CommandPool &commandPool,
-                         scene::Scene &scene, Pass &source)
+                         Pass &source)
     : executor_(executor), device_(device), command_pool_(commandPool),
-      scene_(scene), source_(source), descriptor_pool_(device) {
+      source_(source), descriptor_pool_(device) {
   descriptor_sets_.resize(executor_.framesInFlight());
 }
 
@@ -52,6 +52,9 @@ void OverlayPass::update(const OverlayPassDesc &desc) {
                    name());
   }
   validate(desc);
+  for (const auto &entry : meshes_) {
+    validateMesh(entry.second.source.get(), desc.pipeline.vertexInput);
+  }
   auto nextDesc = desc;
   const auto setCount = std::max<size_t>(1, nextDesc.descriptorLayouts.size());
   while (descriptor_layouts_.size() > setCount) {
@@ -62,7 +65,7 @@ void OverlayPass::update(const OverlayPassDesc &desc) {
   }
   while (descriptor_layouts_.size() < setCount) {
     descriptor_layouts_.push_back(
-        std::make_unique<pipeline::DescriptorSetLayout>(device_));
+        std::make_unique<pipe::DescriptorSetLayout>(device_));
     for (auto &frame : descriptor_sets_) {
       frame.emplace_back(device_, descriptor_pool_,
                          *descriptor_layouts_.back());
@@ -73,6 +76,9 @@ void OverlayPass::update(const OverlayPassDesc &desc) {
 
 void OverlayPass::create() {
   validate(desc_);
+  for (const auto &entry : meshes_) {
+    validateMesh(entry.second.source.get(), desc_.pipeline.vertexInput);
+  }
   destroy();
 
   target_source_ = source_.capability<RenderTargetCapability>();
@@ -89,8 +95,9 @@ void OverlayPass::create() {
 }
 
 void OverlayPass::destroy() noexcept {
-  selected_mesh_.reset();
-  meshes_.clear();
+  for (auto &entry : meshes_) {
+    entry.second.indices.reset();
+  }
   pipeline_.reset();
   for (auto &frame : descriptor_sets_) {
     for (auto &set : frame) {
@@ -106,6 +113,23 @@ void OverlayPass::destroy() noexcept {
   target_source_.reset();
 }
 
+auto OverlayPass::mesh(std::string meshName, const scene::IMesh &mesh)
+    -> OverlayPass & {
+  if (meshName.empty()) {
+    VKR_EXEC_ERROR("OverlayPass '{}' mesh binding name cannot be empty", name());
+  }
+  const auto &input = pipeline_ ? pipeline_->desc().vertexInput
+                                : desc_.pipeline.vertexInput;
+  validateMesh(mesh, input);
+  MeshEntry next{std::cref(mesh), {}};
+  if (pipeline_) {
+    next.indices = createIndices(mesh);
+    device_.waitIdle();
+  }
+  meshes_.insert_or_assign(std::move(meshName), std::move(next));
+  return *this;
+}
+
 void OverlayPass::selectMesh(const std::string &name) noexcept {
   const auto mesh = meshes_.find(name);
   if (mesh == meshes_.end()) {
@@ -115,7 +139,7 @@ void OverlayPass::selectMesh(const std::string &name) noexcept {
   }
 }
 
-auto OverlayPass::target(uint32_t frameIndex) -> pipeline::OffscreenTarget & {
+auto OverlayPass::target(uint32_t frameIndex) -> pipe::OffscreenTarget & {
   if (!target_source_) {
     VKR_EXEC_ERROR("OverlayPass '{}' target requested before create", name());
   }
@@ -123,7 +147,7 @@ auto OverlayPass::target(uint32_t frameIndex) -> pipeline::OffscreenTarget & {
 }
 
 auto OverlayPass::target(uint32_t frameIndex) const
-    -> const pipeline::OffscreenTarget & {
+    -> const pipe::OffscreenTarget & {
   if (!target_source_) {
     VKR_EXEC_ERROR("OverlayPass '{}' target requested before create", name());
   }
@@ -139,6 +163,10 @@ void OverlayPass::record() {
   }
 
   const auto &mesh = selected_mesh_->get();
+  const auto vertices = mesh.source.get().vertexBufferBase();
+  if (!vertices || vertices->get().buffer() == VK_NULL_HANDLE || !mesh.indices) {
+    VKR_EXEC_ERROR("OverlayPass '{}' selected mesh has invalid buffers", name());
+  }
   executor_.beginProfileScope(name());
   executor_.beginPass(*render_pass_, *framebuffers_, {},
                       executor_.frameIndex());
@@ -149,7 +177,7 @@ void OverlayPass::record() {
   } else {
     executor_.bindPipeline(*pipeline_);
   }
-  executor_.drawIndexed(mesh.vertices.get(), *mesh.indices);
+  executor_.drawIndexed(vertices->get(), *mesh.indices);
   executor_.endPass();
   executor_.endProfileScope();
 }
@@ -174,7 +202,7 @@ void OverlayPass::createRenderPass() {
                    name());
   }
 
-  auto passDesc = pipeline::RenderPassDesc::makeOffscreen(
+  auto passDesc = pipe::RenderPassDesc::makeOffscreen(
       outputDesc.color.format,
       useDepth ? outputDesc.depth->format : VK_FORMAT_UNDEFINED);
   auto colorLayout = outputDesc.color.finalLayout;
@@ -225,7 +253,7 @@ void OverlayPass::createRenderPass() {
        .dstStageMask = attachmentStages | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
        .srcAccessMask = attachmentAccess,
        .dstAccessMask = attachmentAccess | VK_ACCESS_SHADER_READ_BIT}};
-  render_pass_ = std::make_unique<pipeline::RenderPass>(device_);
+  render_pass_ = std::make_unique<pipe::RenderPass>(device_);
   render_pass_->update(passDesc);
 }
 
@@ -259,9 +287,9 @@ void OverlayPass::createFramebuffers() {
 }
 
 void OverlayPass::validate(const OverlayPassDesc &desc) const {
-  if (desc.meshNames.empty() || !desc.pipeline.isValid() ||
+  if (!desc.pipeline.isValid() ||
       desc.pipeline.inputAssembly.topology != VK_PRIMITIVE_TOPOLOGY_LINE_LIST) {
-    VKR_EXEC_ERROR("OverlayPass '{}' requires meshes and a valid line pipeline",
+    VKR_EXEC_ERROR("OverlayPass '{}' requires a valid line pipeline",
                    name());
   }
 
@@ -323,7 +351,7 @@ void OverlayPass::createDescriptors() {
     return;
   }
   descriptor_pool_.update(
-      pipeline::DescriptorPoolDesc::sets(layouts, executor_.framesInFlight()));
+      pipe::DescriptorPoolDesc::sets(layouts, executor_.framesInFlight()));
   for (uint32_t setIndex = 0; setIndex < layouts.size(); ++setIndex) {
     descriptor_layouts_[setIndex]->update(layouts[setIndex]);
     for (auto &frame : descriptor_sets_) {
@@ -342,7 +370,7 @@ void OverlayPass::createPipeline() {
     }
   }
   pipeline_ =
-      std::make_unique<pipeline::GraphicsPipeline>(device_, *render_pass_);
+      std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
   pipeline_->update(pipelineDesc);
   if (!pipeline_->valid()) {
     VKR_EXEC_ERROR("OverlayPass '{}' failed to create pipeline", name());
@@ -350,80 +378,67 @@ void OverlayPass::createPipeline() {
 }
 
 void OverlayPass::createMeshes() {
-  meshes_.reserve(desc_.meshNames.size());
-  for (const auto &name : desc_.meshNames) {
-    if (meshes_.find(name) != meshes_.end()) {
-      VKR_EXEC_ERROR("OverlayPass '{}' has duplicate mesh '{}'", this->name(),
-                     name);
-    }
-    const auto &mesh = scene_.mesh(name);
-    const auto vertices = mesh.vertexBufferBase();
-    const auto indices = mesh.indexBuffer();
-    if (!vertices || !indices) {
-      VKR_EXEC_ERROR("OverlayPass '{}' mesh '{}' has invalid buffers",
-                     this->name(), name);
-    }
-    const auto input = vertices->get().vertexInputDesc();
-    const auto &expected = desc_.pipeline.vertexInput;
-    const bool sameBindings =
-        input.bindings.size() == expected.bindings.size() &&
-        std::equal(input.bindings.begin(), input.bindings.end(),
-                   expected.bindings.begin(),
-                   [](const auto &a, const auto &b) -> bool {
-                     return a.binding == b.binding && a.stride == b.stride &&
-                            a.inputRate == b.inputRate;
-                   });
-    const bool sameAttributes =
-        input.attributes.size() == expected.attributes.size() &&
-        std::equal(input.attributes.begin(), input.attributes.end(),
-                   expected.attributes.begin(),
-                   [](const auto &a, const auto &b) -> bool {
-                     return a.location == b.location &&
-                            a.binding == b.binding && a.format == b.format &&
-                            a.offset == b.offset;
-                   });
-    if (!sameBindings || !sameAttributes || input.bindings.size() != 1 ||
-        input.bindings[0].binding != 0 ||
-        input.bindings[0].inputRate != VK_VERTEX_INPUT_RATE_VERTEX) {
-      VKR_EXEC_ERROR("OverlayPass '{}' mesh '{}' has incompatible vertex input",
-                     this->name(), name);
-    }
-    const auto &triangles = indices->get().indices();
-    if (triangles.empty() || triangles.size() % 3 != 0) {
-      VKR_EXEC_ERROR("OverlayPass '{}' mesh '{}' is not a triangle list",
-                     this->name(), name);
-    }
+  for (auto &entry : meshes_) {
+    entry.second.indices = createIndices(entry.second.source.get());
+  }
+}
 
-    std::vector<uint16_t> lines{};
-    lines.reserve(triangles.size() * 2);
-    std::unordered_set<uint32_t> edges{};
-    edges.reserve(triangles.size());
-    for (size_t triangle = 0; triangle < triangles.size(); triangle += 3) {
-      for (size_t edge = 0; edge < 3; ++edge) {
-        const auto a = triangles[triangle + edge];
-        const auto b = triangles[triangle + (edge + 1) % 3];
-        if (a >= vertices->get().vertexCount() ||
-            b >= vertices->get().vertexCount()) {
-          VKR_EXEC_ERROR("OverlayPass '{}' mesh '{}' index is out of range",
-                         this->name(), name);
-        }
-        const auto lo = std::min(a, b);
-        const auto hi = std::max(a, b);
-        const uint32_t key = (static_cast<uint32_t>(lo) << 16) | hi;
-        if (lo != hi && edges.insert(key).second) {
-          lines.push_back(a);
-          lines.push_back(b);
-        }
+void OverlayPass::validateMesh(const scene::IMesh &mesh,
+                               const scene::VertexInputDesc &expected) const {
+  const auto vertices = mesh.vertexBufferBase();
+  const auto indices = mesh.indexBuffer();
+  if (!vertices || !indices ||
+      vertices->get().buffer() == VK_NULL_HANDLE ||
+      indices->get().buffer() == VK_NULL_HANDLE ||
+      vertices->get().vertexCount() == 0) {
+    VKR_EXEC_ERROR("OverlayPass '{}' requires initialized mesh buffers", name());
+  }
+  const auto input = vertices->get().vertexInputDesc();
+  if (!(input == expected) || input.bindings.size() != 1 ||
+      input.bindings[0].binding != 0 ||
+      input.bindings[0].inputRate != VK_VERTEX_INPUT_RATE_VERTEX) {
+    VKR_EXEC_ERROR("OverlayPass '{}' mesh has incompatible vertex input", name());
+  }
+  const auto &triangles = indices->get().indices();
+  if (triangles.empty() || triangles.size() % 3 != 0) {
+    VKR_EXEC_ERROR("OverlayPass '{}' requires triangle-list source meshes", name());
+  }
+  for (const auto index : triangles) {
+    if (index >= vertices->get().vertexCount()) {
+      VKR_EXEC_ERROR("OverlayPass '{}' mesh index is out of range", name());
+    }
+  }
+}
+
+auto OverlayPass::createIndices(const scene::IMesh &mesh)
+    -> std::unique_ptr<scene::IndexBuffer> {
+  const auto &input = pipeline_ ? pipeline_->desc().vertexInput
+                                : desc_.pipeline.vertexInput;
+  validateMesh(mesh, input);
+  const auto &triangles = mesh.indexBuffer()->get().indices();
+  std::vector<uint16_t> lines{};
+  lines.reserve(triangles.size() * 2);
+  std::unordered_set<uint32_t> edges{};
+  edges.reserve(triangles.size());
+  for (size_t triangle = 0; triangle < triangles.size(); triangle += 3) {
+    for (size_t edge = 0; edge < 3; ++edge) {
+      const auto a = triangles[triangle + edge];
+      const auto b = triangles[triangle + (edge + 1) % 3];
+      const auto lo = std::min(a, b);
+      const auto hi = std::max(a, b);
+      const uint32_t key = (static_cast<uint32_t>(lo) << 16) | hi;
+      if (lo != hi && edges.insert(key).second) {
+        lines.push_back(a);
+        lines.push_back(b);
       }
     }
-    if (lines.empty()) {
-      VKR_EXEC_ERROR("OverlayPass '{}' mesh '{}' has no drawable edges",
-                     this->name(), name);
-    }
-    auto buffer = std::make_unique<scene::IndexBuffer>(device_, command_pool_);
-    buffer->update(lines);
-    meshes_.emplace(name, MeshEntry{vertices->get(), std::move(buffer)});
   }
+  if (lines.empty()) {
+    VKR_EXEC_ERROR("OverlayPass '{}' mesh has no drawable edges", name());
+  }
+  auto buffer = std::make_unique<scene::IndexBuffer>(device_, command_pool_);
+  buffer->update(lines);
+  return buffer;
 }
 
 } // namespace vkr::exec

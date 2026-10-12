@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstring>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 Buffer::Buffer(const core::Device &device) : device_(device) {}
 
@@ -147,4 +147,4 @@ auto Buffer::findMemoryType(uint32_t typeFilter,
   VKR_RES_ERROR("Failed to find suitable memory type");
 }
 
-} // namespace vkr::resource
+} // namespace vkr::res

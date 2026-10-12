@@ -1,7 +1,7 @@
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 RenderPass::RenderPass(const core::Device &device) : device_(device) {}
 
@@ -104,4 +104,4 @@ void RenderPass::update(const RenderPassDesc &desc) {
   create();
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

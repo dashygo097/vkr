@@ -1,7 +1,6 @@
 #include <cstdint>
 #include <ctime>
 #include <glm/glm.hpp>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -10,9 +9,9 @@
 #include <vulkan/vulkan.h>
 
 using namespace vkr::exec;
-using namespace vkr::resource;
+using namespace vkr::res;
 using namespace vkr::scene;
-using namespace vkr::pipeline;
+using namespace vkr::pipe;
 
 namespace {
 
@@ -303,7 +302,7 @@ private:
   }
 
   void configure() override {
-    ctx = RenderAppDesc::windowed("shadertoy", "ShaderToy Viewer");
+    ctx = RenderAppDesc::glfwWindowed("shadertoy", "ShaderToy Viewer");
     ctx.swapchain = {
         .presentMode = VK_PRESENT_MODE_FIFO_KHR,
     };

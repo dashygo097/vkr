@@ -6,8 +6,8 @@
 namespace vkr::exec {
 namespace {
 
-void bindSource(pipeline::DescriptorSet &set, std::string_view passName,
-                size_t sourceIndex, const pipeline::OffscreenTarget &source,
+void bindSource(pipe::DescriptorSet &set, std::string_view passName,
+                size_t sourceIndex, const pipe::OffscreenTarget &source,
                 const RenderPassInputDesc &input) {
   switch (input.kind) {
   case RenderPassInputKind::Color: {
@@ -101,7 +101,7 @@ void FeedbackFullscreenPass::update(const FeedbackFullscreenPassDesc &desc) {
   }
   while (descriptor_layouts_.size() < setCount) {
     descriptor_layouts_.push_back(
-        std::make_unique<pipeline::DescriptorSetLayout>(device_));
+        std::make_unique<pipe::DescriptorSetLayout>(device_));
     for (auto &frame : descriptor_sets_) {
       frame.emplace_back(device_, descriptor_pool_,
                          *descriptor_layouts_.back());
@@ -160,7 +160,7 @@ auto FeedbackFullscreenPass::setSources(
   return *this;
 }
 
-auto FeedbackFullscreenPass::target() -> pipeline::OffscreenTarget & {
+auto FeedbackFullscreenPass::target() -> pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target requested before "
                    "create",
@@ -171,7 +171,7 @@ auto FeedbackFullscreenPass::target() -> pipeline::OffscreenTarget & {
 }
 
 auto FeedbackFullscreenPass::target() const
-    -> const pipeline::OffscreenTarget & {
+    -> const pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target requested before "
                    "create",
@@ -182,7 +182,7 @@ auto FeedbackFullscreenPass::target() const
 }
 
 auto FeedbackFullscreenPass::target(uint32_t frameIndex)
-    -> pipeline::OffscreenTarget & {
+    -> pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target requested before "
                    "create",
@@ -193,7 +193,7 @@ auto FeedbackFullscreenPass::target(uint32_t frameIndex)
 }
 
 auto FeedbackFullscreenPass::target(uint32_t frameIndex) const
-    -> const pipeline::OffscreenTarget & {
+    -> const pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target requested before "
                    "create",
@@ -203,7 +203,7 @@ auto FeedbackFullscreenPass::target(uint32_t frameIndex) const
   return target_->writeForFrame(frameIndex);
 }
 
-auto FeedbackFullscreenPass::historyTarget() -> pipeline::OffscreenTarget & {
+auto FeedbackFullscreenPass::historyTarget() -> pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' history target requested "
                    "before create",
@@ -214,7 +214,7 @@ auto FeedbackFullscreenPass::historyTarget() -> pipeline::OffscreenTarget & {
 }
 
 auto FeedbackFullscreenPass::historyTarget() const
-    -> const pipeline::OffscreenTarget & {
+    -> const pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' history target requested "
                    "before create",
@@ -225,7 +225,7 @@ auto FeedbackFullscreenPass::historyTarget() const
 }
 
 auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex)
-    -> pipeline::OffscreenTarget & {
+    -> pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' history target requested "
                    "before create",
@@ -236,7 +236,7 @@ auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex)
 }
 
 auto FeedbackFullscreenPass::historyTarget(uint32_t frameIndex) const
-    -> const pipeline::OffscreenTarget & {
+    -> const pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' history target requested "
                    "before create",
@@ -250,17 +250,17 @@ void FeedbackFullscreenPass::createTarget() {
   auto targetDesc = desc_.target;
   targetDesc.frameCount = executor_.framesInFlight();
 
-  target_ = std::make_unique<pipeline::FrameHistoryTarget>(device_);
+  target_ = std::make_unique<pipe::FrameHistoryTarget>(device_);
   target_->update(targetDesc);
 }
 
 void FeedbackFullscreenPass::createRenderPass() {
-  render_pass_ = std::make_unique<pipeline::RenderPass>(device_);
+  render_pass_ = std::make_unique<pipe::RenderPass>(device_);
   const auto &writeTarget = target_->writeForFrame(0);
-  pipeline::RenderPassDesc renderPassDesc{};
+  pipe::RenderPassDesc renderPassDesc{};
 
   if (writeTarget.hasColor()) {
-    renderPassDesc = pipeline::RenderPassDesc::makeOffscreen(
+    renderPassDesc = pipe::RenderPassDesc::makeOffscreen(
         writeTarget.color().desc().format,
         writeTarget.depth() ? writeTarget.depth()->desc().format
                             : VK_FORMAT_UNDEFINED);
@@ -274,7 +274,7 @@ void FeedbackFullscreenPass::createRenderPass() {
           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
   } else if (writeTarget.depth()) {
-    renderPassDesc = pipeline::RenderPassDesc::makeDepthOnly(
+    renderPassDesc = pipe::RenderPassDesc::makeDepthOnly(
         writeTarget.depth()->desc().format);
   } else {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target has no attachments",
@@ -405,7 +405,7 @@ void FeedbackFullscreenPass::createDescriptors() {
     return;
   }
   descriptor_pool_.update(
-      pipeline::DescriptorPoolDesc::sets(layouts, executor_.framesInFlight()));
+      pipe::DescriptorPoolDesc::sets(layouts, executor_.framesInFlight()));
   for (uint32_t setIndex = 0; setIndex < layouts.size(); ++setIndex) {
     descriptor_layouts_[setIndex]->update(layouts[setIndex]);
     for (auto &frame : descriptor_sets_) {
@@ -445,7 +445,7 @@ void FeedbackFullscreenPass::createPipeline() {
   }
 
   pipeline_ =
-      std::make_unique<pipeline::GraphicsPipeline>(device_, *render_pass_);
+      std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
   pipeline_->update(pipelineDesc);
 
   if (!pipeline_->valid()) {

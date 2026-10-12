@@ -1,7 +1,7 @@
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 DescriptorPool::DescriptorPool(const core::Device &device) : device_(device) {}
 
@@ -61,4 +61,4 @@ void DescriptorPool::update(const DescriptorPoolDesc &desc) {
   create();
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

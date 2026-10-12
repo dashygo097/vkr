@@ -1,7 +1,7 @@
 #include "vkr/resource/image/image_view.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::resource {
+namespace vkr::res {
 
 ImageView::ImageView(const core::Device &device) : device_(device) {}
 
@@ -61,4 +61,4 @@ void ImageView::update(const ImageViewDesc &desc) {
   create();
 }
 
-} // namespace vkr::resource
+} // namespace vkr::res

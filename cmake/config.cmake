@@ -1,12 +1,12 @@
 # Build configuration options
 
 # Compilation options
-set(USE_CCACHE ON)
-set(ENABLE_UNITY_BUILD OFF)
+option(USE_CCACHE "Use ccache for compilation" ON)
+option(ENABLE_UNITY_BUILD "Enable unity builds" OFF)
 
 # Feature options
-set(VKR_ENABLE_SLANG ON)
+option(ENABLE_SLANG "Enable Slang shader compilation" ON)
 
 # Application options
-set(ENABLE_TOOLING ON)
-set(ENABLE_EXAMPLES ON)
+option(ENABLE_TOOLING "Build tooling" ON)
+option(ENABLE_EXAMPLES "Build examples" ON)

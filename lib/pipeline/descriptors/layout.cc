@@ -2,7 +2,7 @@
 #include "vkr/logger.hh"
 #include <utility>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 DescriptorSetLayout::DescriptorSetLayout(const core::Device &device)
     : device_(device) {}
@@ -57,4 +57,4 @@ void DescriptorSetLayout::update(const DescriptorSetLayoutDesc &desc) {
   create();
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

@@ -1,7 +1,7 @@
 #include "vkr/resource/image/storage_image.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::resource {
+namespace vkr::res {
 StorageImage::StorageImage(const core::Device &device)
     : device_(device), image_(std::make_unique<Image>(device_)),
       image_view_(std::make_unique<ImageView>(device_)) {}
@@ -50,4 +50,4 @@ auto StorageImage::descriptorInfo() const noexcept -> VkDescriptorImageInfo {
   return info;
 }
 
-} // namespace vkr::resource
+} // namespace vkr::res

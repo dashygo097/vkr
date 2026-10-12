@@ -10,22 +10,22 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/pipeline/targets/offscreen.hh"
-#include "vkr/scene/scene.hh"
+#include "vkr/scene/geometry/mesh.hh"
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace vkr::exec {
 
 struct OverlayPassDesc {
-  std::vector<pipeline::DescriptorSetLayoutDesc> descriptorLayouts{};
-  pipeline::GraphicsPipelineDesc pipeline{};
-  std::vector<std::string> meshNames{};
+  std::vector<pipe::DescriptorSetLayoutDesc> descriptorLayouts{};
+  pipe::GraphicsPipelineDesc pipeline{};
 
-  auto descriptor(uint32_t setIndex, pipeline::DescriptorBinding binding)
+  auto descriptor(uint32_t setIndex, pipe::DescriptorBinding binding)
       -> OverlayPassDesc & {
     if (setIndex >= descriptorLayouts.size()) {
       descriptorLayouts.resize(static_cast<size_t>(setIndex) + 1);
@@ -52,7 +52,7 @@ struct OverlayPassDesc {
   }
 
   [[nodiscard]] static auto
-  wireframe(pipeline::GraphicsPipelineDesc pipelineDesc) -> OverlayPassDesc;
+  wireframe(pipe::GraphicsPipelineDesc pipelineDesc) -> OverlayPassDesc;
 };
 
 class OverlayPass final : public Pass,
@@ -61,7 +61,7 @@ class OverlayPass final : public Pass,
 public:
   explicit OverlayPass(RenderExecutor &executor, const core::Device &device,
                        const core::CommandPool &commandPool,
-                       scene::Scene &scene, Pass &source);
+                       Pass &source);
   ~OverlayPass() override;
 
   OverlayPass(const OverlayPass &) = delete;
@@ -71,6 +71,7 @@ public:
   void destroy() noexcept override;
   void update(const OverlayPassDesc &desc);
   void record() override;
+  auto mesh(std::string name, const scene::IMesh &mesh) -> OverlayPass &;
 
   template <typename T>
   auto uniform(uint32_t setIndex, uint32_t binding, T &buffer)
@@ -102,12 +103,12 @@ public:
   void selectMesh(const std::string &name) noexcept;
 
   [[nodiscard]] auto target(uint32_t frameIndex)
-      -> pipeline::OffscreenTarget & override;
+      -> pipe::OffscreenTarget & override;
   [[nodiscard]] auto target(uint32_t frameIndex) const
-      -> const pipeline::OffscreenTarget & override;
+      -> const pipe::OffscreenTarget & override;
 
   [[nodiscard]] auto editablePipeline() noexcept -> std::optional<
-      std::reference_wrapper<pipeline::GraphicsPipeline>> override {
+      std::reference_wrapper<pipe::GraphicsPipeline>> override {
     if (!pipeline_) {
       return std::nullopt;
     }
@@ -115,7 +116,7 @@ public:
   }
 
   [[nodiscard]] auto editablePipeline() const noexcept -> std::optional<
-      std::reference_wrapper<const pipeline::GraphicsPipeline>> override {
+      std::reference_wrapper<const pipe::GraphicsPipeline>> override {
     if (!pipeline_) {
       return std::nullopt;
     }
@@ -124,7 +125,7 @@ public:
 
 private:
   struct MeshEntry {
-    std::reference_wrapper<const scene::IVertexBuffer> vertices;
+    std::reference_wrapper<const scene::IMesh> source;
     std::unique_ptr<scene::IndexBuffer> indices;
   };
 
@@ -132,18 +133,17 @@ private:
   RenderExecutor &executor_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  scene::Scene &scene_;
   Pass &source_;
 
   // components
   OverlayPassDesc desc_{};
-  std::unique_ptr<pipeline::RenderPass> render_pass_{};
+  std::unique_ptr<pipe::RenderPass> render_pass_{};
   std::unique_ptr<Framebuffers> framebuffers_{};
-  pipeline::DescriptorPool descriptor_pool_;
-  std::vector<std::unique_ptr<pipeline::DescriptorSetLayout>>
+  pipe::DescriptorPool descriptor_pool_;
+  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>>
       descriptor_layouts_{};
-  std::vector<std::vector<pipeline::DescriptorSet>> descriptor_sets_{};
-  std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
+  std::vector<std::vector<pipe::DescriptorSet>> descriptor_sets_{};
+  std::unique_ptr<pipe::GraphicsPipeline> pipeline_{};
   std::unordered_map<std::string, MeshEntry> meshes_{};
 
   // state
@@ -157,6 +157,10 @@ private:
   void createDescriptors();
   void createPipeline();
   void createMeshes();
+  void validateMesh(const scene::IMesh &mesh,
+                    const scene::VertexInputDesc &input) const;
+  [[nodiscard]] auto createIndices(const scene::IMesh &mesh)
+      -> std::unique_ptr<scene::IndexBuffer>;
 };
 
 } // namespace vkr::exec

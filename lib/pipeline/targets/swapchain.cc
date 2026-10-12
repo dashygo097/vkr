@@ -1,7 +1,7 @@
 #include "vkr/pipeline/targets/swapchain.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 SwapchainTarget::SwapchainTarget(const core::Device &device,
                                  const core::Swapchain &swapchain)
@@ -32,9 +32,9 @@ void SwapchainTarget::create() {
   color_image_views_.reserve(vk_color_images_.size());
 
   for (auto image : vk_color_images_) {
-    auto imageView = std::make_unique<resource::ImageView>(device_);
+    auto imageView = std::make_unique<res::ImageView>(device_);
     imageView->update(
-        resource::ImageViewDesc::color2D(image, swapchain_.format()));
+        res::ImageViewDesc::color2D(image, swapchain_.format()));
     color_image_views_.push_back(std::move(imageView));
   }
 
@@ -115,4 +115,4 @@ auto SwapchainTarget::attachmentViews() const
   return views;
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

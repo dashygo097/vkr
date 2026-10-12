@@ -2,7 +2,7 @@
 #include "vkr/logger.hh"
 #include "vkr/pipeline/render_pass.hh"
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 GraphicsPipeline::GraphicsPipeline(const core::Device &device,
                                    const RenderPass &renderPass)
@@ -48,14 +48,14 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
                    desc_.name);
   }
 
-  std::vector<std::unique_ptr<resource::ShaderModule>> nextShaderModules{};
+  std::vector<std::unique_ptr<res::ShaderModule>> nextShaderModules{};
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
 
   nextShaderModules.reserve(desc_.shaders.size());
   shaderStages.reserve(desc_.shaders.size());
 
   for (const auto &shader : desc_.shaders) {
-    auto module = std::make_unique<resource::ShaderModule>(device_);
+    auto module = std::make_unique<res::ShaderModule>(device_);
     module->update(shader.module);
 
     if (!module->valid()) {
@@ -149,4 +149,4 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
   return true;
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

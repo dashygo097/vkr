@@ -89,7 +89,7 @@ void endSingleTimeCommands(const core::Device &device,
 
 void transitionImageLayout(const core::Device &device,
                            const core::CommandPool &commandPool,
-                           resource::Image &image, VkImageLayout oldLayout,
+                           res::Image &image, VkImageLayout oldLayout,
                            VkImageLayout newLayout) {
   if (oldLayout == newLayout) {
     return;
@@ -167,7 +167,7 @@ void transitionImageLayout(const core::Device &device,
 
 void copyBufferToImage(const core::Device &device,
                        const core::CommandPool &commandPool,
-                       const resource::Buffer &buffer, resource::Image &image,
+                       const res::Buffer &buffer, res::Image &image,
                        uint32_t layers, uint32_t channels) {
   VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
 
@@ -203,9 +203,9 @@ void copyBufferToImage(const core::Device &device,
 Texture::Texture(const core::Device &device,
                  const core::CommandPool &commandPool)
     : device_(device), command_pool_(commandPool),
-      image_(std::make_unique<resource::Image>(device_)),
-      image_view_(std::make_unique<resource::ImageView>(device_)),
-      sampler_(std::make_unique<resource::Sampler>(device_)) {}
+      image_(std::make_unique<res::Image>(device_)),
+      image_view_(std::make_unique<res::ImageView>(device_)),
+      sampler_(std::make_unique<res::Sampler>(device_)) {}
 
 Texture::~Texture() { destroy(); }
 
@@ -266,7 +266,7 @@ void Texture::createFromFile() {
                                  static_cast<VkDeviceSize>(height) *
                                  static_cast<VkDeviceSize>(channels);
 
-  resource::Buffer staging(device_);
+  res::Buffer staging(device_);
   staging.update(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -293,7 +293,7 @@ void Texture::createFromFile() {
 
 void Texture::createViewAndSampler() {
   image_view_->update(desc_.useDefaultView
-                          ? resource::ImageViewDesc::fromImage(*image_)
+                          ? res::ImageViewDesc::fromImage(*image_)
                           : desc_.view);
   if (desc_.createSampler) {
     sampler_->update(desc_.sampler);

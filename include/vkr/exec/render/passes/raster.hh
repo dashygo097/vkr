@@ -13,7 +13,8 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/pipeline/targets/offscreen.hh"
-#include "vkr/scene/scene.hh"
+#include "vkr/scene/geometry/mesh.hh"
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -22,14 +23,13 @@
 namespace vkr::exec {
 
 struct RasterPassDesc {
-  pipeline::OffscreenTargetDesc target{};
-  std::vector<pipeline::DescriptorSetLayoutDesc> descriptorLayouts{};
+  pipe::OffscreenTargetDesc target{};
+  std::vector<pipe::DescriptorSetLayoutDesc> descriptorLayouts{};
   std::vector<VkClearValue> clearValues{};
-  pipeline::GraphicsPipelineDesc pipeline{};
-  std::vector<std::string> meshNames{};
+  pipe::GraphicsPipelineDesc pipeline{};
   std::vector<RenderPassInputDesc> inputs{};
 
-  auto descriptor(uint32_t setIndex, pipeline::DescriptorBinding binding)
+  auto descriptor(uint32_t setIndex, pipe::DescriptorBinding binding)
       -> RasterPassDesc & {
     if (setIndex >= descriptorLayouts.size()) {
       descriptorLayouts.resize(static_cast<size_t>(setIndex) + 1);
@@ -74,11 +74,6 @@ struct RasterPassDesc {
     return *this;
   }
 
-  auto mesh(std::string name) -> RasterPassDesc & {
-    meshNames.push_back(std::move(name));
-    return *this;
-  }
-
   auto clearColor(float r, float g, float b, float a) -> RasterPassDesc & {
     clearValues.push_back(VkClearValue{.color = {{r, g, b, a}}});
     return *this;
@@ -96,9 +91,9 @@ struct RasterPassDesc {
                                       scene::VertexInputDesc vertexInputDesc)
       -> RasterPassDesc {
     RasterPassDesc desc{};
-    desc.target = pipeline::OffscreenTargetDesc::sampledColorDepth(
+    desc.target = pipe::OffscreenTargetDesc::sampledColorDepth(
         width, height, colorFormat, depthFormat);
-    desc.pipeline = pipeline::GraphicsPipelineDesc::mesh(
+    desc.pipeline = pipe::GraphicsPipelineDesc::mesh(
         std::move(pipelineName), std::move(vertexInputDesc));
     return desc;
   }
@@ -120,8 +115,8 @@ struct RasterPassDesc {
             VkCompareOp compareOp = VK_COMPARE_OP_LESS) -> RasterPassDesc {
     RasterPassDesc desc{};
     desc.target =
-        pipeline::OffscreenTargetDesc::shadowMap(width, height, depthFormat);
-    desc.pipeline = pipeline::GraphicsPipelineDesc::shadowMap(
+        pipe::OffscreenTargetDesc::shadowMap(width, height, depthFormat);
+    desc.pipeline = pipe::GraphicsPipelineDesc::shadowMap(
         std::move(pipelineName), std::move(vertexInputDesc), depthBiasConstant,
         depthBiasSlope, shadowCullMode, compareOp);
     desc.clearDepth();
@@ -145,8 +140,7 @@ class RasterPass final : public Pass,
                          public GraphicsPipelineCapability,
                          public RenderTargetCapability {
 public:
-  explicit RasterPass(RenderExecutor &executor, const core::Device &device,
-                      scene::Scene &scene);
+  RasterPass(RenderExecutor &executor, const core::Device &device);
   ~RasterPass() override;
 
   RasterPass(const RasterPass &) = delete;
@@ -156,6 +150,7 @@ public:
   void destroy() noexcept override;
   void update(const RasterPassDesc &desc);
   void record() override;
+  auto mesh(const scene::IMesh &mesh) -> RasterPass &;
 
   template <typename T>
   auto uniform(uint32_t setIndex, uint32_t binding, T &buffer) -> RasterPass & {
@@ -186,18 +181,18 @@ public:
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
       -> RasterPass &;
 
-  [[nodiscard]] auto target() -> pipeline::OffscreenTarget &;
-  [[nodiscard]] auto target() const -> const pipeline::OffscreenTarget &;
-  [[nodiscard]] auto target(uint32_t) -> pipeline::OffscreenTarget & override {
+  [[nodiscard]] auto target() -> pipe::OffscreenTarget &;
+  [[nodiscard]] auto target() const -> const pipe::OffscreenTarget &;
+  [[nodiscard]] auto target(uint32_t) -> pipe::OffscreenTarget & override {
     return target();
   }
   [[nodiscard]] auto target(uint32_t) const
-      -> const pipeline::OffscreenTarget & override {
+      -> const pipe::OffscreenTarget & override {
     return target();
   }
 
   [[nodiscard]] auto editablePipeline() noexcept -> std::optional<
-      std::reference_wrapper<pipeline::GraphicsPipeline>> override {
+      std::reference_wrapper<pipe::GraphicsPipeline>> override {
     if (!pipeline_) {
       return std::nullopt;
     }
@@ -206,7 +201,7 @@ public:
   }
 
   [[nodiscard]] auto editablePipeline() const noexcept -> std::optional<
-      std::reference_wrapper<const pipeline::GraphicsPipeline>> override {
+      std::reference_wrapper<const pipe::GraphicsPipeline>> override {
     if (!pipeline_) {
       return std::nullopt;
     }
@@ -218,25 +213,27 @@ private:
   // dependencies
   RenderExecutor &executor_;
   const core::Device &device_;
-  scene::Scene &scene_;
 
   // components
   RasterPassDesc desc_{};
-  std::unique_ptr<pipeline::OffscreenTarget> target_{};
-  std::unique_ptr<pipeline::RenderPass> render_pass_{};
+  std::unique_ptr<pipe::OffscreenTarget> target_{};
+  std::unique_ptr<pipe::RenderPass> render_pass_{};
   std::unique_ptr<Framebuffers> framebuffers_{};
-  pipeline::DescriptorPool descriptor_pool_;
-  std::vector<std::unique_ptr<pipeline::DescriptorSetLayout>>
+  pipe::DescriptorPool descriptor_pool_;
+  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>>
       descriptor_layouts_{};
-  std::vector<std::vector<pipeline::DescriptorSet>> descriptor_sets_{};
-  std::unique_ptr<pipeline::GraphicsPipeline> pipeline_{};
+  std::vector<std::vector<pipe::DescriptorSet>> descriptor_sets_{};
+  std::unique_ptr<pipe::GraphicsPipeline> pipeline_{};
   std::vector<std::reference_wrapper<Pass>> sources_{};
+  std::vector<std::reference_wrapper<const scene::IMesh>> meshes_{};
 
   // helpers
   void createTarget();
   void createRenderPass();
   void createFramebuffers();
   void validate(const RasterPassDesc &desc) const;
+  void validateMesh(const scene::IMesh &mesh,
+                    const scene::VertexInputDesc &input) const;
   void createDescriptors();
   void createPipeline();
 };

@@ -31,9 +31,9 @@ public:
     return writes_;
   }
 
-  auto setName(std::string name) -> Pass &;
-  auto setReads(std::vector<std::string> reads) -> Pass &;
-  auto setWrites(std::vector<std::string> writes) -> Pass &;
+  auto name(std::string name) -> Pass &;
+  auto reads(std::vector<std::string> reads) -> Pass &;
+  auto writes(std::vector<std::string> writes) -> Pass &;
   auto read(std::string resource) -> Pass &;
   auto write(std::string resource) -> Pass &;
 

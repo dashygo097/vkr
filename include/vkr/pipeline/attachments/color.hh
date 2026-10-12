@@ -6,7 +6,7 @@
 #include "vkr/resource/image/sampler.hh"
 #include <utility>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 struct ColorAttachmentDesc {
   uint32_t width{};
@@ -16,7 +16,7 @@ struct ColorAttachmentDesc {
                           VK_IMAGE_USAGE_SAMPLED_BIT};
   VkImageLayout finalLayout{VK_IMAGE_LAYOUT_UNDEFINED};
   bool createSampler{false};
-  resource::SamplerDesc sampler{resource::SamplerDesc::linearClampToEdge()};
+  res::SamplerDesc sampler{res::SamplerDesc::linearClampToEdge()};
 
   auto extent(uint32_t attachmentWidth, uint32_t attachmentHeight) noexcept
       -> ColorAttachmentDesc & {
@@ -71,7 +71,7 @@ struct ColorAttachmentDesc {
     return *this;
   }
 
-  auto withSampler(resource::SamplerDesc desc) -> ColorAttachmentDesc & {
+  auto withSampler(res::SamplerDesc desc) -> ColorAttachmentDesc & {
     sampler = std::move(desc);
     createSampler = true;
     return *this;
@@ -149,9 +149,9 @@ private:
 
   // components
   ColorAttachmentDesc desc_{};
-  std::unique_ptr<resource::Image> image_;
-  std::unique_ptr<resource::ImageView> image_view_;
-  std::unique_ptr<resource::Sampler> sampler_;
+  std::unique_ptr<res::Image> image_;
+  std::unique_ptr<res::ImageView> image_view_;
+  std::unique_ptr<res::Sampler> sampler_;
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

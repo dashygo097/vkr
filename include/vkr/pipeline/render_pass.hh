@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 struct RenderPassColorAttachmentDesc {
   VkFormat format{VK_FORMAT_UNDEFINED};
@@ -403,4 +403,4 @@ private:
   VkRenderPass vk_render_pass_{VK_NULL_HANDLE};
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

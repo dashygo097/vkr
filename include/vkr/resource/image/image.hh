@@ -3,7 +3,7 @@
 #include "vkr/core/device.hh"
 #include <vulkan/vulkan.h>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 struct ImageDesc {
   uint32_t width{0};
@@ -125,4 +125,4 @@ private:
   void create();
 };
 
-} // namespace vkr::resource
+} // namespace vkr::res

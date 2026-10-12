@@ -10,7 +10,7 @@
 #include <vkr.hh>
 
 using namespace vkr::exec;
-using namespace vkr::resource;
+using namespace vkr::res;
 
 namespace {
 
@@ -133,9 +133,7 @@ private:
         .dispatch1D(LocalSize, ElementCount);
 
     auto &pass = graph().addPass<ComputePass>(executor(), device());
-    pass.setName("vector_ops")
-        .setReads({"input_a", "input_b"})
-        .setWrites({"output_c"});
+    pass.name("vector_ops").reads({"input_a", "input_b"}).writes({"output_c"});
     pass.update(passDesc);
     pass.storage(0, 0, *input_a_)
         .storage(0, 1, *input_b_)
@@ -187,7 +185,7 @@ private:
 
     const auto gpuSample =
         std::find_if(report.gpuSamples.begin(), report.gpuSamples.end(),
-                     [](const ProfileSample &sample) {
+                     [](const ProfileSample &sample) -> bool {
                        return sample.name == "vector_ops";
                      });
 

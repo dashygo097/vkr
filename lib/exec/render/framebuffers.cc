@@ -4,7 +4,7 @@
 namespace vkr::exec {
 
 Framebuffers::Framebuffers(const core::Device &device,
-                           const pipeline::RenderPass &renderPass)
+                           const pipe::RenderPass &renderPass)
     : device_(device), render_pass_(renderPass) {}
 
 Framebuffers::~Framebuffers() { destroy(); }

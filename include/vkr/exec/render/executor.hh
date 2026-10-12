@@ -11,7 +11,8 @@
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
-#include "vkr/scene/scene.hh"
+#include "vkr/scene/geometry/index_buffer.hh"
+#include "vkr/scene/geometry/vertex_buffer.hh"
 #include <functional>
 #include <optional>
 #include <string_view>
@@ -24,7 +25,6 @@ public:
   explicit RenderExecutor(const core::Device &device,
                           const core::Swapchain &swapchain,
                           const core::CommandPool &commandPool,
-                          scene::Scene &scene,
                           core::CommandBuffers &commandBuffers);
   ~RenderExecutor() = default;
 
@@ -67,23 +67,22 @@ public:
 
   [[nodiscard]] auto framesInFlight() const noexcept -> uint32_t;
 
-  void beginPass(const pipeline::RenderPass &renderPass,
+  void beginPass(const pipe::RenderPass &renderPass,
                  const Framebuffers &framebuffers,
                  const std::vector<VkClearValue> &clearValues,
                  uint32_t framebufferIndex = 0,
                  VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
   void endPass();
 
-  void bindPipeline(const pipeline::GraphicsPipeline &pipeline);
-  void bindPipeline(const pipeline::GraphicsPipeline &pipeline,
-                    pipeline::DescriptorSet &set, uint32_t setIndex);
-  void bindPipeline(const pipeline::GraphicsPipeline &pipeline,
-                    std::vector<pipeline::DescriptorSet> &sets);
+  void bindPipeline(const pipe::GraphicsPipeline &pipeline);
+  void bindPipeline(const pipe::GraphicsPipeline &pipeline,
+                    pipe::DescriptorSet &set, uint32_t setIndex);
+  void bindPipeline(const pipe::GraphicsPipeline &pipeline,
+                    std::vector<pipe::DescriptorSet> &sets);
   void setViewportAndScissor(VkExtent2D extent);
 
   void drawIndexed(const scene::IVertexBuffer &vertexBuffer,
                    const scene::IndexBuffer &indexBuffer);
-  void drawGeometry();
   void drawFullscreenTriangle();
   void beginProfileScope(std::string_view name);
   void endProfileScope();
@@ -93,7 +92,6 @@ private:
   const core::Device &device_;
   const core::Swapchain &swapchain_;
   const core::CommandPool &command_pool_;
-  scene::Scene &scene_;
   core::CommandBuffers &command_buffers_;
   std::optional<std::reference_wrapper<Profiler>> profiler_{};
 

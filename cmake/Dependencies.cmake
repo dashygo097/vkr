@@ -29,7 +29,7 @@ elseif(WIN32)
 
 endif()
 
-if(VKR_ENABLE_SLANG)
+if(ENABLE_SLANG)
   get_filename_component(VKR_VULKAN_LIBRARY_DIR "${Vulkan_LIBRARY}" DIRECTORY)
 
   find_path(VKR_SLANG_INCLUDE_DIR

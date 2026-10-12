@@ -58,10 +58,10 @@ private:
 
   // components
   ui::UiDesc desc_{};
-  std::unique_ptr<pipeline::SwapchainTarget> target_{};
-  std::unique_ptr<pipeline::RenderPass> render_pass_{};
+  std::unique_ptr<pipe::SwapchainTarget> target_{};
+  std::unique_ptr<pipe::RenderPass> render_pass_{};
   std::unique_ptr<Framebuffers> framebuffers_{};
-  std::unique_ptr<pipeline::DescriptorPool> descriptor_pool_{};
+  std::unique_ptr<pipe::DescriptorPool> descriptor_pool_{};
   std::unique_ptr<ui::UI> ui_{};
 };
 

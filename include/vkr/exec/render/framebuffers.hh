@@ -51,8 +51,7 @@ struct FramebuffersDesc {
 class Framebuffers {
 public:
   explicit Framebuffers(const core::Device &device,
-                        const pipeline::RenderPass &renderPass);
-
+                        const pipe::RenderPass &renderPass);
   ~Framebuffers();
 
   Framebuffers(const Framebuffers &) = delete;
@@ -82,7 +81,7 @@ public:
 private:
   // dependencies
   const core::Device &device_;
-  const pipeline::RenderPass &render_pass_;
+  const pipe::RenderPass &render_pass_;
 
   // components
   FramebuffersDesc desc_{};

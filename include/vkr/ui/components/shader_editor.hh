@@ -41,7 +41,7 @@ private:
   struct PipelineTarget {
     std::string passName{};
     std::string pipelineName{};
-    std::reference_wrapper<pipeline::GraphicsPipeline> pipeline;
+    std::reference_wrapper<pipe::GraphicsPipeline> pipeline;
 
     [[nodiscard]] auto label() const -> std::string {
       return passName + " / " + pipelineName;
@@ -76,7 +76,7 @@ private:
   [[nodiscard]] auto collectTargets() -> std::vector<PipelineTarget>;
   [[nodiscard]] auto activeTarget() -> std::optional<PipelineTarget>;
   [[nodiscard]] auto activePipeline()
-      -> std::optional<std::reference_wrapper<pipeline::GraphicsPipeline>>;
+      -> std::optional<std::reference_wrapper<pipe::GraphicsPipeline>>;
   [[nodiscard]] auto hasPipeline() const -> bool;
   [[nodiscard]] auto activeTargetKey() -> std::string;
 
@@ -95,35 +95,35 @@ private:
   void setStatus(std::string msg, bool isError = false);
 
   // shader desc helpers
-  [[nodiscard]] static auto findShader(pipeline::GraphicsPipelineDesc &desc,
+  [[nodiscard]] static auto findShader(pipe::GraphicsPipelineDesc &desc,
                                        VkShaderStageFlagBits stage)
       -> std::optional<
-          std::reference_wrapper<pipeline::GraphicsShaderStageDesc>>;
+          std::reference_wrapper<pipe::GraphicsShaderStageDesc>>;
 
   [[nodiscard]] static auto
-  findShader(const pipeline::GraphicsPipelineDesc &desc,
+  findShader(const pipe::GraphicsPipelineDesc &desc,
              VkShaderStageFlagBits stage)
       -> std::optional<
-          std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>;
+          std::reference_wrapper<const pipe::GraphicsShaderStageDesc>>;
 
   [[nodiscard]] static auto
   shaderSource(std::optional<
-               std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>
+               std::reference_wrapper<const pipe::GraphicsShaderStageDesc>>
                    shader) -> std::string;
 
   [[nodiscard]] static auto
-  shaderLabel(const pipeline::GraphicsShaderStageDesc &shader,
+  shaderLabel(const pipe::GraphicsShaderStageDesc &shader,
               const std::string &fallback) -> std::string;
 
   [[nodiscard]] static auto
   shaderPath(std::optional<
-             std::reference_wrapper<const pipeline::GraphicsShaderStageDesc>>
+             std::reference_wrapper<const pipe::GraphicsShaderStageDesc>>
                  shader) -> std::string;
 
   [[nodiscard]] static auto
   makeShaderModule(VkShaderStageFlagBits stage, std::string source,
                    std::string label, std::string entryPoint, bool fileBacked)
-      -> resource::ShaderModuleDesc;
+      -> res::ShaderModuleDesc;
 
   [[nodiscard]] static auto readTextFile(const std::string &path)
       -> std::string;

@@ -33,8 +33,8 @@ void checkVkResult(VkResult err) {
 UI::UI(const core::Window &window, const core::Instance &instance,
        const core::Device &device, scene::Scene &scene,
        const util::AssetSystem &assetSystem, scene::Camera &camera,
-       exec::Pass &source, const pipeline::RenderPass &renderPass,
-       const pipeline::DescriptorPool &descriptorPool, exec::Graph &graph,
+       exec::Pass &source, const pipe::RenderPass &renderPass,
+       const pipe::DescriptorPool &descriptorPool, exec::Graph &graph,
        util::Timer &timer, const core::CommandBuffers &commandBuffers)
     : window_(window), instance_(instance), device_(device), scene_(scene),
       asset_system_(assetSystem), camera_(camera), source_(source),
@@ -103,7 +103,7 @@ void UI::create() {
     }
     vulkan_initialized_ = true;
 
-    std::vector<pipeline::DescriptorBinding> offscreenBindings = {
+    std::vector<pipe::DescriptorBinding> offscreenBindings = {
         {.layout = {
              .binding = 0,
              .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -112,7 +112,7 @@ void UI::create() {
          }}};
 
     offscreen_descriptor_layout_ =
-        std::make_unique<pipeline::DescriptorSetLayout>(device_);
+        std::make_unique<pipe::DescriptorSetLayout>(device_);
     offscreen_descriptor_layout_->update({.bindings = offscreenBindings});
 
     const auto target = source_.capability<exec::RenderTargetCapability>();

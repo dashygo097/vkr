@@ -7,7 +7,7 @@
 #include <optional>
 #include <utility>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 struct SwapchainTargetDesc {
   std::optional<DepthAttachmentDesc> depth{};
@@ -111,8 +111,8 @@ private:
   // components
   SwapchainTargetDesc desc_{};
   std::vector<VkImage> vk_color_images_{};
-  std::vector<std::unique_ptr<resource::ImageView>> color_image_views_{};
+  std::vector<std::unique_ptr<res::ImageView>> color_image_views_{};
   std::unique_ptr<DepthAttachment> depth_;
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

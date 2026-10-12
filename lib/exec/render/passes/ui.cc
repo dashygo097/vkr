@@ -55,11 +55,11 @@ void UiPass::create() {
                    name(), source_.name());
   }
 
-  target_ = std::make_unique<pipeline::SwapchainTarget>(device_, swapchain_);
-  target_->update(pipeline::SwapchainTargetDesc{});
+  target_ = std::make_unique<pipe::SwapchainTarget>(device_, swapchain_);
+  target_->update(pipe::SwapchainTargetDesc{});
 
-  render_pass_ = std::make_unique<pipeline::RenderPass>(device_);
-  render_pass_->update(pipeline::RenderPassDesc::makeSwapchain(
+  render_pass_ = std::make_unique<pipe::RenderPass>(device_);
+  render_pass_->update(pipe::RenderPassDesc::makeSwapchain(
       target_->format(), target_->depth() ? target_->depth()->desc().format
                                           : VK_FORMAT_UNDEFINED));
 
@@ -71,7 +71,7 @@ void UiPass::create() {
   framebuffers_ = std::make_unique<Framebuffers>(device_, *render_pass_);
   framebuffers_->update(framebufferDesc);
 
-  descriptor_pool_ = std::make_unique<pipeline::DescriptorPool>(device_);
+  descriptor_pool_ = std::make_unique<pipe::DescriptorPool>(device_);
   const uint32_t descriptorCount =
       command_buffers_.size() +
       IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE;

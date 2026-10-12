@@ -6,7 +6,7 @@ namespace vkr::scene {
 IndexBuffer::IndexBuffer(const core::Device &device,
                          const core::CommandPool &commandPool)
     : device_(device), command_pool_(commandPool),
-      target_(std::make_unique<resource::Buffer>(device)) {}
+      target_(std::make_unique<res::Buffer>(device)) {}
 
 IndexBuffer::~IndexBuffer() = default;
 
@@ -17,7 +17,7 @@ void IndexBuffer::create() {
 
   VkDeviceSize bufferSize = sizeof(indices_[0]) * indices_.size();
 
-  resource::Buffer staging(device_);
+  res::Buffer staging(device_);
   staging.update(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);

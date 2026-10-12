@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 class DescriptorSet {
 public:
@@ -89,4 +89,4 @@ private:
   void validateBinding(uint32_t binding, VkDescriptorType type) const;
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

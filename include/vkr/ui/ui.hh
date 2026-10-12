@@ -64,10 +64,9 @@ public:
   explicit UI(const core::Window &window, const core::Instance &instance,
               const core::Device &device, scene::Scene &scene,
               const util::AssetSystem &assetSystem, scene::Camera &camera,
-              exec::Pass &source, const pipeline::RenderPass &renderPass,
-              const pipeline::DescriptorPool &descriptorPool,
-              exec::Graph &graph, util::Timer &timer,
-              const core::CommandBuffers &commandBuffers);
+              exec::Pass &source, const pipe::RenderPass &renderPass,
+              const pipe::DescriptorPool &descriptorPool, exec::Graph &graph,
+              util::Timer &timer, const core::CommandBuffers &commandBuffers);
   ~UI();
 
   UI(const UI &) = delete;
@@ -127,8 +126,8 @@ private:
   const util::AssetSystem &asset_system_;
   scene::Camera &camera_;
   exec::Pass &source_;
-  const pipeline::RenderPass &render_pass_;
-  const pipeline::DescriptorPool &descriptor_pool_;
+  const pipe::RenderPass &render_pass_;
+  const pipe::DescriptorPool &descriptor_pool_;
   exec::Graph &graph_;
   util::Timer &timer_;
   const core::CommandBuffers &command_buffers_;
@@ -147,8 +146,8 @@ private:
   std::unique_ptr<FPSPanel> fps_panel_;
   std::unique_ptr<ShaderEditor> shader_editor_;
   std::unique_ptr<LoggingPanel> logging_panel_;
-  std::unique_ptr<pipeline::DescriptorSetLayout> offscreen_descriptor_layout_;
-  std::vector<pipeline::DescriptorSet> offscreen_descriptor_sets_{};
+  std::unique_ptr<pipe::DescriptorSetLayout> offscreen_descriptor_layout_;
+  std::vector<pipe::DescriptorSet> offscreen_descriptor_sets_{};
 
   // state
   Selection selection_{};

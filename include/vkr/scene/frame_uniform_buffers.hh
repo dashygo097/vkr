@@ -33,7 +33,7 @@ public:
     buffers_.reserve(frameCount);
     for (uint32_t i = 0; i < frameCount; ++i) {
       buffers_.push_back(
-          std::make_unique<resource::UniformBuffer<UniformType>>(device_));
+          std::make_unique<res::UniformBuffer<UniformType>>(device_));
     }
   }
 
@@ -80,7 +80,7 @@ private:
   const core::Device &device_;
 
   // components
-  std::vector<std::unique_ptr<resource::UniformBuffer<UniformType>>> buffers_;
+  std::vector<std::unique_ptr<res::UniformBuffer<UniformType>>> buffers_;
 };
 
 } // namespace vkr::scene

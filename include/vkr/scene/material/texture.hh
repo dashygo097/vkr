@@ -12,9 +12,9 @@
 namespace vkr::scene {
 
 struct TextureDesc {
-  resource::ImageDesc image{};
-  resource::ImageViewDesc view{};
-  resource::SamplerDesc sampler{resource::SamplerDesc::linearRepeat()};
+  res::ImageDesc image{};
+  res::ImageViewDesc view{};
+  res::SamplerDesc sampler{res::SamplerDesc::linearRepeat()};
 
   std::string filePath{};
   VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
@@ -25,7 +25,7 @@ struct TextureDesc {
 
   [[nodiscard]] static auto textureFile(
       const std::string &path, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
-      resource::SamplerDesc sampler = resource::SamplerDesc::linearRepeat())
+      res::SamplerDesc sampler = res::SamplerDesc::linearRepeat())
       -> TextureDesc {
     TextureDesc desc{};
     desc.filePath = path;
@@ -47,10 +47,10 @@ struct TextureDesc {
 
   [[nodiscard]] static auto
   sampled2D(uint32_t width, uint32_t height, VkFormat format,
-            resource::SamplerDesc sampler =
-                resource::SamplerDesc::linearClampToEdge()) -> TextureDesc {
+            res::SamplerDesc sampler =
+                res::SamplerDesc::linearClampToEdge()) -> TextureDesc {
     TextureDesc desc{};
-    desc.image = resource::ImageDesc::sampled2D(width, height, format);
+    desc.image = res::ImageDesc::sampled2D(width, height, format);
     desc.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     desc.sampler = sampler;
     desc.useDefaultView = true;
@@ -61,10 +61,10 @@ struct TextureDesc {
   [[nodiscard]] static auto storage2D(uint32_t width, uint32_t height,
                                       VkFormat format) -> TextureDesc {
     TextureDesc desc{};
-    desc.image = resource::ImageDesc::storage2D(width, height, format);
+    desc.image = res::ImageDesc::storage2D(width, height, format);
     desc.image.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
     desc.layout = VK_IMAGE_LAYOUT_GENERAL;
-    desc.sampler = resource::SamplerDesc::linearClampToEdge();
+    desc.sampler = res::SamplerDesc::linearClampToEdge();
     desc.useDefaultView = true;
     desc.createSampler = true;
     return desc;
@@ -72,11 +72,11 @@ struct TextureDesc {
 
   [[nodiscard]] static auto
   colorAttachment(uint32_t width, uint32_t height, VkFormat format,
-                  resource::SamplerDesc sampler =
-                      resource::SamplerDesc::linearClampToEdge())
+                  res::SamplerDesc sampler =
+                      res::SamplerDesc::linearClampToEdge())
       -> TextureDesc {
     TextureDesc desc{};
-    desc.image = resource::ImageDesc::colorAttachment(width, height, format);
+    desc.image = res::ImageDesc::colorAttachment(width, height, format);
     desc.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     desc.sampler = sampler;
     desc.useDefaultView = true;
@@ -87,17 +87,17 @@ struct TextureDesc {
   [[nodiscard]] static auto depthAttachment(uint32_t width, uint32_t height,
                                             VkFormat format) -> TextureDesc {
     TextureDesc desc{};
-    desc.image = resource::ImageDesc::depthAttachment(width, height, format);
+    desc.image = res::ImageDesc::depthAttachment(width, height, format);
     desc.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    desc.sampler = resource::SamplerDesc::shadowCompare();
+    desc.sampler = res::SamplerDesc::shadowCompare();
     desc.useDefaultView = true;
     desc.createSampler = true;
     return desc;
   }
 
   [[nodiscard]] static auto fromImageDesc(
-      resource::ImageDesc image,
-      resource::SamplerDesc sampler = resource::SamplerDesc::linearRepeat())
+      res::ImageDesc image,
+      res::SamplerDesc sampler = res::SamplerDesc::linearRepeat())
       -> TextureDesc {
     TextureDesc desc{};
     desc.image = std::move(image);
@@ -193,9 +193,9 @@ private:
 
   // components
   TextureDesc desc_{};
-  std::unique_ptr<resource::Image> image_;
-  std::unique_ptr<resource::ImageView> image_view_;
-  std::unique_ptr<resource::Sampler> sampler_;
+  std::unique_ptr<res::Image> image_;
+  std::unique_ptr<res::ImageView> image_view_;
+  std::unique_ptr<res::Sampler> sampler_;
 
   // helpers
   void createFromFile();

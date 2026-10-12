@@ -47,6 +47,14 @@ public:
     return desc_.height;
   }
 
+  [[nodiscard]] auto ratio() const noexcept -> float {
+    if (height() == 0) {
+      return 1.0f;
+    }
+
+    return static_cast<float>(width()) / static_cast<float>(height());
+  }
+
   [[nodiscard]] auto shouldClose() const -> bool;
   void pollEvents() const;
   void waitForFramebufferSize();

@@ -4,7 +4,7 @@
 namespace vkr::exec {
 
 void ComputeApplication::run() {
-  initCompute();
+  initVulkan();
   try {
     const auto report = execute(true);
     if (ctx.profiler.logReport) {
@@ -22,7 +22,7 @@ void ComputeApplication::benchmark(uint32_t warmupRuns, uint32_t measuredRuns) {
     VKR_EXEC_ERROR("Compute benchmark requires at least one measured run");
   }
 
-  initCompute();
+  initVulkan();
   try {
     for (uint32_t run = 0; run < warmupRuns; ++run) {
       (void)execute(false);
@@ -45,7 +45,7 @@ void ComputeApplication::benchmark(uint32_t warmupRuns, uint32_t measuredRuns) {
   }
 }
 
-void ComputeApplication::initCompute() {
+void ComputeApplication::initVulkan() {
   if (instance_) {
     VKR_EXEC_ERROR("ComputeApplication has already been initialized");
   }
@@ -68,8 +68,10 @@ void ComputeApplication::initCompute() {
     VKR_CORE_ERROR("compute application requires compute queue support");
   }
 
-  command_pool_ = std::make_unique<core::CommandPool>(*device_, ctx.commandPool);
-  profiler_ = std::make_unique<Profiler>(*device_, *command_pool_, ctx.profiler);
+  command_pool_ =
+      std::make_unique<core::CommandPool>(*device_, ctx.commandPool);
+  profiler_ =
+      std::make_unique<Profiler>(*device_, *command_pool_, ctx.profiler);
   executor_ = std::make_unique<ComputeExecutor>(*device_, *command_pool_);
 
   createResources();

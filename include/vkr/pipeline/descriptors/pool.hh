@@ -7,7 +7,7 @@
 #include <limits>
 #include <vector>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 struct DescriptorPoolDesc {
   std::vector<VkDescriptorPoolSize> poolSizes{};
@@ -112,4 +112,4 @@ private:
   VkDescriptorPool pool_{VK_NULL_HANDLE};
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

@@ -4,7 +4,7 @@
 #include "vkr/util/compiler.hh"
 #include <filesystem>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 enum class ShaderModuleSourceKind {
   SpirvCode,
@@ -192,4 +192,4 @@ private:
   [[nodiscard]] auto loadSpirv() const -> std::vector<uint32_t>;
 };
 
-} // namespace vkr::resource
+} // namespace vkr::res

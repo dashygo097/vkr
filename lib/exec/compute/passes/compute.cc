@@ -43,7 +43,7 @@ void ComputePass::update(const ComputePassDesc &desc) {
   }
   while (descriptor_layouts_.size() < setCount) {
     descriptor_layouts_.push_back(
-        std::make_unique<pipeline::DescriptorSetLayout>(device_));
+        std::make_unique<pipe::DescriptorSetLayout>(device_));
     descriptor_sets_.emplace_back(device_, descriptor_pool_,
                                   *descriptor_layouts_.back());
   }
@@ -110,7 +110,7 @@ void ComputePass::createDescriptors() {
   if (layouts.empty()) {
     return;
   }
-  descriptor_pool_.update(pipeline::DescriptorPoolDesc::sets(layouts, 1));
+  descriptor_pool_.update(pipe::DescriptorPoolDesc::sets(layouts, 1));
   for (uint32_t setIndex = 0; setIndex < layouts.size(); ++setIndex) {
     descriptor_layouts_[setIndex]->update(layouts[setIndex]);
     descriptor_sets_[setIndex].create();
@@ -128,7 +128,7 @@ void ComputePass::createPipeline() {
     }
   }
 
-  pipeline_ = std::make_unique<pipeline::ComputePipeline>(device_);
+  pipeline_ = std::make_unique<pipe::ComputePipeline>(device_);
   pipeline_->update(pipelineDesc);
 
   if (!pipeline_->valid()) {

@@ -1,7 +1,7 @@
 #include "vkr/pipeline/targets/frame_history.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 FrameHistoryTarget::FrameHistoryTarget(const core::Device &device)
     : device_(device) {}
@@ -91,4 +91,4 @@ void FrameHistoryTarget::ensureTargets() {
   }
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

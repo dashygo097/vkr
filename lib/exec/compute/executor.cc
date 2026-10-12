@@ -96,7 +96,7 @@ auto ComputeExecutor::commandBuffer() const -> VkCommandBuffer {
   return command_buffer_;
 }
 
-void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline) {
+void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline) {
   ensureActive("bindPipeline");
 
   if (pipeline.pipeline() == VK_NULL_HANDLE) {
@@ -111,8 +111,8 @@ void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline) {
                     pipeline.pipeline());
 }
 
-void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline,
-                                   pipeline::DescriptorSet &set,
+void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline,
+                                   pipe::DescriptorSet &set,
                                    uint32_t setIndex) {
   if (setIndex >= pipeline.desc().layout.setLayouts.size()) {
     VKR_EXEC_ERROR("Descriptor set index {} is not declared in the pipeline",
@@ -126,8 +126,8 @@ void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline,
                           nullptr);
 }
 
-void ComputeExecutor::bindPipeline(const pipeline::ComputePipeline &pipeline,
-                                   std::vector<pipeline::DescriptorSet> &sets) {
+void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline,
+                                   std::vector<pipe::DescriptorSet> &sets) {
   bindPipeline(pipeline);
   if (sets.size() > pipeline.desc().layout.setLayouts.size()) {
     VKR_EXEC_ERROR("Descriptor set count exceeds the pipeline layout");

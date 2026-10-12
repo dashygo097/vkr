@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 struct ComputePipelineLayoutDesc {
   std::vector<VkDescriptorSetLayout> setLayouts{};
@@ -38,7 +38,7 @@ struct ComputePipelineLayoutDesc {
 
 struct ComputePipelineDesc {
   std::string name{};
-  resource::ShaderModuleDesc shader{};
+  res::ShaderModuleDesc shader{};
   std::string entryPoint{"main"};
   ComputePipelineLayoutDesc layout{};
 
@@ -74,7 +74,7 @@ public:
   }
 
   [[nodiscard]] auto shaderModule() const noexcept
-      -> const std::unique_ptr<resource::ShaderModule> & {
+      -> const std::unique_ptr<res::ShaderModule> & {
     return shader_module_;
   }
 
@@ -107,7 +107,7 @@ private:
 
   // components
   ComputePipelineDesc desc_{};
-  std::unique_ptr<resource::ShaderModule> shader_module_{};
+  std::unique_ptr<res::ShaderModule> shader_module_{};
   VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
   VkPipeline vk_compute_pipeline_{VK_NULL_HANDLE};
 
@@ -116,4 +116,4 @@ private:
   uint64_t revision_{0};
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

@@ -1,11 +1,11 @@
 #include "vkr/pipeline/attachments/color.hh"
 #include "vkr/logger.hh"
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 ColorAttachment::ColorAttachment(const core::Device &device) : device_(device) {
-  image_ = std::make_unique<resource::Image>(device_);
-  image_view_ = std::make_unique<resource::ImageView>(device_);
+  image_ = std::make_unique<res::Image>(device_);
+  image_view_ = std::make_unique<res::ImageView>(device_);
 }
 
 ColorAttachment::~ColorAttachment() { destory(); }
@@ -20,7 +20,7 @@ void ColorAttachment::create() {
                   desc_.height);
   }
 
-  auto imageDesc = resource::ImageDesc::colorAttachment(
+  auto imageDesc = res::ImageDesc::colorAttachment(
       desc_.width, desc_.height, desc_.format);
 
   imageDesc.usage = desc_.usage;
@@ -30,11 +30,11 @@ void ColorAttachment::create() {
                      ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
                      : desc_.finalLayout);
   image_view_->update(
-      resource::ImageViewDesc::color2D(image_->image(), desc_.format));
+      res::ImageViewDesc::color2D(image_->image(), desc_.format));
 
   if (desc_.createSampler) {
     if (!sampler_) {
-      sampler_ = std::make_unique<resource::Sampler>(device_);
+      sampler_ = std::make_unique<res::Sampler>(device_);
     }
 
     sampler_->update(desc_.sampler);
@@ -60,4 +60,4 @@ void ColorAttachment::update(const ColorAttachmentDesc &desc) {
   create();
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

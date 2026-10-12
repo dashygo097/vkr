@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 enum class StorageBufferAccess {
   ReadOnly,
@@ -340,4 +340,4 @@ private:
   }
 };
 
-} // namespace vkr::resource
+} // namespace vkr::res

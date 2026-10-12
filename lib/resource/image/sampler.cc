@@ -2,7 +2,7 @@
 #include "vkr/logger.hh"
 #include <algorithm>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 Sampler::Sampler(const core::Device &device) : device_(device) {}
 
@@ -70,4 +70,4 @@ void Sampler::update(const SamplerDesc &desc) {
   create();
 }
 
-} // namespace vkr::resource
+} // namespace vkr::res

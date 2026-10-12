@@ -3,7 +3,7 @@
 #include "vkr/core/device.hh"
 #include <vulkan/vulkan.h>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 struct SamplerDesc {
   VkFilter magFilter{VK_FILTER_LINEAR};
@@ -111,4 +111,4 @@ private:
   VkSampler vk_sampler_{VK_NULL_HANDLE};
 };
 
-} // namespace vkr::resource
+} // namespace vkr::res

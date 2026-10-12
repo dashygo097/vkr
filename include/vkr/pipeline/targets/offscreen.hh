@@ -7,7 +7,7 @@
 #include <optional>
 #include <utility>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 struct OffscreenTargetDesc {
   bool colorEnabled{true};
@@ -204,4 +204,4 @@ private:
   void validate() const;
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

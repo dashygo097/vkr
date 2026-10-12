@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <utility>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 DescriptorSet::DescriptorSet(const core::Device &device,
                              const DescriptorPool &pool,
@@ -198,4 +198,4 @@ void DescriptorSet::update() {
   }
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

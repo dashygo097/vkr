@@ -1,13 +1,12 @@
 #include <array>
 #include <glm/glm.hpp>
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
 using namespace vkr::exec;
-using namespace vkr::resource;
+using namespace vkr::res;
 using namespace vkr::scene;
 
 namespace {
@@ -50,7 +49,6 @@ private:
         VK_FORMAT_D32_SFLOAT, VertexSkybox3D::vertexInputDesc());
     skyboxDesc.uniform(0, 0, VK_SHADER_STAGE_VERTEX_BIT)
         .texture(1, 0, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .mesh("skybox")
         .clearColor(0.0f, 0.0f, 0.0f, 1.0f)
         .clearDepth();
     skyboxDesc.pipeline
@@ -62,7 +60,8 @@ private:
         .noCull();
 
     auto &skyboxPass = graph().raster("skybox", std::move(skyboxDesc));
-    skyboxPass.uniform(0, 0, scene().uniformBuffer("skybox"))
+    skyboxPass.mesh(scene().mesh("skybox"))
+        .uniform(0, 0, scene().uniformBuffer("skybox"))
         .texture(1, 0, scene().cubemap("skybox"));
 
     auto cornellDesc = RasterPassDesc::offscreen(
@@ -78,14 +77,11 @@ private:
             resolve("shaders/cornell/cornell.frag")))
         .noCull();
 
-    for (const char *part : CornellBoxParts) {
-      std::string meshName = "cornellbox.";
-      meshName += part;
-      cornellDesc.mesh(meshName);
-    }
-
     auto &cornellPass = graph().raster("cornellbox", std::move(cornellDesc));
     cornellPass.uniform(0, 0, scene().uniformBuffer("cornellbox"));
+    for (const char *part : CornellBoxParts) {
+      cornellPass.mesh(scene().mesh(std::string{"cornellbox."} + part));
+    }
 
     auto compositeDesc = FullscreenPassDesc::postProcess(
         "skybox-cornell-composite", swapchain().extent2D(),
@@ -123,7 +119,7 @@ private:
   }
 
   void configure() override {
-    ctx = RenderAppDesc::windowed("cornellbox", "Cornell Box");
+    ctx = RenderAppDesc::glfwWindowed("cornellbox", "Cornell Box");
     ctx.camera = {
         .movementSpeed = 5.0f,
         .mouseSensitivity = 0.5f,

@@ -1,12 +1,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <iostream>
 #include <utility>
 #include <vkr.hh>
 #include <vulkan/vulkan.h>
 
 using namespace vkr::exec;
-using namespace vkr::resource;
+using namespace vkr::res;
 using namespace vkr::scene;
 
 namespace {
@@ -45,7 +44,8 @@ private:
         .noCull();
 
     auto &rasterPass = graph().raster("raster", std::move(desc));
-    rasterPass.uniform(0, 0, scene().uniformBuffer("default"))
+    rasterPass.mesh(scene().mesh("teapot"))
+        .uniform(0, 0, scene().uniformBuffer("default"))
         .texture(1, 0, scene().texture("teapot_texture"));
 
     auto postDesc = FullscreenPassDesc::postProcess(
@@ -81,7 +81,7 @@ private:
   }
 
   void configure() override {
-    ctx = RenderAppDesc::windowed("teapot", "Teapot");
+    ctx = RenderAppDesc::glfwWindowed("teapot", "Teapot");
     ctx.camera = {
         .movementSpeed = 5.0f,
         .mouseSensitivity = 0.5f,

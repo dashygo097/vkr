@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -19,6 +20,22 @@ struct VertexInputDesc {
 
   [[nodiscard]] auto isEmpty() const noexcept -> bool {
     return bindings.empty() && attributes.empty();
+  }
+
+  [[nodiscard]] auto operator==(const VertexInputDesc &other) const noexcept
+      -> bool {
+    return bindings.size() == other.bindings.size() &&
+           attributes.size() == other.attributes.size() &&
+           std::equal(bindings.begin(), bindings.end(), other.bindings.begin(),
+                      [](const auto &a, const auto &b) {
+                        return a.binding == b.binding && a.stride == b.stride &&
+                               a.inputRate == b.inputRate;
+                      }) &&
+           std::equal(attributes.begin(), attributes.end(),
+                      other.attributes.begin(), [](const auto &a, const auto &b) {
+                        return a.location == b.location && a.binding == b.binding &&
+                               a.format == b.format && a.offset == b.offset;
+                      });
   }
 
   [[nodiscard]] auto createInfo() const noexcept

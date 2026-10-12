@@ -41,6 +41,6 @@ private:
 
   // dependencies
   std::vector<uint16_t> indices_{};
-  std::unique_ptr<resource::Buffer> target_{};
+  std::unique_ptr<res::Buffer> target_{};
 };
 } // namespace vkr::scene

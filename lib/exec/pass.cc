@@ -3,19 +3,19 @@
 
 namespace vkr::exec {
 
-auto Pass::setName(std::string name) -> Pass & {
+auto Pass::name(std::string name) -> Pass & {
   ensureConfigurable();
   name_ = std::move(name);
   return *this;
 }
 
-auto Pass::setReads(std::vector<std::string> reads) -> Pass & {
+auto Pass::reads(std::vector<std::string> reads) -> Pass & {
   ensureConfigurable();
   reads_ = std::move(reads);
   return *this;
 }
 
-auto Pass::setWrites(std::vector<std::string> writes) -> Pass & {
+auto Pass::writes(std::vector<std::string> writes) -> Pass & {
   ensureConfigurable();
   writes_ = std::move(writes);
   return *this;

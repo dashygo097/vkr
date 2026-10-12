@@ -201,7 +201,7 @@ private:
   std::unique_ptr<Profiler> profiler_{};
 
   // helpers
-  void initCompute();
+  void initVulkan();
   [[nodiscard]] auto execute(bool capture) -> ProfileReport;
 };
 

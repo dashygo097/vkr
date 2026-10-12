@@ -7,7 +7,7 @@
 #include <cstring>
 #include <memory>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 template <typename UniformType> class UniformBuffer {
 public:
@@ -78,4 +78,4 @@ private:
   std::unique_ptr<Buffer> target_;
 };
 
-} // namespace vkr::resource
+} // namespace vkr::res

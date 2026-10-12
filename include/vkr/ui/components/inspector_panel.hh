@@ -19,7 +19,7 @@ class TexturePreview;
 class InspectorPanel final : public UiComponent {
 public:
   InspectorPanel(const core::Device &device,
-                 const pipeline::RenderPass &renderPass,
+                 const pipe::RenderPass &renderPass,
                  const core::CommandBuffers &commandBuffers,
                  const scene::Scene &scene, const exec::Graph &graph,
                  const Selection &selection,

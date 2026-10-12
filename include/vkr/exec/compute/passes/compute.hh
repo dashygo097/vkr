@@ -83,11 +83,11 @@ struct ComputeDispatchDesc {
 };
 
 struct ComputePassDesc {
-  std::vector<pipeline::DescriptorSetLayoutDesc> descriptorLayouts{};
-  pipeline::ComputePipelineDesc pipeline{};
+  std::vector<pipe::DescriptorSetLayoutDesc> descriptorLayouts{};
+  pipe::ComputePipelineDesc pipeline{};
   ComputeDispatchDesc dispatch{};
 
-  auto descriptor(uint32_t setIndex, pipeline::DescriptorBinding binding)
+  auto descriptor(uint32_t setIndex, pipe::DescriptorBinding binding)
       -> ComputePassDesc & {
     if (setIndex >= descriptorLayouts.size()) {
       descriptorLayouts.resize(static_cast<size_t>(setIndex) + 1);
@@ -115,7 +115,7 @@ struct ComputePassDesc {
                     VK_SHADER_STAGE_COMPUTE_BIT}});
   }
 
-  auto shader(std::string name, resource::ShaderModuleDesc shaderDesc)
+  auto shader(std::string name, res::ShaderModuleDesc shaderDesc)
       -> ComputePassDesc & {
     pipeline.name = std::move(name);
     pipeline.shader = std::move(shaderDesc);
@@ -203,11 +203,11 @@ private:
 
   // components
   ComputePassDesc desc_{};
-  pipeline::DescriptorPool descriptor_pool_;
-  std::vector<std::unique_ptr<pipeline::DescriptorSetLayout>>
+  pipe::DescriptorPool descriptor_pool_;
+  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>>
       descriptor_layouts_{};
-  std::vector<pipeline::DescriptorSet> descriptor_sets_{};
-  std::unique_ptr<pipeline::ComputePipeline> pipeline_{};
+  std::vector<pipe::DescriptorSet> descriptor_sets_{};
+  std::unique_ptr<pipe::ComputePipeline> pipeline_{};
 
   // helpers
   void validate(const ComputePassDesc &desc) const;

@@ -10,7 +10,7 @@
 #include <vkr.hh>
 
 using namespace vkr::exec;
-using namespace vkr::resource;
+using namespace vkr::res;
 
 namespace {
 
@@ -131,9 +131,7 @@ class MMulApplication final : public ComputeApplication {
         .dispatch2D(LocalSize, M, LocalSize, N);
 
     auto &pass = graph().addPass<ComputePass>(executor(), device());
-    pass.setName("mmul")
-        .setReads({"input_A", "input_B"})
-        .setWrites({"output_C"});
+    pass.name("mmul").reads({"input_A", "input_B"}).writes({"output_C"});
     pass.update(passDesc);
     pass.storage(0, 0, *input_A_)
         .storage(0, 1, *input_B_)
@@ -184,9 +182,11 @@ class MMulApplication final : public ComputeApplication {
               << " ms, median=" << cpuStats.medianMs
               << " ms, max=" << cpuStats.maxMs << " ms\n";
 
-    const auto gpuSample = std::find_if(
-        report.gpuSamples.begin(), report.gpuSamples.end(),
-        [](const ProfileSample &sample) { return sample.name == "mmul"; });
+    const auto gpuSample =
+        std::find_if(report.gpuSamples.begin(), report.gpuSamples.end(),
+                     [](const ProfileSample &sample) -> bool {
+                       return sample.name == "mmul";
+                     });
 
     if (gpuSample != report.gpuSamples.end() && gpuSample->milliseconds > 0.0) {
       std::cout << "gpu dispatch:   min=" << gpuSample->minMilliseconds

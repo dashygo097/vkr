@@ -4,7 +4,7 @@
 #include <exception>
 #include <utility>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 ShaderModule::ShaderModule(const core::Device &device) : device_(device) {}
 
@@ -93,4 +93,4 @@ auto ShaderModule::loadSpirv() const -> std::vector<uint32_t> {
   return {};
 }
 
-} // namespace vkr::resource
+} // namespace vkr::res

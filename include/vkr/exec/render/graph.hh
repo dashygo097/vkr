@@ -11,10 +11,6 @@ class CommandPool;
 class Device;
 } // namespace vkr::core
 
-namespace vkr::scene {
-class Scene;
-} // namespace vkr::scene
-
 namespace vkr::exec {
 
 struct FeedbackFullscreenPassDesc;
@@ -32,7 +28,7 @@ class RenderExecutor;
 class RenderGraph final : public Graph {
 public:
   RenderGraph(RenderExecutor &executor, const core::Device &device,
-              const core::CommandPool &commandPool, scene::Scene &scene);
+              const core::CommandPool &commandPool);
   ~RenderGraph() override = default;
 
   void compile() override;
@@ -63,7 +59,6 @@ private:
   RenderExecutor &executor_;
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  scene::Scene &scene_;
 
   // state
   std::optional<std::reference_wrapper<Pass>> presentation_source_{};

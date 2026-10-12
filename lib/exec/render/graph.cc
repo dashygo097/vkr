@@ -12,10 +12,9 @@
 namespace vkr::exec {
 
 RenderGraph::RenderGraph(RenderExecutor &executor, const core::Device &device,
-                         const core::CommandPool &commandPool,
-                         scene::Scene &scene)
+                         const core::CommandPool &commandPool)
     : Graph("Render"), executor_(executor), device_(device),
-      command_pool_(commandPool), scene_(scene) {}
+      command_pool_(commandPool) {}
 
 void RenderGraph::compile() {
   Graph::compile();
@@ -36,8 +35,9 @@ void RenderGraph::destroy() noexcept {
 
 auto RenderGraph::raster(std::string name, RasterPassDesc desc)
     -> RasterPass & {
-  auto pass = std::make_unique<RasterPass>(executor_, device_, scene_);
-  pass->setName(std::move(name));
+  ensureBuilding();
+  auto pass = std::make_unique<RasterPass>(executor_, device_);
+  pass->name(std::move(name));
   pass->update(desc);
 
   auto &result = *pass;
@@ -49,9 +49,9 @@ auto RenderGraph::overlay(std::string name, Pass &source, OverlayPassDesc desc)
     -> OverlayPass & {
   ensureBuilding();
   validateSource(source);
-  auto pass = std::make_unique<OverlayPass>(executor_, device_, command_pool_,
-                                            scene_, source);
-  pass->setName(std::move(name));
+  auto pass =
+      std::make_unique<OverlayPass>(executor_, device_, command_pool_, source);
+  pass->name(std::move(name));
   pass->update(desc);
   auto &result = *pass;
   addPass(std::move(pass));
@@ -72,7 +72,7 @@ auto RenderGraph::fullscreen(std::string name,
     validateSource(source.get());
   }
   auto pass = std::make_unique<FullscreenPass>(executor_, device_, sources);
-  pass->setName(std::move(name));
+  pass->name(std::move(name));
   pass->update(desc);
 
   auto &result = *pass;
@@ -91,7 +91,7 @@ auto RenderGraph::feedback(std::string name,
   }
   auto pass =
       std::make_unique<FeedbackFullscreenPass>(executor_, device_, sources);
-  pass->setName(std::move(name));
+  pass->name(std::move(name));
   pass->update(desc);
 
   auto &result = *pass;

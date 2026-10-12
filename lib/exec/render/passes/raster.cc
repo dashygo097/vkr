@@ -7,8 +7,8 @@
 namespace vkr::exec {
 namespace {
 
-void bindSource(pipeline::DescriptorSet &set, std::string_view passName,
-                size_t sourceIndex, const pipeline::OffscreenTarget &source,
+void bindSource(pipe::DescriptorSet &set, std::string_view passName,
+                size_t sourceIndex, const pipe::OffscreenTarget &source,
                 const RenderPassInputDesc &input) {
   switch (input.kind) {
   case RenderPassInputKind::Color: {
@@ -35,10 +35,8 @@ void bindSource(pipeline::DescriptorSet &set, std::string_view passName,
 
 } // namespace
 
-RasterPass::RasterPass(RenderExecutor &executor, const core::Device &device,
-                       scene::Scene &scene)
-    : executor_(executor), device_(device), scene_(scene),
-      descriptor_pool_(device) {
+RasterPass::RasterPass(RenderExecutor &executor, const core::Device &device)
+    : executor_(executor), device_(device), descriptor_pool_(device) {
   descriptor_sets_.resize(executor_.framesInFlight());
 }
 
@@ -46,6 +44,9 @@ RasterPass::~RasterPass() { destroy(); }
 
 void RasterPass::create() {
   validate(desc_);
+  for (const auto &mesh : meshes_) {
+    validateMesh(mesh.get(), desc_.pipeline.vertexInput);
+  }
   destroy();
 
   createTarget();
@@ -79,6 +80,9 @@ void RasterPass::update(const RasterPassDesc &desc) {
                    name());
   }
   validate(desc);
+  for (const auto &mesh : meshes_) {
+    validateMesh(mesh.get(), desc.pipeline.vertexInput);
+  }
   auto nextDesc = desc;
   for (const auto &input : nextDesc.inputs) {
     if (input.setIndex >= nextDesc.descriptorLayouts.size()) {
@@ -95,13 +99,45 @@ void RasterPass::update(const RasterPassDesc &desc) {
   }
   while (descriptor_layouts_.size() < setCount) {
     descriptor_layouts_.push_back(
-        std::make_unique<pipeline::DescriptorSetLayout>(device_));
+        std::make_unique<pipe::DescriptorSetLayout>(device_));
     for (auto &frame : descriptor_sets_) {
       frame.emplace_back(device_, descriptor_pool_,
                          *descriptor_layouts_.back());
     }
   }
   desc_ = std::move(nextDesc);
+}
+
+auto RasterPass::mesh(const scene::IMesh &mesh) -> RasterPass & {
+  const auto &input =
+      pipeline_ ? pipeline_->desc().vertexInput : desc_.pipeline.vertexInput;
+  validateMesh(mesh, input);
+  const auto existing = std::find_if(
+      meshes_.begin(), meshes_.end(), [&mesh](const auto &entry) -> bool {
+        return std::addressof(entry.get()) == std::addressof(mesh);
+      });
+  if (existing == meshes_.end()) {
+    meshes_.emplace_back(mesh);
+  }
+  return *this;
+}
+
+void RasterPass::validateMesh(const scene::IMesh &mesh,
+                              const scene::VertexInputDesc &expected) const {
+  const auto vertices = mesh.vertexBufferBase();
+  const auto indices = mesh.indexBuffer();
+  if (!vertices || !indices || vertices->get().buffer() == VK_NULL_HANDLE ||
+      indices->get().buffer() == VK_NULL_HANDLE ||
+      vertices->get().vertexCount() == 0 || indices->get().indices().empty()) {
+    VKR_EXEC_ERROR("RasterPass '{}' requires initialized mesh buffers", name());
+  }
+  const auto input = vertices->get().vertexInputDesc();
+  if (!(input == expected) || input.bindings.size() != 1 ||
+      input.bindings[0].binding != 0 ||
+      input.bindings[0].inputRate != VK_VERTEX_INPUT_RATE_VERTEX) {
+    VKR_EXEC_ERROR("RasterPass '{}' mesh has incompatible vertex input",
+                   name());
+  }
 }
 
 auto RasterPass::addSource(Pass &source) -> RasterPass & {
@@ -133,25 +169,15 @@ void RasterPass::record() {
     } else {
       executor_.bindPipeline(*pipeline_);
     }
-    if (desc_.meshNames.empty()) {
-      executor_.drawGeometry();
-    } else {
-      for (const auto &meshName : desc_.meshNames) {
-        const auto &mesh = scene_.mesh(meshName);
-        if (!mesh.isValid()) {
-          VKR_EXEC_ERROR("RasterPass '{}' mesh resource not found: {}", name(),
-                         meshName);
-        }
-
-        const auto vertexBuffer = mesh.vertexBufferBase();
-        const auto indexBuffer = mesh.indexBuffer();
-        if (!vertexBuffer || !indexBuffer) {
-          VKR_EXEC_ERROR("RasterPass '{}' mesh '{}' has invalid buffers",
-                         name(), meshName);
-        }
-
-        executor_.drawIndexed(vertexBuffer->get(), indexBuffer->get());
+    for (const auto &entry : meshes_) {
+      const auto &mesh = entry.get();
+      const auto vertices = mesh.vertexBufferBase();
+      const auto indices = mesh.indexBuffer();
+      if (!vertices || !indices) {
+        VKR_EXEC_ERROR("RasterPass '{}' has a mesh with invalid buffers",
+                       name());
       }
+      executor_.drawIndexed(vertices->get(), indices->get());
     }
   }
 
@@ -159,7 +185,7 @@ void RasterPass::record() {
   executor_.endProfileScope();
 }
 
-auto RasterPass::target() -> pipeline::OffscreenTarget & {
+auto RasterPass::target() -> pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("RasterPass '{}' target requested before create", name());
   }
@@ -167,7 +193,7 @@ auto RasterPass::target() -> pipeline::OffscreenTarget & {
   return *target_;
 }
 
-auto RasterPass::target() const -> const pipeline::OffscreenTarget & {
+auto RasterPass::target() const -> const pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("RasterPass '{}' target requested before create", name());
   }
@@ -176,16 +202,16 @@ auto RasterPass::target() const -> const pipeline::OffscreenTarget & {
 }
 
 void RasterPass::createTarget() {
-  target_ = std::make_unique<pipeline::OffscreenTarget>(device_);
+  target_ = std::make_unique<pipe::OffscreenTarget>(device_);
   target_->update(desc_.target);
 }
 
 void RasterPass::createRenderPass() {
-  render_pass_ = std::make_unique<pipeline::RenderPass>(device_);
-  pipeline::RenderPassDesc renderPassDesc{};
+  render_pass_ = std::make_unique<pipe::RenderPass>(device_);
+  pipe::RenderPassDesc renderPassDesc{};
 
   if (target_->hasColor()) {
-    renderPassDesc = pipeline::RenderPassDesc::makeOffscreen(
+    renderPassDesc = pipe::RenderPassDesc::makeOffscreen(
         target_->color().desc().format, target_->depth()
                                             ? target_->depth()->desc().format
                                             : VK_FORMAT_UNDEFINED);
@@ -200,7 +226,7 @@ void RasterPass::createRenderPass() {
           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
   } else if (target_->depth()) {
-    renderPassDesc = pipeline::RenderPassDesc::makeDepthOnly(
+    renderPassDesc = pipe::RenderPassDesc::makeDepthOnly(
         target_->depth()->desc().format);
   } else {
     VKR_EXEC_ERROR("RasterPass '{}' target has no attachments", name());
@@ -293,7 +319,7 @@ void RasterPass::createDescriptors() {
     return;
   }
   descriptor_pool_.update(
-      pipeline::DescriptorPoolDesc::sets(layouts, executor_.framesInFlight()));
+      pipe::DescriptorPoolDesc::sets(layouts, executor_.framesInFlight()));
   for (uint32_t setIndex = 0; setIndex < layouts.size(); ++setIndex) {
     descriptor_layouts_[setIndex]->update(layouts[setIndex]);
     for (auto &frame : descriptor_sets_) {
@@ -326,7 +352,7 @@ void RasterPass::createPipeline() {
   }
 
   pipeline_ =
-      std::make_unique<pipeline::GraphicsPipeline>(device_, *render_pass_);
+      std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
   pipeline_->update(pipelineDesc);
 
   if (!pipeline_->valid()) {

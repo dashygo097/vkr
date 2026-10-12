@@ -4,7 +4,7 @@
 #include <string>
 #include <vulkan/vulkan.h>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 struct DescriptorBinding {
   VkDescriptorSetLayoutBinding layout{};
@@ -58,4 +58,4 @@ struct DescriptorBinding {
   }
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

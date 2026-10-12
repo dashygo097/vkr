@@ -5,7 +5,7 @@
 #include "vkr/resource/image/image_view.hh"
 #include <memory>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 struct StorageImageDesc {
   uint32_t width{0};
@@ -87,4 +87,4 @@ private:
   void create();
 };
 
-} // namespace vkr::resource
+} // namespace vkr::res

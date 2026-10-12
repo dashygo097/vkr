@@ -3,7 +3,7 @@
 #include "vkr/core/device.hh"
 #include <vulkan/vulkan.h>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 class Buffer {
 public:
@@ -70,4 +70,4 @@ private:
               VkMemoryPropertyFlags properties);
 };
 
-} // namespace vkr::resource
+} // namespace vkr::res

@@ -22,7 +22,7 @@ namespace vkr::ui {
 class TexturePreview final {
 public:
   TexturePreview(const core::Device &device,
-                 const pipeline::RenderPass &renderPass,
+                 const pipe::RenderPass &renderPass,
                  const core::CommandBuffers &commandBuffers,
                  const scene::Scene &scene, const Selection &selection);
   ~TexturePreview();
@@ -36,8 +36,8 @@ public:
 
 private:
   struct Image {
-    resource::ImageDesc image{};
-    resource::ImageViewDesc view{};
+    res::ImageDesc image{};
+    res::ImageViewDesc view{};
     VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
     VkFormatFeatureFlags features{0};
     bool cubemap{false};
@@ -57,7 +57,7 @@ private:
 
   struct Probe {
     Selection selection{};
-    resource::ImageViewDesc view{};
+    res::ImageViewDesc view{};
     VkImageView originalView{VK_NULL_HANDLE};
     uint32_t x{0};
     uint32_t y{0};
@@ -67,33 +67,33 @@ private:
     explicit Frame(const core::Device &device);
 
     // Thumbnail and popup never overwrite one another's GPU state.
-    std::array<resource::ImageView, 2> views;
-    std::array<resource::UniformBuffer<Parameters>, 2> parameters;
-    resource::Buffer readback;
+    std::array<res::ImageView, 2> views;
+    std::array<res::UniformBuffer<Parameters>, 2> parameters;
+    res::Buffer readback;
     std::optional<Probe> probe{};
     bool stale{true};
   };
 
   struct Draw {
-    std::reference_wrapper<const pipeline::GraphicsPipeline> pipeline;
-    std::reference_wrapper<const pipeline::DescriptorSet> images;
-    std::reference_wrapper<const pipeline::DescriptorSet> parameters;
+    std::reference_wrapper<const pipe::GraphicsPipeline> pipeline;
+    std::reference_wrapper<const pipe::DescriptorSet> images;
+    std::reference_wrapper<const pipe::DescriptorSet> parameters;
   };
 
   const core::Device &device_;
-  const pipeline::RenderPass &render_pass_;
+  const pipe::RenderPass &render_pass_;
   const core::CommandBuffers &command_buffers_;
   const scene::Scene &scene_;
   const Selection &selection_;
 
-  pipeline::DescriptorSetLayout image_layout_;
-  pipeline::DescriptorSetLayout parameter_layout_;
-  pipeline::DescriptorPool descriptor_pool_;
-  std::vector<pipeline::DescriptorSet> image_sets_{};
-  std::vector<pipeline::DescriptorSet> parameter_sets_{};
-  resource::Sampler nearest_sampler_;
-  resource::Sampler linear_sampler_;
-  pipeline::GraphicsPipeline pipeline_;
+  pipe::DescriptorSetLayout image_layout_;
+  pipe::DescriptorSetLayout parameter_layout_;
+  pipe::DescriptorPool descriptor_pool_;
+  std::vector<pipe::DescriptorSet> image_sets_{};
+  std::vector<pipe::DescriptorSet> parameter_sets_{};
+  res::Sampler nearest_sampler_;
+  res::Sampler linear_sampler_;
+  pipe::GraphicsPipeline pipeline_;
   std::vector<std::unique_ptr<Frame>> frames_{};
   // Stable addresses for ImGui's callbacks; populated only during construction.
   std::vector<Draw> draws_{};

@@ -2,7 +2,7 @@
 #include "vkr/logger.hh"
 #include "vkr/resource/buffer/buffer.hh"
 
-namespace vkr::resource {
+namespace vkr::res {
 
 Image::Image(const core::Device &device) : device_(device) {}
 
@@ -79,4 +79,4 @@ void Image::destroy() {
   layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-} // namespace vkr::resource
+} // namespace vkr::res

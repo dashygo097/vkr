@@ -15,47 +15,51 @@ std::shared_ptr<spdlog::logger> Logger::scene_logger_;
 std::shared_ptr<spdlog::logger> Logger::ui_logger_;
 
 void Logger::init() {
-  std::vector<spdlog::sink_ptr> sinks;
+  static std::once_flag once;
 
-  auto console_formatter = std::make_unique<spdlog::pattern_formatter>();
-  console_formatter->add_flag<Formatter>('*');
-  console_formatter->set_pattern("%^%*%$ \033[2mlibvkr::%n\033[0m %v");
+  std::call_once(once, []() -> void {
+    std::vector<spdlog::sink_ptr> sinks;
 
-  auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-  console_sink->set_formatter(std::move(console_formatter));
-  sinks.push_back(console_sink);
+    auto console_formatter = std::make_unique<spdlog::pattern_formatter>();
+    console_formatter->add_flag<Formatter>('*');
+    console_formatter->set_pattern("%^%*%$ \033[2mlibvkr::%n\033[0m %v");
 
-  auto file_sink =
-      std::make_shared<spdlog::sinks::basic_file_sink_mt>("vkr.log", true);
-  file_sink->set_pattern("[%T] [%l] %n: %v");
-  sinks.push_back(file_sink);
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    console_sink->set_formatter(std::move(console_formatter));
+    sinks.push_back(console_sink);
 
-  ui_sink_ = std::make_shared<UiLogSink>(1000);
-  ui_sink_->set_pattern(" %-5l %-16n %v");
-  sinks.push_back(ui_sink_);
+    auto file_sink =
+        std::make_shared<spdlog::sinks::basic_file_sink_mt>("vkr.log", true);
+    file_sink->set_pattern("[%T] [%l] %n: %v");
+    sinks.push_back(file_sink);
 
-  util_logger_ =
-      std::make_shared<spdlog::logger>("util    ", sinks.begin(), sinks.end());
-  core_logger_ =
-      std::make_shared<spdlog::logger>("core    ", sinks.begin(), sinks.end());
-  resource_logger_ =
-      std::make_shared<spdlog::logger>("resource", sinks.begin(), sinks.end());
-  pipeline_logger_ =
-      std::make_shared<spdlog::logger>("pipeline", sinks.begin(), sinks.end());
-  exec_logger_ =
-      std::make_shared<spdlog::logger>("exec    ", sinks.begin(), sinks.end());
-  scene_logger_ =
-      std::make_shared<spdlog::logger>("scene   ", sinks.begin(), sinks.end());
-  ui_logger_ =
-      std::make_shared<spdlog::logger>("ui      ", sinks.begin(), sinks.end());
+    ui_sink_ = std::make_shared<UiLogSink>(1000);
+    ui_sink_->set_pattern(" %-5l %-16n %v");
+    sinks.push_back(ui_sink_);
 
-  core_logger_->set_level(spdlog::level::trace);
-  resource_logger_->set_level(spdlog::level::trace);
-  pipeline_logger_->set_level(spdlog::level::trace);
-  exec_logger_->set_level(spdlog::level::trace);
-  scene_logger_->set_level(spdlog::level::trace);
-  ui_logger_->set_level(spdlog::level::trace);
-  util_logger_->set_level(spdlog::level::trace);
+    util_logger_ =
+        std::make_shared<spdlog::logger>("util ", sinks.begin(), sinks.end());
+    core_logger_ =
+        std::make_shared<spdlog::logger>("core ", sinks.begin(), sinks.end());
+    resource_logger_ =
+        std::make_shared<spdlog::logger>("res  ", sinks.begin(), sinks.end());
+    pipeline_logger_ =
+        std::make_shared<spdlog::logger>("pipe ", sinks.begin(), sinks.end());
+    exec_logger_ =
+        std::make_shared<spdlog::logger>("exec ", sinks.begin(), sinks.end());
+    scene_logger_ =
+        std::make_shared<spdlog::logger>("scene", sinks.begin(), sinks.end());
+    ui_logger_ =
+        std::make_shared<spdlog::logger>("ui   ", sinks.begin(), sinks.end());
+
+    core_logger_->set_level(spdlog::level::trace);
+    resource_logger_->set_level(spdlog::level::trace);
+    pipeline_logger_->set_level(spdlog::level::trace);
+    exec_logger_->set_level(spdlog::level::trace);
+    scene_logger_->set_level(spdlog::level::trace);
+    ui_logger_->set_level(spdlog::level::trace);
+    util_logger_->set_level(spdlog::level::trace);
+  });
 }
 
 } // namespace vkr

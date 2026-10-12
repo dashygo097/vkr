@@ -42,9 +42,9 @@ struct RenderAppDesc {
   ui::UiDesc ui{};
 
   [[nodiscard]] static auto
-  windowed(std::string appName, std::string windowTitle, uint32_t width = 1200,
-           uint32_t height = 900, uint32_t framesInFlight = 2)
-      -> RenderAppDesc {
+  glfwWindowed(std::string appName, std::string windowTitle,
+               uint32_t width = 1200, uint32_t height = 900,
+               uint32_t framesInFlight = 2) -> RenderAppDesc {
     RenderAppDesc desc{};
     desc.window = {
         .title = std::move(windowTitle),

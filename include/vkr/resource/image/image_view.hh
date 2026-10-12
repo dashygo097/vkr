@@ -4,7 +4,7 @@
 #include "vkr/resource/image/image.hh"
 #include <vulkan/vulkan.h>
 
-namespace vkr::resource {
+namespace vkr::res {
 
 struct ImageViewDesc {
   VkImage image{VK_NULL_HANDLE};
@@ -112,4 +112,4 @@ private:
   VkImageView vk_imageview_{VK_NULL_HANDLE};
 };
 
-} // namespace vkr::resource
+} // namespace vkr::res

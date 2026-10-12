@@ -28,7 +28,7 @@ public:
   explicit VertexBuffer(const core::Device &device,
                         const core::CommandPool &commandPool)
       : device_(device), command_pool_(commandPool),
-        target_(std::make_unique<resource::Buffer>(device)) {}
+        target_(std::make_unique<res::Buffer>(device)) {}
 
   ~VertexBuffer() override = default;
 
@@ -101,7 +101,7 @@ protected:
       VKR_RES_ERROR("Cannot upload empty vertex buffer data!");
     }
 
-    resource::Buffer staging(device_);
+    res::Buffer staging(device_);
     staging.update(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -164,7 +164,7 @@ protected:
 
   // components
   std::vector<VertexType> vertices_{};
-  std::unique_ptr<resource::Buffer> target_{};
+  std::unique_ptr<res::Buffer> target_{};
 };
 
 } // namespace vkr::scene

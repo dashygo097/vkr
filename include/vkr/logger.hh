@@ -24,12 +24,12 @@ public:
       : max_messages_(max_messages) {}
 
   auto getMessages() -> std::vector<LogMessage> {
-    std::lock_guard<std::mutex> lock(this->mutex_);
+    std::scoped_lock<std::mutex> lock(this->mutex_);
     return messages_;
   }
 
   void clear() {
-    std::lock_guard<std::mutex> lock(this->mutex_);
+    std::scoped_lock<std::mutex> lock(this->mutex_);
     messages_.clear();
   }
 
@@ -103,26 +103,36 @@ class Logger {
 public:
   static void init();
 
-  static auto getUiSink() -> std::shared_ptr<UiLogSink> & { return ui_sink_; }
+  static auto getUiSink() -> std::shared_ptr<UiLogSink> & {
+    init();
+    return ui_sink_;
+  }
   static auto getUtilLogger() -> std::shared_ptr<spdlog::logger> & {
+    init();
     return util_logger_;
   }
   static auto getCoreLogger() -> std::shared_ptr<spdlog::logger> & {
+    init();
     return core_logger_;
   }
   static auto getResourceLogger() -> std::shared_ptr<spdlog::logger> & {
+    init();
     return resource_logger_;
   }
   static auto getPipelineLogger() -> std::shared_ptr<spdlog::logger> & {
+    init();
     return pipeline_logger_;
   }
   static auto getExecLogger() -> std::shared_ptr<spdlog::logger> & {
+    init();
     return exec_logger_;
   }
   static auto getSceneLogger() -> std::shared_ptr<spdlog::logger> & {
+    init();
     return scene_logger_;
   }
   static auto getUiLogger() -> std::shared_ptr<spdlog::logger> & {
+    init();
     return ui_logger_;
   }
 

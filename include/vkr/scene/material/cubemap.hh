@@ -15,14 +15,14 @@ struct CubemapDesc {
   std::array<std::string, 6> facePaths{};
   VkFormat format{VK_FORMAT_R8G8B8A8_SRGB};
   VkImageLayout layout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-  resource::SamplerDesc sampler{resource::SamplerDesc::linearClampToEdge()};
+  res::SamplerDesc sampler{res::SamplerDesc::linearClampToEdge()};
   bool forceRgba{true};
 
   [[nodiscard]] static auto
   files(const std::array<std::string, 6> &faces,
         VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
-        resource::SamplerDesc sampler =
-            resource::SamplerDesc::linearClampToEdge()) -> CubemapDesc {
+        res::SamplerDesc sampler =
+            res::SamplerDesc::linearClampToEdge()) -> CubemapDesc {
     CubemapDesc desc{};
     desc.facePaths = faces;
     desc.format = format;
@@ -105,9 +105,9 @@ private:
 
   // components
   CubemapDesc desc_{};
-  std::unique_ptr<resource::Image> image_;
-  std::unique_ptr<resource::ImageView> image_view_;
-  std::unique_ptr<resource::Sampler> sampler_;
+  std::unique_ptr<res::Image> image_;
+  std::unique_ptr<res::ImageView> image_view_;
+  std::unique_ptr<res::Sampler> sampler_;
 
   // helpers
   void create();

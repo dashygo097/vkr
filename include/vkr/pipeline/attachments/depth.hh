@@ -6,7 +6,7 @@
 #include "vkr/resource/image/sampler.hh"
 #include <utility>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 struct DepthAttachmentDesc {
   uint32_t width{};
@@ -16,7 +16,7 @@ struct DepthAttachmentDesc {
   VkImageLayout finalLayout{VK_IMAGE_LAYOUT_UNDEFINED};
   VkAttachmentStoreOp storeOp{VK_ATTACHMENT_STORE_OP_DONT_CARE};
   bool createSampler{false};
-  resource::SamplerDesc sampler{resource::SamplerDesc::nearestClampToEdge()};
+  res::SamplerDesc sampler{res::SamplerDesc::nearestClampToEdge()};
 
   auto extent(uint32_t attachmentWidth, uint32_t attachmentHeight) noexcept
       -> DepthAttachmentDesc & {
@@ -67,7 +67,7 @@ struct DepthAttachmentDesc {
     return *this;
   }
 
-  auto withSampler(resource::SamplerDesc desc) -> DepthAttachmentDesc & {
+  auto withSampler(res::SamplerDesc desc) -> DepthAttachmentDesc & {
     sampler = std::move(desc);
     createSampler = true;
     return *this;
@@ -150,9 +150,9 @@ private:
 
   // components
   DepthAttachmentDesc desc_{};
-  std::unique_ptr<resource::Image> image_;
-  std::unique_ptr<resource::ImageView> image_view_;
-  std::unique_ptr<resource::Sampler> sampler_;
+  std::unique_ptr<res::Image> image_;
+  std::unique_ptr<res::ImageView> image_view_;
+  std::unique_ptr<res::Sampler> sampler_;
 };
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

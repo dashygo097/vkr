@@ -2,7 +2,7 @@
 #include "vkr/logger.hh"
 #include <vulkan/vulkan_core.h>
 
-namespace vkr::pipeline {
+namespace vkr::pipe {
 
 OffscreenTarget::OffscreenTarget(const core::Device &device)
     : device_(device) {}
@@ -120,4 +120,4 @@ auto OffscreenTarget::attachmentViews() const -> std::vector<VkImageView> {
   return views;
 }
 
-} // namespace vkr::pipeline
+} // namespace vkr::pipe

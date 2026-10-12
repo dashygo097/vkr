@@ -31,11 +31,11 @@ public:
 
   [[nodiscard]] auto commandBuffer() const -> VkCommandBuffer;
 
-  void bindPipeline(const pipeline::ComputePipeline &pipeline);
-  void bindPipeline(const pipeline::ComputePipeline &pipeline,
-                    pipeline::DescriptorSet &set, uint32_t setIndex);
-  void bindPipeline(const pipeline::ComputePipeline &pipeline,
-                    std::vector<pipeline::DescriptorSet> &sets);
+  void bindPipeline(const pipe::ComputePipeline &pipeline);
+  void bindPipeline(const pipe::ComputePipeline &pipeline,
+                    pipe::DescriptorSet &set, uint32_t setIndex);
+  void bindPipeline(const pipe::ComputePipeline &pipeline,
+                    std::vector<pipe::DescriptorSet> &sets);
   void dispatch(uint32_t groupCountX, uint32_t groupCountY,
                 uint32_t groupCountZ);
   void beginProfileScope(std::string_view name);

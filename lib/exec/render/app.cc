@@ -55,14 +55,16 @@ void RenderApplication::initVulkan() {
   }
 
   // swapchain
-  swapchain_ = std::make_unique<core::Swapchain>(
-      *window_, *surface_, *device_, ctx.swapchain);
+  swapchain_ = std::make_unique<core::Swapchain>(*window_, *surface_, *device_,
+                                                 ctx.swapchain);
 
   // command pool
-  command_pool_ = std::make_unique<core::CommandPool>(*device_, ctx.commandPool);
+  command_pool_ =
+      std::make_unique<core::CommandPool>(*device_, ctx.commandPool);
 
   // profiler
-  profiler_ = std::make_unique<Profiler>(*device_, *command_pool_, ctx.profiler);
+  profiler_ =
+      std::make_unique<Profiler>(*device_, *command_pool_, ctx.profiler);
 
   // command buffers
   command_buffers_ =
@@ -70,8 +72,8 @@ void RenderApplication::initVulkan() {
   command_buffers_->update(ctx.commandBuffers);
 
   // scene
-  scene_ = std::make_unique<vkr::scene::Scene>(
-      *device_, *command_pool_, *command_buffers_);
+  scene_ = std::make_unique<vkr::scene::Scene>(*device_, *command_pool_,
+                                               *command_buffers_);
 
   // user resources
   createResources();
@@ -85,12 +87,11 @@ void RenderApplication::initVulkan() {
 
   // executor
   executor_ = std::make_unique<RenderExecutor>(
-      *device_, *swapchain_, *command_pool_, *scene_, *command_buffers_);
+      *device_, *swapchain_, *command_pool_, *command_buffers_);
   executor_->setProfiler(*profiler_);
 
   // render graph
-  graph_ =
-      std::make_unique<RenderGraph>(*executor_, *device_, *command_pool_, *scene_);
+  graph_ = std::make_unique<RenderGraph>(*executor_, *device_, *command_pool_);
   buildGraph();
   auto &uiPass = buildPresentation();
   graph_->compile();
@@ -102,14 +103,14 @@ auto RenderApplication::buildPresentation() -> UiPass & {
   auto &source = graph_->presentationSource();
 
   auto &uiPass = graph_->addPass<UiPass>(
-      *executor_, *window_, *instance_, *device_, *command_buffers_, *swapchain_,
-      *scene_, *asset_system_, *camera_, source, *graph_, *timer_);
-  uiPass.setName("ui");
+      *executor_, *window_, *instance_, *device_, *command_buffers_,
+      *swapchain_, *scene_, *asset_system_, *camera_, source, *graph_, *timer_);
+  uiPass.name("ui");
   uiPass.update(ctx.ui);
   graph_->addDependency(source.name(), uiPass.name());
 
   auto &presentPass = graph_->addPass<PresentPass>(*executor_);
-  presentPass.setName("present");
+  presentPass.name("present");
   graph_->addDependency(uiPass.name(), presentPass.name());
   return uiPass;
 }
@@ -128,7 +129,7 @@ void RenderApplication::mainLoop() {
     }
 
     camera_->lock(ui().layoutMode() == ui::LayoutMode::Standard &&
-                 !ui().viewportFocused());
+                  !ui().viewportFocused());
 
     if (!camera_->isLocked()) {
       camera_->track();
@@ -193,11 +194,10 @@ void RenderApplication::recreateSwapchain() {
   swapchain_->recreate();
 
   executor_ = std::make_unique<RenderExecutor>(
-      *device_, *swapchain_, *command_pool_, *scene_, *command_buffers_);
+      *device_, *swapchain_, *command_pool_, *command_buffers_);
   executor_->setProfiler(*profiler_);
 
-  graph_ =
-      std::make_unique<RenderGraph>(*executor_, *device_, *command_pool_, *scene_);
+  graph_ = std::make_unique<RenderGraph>(*executor_, *device_, *command_pool_);
   buildGraph();
   auto &uiPass = buildPresentation();
   graph_->compile();
