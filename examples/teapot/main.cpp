@@ -73,8 +73,8 @@ private:
     UniformBuffer3DObject ubo{};
     ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.4f, -7.0f));
     ubo.model = glm::scale(ubo.model, glm::vec3(0.04f));
-    ubo.view = camera().getView();
-    ubo.proj = camera().getProjection();
+    ubo.view = camera().view();
+    ubo.proj = camera().proj();
 
     scene().uniformBuffer<UniformBuffer3DObject>("default").update(frameIndex,
                                                                    ubo);

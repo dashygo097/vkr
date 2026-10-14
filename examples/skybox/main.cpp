@@ -108,8 +108,8 @@ private:
 
     UniformBuffer3DObject ubo{};
     ubo.model = glm::mat4(1.0f);
-    ubo.view = camera().getView();
-    ubo.proj = camera().getProjection();
+    ubo.view = camera().view();
+    ubo.proj = camera().proj();
 
     scene().uniformBuffer<UniformBuffer3DObject>("skybox").update(frameIndex,
                                                                   ubo);

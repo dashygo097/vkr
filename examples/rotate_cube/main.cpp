@@ -182,8 +182,8 @@ auto main() -> int {
     ubo.model = glm::translate(glm::mat4{1.0f}, {0.0f, 0.0f, -4.0f});
     ubo.model = glm::rotate(ubo.model, timer.elapsedTime(),
                             glm::vec3{0.0f, 1.0f, 0.0f});
-    ubo.view = camera.getView();
-    ubo.proj = camera.getProjection();
+    ubo.view = camera.view();
+    ubo.proj = camera.proj();
     uniforms.update(frame, ubo);
 
     executor.beginPass(renderPass, framebuffers, clearValues,
