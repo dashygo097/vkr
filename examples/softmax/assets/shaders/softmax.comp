@@ -1,0 +1,56 @@
+#version 450
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std430) readonly buffer Input {
+  float values[];
+} inputValues;
+
+layout(set = 0, binding = 1, std430) writeonly buffer Output {
+  float values[];
+} outputValues;
+
+shared float partial[64];
+
+// A single workgroup computes softmax over the entire input vector.
+void main() {
+  const uint lane = gl_LocalInvocationID.x;
+  const uint elementCount = uint(inputValues.values.length());
+
+  float localMax = -3.402823466e+38;
+  for (uint i = lane; i < elementCount; i += gl_WorkGroupSize.x) {
+    localMax = max(localMax, inputValues.values[i]);
+  }
+  partial[lane] = localMax;
+  barrier();
+
+  for (uint stride = gl_WorkGroupSize.x / 2; stride > 0; stride >>= 1) {
+    if (lane < stride) {
+      partial[lane] = max(partial[lane], partial[lane + stride]);
+    }
+    barrier();
+  }
+
+  const float maximum = partial[0];
+  // Every lane must read the maximum before the shared scratch is reused.
+  barrier();
+
+  float localSum = 0.0;
+  for (uint i = lane; i < elementCount; i += gl_WorkGroupSize.x) {
+    localSum += exp(inputValues.values[i] - maximum);
+  }
+  partial[lane] = localSum;
+  barrier();
+
+  for (uint stride = gl_WorkGroupSize.x / 2; stride > 0; stride >>= 1) {
+    if (lane < stride) {
+      partial[lane] += partial[lane + stride];
+    }
+    barrier();
+  }
+
+  const float denominator = partial[0];
+  for (uint i = lane; i < elementCount; i += gl_WorkGroupSize.x) {
+    outputValues.values[i] = exp(inputValues.values[i] - maximum) / denominator;
+  }
+}

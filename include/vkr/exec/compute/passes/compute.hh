@@ -204,8 +204,7 @@ private:
   // components
   ComputePassDesc desc_{};
   pipe::DescriptorPool descriptor_pool_;
-  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>>
-      descriptor_layouts_{};
+  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>> descriptor_layouts_{};
   std::vector<pipe::DescriptorSet> descriptor_sets_{};
   std::unique_ptr<pipe::ComputePipeline> pipeline_{};
 
