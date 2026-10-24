@@ -107,8 +107,7 @@ auto main() -> int {
 
   // descriptors
   DescriptorSetLayoutDesc layoutDesc{};
-  layoutDesc.bindings.push_back(
-      {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}});
+  layoutDesc.uniform(0, VK_SHADER_STAGE_VERTEX_BIT);
   DescriptorSetLayout layout{device};
   layout.update(layoutDesc);
 

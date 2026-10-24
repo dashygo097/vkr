@@ -87,32 +87,26 @@ struct ComputePassDesc {
   pipe::ComputePipelineDesc pipeline{};
   ComputeDispatchDesc dispatch{};
 
-  auto descriptor(uint32_t setIndex, pipe::DescriptorBinding binding)
-      -> ComputePassDesc & {
+  auto layout(uint32_t setIndex) -> pipe::DescriptorSetLayoutDesc & {
     if (setIndex >= descriptorLayouts.size()) {
       descriptorLayouts.resize(static_cast<size_t>(setIndex) + 1);
     }
-    descriptorLayouts[setIndex].bindings.push_back(std::move(binding));
-    return *this;
+    return descriptorLayouts[setIndex];
   }
 
   auto storage(uint32_t setIndex, uint32_t binding) -> ComputePassDesc & {
-    return descriptor(setIndex,
-                      {.layout = {binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-                                  VK_SHADER_STAGE_COMPUTE_BIT}});
+    layout(setIndex).storage(binding, VK_SHADER_STAGE_COMPUTE_BIT);
+    return *this;
   }
 
   auto uniform(uint32_t setIndex, uint32_t binding) -> ComputePassDesc & {
-    return descriptor(setIndex,
-                      {.layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                                  VK_SHADER_STAGE_COMPUTE_BIT}});
+    layout(setIndex).uniform(binding, VK_SHADER_STAGE_COMPUTE_BIT);
+    return *this;
   }
 
   auto texture(uint32_t setIndex, uint32_t binding) -> ComputePassDesc & {
-    return descriptor(
-        setIndex,
-        {.layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                    VK_SHADER_STAGE_COMPUTE_BIT}});
+    layout(setIndex).texture(binding, VK_SHADER_STAGE_COMPUTE_BIT);
+    return *this;
   }
 
   auto shader(std::string name, res::ShaderModuleDesc shaderDesc)

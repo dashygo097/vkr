@@ -338,9 +338,7 @@ void FeedbackFullscreenPass::validate(
     if (input.setIndex >= layouts.size()) {
       layouts.resize(static_cast<size_t>(input.setIndex) + 1);
     }
-    layouts[input.setIndex].bindings.push_back(
-        {.layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                    input.stageFlags}});
+    layouts[input.setIndex].texture(input.binding, input.stageFlags);
   }
   if (desc.historyInput) {
     const auto &input = *desc.historyInput;
@@ -352,9 +350,7 @@ void FeedbackFullscreenPass::validate(
     if (input.setIndex >= layouts.size()) {
       layouts.resize(static_cast<size_t>(input.setIndex) + 1);
     }
-    layouts[input.setIndex].bindings.push_back(
-        {.layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                    input.stageFlags}});
+    layouts[input.setIndex].texture(input.binding, input.stageFlags);
   }
   for (const auto &layoutDesc : layouts) {
     if (!layoutDesc.isValid()) {
@@ -388,18 +384,14 @@ void FeedbackFullscreenPass::createDescriptors() {
     if (input.setIndex >= layouts.size()) {
       layouts.resize(static_cast<size_t>(input.setIndex) + 1);
     }
-    layouts[input.setIndex].bindings.push_back(
-        {.layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                    input.stageFlags}});
+    layouts[input.setIndex].texture(input.binding, input.stageFlags);
   }
   if (desc_.historyInput) {
     const auto &input = *desc_.historyInput;
     if (input.setIndex >= layouts.size()) {
       layouts.resize(static_cast<size_t>(input.setIndex) + 1);
     }
-    layouts[input.setIndex].bindings.push_back(
-        {.layout = {input.binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                    input.stageFlags}});
+    layouts[input.setIndex].texture(input.binding, input.stageFlags);
   }
   if (layouts.empty()) {
     return;

@@ -25,30 +25,25 @@ struct OverlayPassDesc {
   std::vector<pipe::DescriptorSetLayoutDesc> descriptorLayouts{};
   pipe::GraphicsPipelineDesc pipeline{};
 
-  auto descriptor(uint32_t setIndex, pipe::DescriptorBinding binding)
-      -> OverlayPassDesc & {
+  auto layout(uint32_t setIndex) -> pipe::DescriptorSetLayoutDesc & {
     if (setIndex >= descriptorLayouts.size()) {
       descriptorLayouts.resize(static_cast<size_t>(setIndex) + 1);
     }
-    descriptorLayouts[setIndex].bindings.push_back(std::move(binding));
-    return *this;
+    return descriptorLayouts[setIndex];
   }
 
   auto uniform(uint32_t setIndex, uint32_t binding,
                VkShaderStageFlags stages = VK_SHADER_STAGE_VERTEX_BIT)
       -> OverlayPassDesc & {
-    return descriptor(
-        setIndex,
-        {.layout = {binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, stages}});
+    layout(setIndex).uniform(binding, stages);
+    return *this;
   }
 
   auto texture(uint32_t setIndex, uint32_t binding,
                VkShaderStageFlags stages = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> OverlayPassDesc & {
-    return descriptor(
-        setIndex,
-        {.layout = {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-                    stages}});
+    layout(setIndex).texture(binding, stages);
+    return *this;
   }
 
   [[nodiscard]] static auto

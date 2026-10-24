@@ -101,17 +101,12 @@ void UI::create() {
     }
     vulkan_initialized_ = true;
 
-    std::vector<pipe::DescriptorBinding> offscreenBindings = {
-        {.layout = {
-             .binding = 0,
-             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-             .descriptorCount = 1,
-             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-         }}};
+    pipe::DescriptorSetLayoutDesc offscreenLayoutDesc{};
+    offscreenLayoutDesc.texture(0, VK_SHADER_STAGE_FRAGMENT_BIT);
 
     offscreen_descriptor_layout_ =
         std::make_unique<pipe::DescriptorSetLayout>(device_);
-    offscreen_descriptor_layout_->update({.bindings = offscreenBindings});
+    offscreen_descriptor_layout_->update(offscreenLayoutDesc);
 
     const auto target = source_.capability<exec::RenderTargetCapability>();
     if (!target) {

@@ -3,12 +3,34 @@
 #include "vkr/core/device.hh"
 #include "vkr/pipeline/descriptors/binding.hh"
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace vkr::pipe {
 
 struct DescriptorSetLayoutDesc {
   std::vector<DescriptorBinding> bindings{};
+
+  auto binding(uint32_t index, VkDescriptorType type, VkShaderStageFlags stages,
+               uint32_t count = 1) -> DescriptorSetLayoutDesc & {
+    bindings.push_back({.layout = {index, type, count, stages}});
+    return *this;
+  }
+
+  auto uniform(uint32_t index, VkShaderStageFlags stages)
+      -> DescriptorSetLayoutDesc & {
+    return binding(index, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stages);
+  }
+
+  auto storage(uint32_t index, VkShaderStageFlags stages)
+      -> DescriptorSetLayoutDesc & {
+    return binding(index, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stages);
+  }
+
+  auto texture(uint32_t index, VkShaderStageFlags stages)
+      -> DescriptorSetLayoutDesc & {
+    return binding(index, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, stages);
+  }
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
     for (std::size_t index = 0; index < bindings.size(); ++index) {

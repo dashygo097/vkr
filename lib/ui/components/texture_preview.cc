@@ -174,21 +174,12 @@ TexturePreview::TexturePreview(const core::Device &device,
       pipeline_(device, renderPass) {
   static_assert(sizeof(Parameters) == 32);
   static_assert(offsetof(Parameters, exposure) == 16);
-  image_layout_.update(
-      {.bindings = {
-           {.layout = {
-                .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            }}}});
-  parameter_layout_.update(
-      {.bindings = {{.layout = {
-                         .binding = 0,
-                         .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                         .descriptorCount = 1,
-                         .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                     }}}});
+  pipe::DescriptorSetLayoutDesc imageLayoutDesc{};
+  imageLayoutDesc.texture(0, VK_SHADER_STAGE_FRAGMENT_BIT);
+  image_layout_.update(imageLayoutDesc);
+  pipe::DescriptorSetLayoutDesc parameterLayoutDesc{};
+  parameterLayoutDesc.uniform(0, VK_SHADER_STAGE_FRAGMENT_BIT);
+  parameter_layout_.update(parameterLayoutDesc);
   descriptor_pool_.update({
       .poolSizes = {{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                      commandBuffers.size() * 2U},
