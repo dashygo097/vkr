@@ -115,11 +115,9 @@ auto main() -> int {
   DescriptorPool pool{device};
   pool.update(DescriptorPoolDesc::sets(layoutDesc, commands.size()));
 
-  std::vector<DescriptorSet> descriptorSets{};
-  descriptorSets.reserve(commands.size());
+  auto descriptorSets = pool.allocate(layout, commands.size());
   for (uint32_t frame = 0; frame < commands.size(); ++frame) {
-    descriptorSets.emplace_back(device, pool, layout);
-    descriptorSets.back().uniform(0, uniforms, frame).create();
+    descriptorSets[frame].uniform(0, uniforms, frame).update();
   }
 
   // graphics pipeline

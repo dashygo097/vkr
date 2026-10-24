@@ -1,5 +1,6 @@
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/logger.hh"
+#include "vkr/pipeline/descriptors/pool.hh"
 #include <algorithm>
 #include <utility>
 

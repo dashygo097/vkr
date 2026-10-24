@@ -54,6 +54,8 @@ public:
   }
 
 private:
+  friend class DescriptorPool;
+
   // dependencies
   const core::Device &device_;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vkr/core/command/buffers.hh"
+#include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"

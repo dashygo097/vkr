@@ -3,6 +3,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
+#include "vkr/pipeline/descriptors/set.hh"
 #include <algorithm>
 #include <limits>
 #include <vector>
@@ -92,6 +93,9 @@ public:
   void create();
   void destroy();
   void update(const DescriptorPoolDesc &desc);
+
+  [[nodiscard]] auto allocate(const DescriptorSetLayout &layout, uint32_t count)
+      -> std::vector<DescriptorSet>;
 
   [[nodiscard]] auto desc() const noexcept -> const DescriptorPoolDesc & {
     return desc_;

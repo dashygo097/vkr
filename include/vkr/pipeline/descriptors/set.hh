@@ -2,11 +2,12 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/pipeline/descriptors/layout.hh"
-#include "vkr/pipeline/descriptors/pool.hh"
 #include <cstdint>
 #include <vector>
 
 namespace vkr::pipe {
+
+class DescriptorPool;
 
 class DescriptorSet {
 public:
@@ -52,6 +53,8 @@ public:
   }
 
 private:
+  friend class DescriptorPool;
+
   template <typename Info> struct Binding {
     uint32_t binding;
     VkDescriptorType type;

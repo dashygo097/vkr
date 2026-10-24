@@ -61,4 +61,46 @@ void DescriptorPool::update(const DescriptorPoolDesc &desc) {
   create();
 }
 
+auto DescriptorPool::allocate(const DescriptorSetLayout &layout, uint32_t count)
+    -> std::vector<DescriptorSet> {
+  if (!valid() || !layout.valid()) {
+    VKR_PIPE_ERROR(
+        "Cannot allocate descriptor sets without a valid pool/layout");
+  }
+  if (count == 0 || count > desc_.maxSets) {
+    VKR_PIPE_ERROR("Descriptor set count must be nonzero and fit the pool");
+  }
+  if ((desc_.flags & VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT) == 0) {
+    VKR_PIPE_ERROR("DescriptorSet requires a pool supporting individual frees");
+  }
+  if (layout.device_.device() != device_.device()) {
+    VKR_PIPE_ERROR("Descriptor pool and layout must use the same device");
+  }
+
+  std::vector<DescriptorSet> sets{};
+  sets.reserve(count);
+  for (uint32_t index = 0; index < count; ++index) {
+    sets.emplace_back(device_, *this, layout);
+  }
+  std::vector<VkDescriptorSetLayout> layouts(count, layout.layout());
+  std::vector<VkDescriptorSet> handles(count, VK_NULL_HANDLE);
+
+  VkDescriptorSetAllocateInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  info.descriptorPool = pool_;
+  info.descriptorSetCount = count;
+  info.pSetLayouts = layouts.data();
+  const auto result =
+      vkAllocateDescriptorSets(device_.device(), &info, handles.data());
+  if (result != VK_SUCCESS) {
+    VKR_PIPE_ERROR("Failed to allocate descriptor sets. VkResult: {}",
+                   static_cast<int>(result));
+  }
+
+  for (uint32_t index = 0; index < count; ++index) {
+    sets[index].set_ = handles[index];
+  }
+  return sets;
+}
+
 } // namespace vkr::pipe

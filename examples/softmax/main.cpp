@@ -19,7 +19,6 @@ auto main() -> int {
   InstanceDesc instDesc{};
   instDesc.name = "softmax";
   instDesc.version = VK_MAKE_VERSION(1, 0, 0);
-  instDesc.surfaceIntegration = SurfaceIntegration::None;
 
   Instance instance{instDesc};
 
