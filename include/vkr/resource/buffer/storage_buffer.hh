@@ -229,7 +229,8 @@ public:
       VKR_RES_ERROR("Cannot write empty storage buffer data");
     }
 
-    if (elementOffset + elementCount > desc_.capacity) {
+    if (elementOffset > desc_.capacity ||
+        elementCount > desc_.capacity - elementOffset) {
       VKR_RES_ERROR("Storage buffer write exceeds buffer bounds");
     }
 
@@ -249,7 +250,8 @@ public:
       VKR_RES_ERROR("Cannot read empty storage buffer data");
     }
 
-    if (elementOffset + elements.size() > desc_.capacity) {
+    if (elementOffset > desc_.capacity ||
+        elements.size() > desc_.capacity - elementOffset) {
       VKR_RES_ERROR("Storage buffer read exceeds buffer bounds");
     }
 
@@ -264,11 +266,8 @@ public:
         static_cast<VkDeviceSize>(sizeof(ElementType) * elements.size());
 
     const bool alreadyMapped = target_->isMapped();
-    auto *mapped = static_cast<std::byte *>(
-        alreadyMapped ? target_->mapped() : target_->map(size, offset));
-    if (alreadyMapped) {
-      mapped += offset;
-    }
+    const auto *mapped = target_->map(size, offset);
+    target_->invalidate(size, offset);
 
     std::memcpy(elements.data(), mapped, static_cast<size_t>(size));
 

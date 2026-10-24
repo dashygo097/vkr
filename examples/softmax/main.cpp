@@ -95,15 +95,7 @@ auto main() -> int {
   // execution
   executor.begin();
   pass.record();
-
-  VkMemoryBarrier hostBarrier{};
-  hostBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-  hostBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-  hostBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
-  vkCmdPipelineBarrier(
-      executor.commandBuffer(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-      VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &hostBarrier, 0, nullptr, 0, nullptr);
-
+  executor.hostRead(outBuffer);
   executor.submitAndWait();
   executor.end();
 

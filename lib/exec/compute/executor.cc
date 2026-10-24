@@ -92,12 +92,12 @@ void ComputeExecutor::setProfiler(Profiler &profiler) noexcept {
 void ComputeExecutor::clearProfiler() noexcept { profiler_.reset(); }
 
 auto ComputeExecutor::commandBuffer() const -> VkCommandBuffer {
-  ensureActive("commandBuffer");
+  ensureRecording("commandBuffer");
   return command_buffer_;
 }
 
 void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline) {
-  ensureActive("bindPipeline");
+  ensureRecording("bindPipeline");
 
   if (pipeline.pipeline() == VK_NULL_HANDLE) {
     VKR_EXEC_ERROR("bindPipeline received null VkPipeline");
@@ -147,7 +147,7 @@ void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline,
 
 void ComputeExecutor::dispatch(uint32_t groupCountX, uint32_t groupCountY,
                                uint32_t groupCountZ) {
-  ensureActive("dispatch");
+  ensureRecording("dispatch");
 
   if (groupCountX == 0 || groupCountY == 0 || groupCountZ == 0) {
     VKR_EXEC_ERROR("dispatch has invalid group count: {}x{}x{}", groupCountX,
@@ -157,15 +157,31 @@ void ComputeExecutor::dispatch(uint32_t groupCountX, uint32_t groupCountY,
   vkCmdDispatch(command_buffer_, groupCountX, groupCountY, groupCountZ);
 }
 
+void ComputeExecutor::hostRead(VkBuffer buffer, VkDeviceSize size) {
+  VkBufferMemoryBarrier barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+  barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+  barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.buffer = buffer;
+  barrier.offset = 0;
+  barrier.size = size;
+
+  vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                       VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr, 1, &barrier,
+                       0, nullptr);
+}
+
 void ComputeExecutor::beginProfileScope(std::string_view name) {
-  ensureActive("beginProfileScope");
+  ensureRecording("beginProfileScope");
   if (profiler_) {
     profiler_->get().beginScope(command_buffer_, name);
   }
 }
 
 void ComputeExecutor::endProfileScope() {
-  ensureActive("endProfileScope");
+  ensureRecording("endProfileScope");
   if (profiler_) {
     profiler_->get().endScope(command_buffer_);
   }
@@ -189,6 +205,13 @@ void ComputeExecutor::freeCommandBuffer() noexcept {
     vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
                          &command_buffer_);
     command_buffer_ = VK_NULL_HANDLE;
+  }
+}
+
+void ComputeExecutor::ensureRecording(std::string_view op) const {
+  ensureActive(op);
+  if (submitted_) {
+    VKR_EXEC_ERROR("ComputeExecutor::{} called after submission", op);
   }
 }
 

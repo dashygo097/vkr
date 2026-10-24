@@ -1,5 +1,6 @@
 #include "vkr/resource/buffer/buffer.hh"
 #include "vkr/logger.hh"
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 
@@ -11,14 +12,19 @@ Buffer::~Buffer() { destroy(); }
 
 Buffer::Buffer(Buffer &&other) noexcept
     : device_(other.device_), vk_buffer_(other.vk_buffer_),
-      vk_memory_(other.vk_memory_), size_(other.size_), usage_(other.usage_),
-      memory_properties_(other.memory_properties_), mapped_(other.mapped_) {
+      vk_memory_(other.vk_memory_), size_(other.size_),
+      allocation_size_(other.allocation_size_), atom_size_(other.atom_size_),
+      usage_(other.usage_), memory_properties_(other.memory_properties_),
+      mapped_(other.mapped_), mapped_offset_(other.mapped_offset_) {
   other.vk_buffer_ = VK_NULL_HANDLE;
   other.vk_memory_ = VK_NULL_HANDLE;
   other.size_ = 0;
+  other.allocation_size_ = 0;
+  other.atom_size_ = 1;
   other.usage_ = 0;
   other.memory_properties_ = 0;
   other.mapped_ = nullptr;
+  other.mapped_offset_ = 0;
 }
 
 void Buffer::create(VkDeviceSize size, VkBufferUsageFlags usage,
@@ -50,6 +56,19 @@ void Buffer::create(VkDeviceSize size, VkBufferUsageFlags usage,
   allocInfo.allocationSize = memRequirements.size;
   allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits,
                                              memory_properties_, device_);
+
+  VkPhysicalDeviceMemoryProperties memoryProperties{};
+  vkGetPhysicalDeviceMemoryProperties(device_.physicalDevice(),
+                                      &memoryProperties);
+  memory_properties_ =
+      memoryProperties.memoryTypes[allocInfo.memoryTypeIndex].propertyFlags;
+  allocation_size_ = allocInfo.allocationSize;
+  if (hostVisible() &&
+      (memory_properties_ & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0) {
+    VkPhysicalDeviceProperties deviceProperties{};
+    vkGetPhysicalDeviceProperties(device_.physicalDevice(), &deviceProperties);
+    atom_size_ = deviceProperties.limits.nonCoherentAtomSize;
+  }
 
   if (vkAllocateMemory(device_.device(), &allocInfo, nullptr, &vk_memory_) !=
       VK_SUCCESS) {
@@ -85,29 +104,28 @@ void Buffer::destroy() noexcept {
   }
 
   size_ = 0;
+  allocation_size_ = 0;
+  atom_size_ = 1;
   usage_ = 0;
   memory_properties_ = 0;
 }
 
 auto Buffer::map(VkDeviceSize size, VkDeviceSize offset) -> void * {
-  if (!isValid()) {
-    VKR_RES_ERROR("Cannot map invalid buffer");
-  }
+  validateRange(size, offset);
 
   if (!hostVisible()) {
     VKR_RES_ERROR("Cannot map buffer without HOST_VISIBLE memory");
   }
 
-  if (mapped_ != nullptr) {
-    return mapped_;
+  if (mapped_ == nullptr) {
+    if (vkMapMemory(device_.device(), vk_memory_, 0, VK_WHOLE_SIZE, 0,
+                    &mapped_) != VK_SUCCESS) {
+      VKR_RES_ERROR("Failed to map buffer memory");
+    }
+    mapped_offset_ = offset;
   }
 
-  if (vkMapMemory(device_.device(), vk_memory_, offset, size, 0, &mapped_) !=
-      VK_SUCCESS) {
-    VKR_RES_ERROR("Failed to map buffer memory");
-  }
-
-  return mapped_;
+  return static_cast<std::byte *>(mapped_) + offset;
 }
 
 void Buffer::unmap() noexcept {
@@ -115,20 +133,71 @@ void Buffer::unmap() noexcept {
     vkUnmapMemory(device_.device(), vk_memory_);
     mapped_ = nullptr;
   }
+  mapped_offset_ = 0;
 }
 
 void Buffer::write(const void *data, VkDeviceSize size, VkDeviceSize offset) {
-  if (data == nullptr || size == 0) {
-    VKR_RES_ERROR("Cannot write empty buffer data");
+  if (data == nullptr || size == 0 || size == VK_WHOLE_SIZE) {
+    VKR_RES_ERROR("Buffer write requires data and an explicit nonzero size");
   }
 
   const bool alreadyMapped = mapped_ != nullptr;
-  auto *mapped = alreadyMapped ? static_cast<std::byte *>(mapped_) + offset
-                               : static_cast<std::byte *>(map(size, offset));
+  auto *mapped = map(size, offset);
   std::memcpy(mapped, data, static_cast<size_t>(size));
+  flush(size, offset);
   if (!alreadyMapped) {
     unmap();
   }
+}
+
+void Buffer::flush(VkDeviceSize size, VkDeviceSize offset) {
+  const auto range = mappedRange(size, offset);
+  if ((memory_properties_ & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0) {
+    return;
+  }
+  if (vkFlushMappedMemoryRanges(device_.device(), 1, &range) != VK_SUCCESS) {
+    VKR_RES_ERROR("Failed to flush buffer memory");
+  }
+}
+
+void Buffer::invalidate(VkDeviceSize size, VkDeviceSize offset) {
+  const auto range = mappedRange(size, offset);
+  if ((memory_properties_ & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0) {
+    return;
+  }
+  if (vkInvalidateMappedMemoryRanges(device_.device(), 1, &range) !=
+      VK_SUCCESS) {
+    VKR_RES_ERROR("Failed to invalidate buffer memory");
+  }
+}
+
+void Buffer::validateRange(VkDeviceSize size, VkDeviceSize offset) const {
+  if (!isValid()) {
+    VKR_RES_ERROR("Cannot access invalid buffer");
+  }
+  if (offset >= size_ || size == 0 ||
+      (size != VK_WHOLE_SIZE && size > size_ - offset)) {
+    VKR_RES_ERROR("Buffer access exceeds buffer bounds");
+  }
+}
+
+auto Buffer::mappedRange(VkDeviceSize size, VkDeviceSize offset) const
+    -> VkMappedMemoryRange {
+  validateRange(size, offset);
+  if (!isMapped()) {
+    VKR_RES_ERROR("Cannot synchronize unmapped buffer memory");
+  }
+
+  const auto end = size == VK_WHOLE_SIZE ? size_ : offset + size;
+  const auto padding = (atom_size_ - end % atom_size_) % atom_size_;
+  const auto alignedEnd = end + std::min(padding, allocation_size_ - end);
+
+  VkMappedMemoryRange range{};
+  range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+  range.memory = vk_memory_;
+  range.offset = offset - offset % atom_size_;
+  range.size = alignedEnd - range.offset;
+  return range;
 }
 
 auto Buffer::findMemoryType(uint32_t typeFilter,

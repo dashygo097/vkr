@@ -55,7 +55,7 @@ public:
     if (!target_->isMapped()) {
       VKR_RES_ERROR("Uniform buffer memory is not mapped!");
     }
-    memcpy(target_->mapped(), &newObject, sizeof(UniformType));
+    target_->write(&newObject, sizeof(UniformType));
   }
 
 protected:

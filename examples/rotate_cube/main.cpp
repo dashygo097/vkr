@@ -94,13 +94,8 @@ auto main() -> int {
       swapchain.width(), swapchain.height(), VK_FORMAT_D32_SFLOAT));
 
   RenderPass renderPass{device};
-  auto renderPassDesc =
-      RenderPassDesc::makeSwapchain(swapchain.format(), VK_FORMAT_D32_SFLOAT);
-  auto &dependency = renderPassDesc.dependencies.front();
-  dependency.srcStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.dstStageMask |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-  dependency.dstAccessMask |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-  renderPass.update(renderPassDesc);
+  renderPass.update(
+      RenderPassDesc::makeSwapchain(swapchain.format(), VK_FORMAT_D32_SFLOAT));
 
   Framebuffers framebuffers{device, renderPass};
   FramebuffersDesc framebufferDesc{};

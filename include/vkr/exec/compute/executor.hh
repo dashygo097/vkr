@@ -3,12 +3,17 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/sync/fence.hh"
+#include "vkr/logger.hh"
 #include "vkr/pipeline/compute_pipeline.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include <functional>
 #include <optional>
 #include <string_view>
 #include <vector>
+
+namespace vkr::res {
+template <typename T> class StorageBuffer;
+} // namespace vkr::res
 
 namespace vkr::exec {
 
@@ -38,6 +43,15 @@ public:
                     std::vector<pipe::DescriptorSet> &sets);
   void dispatch(uint32_t groupCountX, uint32_t groupCountY,
                 uint32_t groupCountZ);
+
+  template <typename T> void hostRead(const res::StorageBuffer<T> &buffer) {
+    ensureRecording("hostRead");
+    if (!buffer.valid() || !buffer.hostVisible()) {
+      VKR_EXEC_ERROR("hostRead requires a valid host-visible storage buffer");
+    }
+    hostRead(buffer.buffer(), buffer.bufferSize());
+  }
+
   void beginProfileScope(std::string_view name);
   void endProfileScope();
 
@@ -57,6 +71,8 @@ private:
 
   void allocateCommandBuffer();
   void freeCommandBuffer() noexcept;
+  void hostRead(VkBuffer buffer, VkDeviceSize size);
+  void ensureRecording(std::string_view op) const;
   void ensureActive(std::string_view op) const;
   void ensureInactive(std::string_view op) const;
 };
