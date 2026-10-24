@@ -185,8 +185,6 @@ void RenderApplication::recreateSwapchain() {
   }
 
   ctx.ui = ui().desc();
-  ctx.ui.layoutMode = ui().layoutMode();
-  ctx.ui.theme = ui().theme();
   ui_.reset();
   graph_->destroy();
   graph_.reset();
@@ -226,8 +224,6 @@ void RenderApplication::saveSnapshot() {
   }
   if (ui_) {
     ctx.ui = ui().desc();
-    ctx.ui.layoutMode = ui().layoutMode();
-    ctx.ui.theme = ui().theme();
   }
   const auto path = snapshotPath();
 

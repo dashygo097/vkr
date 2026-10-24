@@ -82,15 +82,15 @@ public:
 
   [[nodiscard]] auto desc() const noexcept -> const UiDesc & { return desc_; }
 
-  void layoutMode(LayoutMode mode) noexcept { layout_mode_ = mode; }
+  void layoutMode(LayoutMode mode) noexcept { desc_.layoutMode = mode; }
 
   void switchLayoutMode() noexcept {
-    switch (layout_mode_) {
+    switch (desc_.layoutMode) {
     case LayoutMode::FullScreen:
-      layout_mode_ = LayoutMode::Standard;
+      desc_.layoutMode = LayoutMode::Standard;
       break;
     case LayoutMode::Standard:
-      layout_mode_ = LayoutMode::FullScreen;
+      desc_.layoutMode = LayoutMode::FullScreen;
       break;
     }
   }
@@ -98,7 +98,7 @@ public:
   void viewport(const VkViewport &viewport) noexcept { viewport_ = viewport; }
 
   [[nodiscard]] auto layoutMode() const noexcept -> LayoutMode {
-    return layout_mode_;
+    return desc_.layoutMode;
   }
 
   [[nodiscard]] auto viewport() const noexcept -> const VkViewport & {
@@ -114,7 +114,7 @@ public:
   }
 
   [[nodiscard]] auto theme() const noexcept -> const ThemeDesc & {
-    return theme_;
+    return desc_.theme;
   }
 
 private:
@@ -151,14 +151,12 @@ private:
 
   // state
   Selection selection_{};
-  ThemeDesc theme_{};
   VkViewport viewport_{};
   bool viewport_focused_{false};
   bool viewport_hovered_{false};
   bool glfw_initialized_{false};
   bool vulkan_initialized_{false};
   bool created_{false};
-  LayoutMode layout_mode_{LayoutMode::Standard};
   uint32_t frame_index_{0};
   ImGuiID dockspace_id_{0};
   bool dock_layout_dirty_{false};

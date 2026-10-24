@@ -69,8 +69,6 @@ void UI::create() {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-    layout_mode_ = desc_.layoutMode;
-    theme_ = desc_.theme;
     dockspace_id_ = ImHashStr("DockSpace", 0, ImHashStr("DockSpace"));
     if (!ImGui_ImplGlfw_InitForVulkan(window_.glfwWindow(), true)) {
       VKR_UI_ERROR("Failed to initialize the ImGui GLFW backend");
@@ -257,7 +255,7 @@ void UI::render(VkCommandBuffer commandBuffer, uint32_t frameIndex) {
 
   renderMainMenu();
 
-  switch (layout_mode_) {
+  switch (desc_.layoutMode) {
   case LayoutMode::FullScreen:
     if (dockspace_id_ != 0) {
       ImGui::DockSpace(dockspace_id_, ImVec2(0.0f, 0.0f),
@@ -420,8 +418,8 @@ void UI::renderMainMenu() {
     return;
   }
 
-  auto brandColor = Theme::accentColor(theme_.accent);
-  if (!theme_.dark) {
+  auto brandColor = Theme::accentColor(desc_.theme.accent);
+  if (!desc_.theme.dark) {
     brandColor.x *= 0.62f;
     brandColor.y *= 0.62f;
     brandColor.z *= 0.62f;
@@ -439,12 +437,12 @@ void UI::renderMainMenu() {
 
   if (ImGui::BeginMenu("View")) {
     if (ImGui::MenuItem("Fullscreen Viewport", "F11",
-                        layout_mode_ == LayoutMode::FullScreen)) {
+                        desc_.layoutMode == LayoutMode::FullScreen)) {
       layoutMode(LayoutMode::FullScreen);
     }
 
     if (ImGui::MenuItem("Editor Workspace", "F11",
-                        layout_mode_ == LayoutMode::Standard)) {
+                        desc_.layoutMode == LayoutMode::Standard)) {
       layoutMode(LayoutMode::Standard);
     }
 
@@ -474,8 +472,9 @@ void UI::renderMainMenu() {
     ImGui::EndMenu();
   }
 
-  const std::string_view modeLabel =
-      layout_mode_ == LayoutMode::Standard ? "Viewport  F11" : "Editor  F11";
+  const std::string_view modeLabel = desc_.layoutMode == LayoutMode::Standard
+                                         ? "Viewport  F11"
+                                         : "Editor  F11";
   const float buttonWidth = ImGui::CalcTextSize(modeLabel.data()).x +
                             ImGui::GetStyle().FramePadding.x * 2.0f;
   const float right =
@@ -583,7 +582,7 @@ void UI::updateTheme() {
                              : 1.0f;
   if (theme_dirty_ || std::abs(dpiScale - dpi_scale_) > 0.001f) {
     dpi_scale_ = dpiScale;
-    Theme::apply(theme_, dpi_scale_);
+    Theme::apply(desc_.theme, dpi_scale_);
     if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
       auto &style = ImGui::GetStyle();
       style.WindowRounding = 0.0f;
@@ -599,8 +598,8 @@ void UI::renderThemeControls() {
   ImGui::SeparatorText("Accent");
 
   auto accentItem = [&](const char *label, ThemeAccent accent) {
-    if (ImGui::MenuItem(label, nullptr, theme_.accent == accent)) {
-      theme_.accent = accent;
+    if (ImGui::MenuItem(label, nullptr, desc_.theme.accent == accent)) {
+      desc_.theme.accent = accent;
       changed = true;
     }
   };
@@ -613,40 +612,41 @@ void UI::renderThemeControls() {
 
   ImGui::SeparatorText("Mode");
 
-  if (ImGui::MenuItem("Dark", nullptr, theme_.dark)) {
-    theme_.dark = true;
+  if (ImGui::MenuItem("Dark", nullptr, desc_.theme.dark)) {
+    desc_.theme.dark = true;
     changed = true;
   }
 
-  if (ImGui::MenuItem("Light", nullptr, !theme_.dark)) {
-    theme_.dark = false;
+  if (ImGui::MenuItem("Light", nullptr, !desc_.theme.dark)) {
+    desc_.theme.dark = false;
     changed = true;
   }
 
   ImGui::SeparatorText("Shape");
   ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
 
+  changed |= ImGui::SliderFloat("Rounding", &desc_.theme.rounding, 0.0f, 10.0f,
+                                "%.1f");
   changed |=
-      ImGui::SliderFloat("Rounding", &theme_.rounding, 0.0f, 10.0f, "%.1f");
-  changed |= ImGui::SliderFloat("Alpha", &theme_.alpha, 0.35f, 1.0f, "%.2f");
+      ImGui::SliderFloat("Alpha", &desc_.theme.alpha, 0.35f, 1.0f, "%.2f");
 
   ImGui::PopItemWidth();
 
   ImGui::SeparatorText("Density");
   if (ImGui::MenuItem("Compact", nullptr,
-                      theme_.density == ThemeDensity::Compact)) {
-    theme_.density = ThemeDensity::Compact;
+                      desc_.theme.density == ThemeDensity::Compact)) {
+    desc_.theme.density = ThemeDensity::Compact;
     changed = true;
   }
   if (ImGui::MenuItem("Comfortable", nullptr,
-                      theme_.density == ThemeDensity::Comfortable)) {
-    theme_.density = ThemeDensity::Comfortable;
+                      desc_.theme.density == ThemeDensity::Comfortable)) {
+    desc_.theme.density = ThemeDensity::Comfortable;
     changed = true;
   }
 
   ImGui::SeparatorText("Typography");
   ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
-  ImGui::SliderFloat("UI scale", &theme_.scale, 0.75f, 2.0f, "%.2fx");
+  ImGui::SliderFloat("UI scale", &desc_.theme.scale, 0.75f, 2.0f, "%.2fx");
   changed |= ImGui::IsItemDeactivatedAfterEdit();
   ImGui::PopItemWidth();
 
