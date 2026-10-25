@@ -219,6 +219,9 @@ void RenderApplication::loadSnapshot() {
 }
 
 void RenderApplication::saveSnapshot() {
+  if (swapchain_) {
+    ctx.swapchain = swapchain_->desc();
+  }
   if (camera_ && camera_->valid()) {
     ctx.camera = camera_->desc();
   }

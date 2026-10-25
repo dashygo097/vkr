@@ -49,9 +49,6 @@ auto main() -> int {
 
   // swapchain
   SwapchainDesc swapchainDesc{};
-  swapchainDesc.width = window.width();
-  swapchainDesc.height = window.height();
-  swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
 
   Swapchain swapchain{window, surface, device, swapchainDesc};
 

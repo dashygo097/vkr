@@ -5,6 +5,7 @@ namespace vkr::exec {
 
 void ComputeApplication::run() {
   initVulkan();
+
   try {
     const auto report = execute(true);
     if (ctx.profiler.logReport) {
