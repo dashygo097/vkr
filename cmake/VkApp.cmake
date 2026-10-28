@@ -1,4 +1,5 @@
 # Helpers for applications and examples that link against VKR.
+include_guard(GLOBAL)
 
 function(_vk_app_print MSG)
   if(COMMAND print_info)
@@ -62,8 +63,9 @@ function(add_vk_app TARGET_NAME)
     message(FATAL_ERROR "add_vk_app(${TARGET_NAME}) requires at least one source file")
   endif()
 
+  include("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/CompilerSetup.cmake")
   add_executable(${TARGET_NAME} ${VK_APP_SOURCES} ${VK_APP_HEADERS})
-  target_link_libraries(${TARGET_NAME} PRIVATE vkr ${VK_APP_LIBRARIES})
+  target_link_libraries(${TARGET_NAME} PRIVATE vkr::vkr ${VK_APP_LIBRARIES})
 
   if(VK_APP_INCLUDE_DIRS)
     target_include_directories(${TARGET_NAME} PRIVATE ${VK_APP_INCLUDE_DIRS})
@@ -83,6 +85,8 @@ function(add_vk_app TARGET_NAME)
     set(app_output_dir "${VK_APP_OUTPUT_DIR}")
   elseif(VK_APP_OUTPUT_DIR)
     set(app_output_dir "${CMAKE_BINARY_DIR}/${VK_APP_OUTPUT_DIR}")
+  elseif(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(app_output_dir "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME}")
   else()
     set(app_output_dir "${CMAKE_BINARY_DIR}/bin/${TARGET_NAME}")
   endif()

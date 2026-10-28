@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 3.24)
-project(vkr LANGUAGES CXX)
+project(vkr VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Add cmake module path
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message(STATUS "CMake module path: ${CMAKE_MODULE_PATH}")
 
-# Generate and include build configuration
-if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/config.cmake")
-  include("${CMAKE_CURRENT_BINARY_DIR}/config.cmake")
-endif()
+# Optional local settings override the shared defaults.
+include("${CMAKE_CURRENT_BINARY_DIR}/config.cmake" OPTIONAL)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake")
+include(GNUInstallDirs)
 
 include(Helpers)
 include(VkApp)
@@ -25,13 +25,4 @@ include(Stastics)
 if(ENABLE_TOOLING)
   enable_testing()
   add_subdirectory(tools)
-endif()
-
-# examples
-if(NOT DEFINED ENABLE_EXAMPLES AND DEFINED ENABLE_EXECUTABLES)
-  set(ENABLE_EXAMPLES ${ENABLE_EXECUTABLES})
-endif()
-
-if(ENABLE_EXAMPLES)
-  add_subdirectory(examples)
 endif()

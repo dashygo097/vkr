@@ -1,3 +1,8 @@
+cmake_minimum_required(VERSION 3.24)
+project(vkr_examples LANGUAGES CXX)
+
+find_package(vkr CONFIG REQUIRED)
+
 add_subdirectory(shadertoy)
 add_subdirectory(skybox)
 add_subdirectory(teapot)

@@ -29,41 +29,24 @@ elseif(WIN32)
 
 endif()
 
+set(HAS_SLANG FALSE)
 if(ENABLE_SLANG)
-  get_filename_component(VKR_VULKAN_LIBRARY_DIR "${Vulkan_LIBRARY}" DIRECTORY)
-
-  find_path(VKR_SLANG_INCLUDE_DIR
-    NAMES slang/slang.h
-    HINTS "${Vulkan_INCLUDE_DIR}"
-    NO_DEFAULT_PATH
+  get_filename_component(vulkan_library_dir "${Vulkan_LIBRARY}" DIRECTORY)
+  find_package(slang CONFIG QUIET
+    HINTS "${vulkan_library_dir}/cmake/slang"
   )
-  find_library(VKR_SLANG_LIBRARY
-    NAMES slang libslang
-    HINTS "${VKR_VULKAN_LIBRARY_DIR}"
-    NO_DEFAULT_PATH
-  )
-
-  if(VKR_SLANG_INCLUDE_DIR AND VKR_SLANG_LIBRARY)
-    set(SLANG_INCLUDE_DIR "${VKR_SLANG_INCLUDE_DIR}" CACHE PATH
-      "Slang include directory" FORCE)
-    set(SLANG_LIBRARY "${VKR_SLANG_LIBRARY}" CACHE FILEPATH
-      "Slang library" FORCE)
-  else()
-    find_path(SLANG_INCLUDE_DIR
-      NAMES slang/slang.h
-    )
-    find_library(SLANG_LIBRARY
-      NAMES slang libslang
-    )
-  endif()
-
-  if(SLANG_INCLUDE_DIR AND SLANG_LIBRARY)
+  if(TARGET slang::slang)
     set(HAS_SLANG TRUE)
-    message(STATUS "Slang support enabled: ${SLANG_LIBRARY}")
+    message(STATUS "Slang support enabled")
   else()
-    set(HAS_SLANG FALSE)
-    message(STATUS "Slang support disabled: Slang headers/library not found")
+    message(STATUS "Slang support disabled: Slang package not found")
   endif()
+endif()
+
+if(UNIX AND NOT APPLE)
+  find_package(SPIRV-Tools CONFIG REQUIRED)
+  find_package(SPIRV-Tools-opt CONFIG REQUIRED)
+  find_package(glslang CONFIG REQUIRED)
 endif()
 
 # 3rdparty
@@ -80,6 +63,31 @@ add_subdirectory(3rdparty/tinyobjloader EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/tomlplusplus EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/ImGuizmo EXCLUDE_FROM_ALL)
+
+# Keep bundled headers relocatable without modifying the submodules.
+set_property(TARGET imgui PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/imgui>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/imgui/backends>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/vkr/thirdparty/imgui>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/vkr/thirdparty/imgui/backends>"
+)
+set_property(TARGET ImGuiColorTextEdit PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/ImGuiColorTextEdit>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/vkr/thirdparty/ImGuiColorTextEdit>"
+)
+set_property(TARGET stb PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/stb>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/vkr/thirdparty/stb>"
+)
+set_property(TARGET imguizmo PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/ImGuizmo/src>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/vkr/thirdparty/ImGuizmo>"
+)
+target_include_directories(tomlplusplus_tomlplusplus INTERFACE
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+target_link_libraries(ImGuiColorTextEdit PUBLIC imgui)
+target_link_libraries(imguizmo PUBLIC imgui)
 
 if (TARGET glfw)
   set(HAS_GLFW TRUE)

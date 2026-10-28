@@ -1,78 +1,47 @@
 PROJECT_DIR := $(CURDIR)
 BUILD_DIR ?= $(PROJECT_DIR)/build
-BUILD_TYPE ?= Debug
-GENERATOR ?= Ninja
+INSTALL_DIR ?= $(BUILD_DIR)/install
 
 CMAKE ?= cmake
-CTEST ?= ctest
-
-CMAKE_CONFIG := $(BUILD_DIR)/config.cmake
 CMAKE_ARGS ?=
 BUILD_ARGS ?=
-CTEST_ARGS ?=
+INSTALL_ARGS ?=
 
-.PHONY: all configure config build rebuild reconfigure clean distclean test help
+.PHONY: all build install clean help
 
 all: build
 
-$(CMAKE_CONFIG): $(PROJECT_DIR)/cmake/config.cmake
-	@mkdir -p "$(BUILD_DIR)"
-	@if [ ! -f "$(CMAKE_CONFIG)" ]; then \
-		echo "==> Creating local build config: $(CMAKE_CONFIG)"; \
-		cp "$(PROJECT_DIR)/cmake/config.cmake" "$(CMAKE_CONFIG)"; \
-	fi
-
-configure config: $(CMAKE_CONFIG)
-	@echo "==> Configuring $(BUILD_TYPE) build in $(BUILD_DIR)"
+build:
+	@echo "==> Configuring VKR in $(BUILD_DIR)"
 	@$(CMAKE) -S "$(PROJECT_DIR)" -B "$(BUILD_DIR)" \
-		-G "$(GENERATOR)" \
-		-DCMAKE_BUILD_TYPE="$(BUILD_TYPE)" \
 		$(CMAKE_ARGS)
-
-build: configure
-	@echo "==> Building project"
+	@echo "==> Building VKR"
 	@$(CMAKE) --build "$(BUILD_DIR)" --parallel $(BUILD_ARGS)
 
-rebuild: distclean build
-
-reconfigure: $(CMAKE_CONFIG)
-	@echo "==> Reconfiguring project"
-	@$(CMAKE) -S "$(PROJECT_DIR)" -B "$(BUILD_DIR)" \
-		-G "$(GENERATOR)" \
-		-DCMAKE_BUILD_TYPE="$(BUILD_TYPE)" \
-		$(CMAKE_ARGS)
+install:
+	@echo "==> Installing VKR package into $(INSTALL_DIR)"
+	@$(CMAKE) --install "$(BUILD_DIR)" --prefix "$(INSTALL_DIR)" $(INSTALL_ARGS)
 
 clean:
 	@if [ -f "$(BUILD_DIR)/CMakeCache.txt" ]; then \
 		echo "==> Cleaning CMake build targets"; \
-		$(CMAKE) --build "$(BUILD_DIR)" --target clean; \
+		$(CMAKE) --build "$(BUILD_DIR)" --target clean $(BUILD_ARGS); \
 	else \
 		echo "==> Nothing to clean; $(BUILD_DIR) is not configured"; \
 	fi
 
-distclean:
-	@echo "==> Removing build directory"
-	@rm -rf "$(BUILD_DIR)"
-
-test: configure
-	@echo "==> Running tests"
-	@$(CTEST) --test-dir "$(BUILD_DIR)" --output-on-failure $(CTEST_ARGS)
-
 help:
 	@echo "Targets:"
-	@echo "  make                  Configure and build"
-	@echo "  make configure        Run CMake configure"
-	@echo "  make build            Configure and build"
-	@echo "  make reconfigure      Re-run CMake configure"
-	@echo "  make rebuild          Remove build directory, then build"
-	@echo "  make clean            Run the CMake clean target"
-	@echo "  make distclean        Remove the build directory"
-	@echo "  make test             Run CTest"
+	@echo "  make / make build     Configure and build VKR"
+	@echo "  make install          Install the existing VKR build"
+	@echo "  make clean            Clean the VKR build"
 	@echo ""
 	@echo "Variables:"
 	@echo "  BUILD_DIR=$(BUILD_DIR)"
-	@echo "  BUILD_TYPE=$(BUILD_TYPE)"
-	@echo "  GENERATOR=$(GENERATOR)"
+	@echo "  INSTALL_DIR=$(INSTALL_DIR)"
 	@echo "  CMAKE_ARGS=$(CMAKE_ARGS)"
 	@echo "  BUILD_ARGS=$(BUILD_ARGS)"
-	@echo "  CTEST_ARGS=$(CTEST_ARGS)"
+	@echo "  INSTALL_ARGS=$(INSTALL_ARGS)"
+	@echo ""
+	@echo "Examples consume the installed package independently:"
+	@echo "  make -C examples CMAKE_ARGS=\"-DCMAKE_PREFIX_PATH=$(INSTALL_DIR)\""
