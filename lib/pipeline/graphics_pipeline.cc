@@ -10,57 +10,45 @@ GraphicsPipeline::GraphicsPipeline(const core::Device &device,
 
 GraphicsPipeline::~GraphicsPipeline() { destroy(); }
 
+GraphicsPipeline::Version::~Version() {
+  if (pipeline_ != VK_NULL_HANDLE) {
+    vkDestroyPipeline(device_.device(), pipeline_, nullptr);
+  }
+  if (layout_ != VK_NULL_HANDLE) {
+    vkDestroyPipelineLayout(device_.device(), layout_, nullptr);
+  }
+}
+
 void GraphicsPipeline::destroy() {
-  if (vk_graphics_pipeline_ != VK_NULL_HANDLE ||
-      vk_pipeline_layout_ != VK_NULL_HANDLE || !retired_pipelines_.empty()) {
-    vkDeviceWaitIdle(device_.device());
-  }
-
-  if (vk_graphics_pipeline_ != VK_NULL_HANDLE) {
-    vkDestroyPipeline(device_.device(), vk_graphics_pipeline_, nullptr);
-    vk_graphics_pipeline_ = VK_NULL_HANDLE;
-  }
-
-  if (vk_pipeline_layout_ != VK_NULL_HANDLE) {
-    vkDestroyPipelineLayout(device_.device(), vk_pipeline_layout_, nullptr);
-    vk_pipeline_layout_ = VK_NULL_HANDLE;
-  }
-
-  for (const auto &retired : retired_pipelines_) {
-    if (retired.pipeline != VK_NULL_HANDLE) {
-      vkDestroyPipeline(device_.device(), retired.pipeline, nullptr);
-    }
-
-    if (retired.layout != VK_NULL_HANDLE) {
-      vkDestroyPipelineLayout(device_.device(), retired.layout, nullptr);
-    }
-  }
-
-  retired_pipelines_.clear();
+  version_.reset();
   shader_modules_.clear();
 }
 
 auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
-  desc_ = desc;
+  auto nextDesc = desc;
+
+  if (!nextDesc.isValid()) {
+    VKR_PIPE_ERROR("Invalid graphics pipeline descriptor");
+  }
 
   if (render_pass_.renderPass() == VK_NULL_HANDLE) {
     VKR_PIPE_ERROR("Graphics pipeline '{}' requires a valid render pass",
-                   desc_.name);
+                   nextDesc.name);
   }
 
   std::vector<std::unique_ptr<res::ShaderModule>> nextShaderModules{};
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
 
-  nextShaderModules.reserve(desc_.shaders.size());
-  shaderStages.reserve(desc_.shaders.size());
+  nextShaderModules.reserve(nextDesc.shaders.size());
+  shaderStages.reserve(nextDesc.shaders.size());
 
-  for (const auto &shader : desc_.shaders) {
+  for (const auto &shader : nextDesc.shaders) {
     auto module = std::make_unique<res::ShaderModule>(device_);
     module->update(shader.module);
 
     if (!module->valid()) {
       VKR_PIPE_ERROR("Failed to create shader module for pipeline '{}'",
-                     desc_.name);
+                     nextDesc.name);
     }
 
     VkPipelineShaderStageCreateInfo stage{};
@@ -73,76 +61,66 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
     nextShaderModules.push_back(std::move(module));
   }
 
-  auto vertexInput = desc_.vertexInput.createInfo();
-  auto inputAssembly = desc_.inputAssembly.createInfo();
-  auto tessellation = desc_.tessellation.createInfo();
-  auto viewport = desc_.viewport.createInfo();
-  auto rasterization = desc_.rasterization.createInfo();
-  auto multisample = desc_.multisample.createInfo();
-  auto depthStencil = desc_.depthStencil.createInfo();
-  auto colorBlend = desc_.colorBlend.createInfo();
-  auto dynamicState = desc_.dynamicState.createInfo();
+  auto vertexInput = nextDesc.vertexInput.createInfo();
+  auto inputAssembly = nextDesc.inputAssembly.createInfo();
+  auto tessellation = nextDesc.tessellation.createInfo();
+  auto viewport = nextDesc.viewport.createInfo();
+  auto rasterization = nextDesc.rasterization.createInfo();
+  auto multisample = nextDesc.multisample.createInfo();
+  auto depthStencil = nextDesc.depthStencil.createInfo();
+  auto colorBlend = nextDesc.colorBlend.createInfo();
+  auto dynamicState = nextDesc.dynamicState.createInfo();
 
   VkPipelineLayoutCreateInfo layoutInfo{};
   layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   layoutInfo.setLayoutCount =
-      static_cast<uint32_t>(desc_.layout.setLayouts.size());
-  layoutInfo.pSetLayouts = desc_.layout.setLayouts.empty()
+      static_cast<uint32_t>(nextDesc.layout.setLayouts.size());
+  layoutInfo.pSetLayouts = nextDesc.layout.setLayouts.empty()
                                ? nullptr
-                               : desc_.layout.setLayouts.data();
+                               : nextDesc.layout.setLayouts.data();
   layoutInfo.pushConstantRangeCount =
-      static_cast<uint32_t>(desc_.layout.pushConstants.size());
-  layoutInfo.pPushConstantRanges = desc_.layout.pushConstants.empty()
+      static_cast<uint32_t>(nextDesc.layout.pushConstants.size());
+  layoutInfo.pPushConstantRanges = nextDesc.layout.pushConstants.empty()
                                        ? nullptr
-                                       : desc_.layout.pushConstants.data();
+                                       : nextDesc.layout.pushConstants.data();
 
-  VkPipelineLayout nextLayout = VK_NULL_HANDLE;
+  auto next = std::make_shared<Version>(device_);
   if (vkCreatePipelineLayout(device_.device(), &layoutInfo, nullptr,
-                             &nextLayout) != VK_SUCCESS) {
+                             &next->layout_) != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to create graphics pipeline layout for '{}'",
                    desc.name);
   }
 
   VkGraphicsPipelineCreateInfo pipelineInfo{};
   pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-  pipelineInfo.flags = desc_.flags;
+  pipelineInfo.flags = nextDesc.flags;
   pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
   pipelineInfo.pStages = shaderStages.data();
   pipelineInfo.pVertexInputState = &vertexInput;
   pipelineInfo.pInputAssemblyState = &inputAssembly;
   pipelineInfo.pTessellationState =
-      desc_.tessellation.enabled() ? &tessellation : nullptr;
+      nextDesc.tessellation.enabled() ? &tessellation : nullptr;
   pipelineInfo.pViewportState = &viewport;
   pipelineInfo.pRasterizationState = &rasterization;
   pipelineInfo.pMultisampleState = &multisample;
   pipelineInfo.pDepthStencilState = &depthStencil;
   pipelineInfo.pColorBlendState = &colorBlend;
   pipelineInfo.pDynamicState = &dynamicState;
-  pipelineInfo.layout = nextLayout;
+  pipelineInfo.layout = next->layout_;
   pipelineInfo.renderPass = render_pass_.renderPass();
-  pipelineInfo.subpass = desc_.subpass;
-  pipelineInfo.basePipelineHandle = desc_.basePipeline;
-  pipelineInfo.basePipelineIndex = desc_.basePipelineIndex;
+  pipelineInfo.subpass = nextDesc.subpass;
+  pipelineInfo.basePipelineHandle = nextDesc.basePipeline;
+  pipelineInfo.basePipelineIndex = nextDesc.basePipelineIndex;
 
-  VkPipeline nextPipeline = VK_NULL_HANDLE;
   if (vkCreateGraphicsPipelines(device_.device(), VK_NULL_HANDLE, 1,
                                 &pipelineInfo, nullptr,
-                                &nextPipeline) != VK_SUCCESS) {
-    vkDestroyPipelineLayout(device_.device(), nextLayout, nullptr);
+                                &next->pipeline_) != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to create graphics pipeline '{}'", desc.name);
   }
 
-  if (vk_graphics_pipeline_ != VK_NULL_HANDLE ||
-      vk_pipeline_layout_ != VK_NULL_HANDLE) {
-    RetiredPipeline retired{};
-    retired.pipeline = vk_graphics_pipeline_;
-    retired.layout = vk_pipeline_layout_;
-    retired_pipelines_.push_back(retired);
-  }
-
   shader_modules_ = std::move(nextShaderModules);
-  vk_pipeline_layout_ = nextLayout;
-  vk_graphics_pipeline_ = nextPipeline;
+  desc_ = std::move(nextDesc);
+  version_ = std::move(next);
   ++revision_;
 
   VKR_PIPE_INFO("Graphics pipeline '{}' created", desc_.name);

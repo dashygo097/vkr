@@ -195,7 +195,6 @@ TexturePreview::TexturePreview(
 }
 
 TexturePreview::~TexturePreview() {
-  // Pipeline destruction waits for outstanding draws before views/buffers die.
   pipeline_.destroy();
 }
 

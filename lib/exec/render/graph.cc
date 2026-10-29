@@ -55,7 +55,6 @@ auto RenderGraph::overlay(std::string name, Pass &source, OverlayPassDesc desc)
   pass->update(desc);
   auto &result = *pass;
   addPass(std::move(pass));
-  addSourceDependency(source, result);
   return result;
 }
 
@@ -77,7 +76,6 @@ auto RenderGraph::fullscreen(std::string name,
 
   auto &result = *pass;
   addPass(std::move(pass));
-  addSourceDependencies(sources, result);
   return result;
 }
 
@@ -96,7 +94,6 @@ auto RenderGraph::feedback(std::string name,
 
   auto &result = *pass;
   addPass(std::move(pass));
-  addSourceDependencies(sources, result);
   return result;
 }
 
@@ -151,19 +148,6 @@ void RenderGraph::validateSource(const Pass &source) const {
   if (!owned) {
     VKR_EXEC_ERROR("Source pass '{}' does not belong to this graph",
                    source.name());
-  }
-}
-
-void RenderGraph::addSourceDependency(const Pass &source,
-                                      const Pass &consumer) {
-  addDependency(source.name(), consumer.name());
-}
-
-void RenderGraph::addSourceDependencies(
-    const std::vector<std::reference_wrapper<Pass>> &sources,
-    const Pass &consumer) {
-  for (const auto &source : sources) {
-    addSourceDependency(source.get(), consumer);
   }
 }
 

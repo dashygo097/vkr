@@ -18,6 +18,11 @@
 #include <string_view>
 #include <vector>
 
+namespace vkr::res {
+class Buffer;
+class BufferSlice;
+} // namespace vkr::res
+
 namespace vkr::exec {
 
 class RenderExecutor {
@@ -26,7 +31,7 @@ public:
                           const core::Swapchain &swapchain,
                           const core::CommandPool &commandPool,
                           std::vector<core::CommandBuffer> &commandBuffers);
-  ~RenderExecutor() = default;
+  ~RenderExecutor();
 
   RenderExecutor(const RenderExecutor &) = delete;
   auto operator=(const RenderExecutor &) -> RenderExecutor & = delete;
@@ -35,6 +40,7 @@ public:
   void submitFrame();
   void presentFrame();
   void endFrame();
+  void wait();
   void setProfiler(Profiler &profiler) noexcept;
   void clearProfiler() noexcept;
 
@@ -49,7 +55,7 @@ public:
   }
 
   [[nodiscard]] auto commandBuffer() const -> VkCommandBuffer {
-    ensureFrameActive("commandBuffer");
+    ensureRecording("commandBuffer");
     return command_buffers_[frame_index_].buffer();
   }
 
@@ -73,6 +79,18 @@ public:
                  uint32_t framebufferIndex = 0,
                  VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
   void endPass();
+
+  void barrier(VkPipelineStageFlags sourceStage, VkAccessFlags sourceAccess,
+               VkPipelineStageFlags destinationStage,
+               VkAccessFlags destinationAccess);
+  void barrier(const res::Buffer &buffer, VkPipelineStageFlags sourceStage,
+               VkAccessFlags sourceAccess,
+               VkPipelineStageFlags destinationStage,
+               VkAccessFlags destinationAccess);
+  void barrier(const res::BufferSlice &slice, VkPipelineStageFlags sourceStage,
+               VkAccessFlags sourceAccess,
+               VkPipelineStageFlags destinationStage,
+               VkAccessFlags destinationAccess);
 
   void bindPipeline(const pipe::GraphicsPipeline &pipeline);
   void bindPipeline(const pipe::GraphicsPipeline &pipeline,
@@ -99,6 +117,10 @@ private:
   std::vector<core::Semaphore> image_available_{};
   std::vector<core::Semaphore> render_finished_{};
   std::vector<core::Fence> in_flight_{};
+  std::vector<
+      std::vector<std::shared_ptr<const pipe::GraphicsPipeline::Version>>>
+      pipelines_{};
+  std::vector<bool> pending_frames_{};
 
   // state
   uint32_t current_frame_{0};
@@ -109,10 +131,13 @@ private:
   bool frame_submitted_{false};
   bool frame_presented_{false};
   bool swapchain_out_of_date_{false};
+  bool render_pass_active_{false};
+  bool presentation_pending_{false};
 
   // helpers
   void ensureFrameActive(std::string_view op) const;
   void ensureFrameInactive(std::string_view op) const;
+  void ensureRecording(std::string_view op) const;
 
   auto acquireNextImage(uint32_t &imageIndex) -> bool;
   void submitCommandBuffer();

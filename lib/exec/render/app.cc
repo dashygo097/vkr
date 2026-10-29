@@ -105,7 +105,6 @@ auto RenderApplication::buildPresentation() -> UiPass & {
       *scene_, *asset_system_, *camera_, source, *graph_, *timer_);
   uiPass.name("ui");
   uiPass.update(ctx.ui);
-  graph_->addDependency(source.name(), uiPass.name());
 
   auto &presentPass = graph_->addPass<PresentPass>(*executor_);
   presentPass.name("present");

@@ -66,10 +66,6 @@ private:
 
   [[nodiscard]] auto presentationSource() -> Pass &;
   void validateSource(const Pass &source) const;
-  void addSourceDependency(const Pass &source, const Pass &consumer);
-  void addSourceDependencies(
-      const std::vector<std::reference_wrapper<Pass>> &sources,
-      const Pass &consumer);
   void validate() const override;
 };
 

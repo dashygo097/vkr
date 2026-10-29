@@ -7,6 +7,11 @@
 
 namespace vkr::exec {
 
+auto OverlayPass::dependencies() const
+    -> std::vector<std::reference_wrapper<const Pass>> {
+  return {source_};
+}
+
 auto OverlayPassDesc::wireframe(pipe::GraphicsPipelineDesc pipelineDesc)
     -> OverlayPassDesc {
   pipelineDesc.name += "-wireframe";

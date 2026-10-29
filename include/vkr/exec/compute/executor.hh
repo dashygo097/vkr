@@ -45,6 +45,18 @@ public:
   void dispatch(uint32_t groupCountX, uint32_t groupCountY,
                 uint32_t groupCountZ);
 
+  void barrier(VkPipelineStageFlags sourceStage, VkAccessFlags sourceAccess,
+               VkPipelineStageFlags destinationStage,
+               VkAccessFlags destinationAccess);
+  void barrier(const res::Buffer &buffer, VkPipelineStageFlags sourceStage,
+               VkAccessFlags sourceAccess,
+               VkPipelineStageFlags destinationStage,
+               VkAccessFlags destinationAccess);
+  void barrier(const res::BufferSlice &slice, VkPipelineStageFlags sourceStage,
+               VkAccessFlags sourceAccess,
+               VkPipelineStageFlags destinationStage,
+               VkAccessFlags destinationAccess);
+
   void hostRead(const res::Buffer &buffer);
   void hostRead(const res::BufferSlice &slice);
 
@@ -59,7 +71,10 @@ private:
 
   // components
   core::CommandBuffer command_buffer_;
+  core::Fence completion_;
   std::vector<VkDescriptorSet> bound_descriptors_{};
+  std::vector<std::shared_ptr<const pipe::ComputePipeline::Version>>
+      pipelines_{};
 
   // state
   bool active_{false};

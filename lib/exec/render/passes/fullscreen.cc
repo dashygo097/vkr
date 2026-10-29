@@ -207,6 +207,11 @@ void FullscreenPass::record() {
   executor_.endProfileScope();
 }
 
+auto FullscreenPass::dependencies() const
+    -> std::vector<std::reference_wrapper<const Pass>> {
+  return {sources_.begin(), sources_.end()};
+}
+
 auto FullscreenPass::addSource(Pass &source) -> FullscreenPass & {
   ensureConfigurable();
   sources_.emplace_back(source);

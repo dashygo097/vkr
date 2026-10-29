@@ -3,6 +3,11 @@
 
 namespace vkr::exec {
 
+auto Pass::dependencies() const
+    -> std::vector<std::reference_wrapper<const Pass>> {
+  return {};
+}
+
 auto Pass::name(std::string name) -> Pass & {
   ensureConfigurable();
   name_ = std::move(name);

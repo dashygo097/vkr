@@ -38,6 +38,8 @@ public:
   void create() override;
   void destroy() noexcept override;
   void record() override;
+  [[nodiscard]] auto dependencies() const
+      -> std::vector<std::reference_wrapper<const Pass>> override;
   void update(const ui::UiDesc &desc);
   [[nodiscard]] auto ui() -> ui::UI &;
   [[nodiscard]] auto ui() const -> const ui::UI &;

@@ -110,6 +110,23 @@ void Graph::compile() {
     }
   }
 
+  for (size_t consumer = 0; consumer < passCount; ++consumer) {
+    for (const auto &dependency : passes_[consumer]->dependencies()) {
+      const auto &source = dependency.get();
+      const auto producer = indices.find(source.name());
+      if (producer == indices.end() ||
+          std::addressof(*passes_[producer->second]) != std::addressof(source)) {
+        VKR_EXEC_ERROR("Pass '{}' input '{}' does not belong to the {} graph",
+                       passes_[consumer]->name(), source.name(), name_);
+      }
+      if (producer->second == consumer) {
+        VKR_EXEC_ERROR("{} graph pass '{}' cannot depend on itself", name_,
+                       source.name());
+      }
+      addDependency(producer->second, consumer);
+    }
+  }
+
   for (size_t producer = 0; producer < passCount; ++producer) {
     for (size_t consumer = 0; consumer < passCount; ++consumer) {
       if (producer == consumer) {

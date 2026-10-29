@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vkr/core/command/buffer.hh"
-#include <vector>
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
@@ -25,6 +24,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace vkr::exec {
 
@@ -215,7 +215,8 @@ protected:
     return command_buffers_;
   }
 
-  [[nodiscard]] auto commandBuffers() const -> const std::vector<core::CommandBuffer> & {
+  [[nodiscard]] auto commandBuffers() const
+      -> const std::vector<core::CommandBuffer> & {
     if (command_buffers_.empty()) {
       VKR_EXEC_ERROR("RenderApplication::commandBuffers() requested before "
                      "initialization");

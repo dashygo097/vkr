@@ -176,6 +176,9 @@ public:
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
       -> RasterPass &;
 
+  [[nodiscard]] auto dependencies() const
+      -> std::vector<std::reference_wrapper<const Pass>> override;
+
   [[nodiscard]] auto target() -> pipe::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const pipe::OffscreenTarget &;
   [[nodiscard]] auto target(uint32_t) -> pipe::OffscreenTarget & override {

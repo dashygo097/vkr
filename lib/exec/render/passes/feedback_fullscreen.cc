@@ -230,6 +230,11 @@ void FeedbackFullscreenPass::record() {
   executor_.endProfileScope();
 }
 
+auto FeedbackFullscreenPass::dependencies() const
+    -> std::vector<std::reference_wrapper<const Pass>> {
+  return {sources_.begin(), sources_.end()};
+}
+
 auto FeedbackFullscreenPass::addSource(Pass &source)
     -> FeedbackFullscreenPass & {
   ensureConfigurable();

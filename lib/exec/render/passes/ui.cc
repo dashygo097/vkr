@@ -6,6 +6,11 @@
 
 namespace vkr::exec {
 
+auto UiPass::dependencies() const
+    -> std::vector<std::reference_wrapper<const Pass>> {
+  return {source_};
+}
+
 UiPass::UiPass(RenderExecutor &executor, const core::Window &window,
                const core::Instance &instance, const core::Device &device,
                const std::vector<core::CommandBuffer> &commandBuffers,

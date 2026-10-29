@@ -217,6 +217,11 @@ void RasterPass::validateMesh(const scene::IMesh &mesh,
   }
 }
 
+auto RasterPass::dependencies() const
+    -> std::vector<std::reference_wrapper<const Pass>> {
+  return {sources_.begin(), sources_.end()};
+}
+
 auto RasterPass::addSource(Pass &source) -> RasterPass & {
   ensureConfigurable();
   sources_.emplace_back(source);

@@ -157,7 +157,8 @@ public:
   auto uniform(uint32_t setIndex, uint32_t binding,
                const res::BufferSlice &slice) -> FullscreenPass &;
   auto uniform(uint32_t setIndex, uint32_t binding,
-               const std::vector<res::UniformBuffer> &buffers) -> FullscreenPass &;
+               const std::vector<res::UniformBuffer> &buffers)
+      -> FullscreenPass &;
 
   auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
       -> FullscreenPass &;
@@ -176,6 +177,9 @@ public:
   auto addSource(Pass &source) -> FullscreenPass &;
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
       -> FullscreenPass &;
+
+  [[nodiscard]] auto dependencies() const
+      -> std::vector<std::reference_wrapper<const Pass>> override;
 
   [[nodiscard]] auto target() -> pipe::OffscreenTarget &;
   [[nodiscard]] auto target() const -> const pipe::OffscreenTarget &;

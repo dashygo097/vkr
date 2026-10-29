@@ -2,13 +2,14 @@
 #include "vkr/exec/profiler.hh"
 #include "vkr/logger.hh"
 #include "vkr/resource/buffers/buffer.hh"
+#include <algorithm>
 
 namespace vkr::exec {
 
 ComputeExecutor::ComputeExecutor(const core::Device &device,
                                  const core::CommandPool &commandPool)
     : device_(device), command_pool_(commandPool),
-      command_buffer_(commandPool.allocate()) {
+      command_buffer_(commandPool.allocate()), completion_(device) {
   if (!device_.supportsCompute()) {
     VKR_EXEC_ERROR("ComputeExecutor requires compute queue support");
   }
@@ -23,7 +24,6 @@ ComputeExecutor::ComputeExecutor(const core::Device &device,
 void ComputeExecutor::begin() {
   ensureInactive("begin");
 
-  command_buffer_.reset();
   command_buffer_.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
   active_ = true;
@@ -47,7 +47,6 @@ void ComputeExecutor::submitAndWait() {
 
   command_buffer_.end();
 
-  core::Fence fence{device_};
   const auto commandBuffer = command_buffer_.buffer();
 
   VkSubmitInfo submitInfo{};
@@ -55,13 +54,16 @@ void ComputeExecutor::submitAndWait() {
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &commandBuffer;
 
-  if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo, fence.fence()) !=
+  completion_.reset();
+  if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo, completion_.fence()) !=
       VK_SUCCESS) {
     VKR_EXEC_ERROR("failed to submit compute command buffer");
   }
 
-  fence.wait();
+  completion_.wait();
   submitted_ = true;
+  command_buffer_.reset();
+  pipelines_.clear();
 }
 
 void ComputeExecutor::end() {
@@ -97,6 +99,13 @@ void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline) {
     VKR_EXEC_ERROR("bindPipeline received null VkPipelineLayout");
   }
 
+  const auto retained = std::find_if(
+      pipelines_.begin(), pipelines_.end(), [&pipeline](const auto &version) {
+        return version->pipeline() == pipeline.pipeline();
+      });
+  if (retained == pipelines_.end()) {
+    pipelines_.push_back(pipeline.version());
+  }
   vkCmdBindPipeline(command_buffer_.buffer(), VK_PIPELINE_BIND_POINT_COMPUTE,
                     pipeline.pipeline());
 }
@@ -148,6 +157,53 @@ void ComputeExecutor::dispatch(uint32_t groupCountX, uint32_t groupCountY,
                 groupCountZ);
 }
 
+void ComputeExecutor::barrier(VkPipelineStageFlags sourceStage,
+                              VkAccessFlags sourceAccess,
+                              VkPipelineStageFlags destinationStage,
+                              VkAccessFlags destinationAccess) {
+  ensureRecording("barrier");
+  if (sourceStage == 0 || destinationStage == 0) {
+    VKR_EXEC_ERROR("Barrier requires nonzero pipeline stages");
+  }
+  VkMemoryBarrier barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+  barrier.srcAccessMask = sourceAccess;
+  barrier.dstAccessMask = destinationAccess;
+  vkCmdPipelineBarrier(command_buffer_.buffer(), sourceStage, destinationStage,
+                       0, 1, &barrier, 0, nullptr, 0, nullptr);
+}
+
+void ComputeExecutor::barrier(const res::Buffer &buffer,
+                              VkPipelineStageFlags sourceStage,
+                              VkAccessFlags sourceAccess,
+                              VkPipelineStageFlags destinationStage,
+                              VkAccessFlags destinationAccess) {
+  barrier(buffer.slice(0, buffer.size()), sourceStage, sourceAccess,
+          destinationStage, destinationAccess);
+}
+
+void ComputeExecutor::barrier(const res::BufferSlice &slice,
+                              VkPipelineStageFlags sourceStage,
+                              VkAccessFlags sourceAccess,
+                              VkPipelineStageFlags destinationStage,
+                              VkAccessFlags destinationAccess) {
+  ensureRecording("barrier");
+  if (!slice.valid() || sourceStage == 0 || destinationStage == 0) {
+    VKR_EXEC_ERROR("Buffer barrier requires a valid range and nonzero stages");
+  }
+  VkBufferMemoryBarrier barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+  barrier.srcAccessMask = sourceAccess;
+  barrier.dstAccessMask = destinationAccess;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.buffer = slice.buffer();
+  barrier.offset = slice.offset();
+  barrier.size = slice.size();
+  vkCmdPipelineBarrier(command_buffer_.buffer(), sourceStage, destinationStage,
+                       0, 0, nullptr, 1, &barrier, 0, nullptr);
+}
+
 void ComputeExecutor::hostRead(const res::Buffer &buffer) {
   hostRead(buffer.slice(0, buffer.size()));
 }
@@ -157,19 +213,9 @@ void ComputeExecutor::hostRead(const res::BufferSlice &slice) {
   if (!slice.valid() || !slice.hostVisible()) {
     VKR_EXEC_ERROR("hostRead requires a valid host-visible buffer slice");
   }
-  VkBufferMemoryBarrier barrier{};
-  barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-  barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-  barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
-  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.buffer = slice.buffer();
-  barrier.offset = slice.offset();
-  barrier.size = slice.size();
-
-  vkCmdPipelineBarrier(
-      command_buffer_.buffer(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-      VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr, 1, &barrier, 0, nullptr);
+  barrier(slice, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+          VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+          VK_ACCESS_HOST_READ_BIT);
 }
 
 void ComputeExecutor::beginProfileScope(std::string_view name) {

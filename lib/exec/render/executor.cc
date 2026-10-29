@@ -1,5 +1,7 @@
 #include "vkr/exec/render/executor.hh"
 #include "vkr/logger.hh"
+#include "vkr/resource/buffers/buffer.hh"
+#include <algorithm>
 #include <array>
 #include <limits>
 
@@ -32,6 +34,8 @@ RenderExecutor::RenderExecutor(const core::Device &device,
   image_available_.reserve(framesInFlight());
   in_flight_.reserve(framesInFlight());
   render_finished_.reserve(swapchain_.imageCount());
+  pipelines_.resize(framesInFlight());
+  pending_frames_.resize(framesInFlight(), false);
 
   for (uint32_t i = 0; i < framesInFlight(); ++i) {
     image_available_.emplace_back(device_);
@@ -43,20 +47,48 @@ RenderExecutor::RenderExecutor(const core::Device &device,
   }
 }
 
+RenderExecutor::~RenderExecutor() {
+  for (size_t frame = 0; frame < pending_frames_.size(); ++frame) {
+    if (pending_frames_[frame]) {
+      const auto fence = in_flight_[frame].fence();
+      vkWaitForFences(device_.device(), 1, &fence, VK_TRUE, UINT64_MAX);
+    }
+  }
+  // Presentation can still be waiting on render_finished_ after graphics ends.
+  if (presentation_pending_) {
+    vkQueueWaitIdle(device_.presentQueue());
+  }
+}
+
+void RenderExecutor::wait() {
+  ensureFrameInactive("wait");
+  for (size_t frame = 0; frame < pending_frames_.size(); ++frame) {
+    if (pending_frames_[frame]) {
+      in_flight_[frame].wait();
+      pending_frames_[frame] = false;
+    }
+    command_buffers_[frame].reset();
+    pipelines_[frame].clear();
+  }
+}
+
 auto RenderExecutor::beginFrame() -> bool {
   ensureFrameInactive("beginFrame");
 
-  in_flight_.at(current_frame_).wait();
+  if (pending_frames_.at(current_frame_)) {
+    in_flight_.at(current_frame_).wait();
+    pending_frames_[current_frame_] = false;
+  }
+
+  auto &commands = command_buffers_.at(current_frame_);
+  commands.reset();
+  pipelines_.at(current_frame_).clear();
 
   uint32_t imageIndex = 0;
   if (!acquireNextImage(imageIndex)) {
     return false;
   }
 
-  in_flight_.at(current_frame_).reset();
-
-  auto &commands = command_buffers_.at(current_frame_);
-  commands.reset();
   commands.begin();
 
   image_index_ = imageIndex;
@@ -78,6 +110,10 @@ void RenderExecutor::submitFrame() {
 
   if (frame_submitted_) {
     VKR_EXEC_ERROR("RenderExecutor::submitFrame called twice for one frame");
+  }
+
+  if (render_pass_active_) {
+    VKR_EXEC_ERROR("RenderExecutor::submitFrame called inside a render pass");
   }
 
   if (profiler_) {
@@ -136,7 +172,10 @@ void RenderExecutor::beginPass(const pipe::RenderPass &renderPass,
                                const std::vector<VkClearValue> &clearValues,
                                uint32_t framebufferIndex,
                                VkSubpassContents contents) {
-  ensureFrameActive("beginPass");
+  ensureRecording("beginPass");
+  if (render_pass_active_) {
+    VKR_EXEC_ERROR("RenderExecutor::beginPass called inside a render pass");
+  }
 
   if (framebufferIndex >= framebuffers.buffers().size()) {
     VKR_EXEC_ERROR("Framebuffer index {} out of range, framebuffer count {}",
@@ -158,15 +197,73 @@ void RenderExecutor::beginPass(const pipe::RenderPass &renderPass,
   info.pClearValues = clearValues.empty() ? nullptr : clearValues.data();
 
   vkCmdBeginRenderPass(commandBuffer(), &info, contents);
+  render_pass_active_ = true;
 }
 
 void RenderExecutor::endPass() {
-  ensureFrameActive("endPass");
+  ensureRecording("endPass");
+  if (!render_pass_active_) {
+    VKR_EXEC_ERROR("RenderExecutor::endPass called outside a render pass");
+  }
   vkCmdEndRenderPass(commandBuffer());
+  render_pass_active_ = false;
+}
+
+void RenderExecutor::barrier(VkPipelineStageFlags sourceStage,
+                             VkAccessFlags sourceAccess,
+                             VkPipelineStageFlags destinationStage,
+                             VkAccessFlags destinationAccess) {
+  ensureRecording("barrier");
+  if (render_pass_active_) {
+    VKR_EXEC_ERROR("RenderExecutor::barrier requires ending the render pass");
+  }
+  if (sourceStage == 0 || destinationStage == 0) {
+    VKR_EXEC_ERROR("Barrier requires nonzero pipeline stages");
+  }
+  VkMemoryBarrier barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+  barrier.srcAccessMask = sourceAccess;
+  barrier.dstAccessMask = destinationAccess;
+  vkCmdPipelineBarrier(commandBuffer(), sourceStage, destinationStage, 0, 1,
+                       &barrier, 0, nullptr, 0, nullptr);
+}
+
+void RenderExecutor::barrier(const res::Buffer &buffer,
+                             VkPipelineStageFlags sourceStage,
+                             VkAccessFlags sourceAccess,
+                             VkPipelineStageFlags destinationStage,
+                             VkAccessFlags destinationAccess) {
+  barrier(buffer.slice(0, buffer.size()), sourceStage, sourceAccess,
+          destinationStage, destinationAccess);
+}
+
+void RenderExecutor::barrier(const res::BufferSlice &slice,
+                             VkPipelineStageFlags sourceStage,
+                             VkAccessFlags sourceAccess,
+                             VkPipelineStageFlags destinationStage,
+                             VkAccessFlags destinationAccess) {
+  ensureRecording("barrier");
+  if (render_pass_active_) {
+    VKR_EXEC_ERROR("RenderExecutor::barrier requires ending the render pass");
+  }
+  if (!slice.valid() || sourceStage == 0 || destinationStage == 0) {
+    VKR_EXEC_ERROR("Buffer barrier requires a valid range and nonzero stages");
+  }
+  VkBufferMemoryBarrier barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+  barrier.srcAccessMask = sourceAccess;
+  barrier.dstAccessMask = destinationAccess;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.buffer = slice.buffer();
+  barrier.offset = slice.offset();
+  barrier.size = slice.size();
+  vkCmdPipelineBarrier(commandBuffer(), sourceStage, destinationStage, 0, 0,
+                       nullptr, 1, &barrier, 0, nullptr);
 }
 
 void RenderExecutor::bindPipeline(const pipe::GraphicsPipeline &pipeline) {
-  ensureFrameActive("bindPipeline");
+  ensureRecording("bindPipeline");
 
   if (pipeline.pipeline() == VK_NULL_HANDLE) {
     VKR_EXEC_ERROR("bindPipeline received null VkPipeline");
@@ -176,6 +273,15 @@ void RenderExecutor::bindPipeline(const pipe::GraphicsPipeline &pipeline) {
     VKR_EXEC_ERROR("bindPipeline received null VkPipelineLayout");
   }
 
+  auto &versions = pipelines_.at(frame_index_);
+  const auto retained =
+      std::find_if(versions.begin(), versions.end(),
+                   [&pipeline](const auto &version) -> bool {
+                     return version->pipeline() == pipeline.pipeline();
+                   });
+  if (retained == versions.end()) {
+    versions.push_back(pipeline.version());
+  }
   vkCmdBindPipeline(commandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                     pipeline.pipeline());
 }
@@ -214,7 +320,7 @@ void RenderExecutor::bindPipeline(const pipe::GraphicsPipeline &pipeline,
 }
 
 void RenderExecutor::setViewportAndScissor(VkExtent2D extent) {
-  ensureFrameActive("setViewportAndScissor");
+  ensureRecording("setViewportAndScissor");
 
   VkViewport viewport{};
   viewport.x = 0.0f;
@@ -235,7 +341,7 @@ void RenderExecutor::setViewportAndScissor(VkExtent2D extent) {
 
 void RenderExecutor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
                                  const scene::IndexBuffer &indexBuffer) {
-  ensureFrameActive("drawIndexed");
+  ensureRecording("drawIndexed");
 
   if (vertexBuffer.vertexCount() == 0 || indexBuffer.indices().empty()) {
     return;
@@ -254,19 +360,19 @@ void RenderExecutor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
 }
 
 void RenderExecutor::drawFullscreenTriangle() {
-  ensureFrameActive("drawFullscreenTriangle");
+  ensureRecording("drawFullscreenTriangle");
   vkCmdDraw(commandBuffer(), 3, 1, 0, 0);
 }
 
 void RenderExecutor::beginProfileScope(std::string_view name) {
-  ensureFrameActive("beginProfileScope");
+  ensureRecording("beginProfileScope");
   if (profiler_) {
     profiler_->get().beginScope(commandBuffer(), name);
   }
 }
 
 void RenderExecutor::endProfileScope() {
-  ensureFrameActive("endProfileScope");
+  ensureRecording("endProfileScope");
   if (profiler_) {
     profiler_->get().endScope(commandBuffer());
   }
@@ -282,6 +388,13 @@ void RenderExecutor::ensureFrameInactive(std::string_view op) const {
   if (frame_active_) {
     VKR_EXEC_ERROR("RenderExecutor::{} called while a frame is already active",
                    op);
+  }
+}
+
+void RenderExecutor::ensureRecording(std::string_view op) const {
+  ensureFrameActive(op);
+  if (frame_submitted_) {
+    VKR_EXEC_ERROR("RenderExecutor::{} called after submission", op);
   }
 }
 
@@ -326,10 +439,12 @@ void RenderExecutor::submitCommandBuffer() {
   submitInfo.signalSemaphoreCount = signalSemaphores.size();
   submitInfo.pSignalSemaphores = signalSemaphores.data();
 
+  in_flight_.at(frame_index_).reset();
   if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo,
                     in_flight_.at(frame_index_).fence()) != VK_SUCCESS) {
     VKR_EXEC_ERROR("failed to submit draw command buffer");
   }
+  pending_frames_[frame_index_] = true;
 }
 
 void RenderExecutor::present(uint32_t imageIndex) {
@@ -347,6 +462,7 @@ void RenderExecutor::present(uint32_t imageIndex) {
   presentInfo.pSwapchains = swapchains.data();
   presentInfo.pImageIndices = &imageIndex;
 
+  presentation_pending_ = true;
   VkResult result = vkQueuePresentKHR(device_.presentQueue(), &presentInfo);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {

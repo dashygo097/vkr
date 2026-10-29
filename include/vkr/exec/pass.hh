@@ -41,6 +41,9 @@ public:
   virtual void destroy() noexcept = 0;
   virtual void record() = 0;
 
+  [[nodiscard]] virtual auto dependencies() const
+      -> std::vector<std::reference_wrapper<const Pass>>;
+
   template <typename CapabilityT>
   [[nodiscard]] auto capability() noexcept
       -> std::optional<std::reference_wrapper<CapabilityT>> {

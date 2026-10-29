@@ -60,6 +60,28 @@ struct ComputePipelineDesc {
 
 class ComputePipeline {
 public:
+  class Version {
+  public:
+    explicit Version(const core::Device &device) : device_(device) {}
+    ~Version();
+
+    Version(const Version &) = delete;
+    auto operator=(const Version &) -> Version & = delete;
+
+    [[nodiscard]] auto pipeline() const noexcept -> VkPipeline {
+      return pipeline_;
+    }
+    [[nodiscard]] auto layout() const noexcept -> VkPipelineLayout {
+      return layout_;
+    }
+
+  private:
+    friend class ComputePipeline;
+    const core::Device &device_;
+    VkPipeline pipeline_{VK_NULL_HANDLE};
+    VkPipelineLayout layout_{VK_NULL_HANDLE};
+  };
+
   explicit ComputePipeline(const core::Device &device);
   ~ComputePipeline();
 
@@ -79,11 +101,16 @@ public:
   }
 
   [[nodiscard]] auto layout() const noexcept -> VkPipelineLayout {
-    return vk_pipeline_layout_;
+    return version_ ? version_->layout() : VK_NULL_HANDLE;
   }
 
   [[nodiscard]] auto pipeline() const noexcept -> VkPipeline {
-    return vk_compute_pipeline_;
+    return version_ ? version_->pipeline() : VK_NULL_HANDLE;
+  }
+
+  [[nodiscard]] auto version() const noexcept
+      -> std::shared_ptr<const Version> {
+    return version_;
   }
 
   [[nodiscard]] auto bindPoint() const noexcept -> VkPipelineBindPoint {
@@ -91,28 +118,21 @@ public:
   }
 
   [[nodiscard]] auto valid() const noexcept -> bool {
-    return vk_compute_pipeline_ != VK_NULL_HANDLE;
+    return pipeline() != VK_NULL_HANDLE;
   }
 
   [[nodiscard]] auto revision() const noexcept -> uint64_t { return revision_; }
 
 private:
-  struct RetiredPipeline {
-    VkPipeline pipeline{VK_NULL_HANDLE};
-    VkPipelineLayout layout{VK_NULL_HANDLE};
-  };
-
   // dependencies
   const core::Device &device_;
 
   // components
   ComputePipelineDesc desc_{};
   std::unique_ptr<res::ShaderModule> shader_module_{};
-  VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
-  VkPipeline vk_compute_pipeline_{VK_NULL_HANDLE};
+  std::shared_ptr<const Version> version_{};
 
   // states
-  std::vector<RetiredPipeline> retired_pipelines_{};
   uint64_t revision_{0};
 };
 

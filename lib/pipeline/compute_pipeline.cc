@@ -8,106 +8,80 @@ ComputePipeline::ComputePipeline(const core::Device &device)
 
 ComputePipeline::~ComputePipeline() { destroy(); }
 
+ComputePipeline::Version::~Version() {
+  if (pipeline_ != VK_NULL_HANDLE) {
+    vkDestroyPipeline(device_.device(), pipeline_, nullptr);
+  }
+  if (layout_ != VK_NULL_HANDLE) {
+    vkDestroyPipelineLayout(device_.device(), layout_, nullptr);
+  }
+}
+
 void ComputePipeline::destroy() {
-  if (vk_compute_pipeline_ != VK_NULL_HANDLE ||
-      vk_pipeline_layout_ != VK_NULL_HANDLE || !retired_pipelines_.empty()) {
-    vkDeviceWaitIdle(device_.device());
-  }
-
-  if (vk_compute_pipeline_ != VK_NULL_HANDLE) {
-    vkDestroyPipeline(device_.device(), vk_compute_pipeline_, nullptr);
-    vk_compute_pipeline_ = VK_NULL_HANDLE;
-  }
-
-  if (vk_pipeline_layout_ != VK_NULL_HANDLE) {
-    vkDestroyPipelineLayout(device_.device(), vk_pipeline_layout_, nullptr);
-    vk_pipeline_layout_ = VK_NULL_HANDLE;
-  }
-
-  for (const auto &retired : retired_pipelines_) {
-    if (retired.pipeline != VK_NULL_HANDLE) {
-      vkDestroyPipeline(device_.device(), retired.pipeline, nullptr);
-    }
-
-    if (retired.layout != VK_NULL_HANDLE) {
-      vkDestroyPipelineLayout(device_.device(), retired.layout, nullptr);
-    }
-  }
-
-  retired_pipelines_.clear();
+  version_.reset();
   shader_module_.reset();
 }
 
 auto ComputePipeline::update(const ComputePipelineDesc &desc) -> bool {
-  desc_ = desc;
+  auto nextDesc = desc;
 
-  if (!desc_.isValid()) {
+  if (!nextDesc.isValid()) {
     VKR_PIPE_ERROR("Invalid compute pipeline descriptor");
   }
 
-  auto shaderDesc = desc_.shader;
-  shaderDesc.setEntryPoint(desc_.entryPoint);
+  auto shaderDesc = nextDesc.shader;
+  shaderDesc.setEntryPoint(nextDesc.entryPoint);
 
   auto nextShaderModule = std::make_unique<res::ShaderModule>(device_);
   nextShaderModule->update(shaderDesc);
 
   if (!nextShaderModule->valid()) {
     VKR_PIPE_ERROR("Failed to create compute shader module for pipeline '{}'",
-                   desc_.name);
+                   nextDesc.name);
   }
 
   VkPipelineShaderStageCreateInfo shaderStage{};
   shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
   shaderStage.module = nextShaderModule->module();
-  shaderStage.pName = desc_.entryPoint.c_str();
+  shaderStage.pName = nextDesc.entryPoint.c_str();
 
   VkPipelineLayoutCreateInfo layoutInfo{};
   layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   layoutInfo.setLayoutCount =
-      static_cast<uint32_t>(desc_.layout.setLayouts.size());
-  layoutInfo.pSetLayouts = desc_.layout.setLayouts.empty()
+      static_cast<uint32_t>(nextDesc.layout.setLayouts.size());
+  layoutInfo.pSetLayouts = nextDesc.layout.setLayouts.empty()
                                ? nullptr
-                               : desc_.layout.setLayouts.data();
+                               : nextDesc.layout.setLayouts.data();
   layoutInfo.pushConstantRangeCount =
-      static_cast<uint32_t>(desc_.layout.pushConstants.size());
-  layoutInfo.pPushConstantRanges = desc_.layout.pushConstants.empty()
+      static_cast<uint32_t>(nextDesc.layout.pushConstants.size());
+  layoutInfo.pPushConstantRanges = nextDesc.layout.pushConstants.empty()
                                        ? nullptr
-                                       : desc_.layout.pushConstants.data();
+                                       : nextDesc.layout.pushConstants.data();
 
-  VkPipelineLayout nextLayout{VK_NULL_HANDLE};
+  auto next = std::make_shared<Version>(device_);
   if (vkCreatePipelineLayout(device_.device(), &layoutInfo, nullptr,
-                             &nextLayout) != VK_SUCCESS) {
+                             &next->layout_) != VK_SUCCESS) {
     VKR_PIPE_ERROR("Failed to create compute pipeline layout for '{}'",
-                   desc_.name);
+                   nextDesc.name);
   }
 
   VkComputePipelineCreateInfo pipelineInfo{};
   pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
   pipelineInfo.stage = shaderStage;
-  pipelineInfo.layout = nextLayout;
+  pipelineInfo.layout = next->layout_;
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
   pipelineInfo.basePipelineIndex = -1;
 
-  VkPipeline nextPipeline{VK_NULL_HANDLE};
   if (vkCreateComputePipelines(device_.device(), VK_NULL_HANDLE, 1,
                                &pipelineInfo, nullptr,
-                               &nextPipeline) != VK_SUCCESS) {
-    vkDestroyPipelineLayout(device_.device(), nextLayout, nullptr);
-    VKR_PIPE_ERROR("Failed to create compute pipeline '{}'", desc_.name);
-  }
-
-  if (vk_compute_pipeline_ != VK_NULL_HANDLE ||
-      vk_pipeline_layout_ != VK_NULL_HANDLE) {
-    RetiredPipeline retired{};
-    retired.pipeline = vk_compute_pipeline_;
-    retired.layout = vk_pipeline_layout_;
-    retired_pipelines_.push_back(retired);
+                               &next->pipeline_) != VK_SUCCESS) {
+    VKR_PIPE_ERROR("Failed to create compute pipeline '{}'", nextDesc.name);
   }
 
   shader_module_ = std::move(nextShaderModule);
-  vk_pipeline_layout_ = nextLayout;
-  vk_compute_pipeline_ = nextPipeline;
+  desc_ = std::move(nextDesc);
+  version_ = std::move(next);
   ++revision_;
 
   VKR_PIPE_INFO("Compute pipeline '{}' created", desc_.name);

@@ -69,6 +69,8 @@ public:
   void destroy() noexcept override;
   void update(const OverlayPassDesc &desc);
   void record() override;
+  [[nodiscard]] auto dependencies() const
+      -> std::vector<std::reference_wrapper<const Pass>> override;
   auto mesh(std::string name, const scene::IMesh &mesh) -> OverlayPass &;
 
   auto uniform(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)

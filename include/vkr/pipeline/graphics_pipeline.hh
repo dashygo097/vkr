@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1484,6 +1485,28 @@ struct GraphicsPipelineDesc {
 
 class GraphicsPipeline {
 public:
+  class Version {
+  public:
+    explicit Version(const core::Device &device) : device_(device) {}
+    ~Version();
+
+    Version(const Version &) = delete;
+    auto operator=(const Version &) -> Version & = delete;
+
+    [[nodiscard]] auto pipeline() const noexcept -> VkPipeline {
+      return pipeline_;
+    }
+    [[nodiscard]] auto layout() const noexcept -> VkPipelineLayout {
+      return layout_;
+    }
+
+  private:
+    friend class GraphicsPipeline;
+    const core::Device &device_;
+    VkPipeline pipeline_{VK_NULL_HANDLE};
+    VkPipelineLayout layout_{VK_NULL_HANDLE};
+  };
+
   GraphicsPipeline(const core::Device &device, const RenderPass &renderPass);
   ~GraphicsPipeline();
 
@@ -1508,25 +1531,25 @@ public:
   }
 
   [[nodiscard]] auto layout() const noexcept -> VkPipelineLayout {
-    return vk_pipeline_layout_;
+    return version_ ? version_->layout() : VK_NULL_HANDLE;
   }
 
   [[nodiscard]] auto pipeline() const noexcept -> VkPipeline {
-    return vk_graphics_pipeline_;
+    return version_ ? version_->pipeline() : VK_NULL_HANDLE;
+  }
+
+  [[nodiscard]] auto version() const noexcept
+      -> std::shared_ptr<const Version> {
+    return version_;
   }
 
   [[nodiscard]] auto valid() const noexcept -> bool {
-    return vk_graphics_pipeline_ != VK_NULL_HANDLE;
+    return pipeline() != VK_NULL_HANDLE;
   }
 
   [[nodiscard]] auto revision() const noexcept -> uint64_t { return revision_; }
 
 private:
-  struct RetiredPipeline {
-    VkPipeline pipeline{VK_NULL_HANDLE};
-    VkPipelineLayout layout{VK_NULL_HANDLE};
-  };
-
   // dependencies
   const core::Device &device_;
   const RenderPass &render_pass_;
@@ -1534,11 +1557,9 @@ private:
   // components
   GraphicsPipelineDesc desc_{};
   std::vector<std::unique_ptr<res::ShaderModule>> shader_modules_{};
-  VkPipelineLayout vk_pipeline_layout_{VK_NULL_HANDLE};
-  VkPipeline vk_graphics_pipeline_{VK_NULL_HANDLE};
+  std::shared_ptr<const Version> version_{};
 
   // states
-  std::vector<RetiredPipeline> retired_pipelines_{};
   uint64_t revision_{0};
 };
 
