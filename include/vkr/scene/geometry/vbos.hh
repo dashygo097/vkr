@@ -27,14 +27,16 @@ struct VertexInputDesc {
     return bindings.size() == other.bindings.size() &&
            attributes.size() == other.attributes.size() &&
            std::equal(bindings.begin(), bindings.end(), other.bindings.begin(),
-                      [](const auto &a, const auto &b) {
+                      [](const auto &a, const auto &b) -> bool {
                         return a.binding == b.binding && a.stride == b.stride &&
                                a.inputRate == b.inputRate;
                       }) &&
            std::equal(attributes.begin(), attributes.end(),
-                      other.attributes.begin(), [](const auto &a, const auto &b) {
-                        return a.location == b.location && a.binding == b.binding &&
-                               a.format == b.format && a.offset == b.offset;
+                      other.attributes.begin(),
+                      [](const auto &a, const auto &b) -> bool {
+                        return a.location == b.location &&
+                               a.binding == b.binding && a.format == b.format &&
+                               a.offset == b.offset;
                       });
   }
 

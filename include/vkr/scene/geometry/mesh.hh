@@ -143,9 +143,9 @@ public:
         }
 
         if (vertices.size() > std::numeric_limits<uint16_t>::max()) {
-          VKR_RES_ERROR("Mesh exceeds the 16-bit index capacity of {} vertices",
-                        static_cast<size_t>(
-                            std::numeric_limits<uint16_t>::max()) + 1);
+          VKR_RES_ERROR(
+              "Mesh exceeds the 16-bit index capacity of {} vertices",
+              static_cast<size_t>(std::numeric_limits<uint16_t>::max()) + 1);
         }
 
         const auto vertexIndex = static_cast<uint16_t>(vertices.size());
