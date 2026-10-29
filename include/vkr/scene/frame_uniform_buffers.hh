@@ -2,7 +2,7 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffer/uniform_buffer.hh"
+#include "vkr/resource/buffers/uniform_buffer.hh"
 #include <cstddef>
 #include <memory>
 #include <vector>

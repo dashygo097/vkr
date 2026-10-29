@@ -1,7 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "vkr/scene/material/texture.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffer/buffer.hh"
+#include "vkr/resource/buffers/buffer.hh"
 #include <cstddef>
 #include <cstring>
 #include <memory>

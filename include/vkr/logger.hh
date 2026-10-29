@@ -135,6 +135,10 @@ public:
     init();
     return ui_logger_;
   }
+  static auto getMlLogger() -> std::shared_ptr<spdlog::logger> & {
+    init();
+    return ml_logger_;
+  }
 
 private:
   static std::shared_ptr<UiLogSink> ui_sink_;
@@ -145,6 +149,7 @@ private:
   static std::shared_ptr<spdlog::logger> exec_logger_;
   static std::shared_ptr<spdlog::logger> scene_logger_;
   static std::shared_ptr<spdlog::logger> ui_logger_;
+  static std::shared_ptr<spdlog::logger> ml_logger_;
 };
 
 } // namespace vkr
@@ -237,5 +242,16 @@ private:
 #define VKR_UI_ERROR(...)                                                      \
   do {                                                                         \
     ::vkr::Logger::getUiLogger()->error(__VA_ARGS__);                          \
+    throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
+  } while (0);
+
+#define VKR_ML_TRACE(...) ::vkr::Logger::getMlLogger()->trace(__VA_ARGS__);
+#define VKR_ML_DEBUG(...) ::vkr::Logger::getMlLogger()->debug(__VA_ARGS__);
+#define VKR_ML_INFO(...) ::vkr::Logger::getMlLogger()->info(__VA_ARGS__);
+#define VKR_ML_WARN(...) ::vkr::Logger::getMlLogger()->warn(__VA_ARGS__);
+#define VKR_ML_CRIT(...) ::vkr::Logger::getMlLogger()->critical(__VA_ARGS__);
+#define VKR_ML_ERROR(...)                                                      \
+  do {                                                                         \
+    ::vkr::Logger::getMlLogger()->error(__VA_ARGS__);                          \
     throw ::vkr::VkrError(fmt::format(__VA_ARGS__));                           \
   } while (0);

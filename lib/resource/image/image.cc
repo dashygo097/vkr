@@ -1,6 +1,6 @@
 #include "vkr/resource/image/image.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffer/buffer.hh"
+#include "vkr/resource/buffers/buffer.hh"
 
 namespace vkr::res {
 

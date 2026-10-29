@@ -1,4 +1,4 @@
-#include "vkr/resource/buffer/buffer.hh"
+#include "vkr/resource/buffers/buffer.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
 #include <cstddef>

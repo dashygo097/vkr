@@ -3,7 +3,7 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffer/buffer.hh"
+#include "vkr/resource/buffers/buffer.hh"
 #include "vkr/scene/geometry/vbos.hh"
 #include <memory>
 #include <vector>

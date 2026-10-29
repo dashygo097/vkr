@@ -5,7 +5,7 @@
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
-#include "vkr/resource/buffer/uniform_buffer.hh"
+#include "vkr/resource/buffers/uniform_buffer.hh"
 #include "vkr/resource/image/image_view.hh"
 #include "vkr/resource/image/sampler.hh"
 #include "vkr/scene/scene.hh"

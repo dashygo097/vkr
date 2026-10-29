@@ -2,7 +2,7 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/resource/buffer/buffer.hh"
+#include "vkr/resource/buffers/buffer.hh"
 #include <memory>
 #include <vector>
 

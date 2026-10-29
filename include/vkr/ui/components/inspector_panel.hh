@@ -18,8 +18,7 @@ class TexturePreview;
 
 class InspectorPanel final : public UiComponent {
 public:
-  InspectorPanel(const core::Device &device,
-                 const pipe::RenderPass &renderPass,
+  InspectorPanel(const core::Device &device, const pipe::RenderPass &renderPass,
                  const std::vector<core::CommandBuffer> &commandBuffers,
                  const scene::Scene &scene, const exec::Graph &graph,
                  const Selection &selection,

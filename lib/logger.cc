@@ -13,6 +13,7 @@ std::shared_ptr<spdlog::logger> Logger::pipeline_logger_;
 std::shared_ptr<spdlog::logger> Logger::exec_logger_;
 std::shared_ptr<spdlog::logger> Logger::scene_logger_;
 std::shared_ptr<spdlog::logger> Logger::ui_logger_;
+std::shared_ptr<spdlog::logger> Logger::ml_logger_;
 
 void Logger::init() {
   static std::once_flag once;
@@ -51,14 +52,17 @@ void Logger::init() {
         std::make_shared<spdlog::logger>("scene", sinks.begin(), sinks.end());
     ui_logger_ =
         std::make_shared<spdlog::logger>("ui   ", sinks.begin(), sinks.end());
+    ml_logger_ =
+        std::make_shared<spdlog::logger>("ml   ", sinks.begin(), sinks.end());
 
+    util_logger_->set_level(spdlog::level::trace);
     core_logger_->set_level(spdlog::level::trace);
     resource_logger_->set_level(spdlog::level::trace);
     pipeline_logger_->set_level(spdlog::level::trace);
     exec_logger_->set_level(spdlog::level::trace);
     scene_logger_->set_level(spdlog::level::trace);
     ui_logger_->set_level(spdlog::level::trace);
-    util_logger_->set_level(spdlog::level::trace);
+    ml_logger_->set_level(spdlog::level::trace);
   });
 }
 
