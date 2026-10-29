@@ -3,6 +3,7 @@
 #include "texture_preview.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/targets/offscreen.hh"
+#include <algorithm>
 #include <array>
 #include <imgui.h>
 #include <string>
@@ -130,15 +131,26 @@ void InspectorPanel::renderResource() {
     }
 
     const auto &value = uniformBuffer->get();
+    if (value.empty()) {
+      ImGui::TextDisabled("State: unavailable");
+      return;
+    }
+    const bool valid = std::all_of(
+        value.begin(), value.end(),
+        [](const res::UniformBuffer &buffer) { return buffer.isValid(); });
     if (beginPropertyTable("##buffer_summary")) {
-      propertyRow("State", "Valid");
-      propertyRow("Buffer size", std::to_string(value.byteSize()) + " bytes");
-      propertyRow("Frames", std::to_string(value.frameCount()));
+      propertyRow("State", valid ? "Valid" : "Unavailable");
+      propertyRow("Buffer size",
+                  std::to_string(value.front().size()) + " bytes");
+      propertyRow("Frames", std::to_string(value.size()));
       ImGui::EndTable();
     }
     if (ImGui::CollapsingHeader("Advanced") &&
         beginPropertyTable("##buffer_advanced")) {
-      propertyRow("Mapped frames", std::to_string(value.mappedFrameCount()));
+      const auto mapped = std::count_if(
+          value.begin(), value.end(),
+          [](const res::UniformBuffer &buffer) { return buffer.isMapped(); });
+      propertyRow("Mapped frames", std::to_string(mapped));
       ImGui::EndTable();
     }
     return;

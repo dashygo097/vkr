@@ -13,17 +13,6 @@
 namespace vkr::ui {
 namespace {
 
-// Borrows the preview's selected view and sampler; owns no GPU resources.
-struct PreviewTexture {
-  const res::ImageView &view;
-  const res::Sampler &sampler;
-  VkImageLayout layout;
-
-  [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
-    return {sampler.sampler(), view.imageView(), layout};
-  }
-};
-
 constexpr auto VertexShader = R"glsl(
 #version 450
 layout(location = 0) in vec2 position;
@@ -157,8 +146,8 @@ auto readTexel(VkFormat format, const res::Buffer &buffer)
 
 TexturePreview::Frame::Frame(const core::Device &device)
     : views{res::ImageView{device}, res::ImageView{device}},
-      parameters{res::UniformBuffer<Parameters>{device},
-                 res::UniformBuffer<Parameters>{device}},
+      parameters{res::UniformBuffer{device, sizeof(Parameters)},
+                 res::UniformBuffer{device, sizeof(Parameters)}},
       readback(device) {}
 
 TexturePreview::TexturePreview(
@@ -586,9 +575,11 @@ void TexturePreview::draw(const Image &value, ImVec2 available,
   auto &imageView = frame.views[slot];
   const auto &previous = imageView.desc();
   if (imageView.imageView() == VK_NULL_HANDLE || previous.image != view.image ||
-      previous.format != view.format ||
+      previous.format != view.format || previous.viewType != view.viewType ||
       previous.baseMipLevel != view.baseMipLevel ||
+      previous.levelCount != view.levelCount ||
       previous.baseArrayLayer != view.baseArrayLayer ||
+      previous.layerCount != view.layerCount ||
       previous.aspectMask != view.aspectMask ||
       previous.components.r != view.components.r ||
       previous.components.g != view.components.g ||
@@ -603,9 +594,16 @@ void TexturePreview::draw(const Image &value, ImVec2 available,
           : nearest_sampler_;
   const auto index = frame_index_ * 2 + slot;
   auto &imageSet = image_sets_.at(index);
-  const PreviewTexture texture{imageView, sampler, value.layout};
-  imageSet.texture(0, texture);
-  imageSet.update();
+  const VkDescriptorImageInfo imageInfo{sampler.sampler(),
+                                        imageView.imageView(), value.layout};
+  VkWriteDescriptorSet write{};
+  write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  write.dstSet = imageSet.set();
+  write.dstBinding = 0;
+  write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  write.descriptorCount = 1;
+  write.pImageInfo = &imageInfo;
+  vkUpdateDescriptorSets(device_.device(), 1, &write, 0, nullptr);
   parameter_sets_.at(index).update();
   Parameters parameters{};
   parameters.channel = channel_;

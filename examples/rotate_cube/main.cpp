@@ -99,7 +99,11 @@ auto main() -> int {
       .attachmentViews(target.attachmentViews());
   framebuffers.update(framebufferDesc);
 
-  FrameUniformBuffers<UniformObject> uniforms{device, MAX_FRAMES_IN_FLIGHT};
+  std::vector<UniformBuffer> uniforms;
+  uniforms.reserve(commands.size());
+  for (size_t frame = 0; frame < commands.size(); ++frame) {
+    uniforms.emplace_back(device, sizeof(UniformObject));
+  }
 
   // descriptors
   DescriptorSetLayoutDesc layoutDesc{};
@@ -112,7 +116,7 @@ auto main() -> int {
 
   auto descriptorSets = pool.allocate(layout, commands.size());
   for (uint32_t frame = 0; frame < commands.size(); ++frame) {
-    descriptorSets[frame].uniform(0, uniforms, frame).update();
+    descriptorSets[frame].uniform(0, uniforms[frame]).update();
   }
 
   // graphics pipeline
@@ -172,7 +176,7 @@ auto main() -> int {
                             glm::vec3{0.0f, 1.0f, 0.0f});
     ubo.view = camera.view();
     ubo.proj = camera.proj();
-    uniforms.update(frame, ubo);
+    uniforms[frame].update(ubo);
 
     executor.beginPass(renderPass, framebuffers, clearValues,
                        executor.imageIndex());

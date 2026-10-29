@@ -42,7 +42,7 @@ auto main() -> int {
   auto outBuffer = StorageBuffer<float>{device};
 
   auto inDesc = StorageBufferDesc{};
-  inDesc.reserve(ElementCount)
+  inDesc.elements(ElementCount)
       .readonly()
       .storage()
       .transfer()
@@ -50,7 +50,7 @@ auto main() -> int {
       .mapped();
 
   auto outDesc = StorageBufferDesc{};
-  outDesc.reserve(ElementCount)
+  outDesc.elements(ElementCount)
       .writeonly()
       .storage()
       .transfer()

@@ -20,6 +20,10 @@
 #include <utility>
 #include <vector>
 
+namespace vkr::res {
+class UniformBuffer;
+} // namespace vkr::res
+
 namespace vkr::exec {
 
 struct RasterPassDesc {
@@ -147,30 +151,26 @@ public:
   void record() override;
   auto mesh(const scene::IMesh &mesh) -> RasterPass &;
 
-  template <typename T>
-  auto uniform(uint32_t setIndex, uint32_t binding, T &buffer) -> RasterPass & {
-    for (uint32_t frame = 0; frame < descriptor_sets_.size(); ++frame) {
-      descriptor_sets_[frame].at(setIndex).uniform(binding, buffer, frame);
-    }
-    return *this;
-  }
+  auto uniform(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)
+      -> RasterPass &;
+  auto uniform(uint32_t setIndex, uint32_t binding,
+               const res::BufferSlice &slice) -> RasterPass &;
+  auto uniform(uint32_t setIndex, uint32_t binding,
+               const std::vector<res::UniformBuffer> &buffers) -> RasterPass &;
 
-  template <typename T>
-  auto texture(uint32_t setIndex, uint32_t binding, T &texture)
-      -> RasterPass & {
-    for (auto &frame : descriptor_sets_) {
-      frame.at(setIndex).texture(binding, texture);
-    }
-    return *this;
-  }
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
+      -> RasterPass &;
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Cubemap &cubemap)
+      -> RasterPass &;
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const pipe::ColorAttachment &attachment) -> RasterPass &;
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const pipe::DepthAttachment &attachment) -> RasterPass &;
 
-  template <typename T>
-  auto storage(uint32_t setIndex, uint32_t binding, T &buffer) -> RasterPass & {
-    for (auto &frame : descriptor_sets_) {
-      frame.at(setIndex).storage(binding, buffer);
-    }
-    return *this;
-  }
+  auto storage(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)
+      -> RasterPass &;
+  auto storage(uint32_t setIndex, uint32_t binding,
+               const res::BufferSlice &slice) -> RasterPass &;
 
   auto addSource(Pass &source) -> RasterPass &;
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
@@ -215,8 +215,7 @@ private:
   std::unique_ptr<pipe::RenderPass> render_pass_{};
   std::unique_ptr<Framebuffers> framebuffers_{};
   pipe::DescriptorPool descriptor_pool_;
-  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>>
-      descriptor_layouts_{};
+  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>> descriptor_layouts_{};
   std::vector<std::vector<pipe::DescriptorSet>> descriptor_sets_{};
   std::unique_ptr<pipe::GraphicsPipeline> pipeline_{};
   std::vector<std::reference_wrapper<Pass>> sources_{};

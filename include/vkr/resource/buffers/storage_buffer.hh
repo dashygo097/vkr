@@ -4,8 +4,8 @@
 #include "vkr/logger.hh"
 #include "vkr/resource/buffers/buffer.hh"
 #include <cstddef>
-#include <cstring>
-#include <memory>
+#include <limits>
+#include <type_traits>
 #include <vector>
 
 namespace vkr::res {
@@ -30,18 +30,7 @@ struct StorageBufferDesc {
             (memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0);
   }
 
-  auto reserve(size_t elementCapacity) noexcept -> StorageBufferDesc & {
-    capacity = elementCapacity;
-    return *this;
-  }
-
   auto elements(size_t elementCapacity) noexcept -> StorageBufferDesc & {
-    capacity = elementCapacity;
-    return *this;
-  }
-
-  auto capacityElements(size_t elementCapacity) noexcept
-      -> StorageBufferDesc & {
     capacity = elementCapacity;
     return *this;
   }
@@ -144,17 +133,17 @@ struct StorageBufferDesc {
 
   [[nodiscard]] static auto hostVisible(size_t capacity) -> StorageBufferDesc {
     StorageBufferDesc desc{};
-    return desc.reserve(capacity).storage().transfer().hostVisible().mapped();
+    return desc.elements(capacity).storage().transfer().hostVisible().mapped();
   }
 
   [[nodiscard]] static auto deviceLocal(size_t capacity) -> StorageBufferDesc {
     StorageBufferDesc desc{};
-    return desc.reserve(capacity).storage().transfer().deviceLocal();
+    return desc.elements(capacity).storage().transfer().deviceLocal();
   }
 
   [[nodiscard]] static auto input(size_t capacity) -> StorageBufferDesc {
     StorageBufferDesc desc{};
-    return desc.reserve(capacity)
+    return desc.elements(capacity)
         .usageFlags(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
         .readonly()
         .transfer()
@@ -164,7 +153,7 @@ struct StorageBufferDesc {
 
   [[nodiscard]] static auto output(size_t capacity) -> StorageBufferDesc {
     StorageBufferDesc desc{};
-    return desc.reserve(capacity)
+    return desc.elements(capacity)
         .usageFlags(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
         .writeonly()
         .transfer()
@@ -193,30 +182,39 @@ private:
   }
 };
 
-template <typename ElementType> class StorageBuffer {
+template <typename ElementType> class StorageBuffer : public Buffer {
+  static_assert(std::is_trivially_copyable_v<ElementType>,
+                "StorageBuffer elements must be trivially copyable");
+
 public:
-  explicit StorageBuffer(const core::Device &device)
-      : device_(device), target_(std::make_unique<Buffer>(device)) {}
+  explicit StorageBuffer(const core::Device &device) : Buffer(device) {}
 
   StorageBuffer(const core::Device &device, const StorageBufferDesc &desc)
-      : device_(device), target_(std::make_unique<Buffer>(device)) {
+      : Buffer(device) {
     update(desc);
   }
 
-  ~StorageBuffer() { destroy(); }
+  ~StorageBuffer() override = default;
 
   StorageBuffer(const StorageBuffer &) = delete;
   auto operator=(const StorageBuffer &) -> StorageBuffer & = delete;
 
-  StorageBuffer(StorageBuffer &&) = delete;
+  StorageBuffer(StorageBuffer &&) noexcept = default;
   auto operator=(StorageBuffer &&) -> StorageBuffer & = delete;
 
   void update(const StorageBufferDesc &desc) {
+    if (!desc.isValid() ||
+        desc.capacity >
+            std::numeric_limits<VkDeviceSize>::max() / sizeof(ElementType) ||
+        desc.capacity >
+            std::numeric_limits<size_t>::max() / sizeof(ElementType)) {
+      VKR_RES_ERROR("StorageBufferDesc is invalid or its byte size overflows");
+    }
+    Buffer::update(static_cast<VkDeviceSize>(desc.capacity) *
+                       sizeof(ElementType),
+                   desc.usage, desc.memoryProperties, desc.mapOnCreate);
     desc_ = desc;
-    create();
   }
-
-  void destroy() { target_->destroy(); }
 
   void write(const std::vector<ElementType> &elements,
              size_t elementOffset = 0) {
@@ -229,114 +227,65 @@ public:
       VKR_RES_ERROR("Cannot write empty storage buffer data");
     }
 
-    if (elementOffset > desc_.capacity ||
-        elementCount > desc_.capacity - elementOffset) {
+    if (elementOffset > capacity() ||
+        elementCount > capacity() - elementOffset) {
       VKR_RES_ERROR("Storage buffer write exceeds buffer bounds");
-    }
-
-    if ((desc_.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
-      VKR_RES_ERROR("Cannot write device-local storage buffer directly from "
-                    "CPU; use a staging/upload path");
     }
 
     auto offset =
         static_cast<VkDeviceSize>(sizeof(ElementType) * elementOffset);
     auto size = static_cast<VkDeviceSize>(sizeof(ElementType) * elementCount);
-    target_->write(elements, size, offset);
+    Buffer::write(elements, size, offset);
   }
 
   void read(std::vector<ElementType> &elements, size_t elementOffset = 0) {
-    if (elements.empty()) {
+    read(elements.data(), elements.size(), elementOffset);
+  }
+
+  void read(ElementType *elements, size_t elementCount,
+            size_t elementOffset = 0) {
+    if (elements == nullptr || elementCount == 0) {
       VKR_RES_ERROR("Cannot read empty storage buffer data");
     }
 
-    if (elementOffset > desc_.capacity ||
-        elements.size() > desc_.capacity - elementOffset) {
+    if (elementOffset > capacity() ||
+        elementCount > capacity() - elementOffset) {
       VKR_RES_ERROR("Storage buffer read exceeds buffer bounds");
-    }
-
-    if ((desc_.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
-      VKR_RES_ERROR("Cannot read device-local storage buffer directly from "
-                    "CPU; use a staging/download path");
     }
 
     auto offset =
         static_cast<VkDeviceSize>(sizeof(ElementType) * elementOffset);
-    auto size =
-        static_cast<VkDeviceSize>(sizeof(ElementType) * elements.size());
-
-    const bool alreadyMapped = target_->isMapped();
-    const auto *mapped = target_->map(size, offset);
-    target_->invalidate(size, offset);
-
-    std::memcpy(elements.data(), mapped, static_cast<size_t>(size));
-
-    if (!alreadyMapped) {
-      target_->unmap();
-    }
+    auto size = static_cast<VkDeviceSize>(sizeof(ElementType) * elementCount);
+    Buffer::read(elements, size, offset);
   }
 
   [[nodiscard]] auto desc() const noexcept -> const StorageBufferDesc & {
     return desc_;
   }
 
-  [[nodiscard]] auto buffer() const noexcept -> VkBuffer {
-    return target_->buffer();
-  }
-
-  [[nodiscard]] auto memory() const noexcept -> VkDeviceMemory {
-    return target_->memory();
-  }
-
   [[nodiscard]] auto capacity() const noexcept -> size_t {
-    return desc_.capacity;
+    return static_cast<size_t>(size() / sizeof(ElementType));
   }
 
-  [[nodiscard]] auto bufferSize() const noexcept -> VkDeviceSize {
-    return static_cast<VkDeviceSize>(sizeof(ElementType) * desc_.capacity);
+  [[nodiscard]] auto descriptorInfo() const -> VkDescriptorBufferInfo {
+    return Buffer::slice(0, size()).descriptorInfo();
   }
 
-  [[nodiscard]] auto
-  descriptorInfo(VkDeviceSize offset = 0,
-                 VkDeviceSize range = VK_WHOLE_SIZE) const noexcept
-      -> VkDescriptorBufferInfo {
-    VkDescriptorBufferInfo info{};
-    info.buffer = buffer();
-    info.offset = offset;
-    info.range = range;
-    return info;
+  [[nodiscard]] auto slice(size_t elementOffset,
+                           size_t elementCount) const & -> BufferSlice {
+    if (elementOffset > capacity() ||
+        elementCount > capacity() - elementOffset) {
+      VKR_RES_ERROR("Storage buffer slice exceeds buffer bounds");
+    }
+    return Buffer::slice(
+        static_cast<VkDeviceSize>(elementOffset) * sizeof(ElementType),
+        static_cast<VkDeviceSize>(elementCount) * sizeof(ElementType));
   }
-
-  [[nodiscard]] auto hostVisible() const noexcept -> bool {
-    return (desc_.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
-  }
-
-  [[nodiscard]] auto valid() const noexcept -> bool {
-    return target_->isValid();
-  }
+  [[nodiscard]] auto slice(size_t, size_t) const && -> BufferSlice = delete;
 
 private:
-  // dependencies
-  const core::Device &device_;
-
   // components
   StorageBufferDesc desc_{};
-  std::unique_ptr<Buffer> target_;
-
-  // helpers
-  void create() {
-    destroy();
-
-    if (!desc_.isValid()) {
-      VKR_RES_ERROR("StorageBufferDesc is invalid");
-    }
-
-    target_->update(bufferSize(), desc_.usage, desc_.memoryProperties);
-
-    if (desc_.mapOnCreate) {
-      (void)target_->map(bufferSize());
-    }
-  }
 };
 
 } // namespace vkr::res

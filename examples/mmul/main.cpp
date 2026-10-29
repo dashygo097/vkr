@@ -63,7 +63,7 @@ class MMulApplication final : public ComputeApplication {
   std::unique_ptr<StorageBuffer<float>> input_A_{};
   std::unique_ptr<StorageBuffer<float>> input_B_{};
   std::unique_ptr<StorageBuffer<float>> output_C_{};
-  std::unique_ptr<UniformBuffer<MMulParams>> params_{};
+  std::unique_ptr<UniformBuffer> params_{};
 
   void createResources() override {
     A_.resize(M * K);
@@ -107,12 +107,12 @@ class MMulApplication final : public ComputeApplication {
     input_A_ = std::make_unique<StorageBuffer<float>>(device(), descA);
     input_B_ = std::make_unique<StorageBuffer<float>>(device(), descB);
     output_C_ = std::make_unique<StorageBuffer<float>>(device(), descC);
-    params_ = std::make_unique<UniformBuffer<MMulParams>>(device());
+    params_ = std::make_unique<UniformBuffer>(device(), sizeof(MMulParams));
 
     input_A_->write(A_);
     input_B_->write(B_);
     output_C_->write(C_);
-    params_->update({M, K, N});
+    params_->update(MMulParams{M, K, N});
   }
 
   void buildGraph() override {

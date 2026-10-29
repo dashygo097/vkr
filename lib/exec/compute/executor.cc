@@ -1,6 +1,7 @@
 #include "vkr/exec/compute/executor.hh"
 #include "vkr/exec/profiler.hh"
 #include "vkr/logger.hh"
+#include "vkr/resource/buffers/buffer.hh"
 
 namespace vkr::exec {
 
@@ -147,16 +148,24 @@ void ComputeExecutor::dispatch(uint32_t groupCountX, uint32_t groupCountY,
                 groupCountZ);
 }
 
-void ComputeExecutor::hostRead(VkBuffer buffer, VkDeviceSize size) {
+void ComputeExecutor::hostRead(const res::Buffer &buffer) {
+  hostRead(buffer.slice(0, buffer.size()));
+}
+
+void ComputeExecutor::hostRead(const res::BufferSlice &slice) {
+  ensureRecording("hostRead");
+  if (!slice.valid() || !slice.hostVisible()) {
+    VKR_EXEC_ERROR("hostRead requires a valid host-visible buffer slice");
+  }
   VkBufferMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
   barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
   barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.buffer = buffer;
-  barrier.offset = 0;
-  barrier.size = size;
+  barrier.buffer = slice.buffer();
+  barrier.offset = slice.offset();
+  barrier.size = slice.size();
 
   vkCmdPipelineBarrier(
       command_buffer_.buffer(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,

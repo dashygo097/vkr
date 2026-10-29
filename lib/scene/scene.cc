@@ -13,7 +13,8 @@ Scene::Scene(const core::Device &device, const core::CommandPool &commandPool,
 
 Scene::~Scene() = default;
 
-auto Scene::uniformBuffer(std::string_view name) -> IFrameUniformBuffers & {
+auto Scene::uniformBuffer(std::string_view name)
+    -> std::vector<res::UniformBuffer> & {
   const auto resource = findUniformBuffer(name);
   if (!resource) {
     VKR_RES_ERROR("Uniform buffer resource not found: {}", name);
@@ -22,7 +23,7 @@ auto Scene::uniformBuffer(std::string_view name) -> IFrameUniformBuffers & {
 }
 
 auto Scene::uniformBuffer(std::string_view name) const
-    -> const IFrameUniformBuffers & {
+    -> const std::vector<res::UniformBuffer> & {
   const auto resource = findUniformBuffer(name);
   if (!resource) {
     VKR_RES_ERROR("Uniform buffer resource not found: {}", name);
@@ -31,13 +32,21 @@ auto Scene::uniformBuffer(std::string_view name) const
 }
 
 auto Scene::findUniformBuffer(std::string_view name)
-    -> std::optional<std::reference_wrapper<IFrameUniformBuffers>> {
-  return findResource(uniform_buffers_, name);
+    -> std::optional<std::reference_wrapper<std::vector<res::UniformBuffer>>> {
+  const auto it = uniform_buffers_.find(std::string(name));
+  if (it == uniform_buffers_.end()) {
+    return std::nullopt;
+  }
+  return it->second;
 }
 
-auto Scene::findUniformBuffer(std::string_view name) const
-    -> std::optional<std::reference_wrapper<const IFrameUniformBuffers>> {
-  return findResource(uniform_buffers_, name);
+auto Scene::findUniformBuffer(std::string_view name) const -> std::optional<
+    std::reference_wrapper<const std::vector<res::UniformBuffer>>> {
+  const auto it = uniform_buffers_.find(std::string(name));
+  if (it == uniform_buffers_.end()) {
+    return std::nullopt;
+  }
+  return it->second;
 }
 
 void Scene::destroyUniformBuffer(std::string_view name) {
@@ -94,10 +103,11 @@ void Scene::selectMesh(std::string name) {
 
 void Scene::clearSelectedMesh() { selected_mesh_name_.clear(); }
 
-auto Scene::createTexture(std::string name, TextureDesc desc) -> Texture & {
+auto Scene::createTexture(std::string name, res::TextureDesc desc)
+    -> res::Texture & {
   validateNewResource(textures_, name, "texture");
 
-  auto texture = std::make_unique<Texture>(device_, command_pool_);
+  auto texture = std::make_unique<res::Texture>(device_, command_pool_);
   texture->update(desc);
 
   auto &result = *texture;
@@ -106,12 +116,12 @@ auto Scene::createTexture(std::string name, TextureDesc desc) -> Texture & {
 }
 
 auto Scene::loadTexture(std::string name, const std::filesystem::path &path)
-    -> Texture & {
+    -> res::Texture & {
   return createTexture(std::move(name),
-                       TextureDesc::textureFile(path.string()));
+                       res::TextureDesc::textureFile(path.string()));
 }
 
-auto Scene::texture(std::string_view name) -> Texture & {
+auto Scene::texture(std::string_view name) -> res::Texture & {
   const auto resource = findTexture(name);
   if (!resource) {
     VKR_RES_ERROR("Texture resource not found: {}", name);
@@ -119,7 +129,7 @@ auto Scene::texture(std::string_view name) -> Texture & {
   return resource->get();
 }
 
-auto Scene::texture(std::string_view name) const -> const Texture & {
+auto Scene::texture(std::string_view name) const -> const res::Texture & {
   const auto resource = findTexture(name);
   if (!resource) {
     VKR_RES_ERROR("Texture resource not found: {}", name);
@@ -128,19 +138,20 @@ auto Scene::texture(std::string_view name) const -> const Texture & {
 }
 
 auto Scene::findTexture(std::string_view name)
-    -> std::optional<std::reference_wrapper<Texture>> {
+    -> std::optional<std::reference_wrapper<res::Texture>> {
   return findResource(textures_, name);
 }
 
 auto Scene::findTexture(std::string_view name) const
-    -> std::optional<std::reference_wrapper<const Texture>> {
+    -> std::optional<std::reference_wrapper<const res::Texture>> {
   return findResource(textures_, name);
 }
 
-auto Scene::createCubemap(std::string name, CubemapDesc desc) -> Cubemap & {
+auto Scene::createCubemap(std::string name, res::CubemapDesc desc)
+    -> res::Cubemap & {
   validateNewResource(cubemaps_, name, "cubemap");
 
-  auto cubemap = std::make_unique<Cubemap>(device_, command_pool_);
+  auto cubemap = std::make_unique<res::Cubemap>(device_, command_pool_);
   cubemap->update(desc);
 
   auto &result = *cubemap;
@@ -150,11 +161,12 @@ auto Scene::createCubemap(std::string name, CubemapDesc desc) -> Cubemap & {
 
 auto Scene::createCubemap(std::string name,
                           const std::array<std::string, 6> &facePaths,
-                          VkFormat format) -> Cubemap & {
-  return createCubemap(std::move(name), CubemapDesc::files(facePaths, format));
+                          VkFormat format) -> res::Cubemap & {
+  return createCubemap(std::move(name),
+                       res::CubemapDesc::files(facePaths, format));
 }
 
-auto Scene::cubemap(std::string_view name) -> Cubemap & {
+auto Scene::cubemap(std::string_view name) -> res::Cubemap & {
   const auto resource = findCubemap(name);
   if (!resource) {
     VKR_RES_ERROR("Cubemap resource not found: {}", name);
@@ -162,7 +174,7 @@ auto Scene::cubemap(std::string_view name) -> Cubemap & {
   return resource->get();
 }
 
-auto Scene::cubemap(std::string_view name) const -> const Cubemap & {
+auto Scene::cubemap(std::string_view name) const -> const res::Cubemap & {
   const auto resource = findCubemap(name);
   if (!resource) {
     VKR_RES_ERROR("Cubemap resource not found: {}", name);
@@ -171,12 +183,12 @@ auto Scene::cubemap(std::string_view name) const -> const Cubemap & {
 }
 
 auto Scene::findCubemap(std::string_view name)
-    -> std::optional<std::reference_wrapper<Cubemap>> {
+    -> std::optional<std::reference_wrapper<res::Cubemap>> {
   return findResource(cubemaps_, name);
 }
 
 auto Scene::findCubemap(std::string_view name) const
-    -> std::optional<std::reference_wrapper<const Cubemap>> {
+    -> std::optional<std::reference_wrapper<const res::Cubemap>> {
   return findResource(cubemaps_, name);
 }
 

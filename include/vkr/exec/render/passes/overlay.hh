@@ -19,6 +19,10 @@
 #include <utility>
 #include <vector>
 
+namespace vkr::res {
+class UniformBuffer;
+} // namespace vkr::res
+
 namespace vkr::exec {
 
 struct OverlayPassDesc {
@@ -46,8 +50,8 @@ struct OverlayPassDesc {
     return *this;
   }
 
-  [[nodiscard]] static auto
-  wireframe(pipe::GraphicsPipelineDesc pipelineDesc) -> OverlayPassDesc;
+  [[nodiscard]] static auto wireframe(pipe::GraphicsPipelineDesc pipelineDesc)
+      -> OverlayPassDesc;
 };
 
 class OverlayPass final : public Pass,
@@ -55,8 +59,7 @@ class OverlayPass final : public Pass,
                           public RenderTargetCapability {
 public:
   explicit OverlayPass(RenderExecutor &executor, const core::Device &device,
-                       const core::CommandPool &commandPool,
-                       Pass &source);
+                       const core::CommandPool &commandPool, Pass &source);
   ~OverlayPass() override;
 
   OverlayPass(const OverlayPass &) = delete;
@@ -68,32 +71,26 @@ public:
   void record() override;
   auto mesh(std::string name, const scene::IMesh &mesh) -> OverlayPass &;
 
-  template <typename T>
-  auto uniform(uint32_t setIndex, uint32_t binding, T &buffer)
-      -> OverlayPass & {
-    for (uint32_t frame = 0; frame < descriptor_sets_.size(); ++frame) {
-      descriptor_sets_[frame].at(setIndex).uniform(binding, buffer, frame);
-    }
-    return *this;
-  }
+  auto uniform(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)
+      -> OverlayPass &;
+  auto uniform(uint32_t setIndex, uint32_t binding,
+               const res::BufferSlice &slice) -> OverlayPass &;
+  auto uniform(uint32_t setIndex, uint32_t binding,
+               const std::vector<res::UniformBuffer> &buffers) -> OverlayPass &;
 
-  template <typename T>
-  auto texture(uint32_t setIndex, uint32_t binding, T &texture)
-      -> OverlayPass & {
-    for (auto &frame : descriptor_sets_) {
-      frame.at(setIndex).texture(binding, texture);
-    }
-    return *this;
-  }
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
+      -> OverlayPass &;
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Cubemap &cubemap)
+      -> OverlayPass &;
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const pipe::ColorAttachment &attachment) -> OverlayPass &;
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const pipe::DepthAttachment &attachment) -> OverlayPass &;
 
-  template <typename T>
-  auto storage(uint32_t setIndex, uint32_t binding, T &buffer)
-      -> OverlayPass & {
-    for (auto &frame : descriptor_sets_) {
-      frame.at(setIndex).storage(binding, buffer);
-    }
-    return *this;
-  }
+  auto storage(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)
+      -> OverlayPass &;
+  auto storage(uint32_t setIndex, uint32_t binding,
+               const res::BufferSlice &slice) -> OverlayPass &;
 
   void selectMesh(const std::string &name) noexcept;
 
@@ -135,8 +132,7 @@ private:
   std::unique_ptr<pipe::RenderPass> render_pass_{};
   std::unique_ptr<Framebuffers> framebuffers_{};
   pipe::DescriptorPool descriptor_pool_;
-  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>>
-      descriptor_layouts_{};
+  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>> descriptor_layouts_{};
   std::vector<std::vector<pipe::DescriptorSet>> descriptor_sets_{};
   std::unique_ptr<pipe::GraphicsPipeline> pipeline_{};
   std::unordered_map<std::string, MeshEntry> meshes_{};

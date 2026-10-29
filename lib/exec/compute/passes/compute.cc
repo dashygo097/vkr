@@ -9,6 +9,56 @@ ComputePass::ComputePass(ComputeExecutor &executor, const core::Device &device)
 
 ComputePass::~ComputePass() { destroy(); }
 
+auto ComputePass::uniform(uint32_t setIndex, uint32_t binding,
+                          const res::Buffer &buffer) -> ComputePass & {
+  descriptor_sets_.at(setIndex).uniform(binding, buffer);
+  return *this;
+}
+
+auto ComputePass::uniform(uint32_t setIndex, uint32_t binding,
+                          const res::BufferSlice &slice) -> ComputePass & {
+  descriptor_sets_.at(setIndex).uniform(binding, slice);
+  return *this;
+}
+
+auto ComputePass::texture(uint32_t setIndex, uint32_t binding,
+                          const res::Texture &texture) -> ComputePass & {
+  descriptor_sets_.at(setIndex).texture(binding, texture);
+  return *this;
+}
+
+auto ComputePass::texture(uint32_t setIndex, uint32_t binding,
+                          const res::Cubemap &cubemap) -> ComputePass & {
+  descriptor_sets_.at(setIndex).texture(binding, cubemap);
+  return *this;
+}
+
+auto ComputePass::texture(uint32_t setIndex, uint32_t binding,
+                          const pipe::ColorAttachment &attachment)
+    -> ComputePass & {
+  descriptor_sets_.at(setIndex).texture(binding, attachment);
+  return *this;
+}
+
+auto ComputePass::texture(uint32_t setIndex, uint32_t binding,
+                          const pipe::DepthAttachment &attachment)
+    -> ComputePass & {
+  descriptor_sets_.at(setIndex).texture(binding, attachment);
+  return *this;
+}
+
+auto ComputePass::storage(uint32_t setIndex, uint32_t binding,
+                          const res::Buffer &buffer) -> ComputePass & {
+  descriptor_sets_.at(setIndex).storage(binding, buffer);
+  return *this;
+}
+
+auto ComputePass::storage(uint32_t setIndex, uint32_t binding,
+                          const res::BufferSlice &slice) -> ComputePass & {
+  descriptor_sets_.at(setIndex).storage(binding, slice);
+  return *this;
+}
+
 void ComputePass::create() {
   validate(desc_);
   destroy();
@@ -81,25 +131,28 @@ void ComputePass::validate(const ComputePassDesc &desc) const {
     VKR_EXEC_ERROR("ComputePass '{}' has invalid dispatch group counts",
                    name());
   }
-  VkPhysicalDeviceProperties properties{};
-  vkGetPhysicalDeviceProperties(device_.physicalDevice(), &properties);
+  const auto &properties = device_.properties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("ComputePass '{}' exceeds maxBoundDescriptorSets", name());
   }
   for (const auto &layoutDesc : layouts) {
     if (!layoutDesc.isValid()) {
-      VKR_EXEC_ERROR("ComputePass '{}' requires unique bindings within each set "
-                     "with nonzero counts/stages", name());
+      VKR_EXEC_ERROR(
+          "ComputePass '{}' requires unique bindings within each set "
+          "with nonzero counts/stages",
+          name());
     }
     for (const auto &binding : layoutDesc.bindings) {
       const auto &layout = binding.layout;
       if (layout.descriptorCount != 1 ||
           (layout.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
            layout.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
-           layout.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
-        VKR_EXEC_ERROR("ComputePass '{}' has an unsupported descriptor binding {}",
-                       name(), layout.binding);
+           layout.descriptorType !=
+               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)) {
+        VKR_EXEC_ERROR(
+            "ComputePass '{}' has an unsupported descriptor binding {}", name(),
+            layout.binding);
       }
     }
   }

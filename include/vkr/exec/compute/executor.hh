@@ -12,7 +12,8 @@
 #include <vector>
 
 namespace vkr::res {
-template <typename T> class StorageBuffer;
+class Buffer;
+class BufferSlice;
 } // namespace vkr::res
 
 namespace vkr::exec {
@@ -44,13 +45,8 @@ public:
   void dispatch(uint32_t groupCountX, uint32_t groupCountY,
                 uint32_t groupCountZ);
 
-  template <typename T> void hostRead(const res::StorageBuffer<T> &buffer) {
-    ensureRecording("hostRead");
-    if (!buffer.valid() || !buffer.hostVisible()) {
-      VKR_EXEC_ERROR("hostRead requires a valid host-visible storage buffer");
-    }
-    hostRead(buffer.buffer(), buffer.bufferSize());
-  }
+  void hostRead(const res::Buffer &buffer);
+  void hostRead(const res::BufferSlice &slice);
 
   void beginProfileScope(std::string_view name);
   void endProfileScope();
@@ -69,7 +65,6 @@ private:
   bool active_{false};
   bool submitted_{false};
 
-  void hostRead(VkBuffer buffer, VkDeviceSize size);
   void ensureRecording(std::string_view op) const;
   void ensureActive(std::string_view op) const;
   void ensureInactive(std::string_view op) const;

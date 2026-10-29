@@ -254,8 +254,7 @@ private:
   }
 
   void onDraw() override {
-    auto &shadertoyUBO = scene().uniformBuffer<UniformBufferShaderToyObject>(
-        kShaderToyUniformName);
+    auto &shadertoyUBO = scene().uniformBuffer(kShaderToyUniformName);
 
     const uint64_t revision = shadertoyPipelineRevision();
     if (revision != shadertoy_pipeline_revision_) {
@@ -298,7 +297,7 @@ private:
       resolution = channelResolution;
     }
 
-    shadertoyUBO.update(executor().frameIndex(), ubo);
+    shadertoyUBO[executor().frameIndex()].update(ubo);
   }
 
   void configure() override {

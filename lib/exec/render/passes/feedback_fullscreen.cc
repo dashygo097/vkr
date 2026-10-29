@@ -1,5 +1,6 @@
 #include "vkr/exec/render/passes/feedback_fullscreen.hh"
 #include "vkr/logger.hh"
+#include "vkr/resource/buffers/uniform_buffer.hh"
 #include <algorithm>
 #include <string_view>
 
@@ -43,6 +44,90 @@ FeedbackFullscreenPass::FeedbackFullscreenPass(
 }
 
 FeedbackFullscreenPass::~FeedbackFullscreenPass() { destroy(); }
+
+auto FeedbackFullscreenPass::uniform(uint32_t setIndex, uint32_t binding,
+                                     const res::Buffer &buffer)
+    -> FeedbackFullscreenPass & {
+  return uniform(setIndex, binding, buffer.slice(0, buffer.size()));
+}
+
+auto FeedbackFullscreenPass::uniform(uint32_t setIndex, uint32_t binding,
+                                     const res::BufferSlice &slice)
+    -> FeedbackFullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).uniform(binding, slice);
+  }
+  return *this;
+}
+
+auto FeedbackFullscreenPass::uniform(
+    uint32_t setIndex, uint32_t binding,
+    const std::vector<res::UniformBuffer> &buffers)
+    -> FeedbackFullscreenPass & {
+  if (buffers.size() < descriptor_sets_.size()) {
+    VKR_EXEC_ERROR(
+        "FeedbackFullscreenPass '{}' requires a uniform buffer for every frame",
+        name());
+  }
+  for (uint32_t frame = 0; frame < descriptor_sets_.size(); ++frame) {
+    descriptor_sets_[frame].at(setIndex).uniform(binding, buffers[frame]);
+  }
+  return *this;
+}
+
+auto FeedbackFullscreenPass::texture(uint32_t setIndex, uint32_t binding,
+                                     const res::Texture &texture)
+    -> FeedbackFullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, texture);
+  }
+  return *this;
+}
+
+auto FeedbackFullscreenPass::texture(uint32_t setIndex, uint32_t binding,
+                                     const res::Cubemap &cubemap)
+    -> FeedbackFullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, cubemap);
+  }
+  return *this;
+}
+
+auto FeedbackFullscreenPass::texture(uint32_t setIndex, uint32_t binding,
+                                     const pipe::ColorAttachment &attachment)
+    -> FeedbackFullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, attachment);
+  }
+  return *this;
+}
+
+auto FeedbackFullscreenPass::texture(uint32_t setIndex, uint32_t binding,
+                                     const pipe::DepthAttachment &attachment)
+    -> FeedbackFullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, attachment);
+  }
+  return *this;
+}
+
+auto FeedbackFullscreenPass::storage(uint32_t setIndex, uint32_t binding,
+                                     const res::Buffer &buffer)
+    -> FeedbackFullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, buffer);
+  }
+  return *this;
+}
+
+auto FeedbackFullscreenPass::storage(uint32_t setIndex, uint32_t binding,
+                                     const res::BufferSlice &slice)
+    -> FeedbackFullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, slice);
+  }
+  return *this;
+}
 
 void FeedbackFullscreenPass::create() {
   validate(desc_);
@@ -170,8 +255,7 @@ auto FeedbackFullscreenPass::target() -> pipe::OffscreenTarget & {
   return target_->writeForFrame(executor_.frameIndex());
 }
 
-auto FeedbackFullscreenPass::target() const
-    -> const pipe::OffscreenTarget & {
+auto FeedbackFullscreenPass::target() const -> const pipe::OffscreenTarget & {
   if (!target_) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target requested before "
                    "create",
@@ -274,8 +358,8 @@ void FeedbackFullscreenPass::createRenderPass() {
           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
   } else if (writeTarget.depth()) {
-    renderPassDesc = pipe::RenderPassDesc::makeDepthOnly(
-        writeTarget.depth()->desc().format);
+    renderPassDesc =
+        pipe::RenderPassDesc::makeDepthOnly(writeTarget.depth()->desc().format);
   } else {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' target has no attachments",
                    name());
@@ -322,8 +406,7 @@ void FeedbackFullscreenPass::validate(
         "FeedbackFullscreenPass '{}' has an invalid pipeline descriptor",
         name());
   }
-  VkPhysicalDeviceProperties properties{};
-  vkGetPhysicalDeviceProperties(device_.physicalDevice(), &properties);
+  const auto &properties = device_.properties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' exceeds maxBoundDescriptorSets",
@@ -436,8 +519,7 @@ void FeedbackFullscreenPass::createPipeline() {
     }
   }
 
-  pipeline_ =
-      std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
+  pipeline_ = std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
   pipeline_->update(pipelineDesc);
 
   if (!pipeline_->valid()) {

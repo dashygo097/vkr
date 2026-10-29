@@ -77,7 +77,7 @@ private:
   std::unique_ptr<StorageBuffer<float>> input_a_{};
   std::unique_ptr<StorageBuffer<float>> input_b_{};
   std::unique_ptr<StorageBuffer<float>> output_c_{};
-  std::unique_ptr<UniformBuffer<VectorOpsParams>> params_{};
+  std::unique_ptr<UniformBuffer> params_{};
 
   void createResources() override {
     a_.resize(ElementCount);
@@ -90,7 +90,7 @@ private:
     }
 
     auto inputDesc = StorageBufferDesc{};
-    inputDesc.reserve(ElementCount)
+    inputDesc.elements(ElementCount)
         .readonly()
         .storage()
         .transfer()
@@ -98,7 +98,7 @@ private:
         .mapped();
 
     auto outputDesc = StorageBufferDesc{};
-    outputDesc.reserve(ElementCount)
+    outputDesc.elements(ElementCount)
         .writeonly()
         .storage()
         .transfer()
@@ -108,12 +108,13 @@ private:
     input_a_ = std::make_unique<StorageBuffer<float>>(device(), inputDesc);
     input_b_ = std::make_unique<StorageBuffer<float>>(device(), inputDesc);
     output_c_ = std::make_unique<StorageBuffer<float>>(device(), outputDesc);
-    params_ = std::make_unique<UniformBuffer<VectorOpsParams>>(device());
+    params_ =
+        std::make_unique<UniformBuffer>(device(), sizeof(VectorOpsParams));
 
     input_a_->write(a_);
     input_b_->write(b_);
     output_c_->write(c_);
-    params_->update({ElementCount, Iterations});
+    params_->update(VectorOpsParams{ElementCount, Iterations});
   }
 
   void buildGraph() override {

@@ -169,26 +169,24 @@ public:
   void update(const ComputePassDesc &desc);
   void record() override;
 
-  template <typename T>
-  auto storage(uint32_t setIndex, uint32_t binding, T &buffer)
-      -> ComputePass & {
-    descriptor_sets_.at(setIndex).storage(binding, buffer);
-    return *this;
-  }
+  auto storage(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)
+      -> ComputePass &;
+  auto storage(uint32_t setIndex, uint32_t binding,
+               const res::BufferSlice &slice) -> ComputePass &;
 
-  template <typename T>
-  auto uniform(uint32_t setIndex, uint32_t binding, T &buffer)
-      -> ComputePass & {
-    descriptor_sets_.at(setIndex).uniform(binding, buffer);
-    return *this;
-  }
+  auto uniform(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)
+      -> ComputePass &;
+  auto uniform(uint32_t setIndex, uint32_t binding,
+               const res::BufferSlice &slice) -> ComputePass &;
 
-  template <typename T>
-  auto texture(uint32_t setIndex, uint32_t binding, T &texture)
-      -> ComputePass & {
-    descriptor_sets_.at(setIndex).texture(binding, texture);
-    return *this;
-  }
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
+      -> ComputePass &;
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Cubemap &cubemap)
+      -> ComputePass &;
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const pipe::ColorAttachment &attachment) -> ComputePass &;
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const pipe::DepthAttachment &attachment) -> ComputePass &;
 
 private:
   // dependencies

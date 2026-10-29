@@ -1,5 +1,6 @@
 #include "vkr/exec/render/passes/overlay.hh"
 #include "vkr/logger.hh"
+#include "vkr/resource/buffers/uniform_buffer.hh"
 #include <algorithm>
 #include <unordered_set>
 #include <utility>
@@ -35,14 +36,39 @@ void main() {
 }
 
 OverlayPass::OverlayPass(RenderExecutor &executor, const core::Device &device,
-                         const core::CommandPool &commandPool,
-                         Pass &source)
+                         const core::CommandPool &commandPool, Pass &source)
     : executor_(executor), device_(device), command_pool_(commandPool),
       source_(source), descriptor_pool_(device) {
   descriptor_sets_.resize(executor_.framesInFlight());
 }
 
 OverlayPass::~OverlayPass() { destroy(); }
+
+auto OverlayPass::uniform(uint32_t setIndex, uint32_t binding,
+                          const res::Buffer &buffer) -> OverlayPass & {
+  return uniform(setIndex, binding, buffer.slice(0, buffer.size()));
+}
+
+auto OverlayPass::uniform(uint32_t setIndex, uint32_t binding,
+                          const res::BufferSlice &slice) -> OverlayPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).uniform(binding, slice);
+  }
+  return *this;
+}
+
+auto OverlayPass::uniform(uint32_t setIndex, uint32_t binding,
+                          const std::vector<res::UniformBuffer> &buffers)
+    -> OverlayPass & {
+  if (buffers.size() < descriptor_sets_.size()) {
+    VKR_EXEC_ERROR("OverlayPass '{}' requires a uniform buffer for every frame",
+                   name());
+  }
+  for (uint32_t frame = 0; frame < descriptor_sets_.size(); ++frame) {
+    descriptor_sets_[frame].at(setIndex).uniform(binding, buffers[frame]);
+  }
+  return *this;
+}
 
 void OverlayPass::update(const OverlayPassDesc &desc) {
   ensureConfigurable();
@@ -72,6 +98,56 @@ void OverlayPass::update(const OverlayPassDesc &desc) {
     }
   }
   desc_ = std::move(nextDesc);
+}
+
+auto OverlayPass::texture(uint32_t setIndex, uint32_t binding,
+                          const res::Texture &texture) -> OverlayPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, texture);
+  }
+  return *this;
+}
+
+auto OverlayPass::texture(uint32_t setIndex, uint32_t binding,
+                          const res::Cubemap &cubemap) -> OverlayPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, cubemap);
+  }
+  return *this;
+}
+
+auto OverlayPass::texture(uint32_t setIndex, uint32_t binding,
+                          const pipe::ColorAttachment &attachment)
+    -> OverlayPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, attachment);
+  }
+  return *this;
+}
+
+auto OverlayPass::texture(uint32_t setIndex, uint32_t binding,
+                          const pipe::DepthAttachment &attachment)
+    -> OverlayPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, attachment);
+  }
+  return *this;
+}
+
+auto OverlayPass::storage(uint32_t setIndex, uint32_t binding,
+                          const res::Buffer &buffer) -> OverlayPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, buffer);
+  }
+  return *this;
+}
+
+auto OverlayPass::storage(uint32_t setIndex, uint32_t binding,
+                          const res::BufferSlice &slice) -> OverlayPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, slice);
+  }
+  return *this;
 }
 
 void OverlayPass::create() {
@@ -116,10 +192,11 @@ void OverlayPass::destroy() noexcept {
 auto OverlayPass::mesh(std::string meshName, const scene::IMesh &mesh)
     -> OverlayPass & {
   if (meshName.empty()) {
-    VKR_EXEC_ERROR("OverlayPass '{}' mesh binding name cannot be empty", name());
+    VKR_EXEC_ERROR("OverlayPass '{}' mesh binding name cannot be empty",
+                   name());
   }
-  const auto &input = pipeline_ ? pipeline_->desc().vertexInput
-                                : desc_.pipeline.vertexInput;
+  const auto &input =
+      pipeline_ ? pipeline_->desc().vertexInput : desc_.pipeline.vertexInput;
   validateMesh(mesh, input);
   MeshEntry next{std::cref(mesh), {}};
   if (pipeline_) {
@@ -164,8 +241,10 @@ void OverlayPass::record() {
 
   const auto &mesh = selected_mesh_->get();
   const auto vertices = mesh.source.get().vertexBufferBase();
-  if (!vertices || vertices->get().buffer() == VK_NULL_HANDLE || !mesh.indices) {
-    VKR_EXEC_ERROR("OverlayPass '{}' selected mesh has invalid buffers", name());
+  if (!vertices || vertices->get().buffer() == VK_NULL_HANDLE ||
+      !mesh.indices) {
+    VKR_EXEC_ERROR("OverlayPass '{}' selected mesh has invalid buffers",
+                   name());
   }
   executor_.beginProfileScope(name());
   executor_.beginPass(*render_pass_, *framebuffers_, {},
@@ -289,8 +368,7 @@ void OverlayPass::createFramebuffers() {
 void OverlayPass::validate(const OverlayPassDesc &desc) const {
   if (!desc.pipeline.isValid() ||
       desc.pipeline.inputAssembly.topology != VK_PRIMITIVE_TOPOLOGY_LINE_LIST) {
-    VKR_EXEC_ERROR("OverlayPass '{}' requires a valid line pipeline",
-                   name());
+    VKR_EXEC_ERROR("OverlayPass '{}' requires a valid line pipeline", name());
   }
 
   VkShaderStageFlags stages{};
@@ -317,8 +395,7 @@ void OverlayPass::validate(const OverlayPassDesc &desc) const {
                    name());
   }
 
-  VkPhysicalDeviceProperties properties{};
-  vkGetPhysicalDeviceProperties(device_.physicalDevice(), &properties);
+  const auto &properties = device_.properties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("OverlayPass '{}' exceeds maxBoundDescriptorSets", name());
@@ -369,8 +446,7 @@ void OverlayPass::createPipeline() {
       }
     }
   }
-  pipeline_ =
-      std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
+  pipeline_ = std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
   pipeline_->update(pipelineDesc);
   if (!pipeline_->valid()) {
     VKR_EXEC_ERROR("OverlayPass '{}' failed to create pipeline", name());
@@ -387,21 +463,23 @@ void OverlayPass::validateMesh(const scene::IMesh &mesh,
                                const scene::VertexInputDesc &expected) const {
   const auto vertices = mesh.vertexBufferBase();
   const auto indices = mesh.indexBuffer();
-  if (!vertices || !indices ||
-      vertices->get().buffer() == VK_NULL_HANDLE ||
+  if (!vertices || !indices || vertices->get().buffer() == VK_NULL_HANDLE ||
       indices->get().buffer() == VK_NULL_HANDLE ||
       vertices->get().vertexCount() == 0) {
-    VKR_EXEC_ERROR("OverlayPass '{}' requires initialized mesh buffers", name());
+    VKR_EXEC_ERROR("OverlayPass '{}' requires initialized mesh buffers",
+                   name());
   }
   const auto input = vertices->get().vertexInputDesc();
   if (!(input == expected) || input.bindings.size() != 1 ||
       input.bindings[0].binding != 0 ||
       input.bindings[0].inputRate != VK_VERTEX_INPUT_RATE_VERTEX) {
-    VKR_EXEC_ERROR("OverlayPass '{}' mesh has incompatible vertex input", name());
+    VKR_EXEC_ERROR("OverlayPass '{}' mesh has incompatible vertex input",
+                   name());
   }
   const auto &triangles = indices->get().indices();
   if (triangles.empty() || triangles.size() % 3 != 0) {
-    VKR_EXEC_ERROR("OverlayPass '{}' requires triangle-list source meshes", name());
+    VKR_EXEC_ERROR("OverlayPass '{}' requires triangle-list source meshes",
+                   name());
   }
   for (const auto index : triangles) {
     if (index >= vertices->get().vertexCount()) {
@@ -412,8 +490,8 @@ void OverlayPass::validateMesh(const scene::IMesh &mesh,
 
 auto OverlayPass::createIndices(const scene::IMesh &mesh)
     -> std::unique_ptr<scene::IndexBuffer> {
-  const auto &input = pipeline_ ? pipeline_->desc().vertexInput
-                                : desc_.pipeline.vertexInput;
+  const auto &input =
+      pipeline_ ? pipeline_->desc().vertexInput : desc_.pipeline.vertexInput;
   validateMesh(mesh, input);
   const auto &triangles = mesh.indexBuffer()->get().indices();
   std::vector<uint16_t> lines{};

@@ -110,9 +110,7 @@ void Profiler::create() {
     return;
   }
 
-  VkPhysicalDeviceProperties properties{};
-  vkGetPhysicalDeviceProperties(device_.physicalDevice(), &properties);
-  timestamp_period_ = properties.limits.timestampPeriod;
+  timestamp_period_ = device_.properties().limits.timestampPeriod;
   if (timestamp_period_ <= 0.0F) {
     VKR_EXEC_WARN("GPU profiler disabled: invalid timestamp period");
     return;

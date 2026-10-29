@@ -111,11 +111,8 @@ private:
     ubo.view = camera().view();
     ubo.proj = camera().proj();
 
-    scene().uniformBuffer<UniformBuffer3DObject>("skybox").update(frameIndex,
-                                                                  ubo);
-    scene()
-        .uniformBuffer<UniformBuffer3DObject>("cornellbox")
-        .update(frameIndex, ubo);
+    scene().uniformBuffer("skybox")[frameIndex].update(ubo);
+    scene().uniformBuffer("cornellbox")[frameIndex].update(ubo);
   }
 
   void configure() override {

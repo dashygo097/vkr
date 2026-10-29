@@ -1,5 +1,6 @@
 #include "vkr/exec/render/passes/fullscreen.hh"
 #include "vkr/logger.hh"
+#include "vkr/resource/buffers/uniform_buffer.hh"
 #include <algorithm>
 #include <string_view>
 
@@ -43,6 +44,85 @@ FullscreenPass::FullscreenPass(
 }
 
 FullscreenPass::~FullscreenPass() { destroy(); }
+
+auto FullscreenPass::uniform(uint32_t setIndex, uint32_t binding,
+                             const res::Buffer &buffer) -> FullscreenPass & {
+  return uniform(setIndex, binding, buffer.slice(0, buffer.size()));
+}
+
+auto FullscreenPass::uniform(uint32_t setIndex, uint32_t binding,
+                             const res::BufferSlice &slice)
+    -> FullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).uniform(binding, slice);
+  }
+  return *this;
+}
+
+auto FullscreenPass::uniform(uint32_t setIndex, uint32_t binding,
+                             const std::vector<res::UniformBuffer> &buffers)
+    -> FullscreenPass & {
+  if (buffers.size() < descriptor_sets_.size()) {
+    VKR_EXEC_ERROR(
+        "FullscreenPass '{}' requires a uniform buffer for every frame",
+        name());
+  }
+  for (uint32_t frame = 0; frame < descriptor_sets_.size(); ++frame) {
+    descriptor_sets_[frame].at(setIndex).uniform(binding, buffers[frame]);
+  }
+  return *this;
+}
+
+auto FullscreenPass::texture(uint32_t setIndex, uint32_t binding,
+                             const res::Texture &texture) -> FullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, texture);
+  }
+  return *this;
+}
+
+auto FullscreenPass::texture(uint32_t setIndex, uint32_t binding,
+                             const res::Cubemap &cubemap) -> FullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, cubemap);
+  }
+  return *this;
+}
+
+auto FullscreenPass::texture(uint32_t setIndex, uint32_t binding,
+                             const pipe::ColorAttachment &attachment)
+    -> FullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, attachment);
+  }
+  return *this;
+}
+
+auto FullscreenPass::texture(uint32_t setIndex, uint32_t binding,
+                             const pipe::DepthAttachment &attachment)
+    -> FullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, attachment);
+  }
+  return *this;
+}
+
+auto FullscreenPass::storage(uint32_t setIndex, uint32_t binding,
+                             const res::Buffer &buffer) -> FullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, buffer);
+  }
+  return *this;
+}
+
+auto FullscreenPass::storage(uint32_t setIndex, uint32_t binding,
+                             const res::BufferSlice &slice)
+    -> FullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, slice);
+  }
+  return *this;
+}
 
 void FullscreenPass::create() {
   validate(desc_);
@@ -182,8 +262,8 @@ void FullscreenPass::createRenderPass() {
           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
   } else if (target_->depth()) {
-    renderPassDesc = pipe::RenderPassDesc::makeDepthOnly(
-        target_->depth()->desc().format);
+    renderPassDesc =
+        pipe::RenderPassDesc::makeDepthOnly(target_->depth()->desc().format);
   } else {
     VKR_EXEC_ERROR("FullscreenPass '{}' target has no attachments", name());
   }
@@ -220,8 +300,7 @@ void FullscreenPass::validate(const FullscreenPassDesc &desc) const {
     VKR_EXEC_ERROR("FullscreenPass '{}' has an invalid pipeline descriptor",
                    name());
   }
-  VkPhysicalDeviceProperties properties{};
-  vkGetPhysicalDeviceProperties(device_.physicalDevice(), &properties);
+  const auto &properties = device_.properties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("FullscreenPass '{}' exceeds maxBoundDescriptorSets",
@@ -307,8 +386,7 @@ void FullscreenPass::createPipeline() {
     }
   }
 
-  pipeline_ =
-      std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
+  pipeline_ = std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
   pipeline_->update(pipelineDesc);
 
   if (!pipeline_->valid()) {

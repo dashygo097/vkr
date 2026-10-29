@@ -1050,8 +1050,7 @@ struct GraphicsPipelineDesc {
     return *this;
   }
 
-  auto shader(VkShaderStageFlagBits stage,
-              res::ShaderModuleDesc shaderDesc,
+  auto shader(VkShaderStageFlagBits stage, res::ShaderModuleDesc shaderDesc,
               std::string entryPoint = "main") -> GraphicsPipelineDesc & {
     shaders.push_back(GraphicsShaderStageDesc::make(
         stage, std::move(shaderDesc), std::move(entryPoint)));

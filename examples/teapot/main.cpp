@@ -76,8 +76,7 @@ private:
     ubo.view = camera().view();
     ubo.proj = camera().proj();
 
-    scene().uniformBuffer<UniformBuffer3DObject>("default").update(frameIndex,
-                                                                   ubo);
+    scene().uniformBuffer("default")[frameIndex].update(ubo);
   }
 
   void configure() override {

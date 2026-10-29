@@ -11,11 +11,8 @@ Sampler::~Sampler() { destroy(); }
 void Sampler::create() {
   destroy();
 
-  VkPhysicalDeviceProperties properties{};
-  vkGetPhysicalDeviceProperties(device_.physicalDevice(), &properties);
-
-  VkPhysicalDeviceFeatures features{};
-  vkGetPhysicalDeviceFeatures(device_.physicalDevice(), &features);
+  const auto &properties = device_.properties();
+  const auto &features = device_.features();
 
   SamplerDesc effective = desc_;
 

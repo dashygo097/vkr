@@ -7,6 +7,10 @@
 #include <string>
 #include <utility>
 
+namespace vkr::res {
+class UniformBuffer;
+} // namespace vkr::res
+
 namespace vkr::exec {
 
 struct FeedbackFullscreenPassDesc {
@@ -45,9 +49,9 @@ struct FeedbackFullscreenPassDesc {
     return *this;
   }
 
-  auto historyDepth(
-      uint32_t setIndex, uint32_t binding,
-      VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
+  auto
+  historyDepth(uint32_t setIndex, uint32_t binding,
+               VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT)
       -> FeedbackFullscreenPassDesc & {
     historyInput = RenderPassInputDesc::depth(setIndex, binding, stageFlags);
     return *this;
@@ -127,32 +131,28 @@ public:
   void update(const FeedbackFullscreenPassDesc &desc);
   void record() override;
 
-  template <typename T>
-  auto uniform(uint32_t setIndex, uint32_t binding, T &buffer)
-      -> FeedbackFullscreenPass & {
-    for (uint32_t frame = 0; frame < descriptor_sets_.size(); ++frame) {
-      descriptor_sets_[frame].at(setIndex).uniform(binding, buffer, frame);
-    }
-    return *this;
-  }
+  auto uniform(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)
+      -> FeedbackFullscreenPass &;
+  auto uniform(uint32_t setIndex, uint32_t binding,
+               const res::BufferSlice &slice) -> FeedbackFullscreenPass &;
+  auto uniform(uint32_t setIndex, uint32_t binding,
+               const std::vector<res::UniformBuffer> &buffers) -> FeedbackFullscreenPass &;
 
-  template <typename T>
-  auto texture(uint32_t setIndex, uint32_t binding, T &texture)
-      -> FeedbackFullscreenPass & {
-    for (auto &frame : descriptor_sets_) {
-      frame.at(setIndex).texture(binding, texture);
-    }
-    return *this;
-  }
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
+      -> FeedbackFullscreenPass &;
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Cubemap &cubemap)
+      -> FeedbackFullscreenPass &;
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const pipe::ColorAttachment &attachment)
+      -> FeedbackFullscreenPass &;
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const pipe::DepthAttachment &attachment)
+      -> FeedbackFullscreenPass &;
 
-  template <typename T>
-  auto storage(uint32_t setIndex, uint32_t binding, T &buffer)
-      -> FeedbackFullscreenPass & {
-    for (auto &frame : descriptor_sets_) {
-      frame.at(setIndex).storage(binding, buffer);
-    }
-    return *this;
-  }
+  auto storage(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)
+      -> FeedbackFullscreenPass &;
+  auto storage(uint32_t setIndex, uint32_t binding,
+               const res::BufferSlice &slice) -> FeedbackFullscreenPass &;
 
   auto addSource(Pass &source) -> FeedbackFullscreenPass &;
   auto setSources(std::vector<std::reference_wrapper<Pass>> sources)
@@ -202,8 +202,7 @@ private:
   std::unique_ptr<pipe::RenderPass> render_pass_{};
   std::vector<std::unique_ptr<Framebuffers>> framebuffers_{};
   pipe::DescriptorPool descriptor_pool_;
-  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>>
-      descriptor_layouts_{};
+  std::vector<std::unique_ptr<pipe::DescriptorSetLayout>> descriptor_layouts_{};
   std::vector<std::vector<pipe::DescriptorSet>> descriptor_sets_{};
   std::unique_ptr<pipe::GraphicsPipeline> pipeline_{};
 

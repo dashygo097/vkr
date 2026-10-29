@@ -1,6 +1,7 @@
 #include "vkr/exec/render/passes/raster.hh"
 #include "vkr/exec/render/executor.hh"
 #include "vkr/logger.hh"
+#include "vkr/resource/buffers/uniform_buffer.hh"
 #include <algorithm>
 #include <string_view>
 
@@ -41,6 +42,82 @@ RasterPass::RasterPass(RenderExecutor &executor, const core::Device &device)
 }
 
 RasterPass::~RasterPass() { destroy(); }
+
+auto RasterPass::uniform(uint32_t setIndex, uint32_t binding,
+                         const res::Buffer &buffer) -> RasterPass & {
+  return uniform(setIndex, binding, buffer.slice(0, buffer.size()));
+}
+
+auto RasterPass::uniform(uint32_t setIndex, uint32_t binding,
+                         const res::BufferSlice &slice) -> RasterPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).uniform(binding, slice);
+  }
+  return *this;
+}
+
+auto RasterPass::uniform(uint32_t setIndex, uint32_t binding,
+                         const std::vector<res::UniformBuffer> &buffers)
+    -> RasterPass & {
+  if (buffers.size() < descriptor_sets_.size()) {
+    VKR_EXEC_ERROR("RasterPass '{}' requires a uniform buffer for every frame",
+                   name());
+  }
+  for (uint32_t frame = 0; frame < descriptor_sets_.size(); ++frame) {
+    descriptor_sets_[frame].at(setIndex).uniform(binding, buffers[frame]);
+  }
+  return *this;
+}
+
+auto RasterPass::texture(uint32_t setIndex, uint32_t binding,
+                         const res::Texture &texture) -> RasterPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, texture);
+  }
+  return *this;
+}
+
+auto RasterPass::texture(uint32_t setIndex, uint32_t binding,
+                         const res::Cubemap &cubemap) -> RasterPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, cubemap);
+  }
+  return *this;
+}
+
+auto RasterPass::texture(uint32_t setIndex, uint32_t binding,
+                         const pipe::ColorAttachment &attachment)
+    -> RasterPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, attachment);
+  }
+  return *this;
+}
+
+auto RasterPass::texture(uint32_t setIndex, uint32_t binding,
+                         const pipe::DepthAttachment &attachment)
+    -> RasterPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, attachment);
+  }
+  return *this;
+}
+
+auto RasterPass::storage(uint32_t setIndex, uint32_t binding,
+                         const res::Buffer &buffer) -> RasterPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, buffer);
+  }
+  return *this;
+}
+
+auto RasterPass::storage(uint32_t setIndex, uint32_t binding,
+                         const res::BufferSlice &slice) -> RasterPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, slice);
+  }
+  return *this;
+}
 
 void RasterPass::create() {
   validate(desc_);
@@ -226,8 +303,8 @@ void RasterPass::createRenderPass() {
           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
   } else if (target_->depth()) {
-    renderPassDesc = pipe::RenderPassDesc::makeDepthOnly(
-        target_->depth()->desc().format);
+    renderPassDesc =
+        pipe::RenderPassDesc::makeDepthOnly(target_->depth()->desc().format);
   } else {
     VKR_EXEC_ERROR("RasterPass '{}' target has no attachments", name());
   }
@@ -263,8 +340,7 @@ void RasterPass::validate(const RasterPassDesc &desc) const {
     VKR_EXEC_ERROR("RasterPass '{}' has an invalid pipeline descriptor",
                    name());
   }
-  VkPhysicalDeviceProperties properties{};
-  vkGetPhysicalDeviceProperties(device_.physicalDevice(), &properties);
+  const auto &properties = device_.properties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("RasterPass '{}' exceeds maxBoundDescriptorSets", name());
@@ -347,8 +423,7 @@ void RasterPass::createPipeline() {
     }
   }
 
-  pipeline_ =
-      std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
+  pipeline_ = std::make_unique<pipe::GraphicsPipeline>(device_, *render_pass_);
   pipeline_->update(pipelineDesc);
 
   if (!pipeline_->valid()) {

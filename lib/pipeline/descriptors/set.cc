@@ -1,6 +1,11 @@
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/logger.hh"
+#include "vkr/pipeline/attachments/color.hh"
+#include "vkr/pipeline/attachments/depth.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
+#include "vkr/resource/buffers/buffer.hh"
+#include "vkr/resource/image/cubemap.hh"
+#include "vkr/resource/image/texture.hh"
 #include <algorithm>
 #include <utility>
 
@@ -12,6 +17,62 @@ DescriptorSet::DescriptorSet(const core::Device &device,
     : device_(device), pool_(pool), layout_(layout) {}
 
 DescriptorSet::~DescriptorSet() { destroy(); }
+
+auto DescriptorSet::texture(uint32_t binding, const res::Texture &texture)
+    -> DescriptorSet & {
+  assign(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+         texture.descriptorInfo());
+  return *this;
+}
+
+auto DescriptorSet::texture(uint32_t binding, const res::Cubemap &cubemap)
+    -> DescriptorSet & {
+  assign(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+         cubemap.descriptorInfo());
+  return *this;
+}
+
+auto DescriptorSet::texture(uint32_t binding, const ColorAttachment &attachment)
+    -> DescriptorSet & {
+  assign(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+         attachment.descriptorInfo());
+  return *this;
+}
+
+auto DescriptorSet::texture(uint32_t binding, const DepthAttachment &attachment)
+    -> DescriptorSet & {
+  assign(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+         attachment.descriptorInfo());
+  return *this;
+}
+
+auto DescriptorSet::uniform(uint32_t binding, const res::Buffer &buffer)
+    -> DescriptorSet & {
+  return uniform(binding, buffer.slice(0, buffer.size()));
+}
+
+auto DescriptorSet::uniform(uint32_t binding, const res::BufferSlice &slice)
+    -> DescriptorSet & {
+  if ((slice.usage() & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) == 0) {
+    VKR_PIPE_ERROR("Uniform binding requires UNIFORM_BUFFER usage");
+  }
+  assign(binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, slice.descriptorInfo());
+  return *this;
+}
+
+auto DescriptorSet::storage(uint32_t binding, const res::Buffer &buffer)
+    -> DescriptorSet & {
+  return storage(binding, buffer.slice(0, buffer.size()));
+}
+
+auto DescriptorSet::storage(uint32_t binding, const res::BufferSlice &slice)
+    -> DescriptorSet & {
+  if ((slice.usage() & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) == 0) {
+    VKR_PIPE_ERROR("Storage binding requires STORAGE_BUFFER usage");
+  }
+  assign(binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, slice.descriptorInfo());
+  return *this;
+}
 
 DescriptorSet::DescriptorSet(DescriptorSet &&other) noexcept
     : device_(other.device_), pool_(other.pool_), layout_(other.layout_),
@@ -34,9 +95,11 @@ void DescriptorSet::create() {
 
   for (const auto &buffer : buffers_) {
     validateBinding(buffer.binding, buffer.type);
+    validateBuffer(buffer.type, buffer.info);
   }
   for (const auto &image : images_) {
     validateBinding(image.binding, image.type);
+    validateImage(image.info);
   }
 
   const auto layout = layout_.layout();
@@ -84,6 +147,7 @@ void DescriptorSet::validateBinding(uint32_t binding,
 
 void DescriptorSet::assign(uint32_t binding, VkDescriptorType type,
                            VkDescriptorBufferInfo info) {
+  validateBuffer(type, info);
   if (layout_.valid()) {
     validateBinding(binding, type);
   }
@@ -104,8 +168,24 @@ void DescriptorSet::assign(uint32_t binding, VkDescriptorType type,
   }
 }
 
+void DescriptorSet::validateBuffer(VkDescriptorType type,
+                                   const VkDescriptorBufferInfo &info) const {
+  const bool uniform = type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  const auto &limits = device_.properties().limits;
+  const auto alignment = uniform ? limits.minUniformBufferOffsetAlignment
+                                 : limits.minStorageBufferOffsetAlignment;
+  const auto maxRange =
+      uniform ? limits.maxUniformBufferRange : limits.maxStorageBufferRange;
+  if (info.buffer == VK_NULL_HANDLE || info.range == 0 ||
+      info.range > maxRange || info.offset % alignment != 0) {
+    VKR_PIPE_ERROR("Buffer descriptor requires a valid handle, an aligned "
+                   "offset, and an explicit range within device limits");
+  }
+}
+
 void DescriptorSet::assign(uint32_t binding, VkDescriptorType type,
                            VkDescriptorImageInfo info) {
+  validateImage(info);
   if (layout_.valid()) {
     validateBinding(binding, type);
   }
@@ -123,6 +203,14 @@ void DescriptorSet::assign(uint32_t binding, VkDescriptorType type,
     writes_.reserve(buffers_.size() + images_.size());
   } else {
     *existing = {binding, type, info};
+  }
+}
+
+void DescriptorSet::validateImage(const VkDescriptorImageInfo &info) {
+  if (info.imageView == VK_NULL_HANDLE || info.sampler == VK_NULL_HANDLE ||
+      info.imageLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
+    VKR_PIPE_ERROR("Texture binding requires a valid image view, sampler, "
+                   "and descriptor layout");
   }
 }
 
@@ -153,10 +241,8 @@ void DescriptorSet::update() {
     if (!buffer.dirty) {
       continue;
     }
-    if (buffer.info.buffer == VK_NULL_HANDLE || buffer.info.range == 0) {
-      VKR_PIPE_ERROR("Descriptor binding {} has no valid buffer",
-                     buffer.binding);
-    }
+    validateBinding(buffer.binding, buffer.type);
+    validateBuffer(buffer.type, buffer.info);
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.dstSet = set_;
@@ -170,12 +256,8 @@ void DescriptorSet::update() {
     if (!image.dirty) {
       continue;
     }
-    if (image.info.imageView == VK_NULL_HANDLE ||
-        image.info.sampler == VK_NULL_HANDLE ||
-        image.info.imageLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
-      VKR_PIPE_ERROR("Descriptor binding {} has no valid sampled image",
-                     image.binding);
-    }
+    validateBinding(image.binding, image.type);
+    validateImage(image.info);
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.dstSet = set_;

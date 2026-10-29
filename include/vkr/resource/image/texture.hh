@@ -9,12 +9,12 @@
 #include <string>
 #include <utility>
 
-namespace vkr::scene {
+namespace vkr::res {
 
 struct TextureDesc {
-  res::ImageDesc image{};
-  res::ImageViewDesc view{};
-  res::SamplerDesc sampler{res::SamplerDesc::linearRepeat()};
+  ImageDesc image{};
+  ImageViewDesc view{};
+  SamplerDesc sampler{SamplerDesc::linearRepeat()};
 
   std::string filePath{};
   VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
@@ -25,8 +25,7 @@ struct TextureDesc {
 
   [[nodiscard]] static auto textureFile(
       const std::string &path, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
-      res::SamplerDesc sampler = res::SamplerDesc::linearRepeat())
-      -> TextureDesc {
+      SamplerDesc sampler = SamplerDesc::linearRepeat()) -> TextureDesc {
     TextureDesc desc{};
     desc.filePath = path;
     desc.image.format = format;
@@ -47,10 +46,10 @@ struct TextureDesc {
 
   [[nodiscard]] static auto
   sampled2D(uint32_t width, uint32_t height, VkFormat format,
-            res::SamplerDesc sampler =
-                res::SamplerDesc::linearClampToEdge()) -> TextureDesc {
+            SamplerDesc sampler = SamplerDesc::linearClampToEdge())
+      -> TextureDesc {
     TextureDesc desc{};
-    desc.image = res::ImageDesc::sampled2D(width, height, format);
+    desc.image = ImageDesc::sampled2D(width, height, format);
     desc.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     desc.sampler = sampler;
     desc.useDefaultView = true;
@@ -61,10 +60,10 @@ struct TextureDesc {
   [[nodiscard]] static auto storage2D(uint32_t width, uint32_t height,
                                       VkFormat format) -> TextureDesc {
     TextureDesc desc{};
-    desc.image = res::ImageDesc::storage2D(width, height, format);
+    desc.image = ImageDesc::storage2D(width, height, format);
     desc.image.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
     desc.layout = VK_IMAGE_LAYOUT_GENERAL;
-    desc.sampler = res::SamplerDesc::linearClampToEdge();
+    desc.sampler = SamplerDesc::linearClampToEdge();
     desc.useDefaultView = true;
     desc.createSampler = true;
     return desc;
@@ -72,11 +71,10 @@ struct TextureDesc {
 
   [[nodiscard]] static auto
   colorAttachment(uint32_t width, uint32_t height, VkFormat format,
-                  res::SamplerDesc sampler =
-                      res::SamplerDesc::linearClampToEdge())
+                  SamplerDesc sampler = SamplerDesc::linearClampToEdge())
       -> TextureDesc {
     TextureDesc desc{};
-    desc.image = res::ImageDesc::colorAttachment(width, height, format);
+    desc.image = ImageDesc::colorAttachment(width, height, format);
     desc.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     desc.sampler = sampler;
     desc.useDefaultView = true;
@@ -87,17 +85,17 @@ struct TextureDesc {
   [[nodiscard]] static auto depthAttachment(uint32_t width, uint32_t height,
                                             VkFormat format) -> TextureDesc {
     TextureDesc desc{};
-    desc.image = res::ImageDesc::depthAttachment(width, height, format);
+    desc.image = ImageDesc::depthAttachment(width, height, format);
     desc.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    desc.sampler = res::SamplerDesc::shadowCompare();
+    desc.sampler = SamplerDesc::shadowCompare();
     desc.useDefaultView = true;
     desc.createSampler = true;
     return desc;
   }
 
-  [[nodiscard]] static auto fromImageDesc(
-      res::ImageDesc image,
-      res::SamplerDesc sampler = res::SamplerDesc::linearRepeat())
+  [[nodiscard]] static auto
+  fromImageDesc(ImageDesc image,
+                SamplerDesc sampler = SamplerDesc::linearRepeat())
       -> TextureDesc {
     TextureDesc desc{};
     desc.image = std::move(image);
@@ -154,20 +152,14 @@ public:
   [[nodiscard]] auto imageView() const -> VkImageView {
     return image_view_->imageView();
   }
-  [[nodiscard]] auto sampler() const -> VkSampler {
-    if (!hasSampler()) {
-      return VK_NULL_HANDLE;
-    }
-
-    return sampler_->sampler();
+  [[nodiscard]] auto sampler() const noexcept -> VkSampler {
+    return hasSampler() ? sampler_->sampler() : VK_NULL_HANDLE;
   }
 
   [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
-    VkDescriptorImageInfo info{};
-    info.sampler = hasSampler() ? sampler_->sampler() : VK_NULL_HANDLE;
-    info.imageView = hasImageView() ? image_view_->imageView() : VK_NULL_HANDLE;
-    info.imageLayout = layout();
-    return info;
+    return {sampler(),
+            hasImageView() ? image_view_->imageView() : VK_NULL_HANDLE,
+            layout()};
   }
 
   [[nodiscard]] auto hasImage() const noexcept -> bool {
@@ -193,9 +185,9 @@ private:
 
   // components
   TextureDesc desc_{};
-  std::unique_ptr<res::Image> image_;
-  std::unique_ptr<res::ImageView> image_view_;
-  std::unique_ptr<res::Sampler> sampler_;
+  std::unique_ptr<Image> image_;
+  std::unique_ptr<ImageView> image_view_;
+  std::unique_ptr<Sampler> sampler_;
 
   // helpers
   void createFromFile();
@@ -203,4 +195,4 @@ private:
   void createViewAndSampler();
 };
 
-} // namespace vkr::scene
+} // namespace vkr::res

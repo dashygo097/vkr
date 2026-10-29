@@ -1,4 +1,4 @@
-#include "vkr/scene/material/cubemap.hh"
+#include "vkr/resource/image/cubemap.hh"
 #include "vkr/logger.hh"
 #include "vkr/resource/buffers/buffer.hh"
 #include <cstddef>
@@ -7,7 +7,7 @@
 #include <stb_image.h>
 #include <vector>
 
-namespace vkr::scene {
+namespace vkr::res {
 
 namespace {
 
@@ -53,9 +53,8 @@ void endSingleTimeCommands(const core::CommandPool &commandPool,
   }
 }
 
-void transitionImageLayout(const core::CommandPool &commandPool,
-                           res::Image &image, VkImageLayout oldLayout,
-                           VkImageLayout newLayout) {
+void transitionImageLayout(const core::CommandPool &commandPool, Image &image,
+                           VkImageLayout oldLayout, VkImageLayout newLayout) {
   if (oldLayout == newLayout) {
     return;
   }
@@ -105,8 +104,8 @@ void transitionImageLayout(const core::CommandPool &commandPool,
 }
 
 void copyBufferToImage(const core::CommandPool &commandPool,
-                       const res::Buffer &buffer, res::Image &image,
-                       uint32_t layers, uint32_t channels) {
+                       const Buffer &buffer, Image &image, uint32_t layers,
+                       uint32_t channels) {
   auto commands = commandPool.allocate();
   commands.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
   const auto commandBuffer = commands.buffer();
@@ -143,9 +142,9 @@ void copyBufferToImage(const core::CommandPool &commandPool,
 Cubemap::Cubemap(const core::Device &device,
                  const core::CommandPool &commandPool)
     : device_(device), command_pool_(commandPool),
-      image_(std::make_unique<res::Image>(device_)),
-      image_view_(std::make_unique<res::ImageView>(device_)),
-      sampler_(std::make_unique<res::Sampler>(device_)) {}
+      image_(std::make_unique<Image>(device_)),
+      image_view_(std::make_unique<ImageView>(device_)),
+      sampler_(std::make_unique<Sampler>(device_)) {}
 
 Cubemap::~Cubemap() { destroy(); }
 
@@ -217,7 +216,7 @@ void Cubemap::create() {
                                 static_cast<VkDeviceSize>(channels);
   const VkDeviceSize imageSize = faceSize * FaceCount;
 
-  res::Buffer staging(device_);
+  Buffer staging(device_);
   staging.update(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -229,8 +228,7 @@ void Cubemap::create() {
   }
   staging.unmap();
 
-  res::ImageDesc imageDesc =
-      res::ImageDesc::sampled2D(width, height, desc_.format);
+  ImageDesc imageDesc = ImageDesc::sampled2D(width, height, desc_.format);
   imageDesc.arrayLayers = FaceCount;
   imageDesc.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
   imageDesc.defaultViewType = VK_IMAGE_VIEW_TYPE_CUBE;
@@ -248,7 +246,7 @@ void Cubemap::create() {
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, desc_.layout);
   }
 
-  image_view_->update(res::ImageViewDesc::fromImage(*image_));
+  image_view_->update(ImageViewDesc::fromImage(*image_));
   sampler_->update(desc_.sampler);
 }
 
@@ -266,4 +264,4 @@ void Cubemap::destroy() {
   }
 }
 
-} // namespace vkr::scene
+} // namespace vkr::res

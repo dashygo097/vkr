@@ -4,10 +4,10 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/scene/frame_uniform_buffers.hh"
+#include "vkr/resource/buffers/uniform_buffer.hh"
+#include "vkr/resource/image/cubemap.hh"
+#include "vkr/resource/image/texture.hh"
 #include "vkr/scene/geometry/mesh.hh"
-#include "vkr/scene/material/cubemap.hh"
-#include "vkr/scene/material/texture.hh"
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -41,54 +41,32 @@ public:
   // Uniform buffer management
   template <typename UniformType>
   auto createUniformBuffer(std::string name, const UniformType &initial)
-      -> FrameUniformBuffers<UniformType> & {
+      -> std::vector<res::UniformBuffer> & {
     validateNewResource(uniform_buffers_, name, "uniform buffer");
 
-    auto buffer = std::make_unique<FrameUniformBuffers<UniformType>>(
-        device_, static_cast<uint32_t>(command_buffers_.size()));
-    for (uint32_t frameIndex = 0; frameIndex < command_buffers_.size();
-         ++frameIndex) {
-      buffer->update(frameIndex, initial);
+    std::vector<res::UniformBuffer> buffers;
+    buffers.reserve(command_buffers_.size());
+    for (size_t frame = 0; frame < command_buffers_.size(); ++frame) {
+      buffers.emplace_back(device_, sizeof(UniformType));
+      buffers.back().update(initial);
     }
 
-    auto &result = *buffer;
-    uniform_buffers_.emplace(std::move(name), std::move(buffer));
-    return result;
-  }
-
-  template <typename UniformType>
-  [[nodiscard]] auto uniformBuffer(std::string_view name)
-      -> FrameUniformBuffers<UniformType> & {
-    try {
-      return dynamic_cast<FrameUniformBuffers<UniformType> &>(
-          uniformBuffer(name));
-    } catch (const std::bad_cast &) {
-      VKR_RES_ERROR("Uniform buffer '{}' has a different type", name);
-    }
-  }
-
-  template <typename UniformType>
-  [[nodiscard]] auto uniformBuffer(std::string_view name) const
-      -> const FrameUniformBuffers<UniformType> & {
-    try {
-      return dynamic_cast<const FrameUniformBuffers<UniformType> &>(
-          uniformBuffer(name));
-    } catch (const std::bad_cast &) {
-      VKR_RES_ERROR("Uniform buffer '{}' has a different type", name);
-    }
+    return uniform_buffers_.emplace(std::move(name), std::move(buffers))
+        .first->second;
   }
 
   [[nodiscard]] auto uniformBuffer(std::string_view name)
-      -> IFrameUniformBuffers &;
+      -> std::vector<res::UniformBuffer> &;
 
   [[nodiscard]] auto uniformBuffer(std::string_view name) const
-      -> const IFrameUniformBuffers &;
+      -> const std::vector<res::UniformBuffer> &;
 
   [[nodiscard]] auto findUniformBuffer(std::string_view name)
-      -> std::optional<std::reference_wrapper<IFrameUniformBuffers>>;
+      -> std::optional<std::reference_wrapper<std::vector<res::UniformBuffer>>>;
 
   [[nodiscard]] auto findUniformBuffer(std::string_view name) const
-      -> std::optional<std::reference_wrapper<const IFrameUniformBuffers>>;
+      -> std::optional<
+          std::reference_wrapper<const std::vector<res::UniformBuffer>>>;
 
   void destroyUniformBuffer(std::string_view name);
 
@@ -161,36 +139,39 @@ public:
   void clearSelectedMesh();
 
   // Texture management
-  auto createTexture(std::string name, TextureDesc desc) -> Texture &;
+  auto createTexture(std::string name, res::TextureDesc desc) -> res::Texture &;
 
   auto loadTexture(std::string name, const std::filesystem::path &path)
-      -> Texture &;
+      -> res::Texture &;
 
-  [[nodiscard]] auto texture(std::string_view name) -> Texture &;
+  [[nodiscard]] auto texture(std::string_view name) -> res::Texture &;
 
-  [[nodiscard]] auto texture(std::string_view name) const -> const Texture &;
+  [[nodiscard]] auto texture(std::string_view name) const
+      -> const res::Texture &;
 
   [[nodiscard]] auto findTexture(std::string_view name)
-      -> std::optional<std::reference_wrapper<Texture>>;
+      -> std::optional<std::reference_wrapper<res::Texture>>;
 
   [[nodiscard]] auto findTexture(std::string_view name) const
-      -> std::optional<std::reference_wrapper<const Texture>>;
+      -> std::optional<std::reference_wrapper<const res::Texture>>;
 
-  auto createCubemap(std::string name, CubemapDesc desc) -> Cubemap &;
+  auto createCubemap(std::string name, res::CubemapDesc desc) -> res::Cubemap &;
 
   auto createCubemap(std::string name,
                      const std::array<std::string, 6> &facePaths,
-                     VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) -> Cubemap &;
+                     VkFormat format = VK_FORMAT_R8G8B8A8_SRGB)
+      -> res::Cubemap &;
 
-  [[nodiscard]] auto cubemap(std::string_view name) -> Cubemap &;
+  [[nodiscard]] auto cubemap(std::string_view name) -> res::Cubemap &;
 
-  [[nodiscard]] auto cubemap(std::string_view name) const -> const Cubemap &;
+  [[nodiscard]] auto cubemap(std::string_view name) const
+      -> const res::Cubemap &;
 
   [[nodiscard]] auto findCubemap(std::string_view name)
-      -> std::optional<std::reference_wrapper<Cubemap>>;
+      -> std::optional<std::reference_wrapper<res::Cubemap>>;
 
   [[nodiscard]] auto findCubemap(std::string_view name) const
-      -> std::optional<std::reference_wrapper<const Cubemap>>;
+      -> std::optional<std::reference_wrapper<const res::Cubemap>>;
 
   void destroyTexture(std::string_view name);
 
@@ -217,8 +198,8 @@ private:
   using ResourceMap =
       std::unordered_map<std::string, std::unique_ptr<ResourceType>>;
 
-  template <typename ResourceType>
-  static void validateNewResource(const ResourceMap<ResourceType> &resources,
+  template <typename Resources>
+  static void validateNewResource(const Resources &resources,
                                   std::string_view name,
                                   std::string_view kind) {
     if (name.empty()) {
@@ -275,9 +256,10 @@ private:
 
   // components
   Transform world_{};
-  ResourceMap<IFrameUniformBuffers> uniform_buffers_{};
-  ResourceMap<Texture> textures_{};
-  ResourceMap<Cubemap> cubemaps_{};
+  std::unordered_map<std::string, std::vector<res::UniformBuffer>>
+      uniform_buffers_{};
+  ResourceMap<res::Texture> textures_{};
+  ResourceMap<res::Cubemap> cubemaps_{};
   ResourceMap<IMesh> meshes_{};
   std::string selected_mesh_name_{};
 };

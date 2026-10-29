@@ -2,6 +2,8 @@
 #include "vkr/core/instance.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
+#include <limits>
+#include <numeric>
 #include <set>
 #include <vector>
 
@@ -70,8 +72,11 @@ void Device::pickPhysicalDevice() {
     compute_family_ = VK_QUEUE_FAMILY_IGNORED;
     transfer_family_ = VK_QUEUE_FAMILY_IGNORED;
 
-    VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceProperties deviceProperties{};
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    vkGetPhysicalDeviceFeatures(device, &features_);
 
     VKR_CORE_INFO("--- Device FOUND: {} ---", deviceProperties.deviceName);
     VKR_CORE_TRACE("  -- API Version: {}.{}.{}",
@@ -105,6 +110,8 @@ void Device::pickPhysicalDevice() {
     }
 
     vk_physical_device_ = device;
+    properties_ = deviceProperties;
+    features_ = deviceFeatures;
     VKR_CORE_INFO("Selected device: {}", deviceProperties.deviceName);
     break;
   }

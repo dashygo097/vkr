@@ -2,6 +2,7 @@
 
 #include "vkr/core/instance.hh"
 #include "vkr/core/surface.hh"
+#include <cstddef>
 #include <functional>
 #include <optional>
 #include <string>
@@ -39,6 +40,14 @@ public:
   }
   [[nodiscard]] auto physicalDevice() const noexcept -> VkPhysicalDevice {
     return vk_physical_device_;
+  }
+  [[nodiscard]] auto features() const noexcept
+      -> const VkPhysicalDeviceFeatures {
+    return features_;
+  }
+  [[nodiscard]] auto properties() const noexcept
+      -> const VkPhysicalDeviceProperties & {
+    return properties_;
   }
   [[nodiscard]] auto availableExtensions() const noexcept
       -> const std::vector<VkExtensionProperties> & {
@@ -100,6 +109,8 @@ private:
   DeviceDesc &desc_;
   VkPhysicalDevice vk_physical_device_{VK_NULL_HANDLE};
   VkDevice vk_logical_device_{VK_NULL_HANDLE};
+  VkPhysicalDeviceProperties properties_{};
+  VkPhysicalDeviceFeatures features_{};
 
   std::vector<VkExtensionProperties> available_extensions_{};
   std::vector<std::string> enabled_extensions_{};

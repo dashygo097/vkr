@@ -1,81 +1,36 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/logger.hh"
 #include "vkr/resource/buffers/buffer.hh"
 #include <cstddef>
-#include <cstring>
-#include <memory>
+#include <type_traits>
 
 namespace vkr::res {
 
-template <typename UniformType> class UniformBuffer {
+class UniformBuffer : public Buffer {
 public:
-  explicit UniformBuffer(const core::Device &device)
-      : device_(device), target_(std::make_unique<Buffer>(device)) {
-    create();
-  }
+  explicit UniformBuffer(const core::Device &device, VkDeviceSize size);
 
-  ~UniformBuffer() { destroy(); }
+  ~UniformBuffer() override = default;
 
   UniformBuffer(const UniformBuffer &) = delete;
   auto operator=(const UniformBuffer &) -> UniformBuffer & = delete;
 
-  UniformBuffer(UniformBuffer &&) = delete;
+  UniformBuffer(UniformBuffer &&) noexcept = default;
   auto operator=(UniformBuffer &&) -> UniformBuffer & = delete;
 
-  [[nodiscard]] auto buffer() const noexcept -> VkBuffer {
-    return target_->buffer();
+  [[nodiscard]] auto descriptorInfo() const -> VkDescriptorBufferInfo {
+    return Buffer::slice(0, size()).descriptorInfo();
   }
 
-  [[nodiscard]] auto memory() const noexcept -> VkDeviceMemory {
-    return target_->memory();
+  template <typename T> void update(const T &object) {
+    static_assert(std::is_trivially_copyable_v<T>,
+                  "UniformBuffer data must be trivially copyable");
+    update(&object, sizeof(T));
   }
-
-  [[nodiscard]] auto byteSize() const noexcept -> VkDeviceSize {
-    return sizeof(UniformType);
-  }
-
-  [[nodiscard]] auto
-  descriptorInfo(VkDeviceSize offset = 0,
-                 VkDeviceSize range = sizeof(UniformType)) const noexcept
-      -> VkDescriptorBufferInfo {
-    VkDescriptorBufferInfo info{};
-    info.buffer = buffer();
-    info.offset = offset;
-    info.range = range;
-    return info;
-  }
-
-  [[nodiscard]] auto isMapped() const noexcept -> bool {
-    return target_->isMapped();
-  }
-
-  void update(const UniformType &newObject) {
-    if (!target_->isMapped()) {
-      VKR_RES_ERROR("Uniform buffer memory is not mapped!");
-    }
-    target_->write(&newObject, sizeof(UniformType));
-  }
-
-protected:
-  void create() {
-
-    VkDeviceSize bufferSize = sizeof(UniformType);
-    target_->update(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    (void)target_->map(bufferSize);
-  }
-
-  void destroy() { target_->destroy(); }
 
 private:
-  // dependencies
-  const core::Device &device_;
-
-  // components
-  std::unique_ptr<Buffer> target_;
+  void update(const void *data, VkDeviceSize size);
 };
 
 } // namespace vkr::res

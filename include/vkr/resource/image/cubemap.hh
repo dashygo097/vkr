@@ -9,20 +9,19 @@
 #include <memory>
 #include <string>
 
-namespace vkr::scene {
+namespace vkr::res {
 
 struct CubemapDesc {
   std::array<std::string, 6> facePaths{};
   VkFormat format{VK_FORMAT_R8G8B8A8_SRGB};
   VkImageLayout layout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-  res::SamplerDesc sampler{res::SamplerDesc::linearClampToEdge()};
+  SamplerDesc sampler{SamplerDesc::linearClampToEdge()};
   bool forceRgba{true};
 
   [[nodiscard]] static auto
   files(const std::array<std::string, 6> &faces,
         VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
-        res::SamplerDesc sampler =
-            res::SamplerDesc::linearClampToEdge()) -> CubemapDesc {
+        SamplerDesc sampler = SamplerDesc::linearClampToEdge()) -> CubemapDesc {
     CubemapDesc desc{};
     desc.facePaths = faces;
     desc.format = format;
@@ -86,11 +85,7 @@ public:
   }
 
   [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
-    VkDescriptorImageInfo info{};
-    info.sampler = sampler();
-    info.imageView = imageView();
-    info.imageLayout = layout();
-    return info;
+    return {sampler(), imageView(), layout()};
   }
 
   [[nodiscard]] auto valid() const noexcept -> bool {
@@ -105,12 +100,12 @@ private:
 
   // components
   CubemapDesc desc_{};
-  std::unique_ptr<res::Image> image_;
-  std::unique_ptr<res::ImageView> image_view_;
-  std::unique_ptr<res::Sampler> sampler_;
+  std::unique_ptr<Image> image_;
+  std::unique_ptr<ImageView> image_view_;
+  std::unique_ptr<Sampler> sampler_;
 
   // helpers
   void create();
 };
 
-} // namespace vkr::scene
+} // namespace vkr::res

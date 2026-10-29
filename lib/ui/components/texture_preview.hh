@@ -68,7 +68,7 @@ private:
 
     // Thumbnail and popup never overwrite one another's GPU state.
     std::array<res::ImageView, 2> views;
-    std::array<res::UniformBuffer<Parameters>, 2> parameters;
+    std::array<res::UniformBuffer, 2> parameters;
     res::Buffer readback;
     std::optional<Probe> probe{};
     bool stale{true};
