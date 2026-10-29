@@ -34,42 +34,10 @@ auto shaderStageFor(const core::CommandPool &commandPool)
   VKR_RES_ERROR("Unsupported command pool role for cubemap shader access");
 }
 
-auto beginSingleTimeCommands(const core::Device &device,
-                             const core::CommandPool &commandPool)
-    -> VkCommandBuffer {
-  VkCommandBufferAllocateInfo allocInfo{};
-  allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandPool = commandPool.commandPool();
-  allocInfo.commandBufferCount = 1;
-
-  VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
-  if (vkAllocateCommandBuffers(device.device(), &allocInfo, &commandBuffer) !=
-      VK_SUCCESS) {
-    VKR_RES_ERROR("Failed to allocate cubemap upload command buffer");
-  }
-
-  VkCommandBufferBeginInfo beginInfo{};
-  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-  if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-    vkFreeCommandBuffers(device.device(), commandPool.commandPool(), 1,
-                         &commandBuffer);
-    VKR_RES_ERROR("Failed to begin cubemap upload command buffer");
-  }
-
-  return commandBuffer;
-}
-
-void endSingleTimeCommands(const core::Device &device,
-                           const core::CommandPool &commandPool,
-                           VkCommandBuffer commandBuffer) {
-  if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-    vkFreeCommandBuffers(device.device(), commandPool.commandPool(), 1,
-                         &commandBuffer);
-    VKR_RES_ERROR("Failed to end cubemap upload command buffer");
-  }
+void endSingleTimeCommands(const core::CommandPool &commandPool,
+                           core::CommandBuffer &commands) {
+  commands.end();
+  const auto commandBuffer = commands.buffer();
 
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -78,25 +46,23 @@ void endSingleTimeCommands(const core::Device &device,
 
   if (vkQueueSubmit(commandPool.queue(), 1, &submitInfo, VK_NULL_HANDLE) !=
       VK_SUCCESS) {
-    vkFreeCommandBuffers(device.device(), commandPool.commandPool(), 1,
-                         &commandBuffer);
     VKR_RES_ERROR("Failed to submit cubemap upload command buffer");
   }
-
-  vkQueueWaitIdle(commandPool.queue());
-  vkFreeCommandBuffers(device.device(), commandPool.commandPool(), 1,
-                       &commandBuffer);
+  if (vkQueueWaitIdle(commandPool.queue()) != VK_SUCCESS) {
+    VKR_RES_ERROR("Failed to wait for cubemap upload");
+  }
 }
 
-void transitionImageLayout(const core::Device &device,
-                           const core::CommandPool &commandPool,
+void transitionImageLayout(const core::CommandPool &commandPool,
                            res::Image &image, VkImageLayout oldLayout,
                            VkImageLayout newLayout) {
   if (oldLayout == newLayout) {
     return;
   }
 
-  VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
+  auto commands = commandPool.allocate();
+  commands.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+  const auto commandBuffer = commands.buffer();
 
   VkImageMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -134,15 +100,16 @@ void transitionImageLayout(const core::Device &device,
   vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
                        nullptr, 0, nullptr, 1, &barrier);
 
-  endSingleTimeCommands(device, commandPool, commandBuffer);
+  endSingleTimeCommands(commandPool, commands);
   image.layout(newLayout);
 }
 
-void copyBufferToImage(const core::Device &device,
-                       const core::CommandPool &commandPool,
+void copyBufferToImage(const core::CommandPool &commandPool,
                        const res::Buffer &buffer, res::Image &image,
                        uint32_t layers, uint32_t channels) {
-  VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
+  auto commands = commandPool.allocate();
+  commands.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+  const auto commandBuffer = commands.buffer();
 
   const VkDeviceSize layerSize = static_cast<VkDeviceSize>(image.width()) *
                                  static_cast<VkDeviceSize>(image.height()) *
@@ -168,7 +135,7 @@ void copyBufferToImage(const core::Device &device,
                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                          static_cast<uint32_t>(regions.size()), regions.data());
 
-  endSingleTimeCommands(device, commandPool, commandBuffer);
+  endSingleTimeCommands(commandPool, commands);
 }
 
 } // namespace
@@ -271,15 +238,13 @@ void Cubemap::create() {
 
   image_->update(imageDesc);
 
-  transitionImageLayout(device_, command_pool_, *image_,
-                        VK_IMAGE_LAYOUT_UNDEFINED,
+  transitionImageLayout(command_pool_, *image_, VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  copyBufferToImage(device_, command_pool_, staging, *image_, FaceCount,
-                    channels);
+  copyBufferToImage(command_pool_, staging, *image_, FaceCount, channels);
 
   if (desc_.layout != VK_IMAGE_LAYOUT_UNDEFINED &&
       desc_.layout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-    transitionImageLayout(device_, command_pool_, *image_,
+    transitionImageLayout(command_pool_, *image_,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, desc_.layout);
   }
 

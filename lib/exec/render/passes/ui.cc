@@ -8,7 +8,7 @@ namespace vkr::exec {
 
 UiPass::UiPass(RenderExecutor &executor, const core::Window &window,
                const core::Instance &instance, const core::Device &device,
-               const core::CommandBuffers &commandBuffers,
+               const std::vector<core::CommandBuffer> &commandBuffers,
                const core::Swapchain &swapchain, scene::Scene &scene,
                const util::AssetSystem &assetSystem, scene::Camera &camera,
                Pass &source, Graph &graph, util::Timer &timer)
@@ -73,7 +73,7 @@ void UiPass::create() {
 
   descriptor_pool_ = std::make_unique<pipe::DescriptorPool>(device_);
   const uint32_t descriptorCount =
-      command_buffers_.size() +
+      static_cast<uint32_t>(command_buffers_.size()) +
       IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE;
   descriptor_pool_->update({
       .poolSizes = {{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,

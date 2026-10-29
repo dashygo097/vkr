@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command/buffers.hh"
+#include "vkr/core/command/buffer.hh"
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
@@ -25,7 +25,7 @@ public:
   explicit RenderExecutor(const core::Device &device,
                           const core::Swapchain &swapchain,
                           const core::CommandPool &commandPool,
-                          core::CommandBuffers &commandBuffers);
+                          std::vector<core::CommandBuffer> &commandBuffers);
   ~RenderExecutor() = default;
 
   RenderExecutor(const RenderExecutor &) = delete;
@@ -50,7 +50,7 @@ public:
 
   [[nodiscard]] auto commandBuffer() const -> VkCommandBuffer {
     ensureFrameActive("commandBuffer");
-    return command_buffer_;
+    return command_buffers_[frame_index_].buffer();
   }
 
   [[nodiscard]] auto frameIndex() const noexcept -> uint32_t {
@@ -92,7 +92,7 @@ private:
   const core::Device &device_;
   const core::Swapchain &swapchain_;
   const core::CommandPool &command_pool_;
-  core::CommandBuffers &command_buffers_;
+  std::vector<core::CommandBuffer> &command_buffers_;
   std::optional<std::reference_wrapper<Profiler>> profiler_{};
 
   // components
@@ -104,7 +104,6 @@ private:
   uint32_t current_frame_{0};
   uint32_t image_index_{0};
   uint32_t frame_index_{0};
-  VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
   std::vector<VkDescriptorSet> bound_descriptors_{};
   bool frame_active_{false};
   bool frame_submitted_{false};

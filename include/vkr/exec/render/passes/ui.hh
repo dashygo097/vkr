@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command/buffers.hh"
+#include "vkr/core/command/buffer.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
 #include "vkr/core/swapchain.hh"
@@ -18,6 +18,7 @@
 #include "vkr/util/asset.hh"
 #include "vkr/util/timer.hh"
 #include <memory>
+#include <vector>
 
 namespace vkr::exec {
 
@@ -25,7 +26,7 @@ class UiPass final : public Pass {
 public:
   explicit UiPass(RenderExecutor &executor, const core::Window &window,
                   const core::Instance &instance, const core::Device &device,
-                  const core::CommandBuffers &commandBuffers,
+                  const std::vector<core::CommandBuffer> &commandBuffers,
                   const core::Swapchain &swapchain, scene::Scene &scene,
                   const util::AssetSystem &assetSystem, scene::Camera &camera,
                   Pass &source, Graph &graph, util::Timer &timer);
@@ -47,7 +48,7 @@ private:
   const core::Window &window_;
   const core::Instance &instance_;
   const core::Device &device_;
-  const core::CommandBuffers &command_buffers_;
+  const std::vector<core::CommandBuffer> &command_buffers_;
   const core::Swapchain &swapchain_;
   scene::Scene &scene_;
   const util::AssetSystem &asset_system_;

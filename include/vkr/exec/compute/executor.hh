@@ -23,7 +23,7 @@ class ComputeExecutor {
 public:
   explicit ComputeExecutor(const core::Device &device,
                            const core::CommandPool &commandPool);
-  ~ComputeExecutor();
+  ~ComputeExecutor() = default;
 
   ComputeExecutor(const ComputeExecutor &) = delete;
   auto operator=(const ComputeExecutor &) -> ComputeExecutor & = delete;
@@ -62,15 +62,13 @@ private:
   std::optional<std::reference_wrapper<Profiler>> profiler_{};
 
   // components
-  VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
+  core::CommandBuffer command_buffer_;
   std::vector<VkDescriptorSet> bound_descriptors_{};
 
   // state
   bool active_{false};
   bool submitted_{false};
 
-  void allocateCommandBuffer();
-  void freeCommandBuffer() noexcept;
   void hostRead(VkBuffer buffer, VkDeviceSize size);
   void ensureRecording(std::string_view op) const;
   void ensureActive(std::string_view op) const;

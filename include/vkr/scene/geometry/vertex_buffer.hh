@@ -107,38 +107,16 @@ protected:
                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     staging.write(vertices, bufferSize);
 
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = command_pool_.commandPool();
-    allocInfo.commandBufferCount = 1;
-
-    VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
-    if (vkAllocateCommandBuffers(device_.device(), &allocInfo,
-                                 &commandBuffer) != VK_SUCCESS) {
-      VKR_RES_ERROR("Failed to allocate vertex upload command buffer");
-    }
-
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-      vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
-                           &commandBuffer);
-      VKR_RES_ERROR("Failed to begin vertex upload command buffer");
-    }
+    auto commands = command_pool_.allocate();
+    commands.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    const auto commandBuffer = commands.buffer();
 
     VkBufferCopy copyRegion{};
     copyRegion.size = bufferSize;
     vkCmdCopyBuffer(commandBuffer, staging.buffer(), target_->buffer(), 1,
                     &copyRegion);
 
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-      vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
-                           &commandBuffer);
-      VKR_RES_ERROR("Failed to end vertex upload command buffer");
-    }
+    commands.end();
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -147,14 +125,12 @@ protected:
 
     if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo, VK_NULL_HANDLE) !=
         VK_SUCCESS) {
-      vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
-                           &commandBuffer);
       VKR_RES_ERROR("Failed to submit vertex upload command buffer");
     }
 
-    vkQueueWaitIdle(command_pool_.queue());
-    vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
-                         &commandBuffer);
+    if (vkQueueWaitIdle(command_pool_.queue()) != VK_SUCCESS) {
+      VKR_RES_ERROR("Failed to wait for vertex upload");
+    }
   }
 
 protected:

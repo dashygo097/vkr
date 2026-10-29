@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command/buffers.hh"
+#include "vkr/core/command/buffer.hh"
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
@@ -27,7 +27,7 @@ class Scene {
 public:
   explicit Scene(const core::Device &device,
                  const core::CommandPool &commandPool,
-                 const core::CommandBuffers &commandBuffers);
+                 const std::vector<core::CommandBuffer> &commandBuffers);
   ~Scene();
 
   Scene(const Scene &) = delete;
@@ -45,7 +45,7 @@ public:
     validateNewResource(uniform_buffers_, name, "uniform buffer");
 
     auto buffer = std::make_unique<FrameUniformBuffers<UniformType>>(
-        device_, command_buffers_.size());
+        device_, static_cast<uint32_t>(command_buffers_.size()));
     for (uint32_t frameIndex = 0; frameIndex < command_buffers_.size();
          ++frameIndex) {
       buffer->update(frameIndex, initial);
@@ -271,7 +271,7 @@ private:
   // dependencies
   const core::Device &device_;
   const core::CommandPool &command_pool_;
-  const core::CommandBuffers &command_buffers_;
+  const std::vector<core::CommandBuffer> &command_buffers_;
 
   // components
   Transform world_{};

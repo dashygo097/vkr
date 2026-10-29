@@ -4,6 +4,7 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
+#include "vkr/core/command/buffer.hh"
 #include "vkr/core/sync/fence.hh"
 #include "vkr/core/sync/semaphore.hh"
 #include "vkr/exec/capability.hh"

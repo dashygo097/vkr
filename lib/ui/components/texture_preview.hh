@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command/buffers.hh"
+#include "vkr/core/command/buffer.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
 #include "vkr/pipeline/descriptors/set.hh"
 #include "vkr/pipeline/graphics_pipeline.hh"
@@ -22,9 +22,8 @@ namespace vkr::ui {
 // Inspector implementation. Does not own the inspected images.
 class TexturePreview final {
 public:
-  TexturePreview(const core::Device &device,
-                 const pipe::RenderPass &renderPass,
-                 const core::CommandBuffers &commandBuffers,
+  TexturePreview(const core::Device &device, const pipe::RenderPass &renderPass,
+                 const std::vector<core::CommandBuffer> &commandBuffers,
                  const scene::Scene &scene, const Selection &selection);
   ~TexturePreview();
 
@@ -83,7 +82,7 @@ private:
 
   const core::Device &device_;
   const pipe::RenderPass &render_pass_;
-  const core::CommandBuffers &command_buffers_;
+  const std::vector<core::CommandBuffer> &command_buffers_;
   const scene::Scene &scene_;
   const Selection &selection_;
 

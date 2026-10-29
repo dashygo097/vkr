@@ -12,13 +12,11 @@
 
 namespace vkr::ui {
 
-InspectorPanel::InspectorPanel(const core::Device &device,
-                               const pipe::RenderPass &renderPass,
-                               const core::CommandBuffers &commandBuffers,
-                               const scene::Scene &scene,
-                               const exec::Graph &graph,
-                               const Selection &selection,
-                               std::function<void(Selection)> onSelect)
+InspectorPanel::InspectorPanel(
+    const core::Device &device, const pipe::RenderPass &renderPass,
+    const std::vector<core::CommandBuffer> &commandBuffers,
+    const scene::Scene &scene, const exec::Graph &graph,
+    const Selection &selection, std::function<void(Selection)> onSelect)
     : UiComponent("Inspector"), scene_(scene), graph_(graph),
       selection_(selection), on_select_(std::move(onSelect)),
       texture_preview_(std::make_unique<TexturePreview>(

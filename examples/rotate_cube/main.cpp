@@ -59,8 +59,7 @@ auto main() -> int {
   CommandPool commandPool{device, commandPoolDesc};
 
   // command buffers
-  CommandBuffers commands{device, commandPool};
-  commands.update({.size = MAX_FRAMES_IN_FLIGHT});
+  auto commands = commandPool.allocate(MAX_FRAMES_IN_FLIGHT);
 
   // cube geometry
   VertexBuffer<Vertex3D> vertices{device, commandPool};
@@ -100,7 +99,7 @@ auto main() -> int {
       .attachmentViews(target.attachmentViews());
   framebuffers.update(framebufferDesc);
 
-  FrameUniformBuffers<UniformObject> uniforms{device, commands.size()};
+  FrameUniformBuffers<UniformObject> uniforms{device, MAX_FRAMES_IN_FLIGHT};
 
   // descriptors
   DescriptorSetLayoutDesc layoutDesc{};

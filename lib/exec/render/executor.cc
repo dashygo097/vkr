@@ -1,21 +1,28 @@
 #include "vkr/exec/render/executor.hh"
 #include "vkr/logger.hh"
 #include <array>
+#include <limits>
 
 namespace vkr::exec {
 
 RenderExecutor::RenderExecutor(const core::Device &device,
                                const core::Swapchain &swapchain,
                                const core::CommandPool &commandPool,
-                               core::CommandBuffers &commandBuffers)
+                               std::vector<core::CommandBuffer> &commandBuffers)
     : device_(device), swapchain_(swapchain), command_pool_(commandPool),
       command_buffers_(commandBuffers) {
   if (command_pool_.queueRole() != core::CommandQueueRole::Graphics) {
     VKR_EXEC_ERROR("RenderExecutor requires a graphics command pool");
   }
 
-  if (command_buffers_.empty()) {
+  if (command_buffers_.empty() ||
+      command_buffers_.size() > std::numeric_limits<uint32_t>::max()) {
     VKR_EXEC_ERROR("RenderExecutor requires initialized command buffers");
+  }
+  for (const auto &buffer : command_buffers_) {
+    if (!buffer.valid()) {
+      VKR_EXEC_ERROR("RenderExecutor received an invalid command buffer");
+    }
   }
 
   if (swapchain_.imageCount() == 0) {
@@ -48,26 +55,19 @@ auto RenderExecutor::beginFrame() -> bool {
 
   in_flight_.at(current_frame_).reset();
 
-  VkCommandBuffer commandBuffer = command_buffers_.buffer(current_frame_);
-  vkResetCommandBuffer(commandBuffer, 0);
+  auto &commands = command_buffers_.at(current_frame_);
+  commands.reset();
+  commands.begin();
 
   image_index_ = imageIndex;
   frame_index_ = current_frame_;
-  command_buffer_ = commandBuffer;
-
-  VkCommandBufferBeginInfo beginInfo{};
-  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-  if (vkBeginCommandBuffer(command_buffer_, &beginInfo) != VK_SUCCESS) {
-    VKR_EXEC_ERROR("failed to begin recording command buffer");
-  }
 
   frame_active_ = true;
   frame_submitted_ = false;
   frame_presented_ = false;
 
   if (profiler_) {
-    profiler_->get().beginFrame(command_buffer_);
+    profiler_->get().beginFrame(commandBuffer());
   }
 
   return true;
@@ -81,12 +81,10 @@ void RenderExecutor::submitFrame() {
   }
 
   if (profiler_) {
-    profiler_->get().endFrame(command_buffer_);
+    profiler_->get().endFrame(commandBuffer());
   }
 
-  if (vkEndCommandBuffer(command_buffer_) != VK_SUCCESS) {
-    VKR_EXEC_ERROR("failed to record command buffer");
-  }
+  command_buffers_.at(frame_index_).end();
 
   submitCommandBuffer();
   frame_submitted_ = true;
@@ -120,18 +118,17 @@ void RenderExecutor::endFrame() {
     VKR_EXEC_ERROR("RenderExecutor::endFrame called before submitFrame");
   }
 
-  current_frame_ = (current_frame_ + 1) % command_buffers_.size();
+  current_frame_ = (current_frame_ + 1) % framesInFlight();
 
   image_index_ = 0;
   frame_index_ = 0;
-  command_buffer_ = VK_NULL_HANDLE;
   frame_active_ = false;
   frame_submitted_ = false;
   frame_presented_ = false;
 }
 
 auto RenderExecutor::framesInFlight() const noexcept -> uint32_t {
-  return command_buffers_.size();
+  return static_cast<uint32_t>(command_buffers_.size());
 }
 
 void RenderExecutor::beginPass(const pipe::RenderPass &renderPass,
@@ -160,12 +157,12 @@ void RenderExecutor::beginPass(const pipe::RenderPass &renderPass,
   info.clearValueCount = static_cast<uint32_t>(clearValues.size());
   info.pClearValues = clearValues.empty() ? nullptr : clearValues.data();
 
-  vkCmdBeginRenderPass(command_buffer_, &info, contents);
+  vkCmdBeginRenderPass(commandBuffer(), &info, contents);
 }
 
 void RenderExecutor::endPass() {
   ensureFrameActive("endPass");
-  vkCmdEndRenderPass(command_buffer_);
+  vkCmdEndRenderPass(commandBuffer());
 }
 
 void RenderExecutor::bindPipeline(const pipe::GraphicsPipeline &pipeline) {
@@ -179,7 +176,7 @@ void RenderExecutor::bindPipeline(const pipe::GraphicsPipeline &pipeline) {
     VKR_EXEC_ERROR("bindPipeline received null VkPipelineLayout");
   }
 
-  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+  vkCmdBindPipeline(commandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                     pipeline.pipeline());
 }
 
@@ -192,7 +189,7 @@ void RenderExecutor::bindPipeline(const pipe::GraphicsPipeline &pipeline,
   bindPipeline(pipeline);
   set.update();
   const auto descriptorSet = set.set();
-  vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+  vkCmdBindDescriptorSets(commandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                           pipeline.layout(), setIndex, 1, &descriptorSet, 0,
                           nullptr);
 }
@@ -209,7 +206,7 @@ void RenderExecutor::bindPipeline(const pipe::GraphicsPipeline &pipeline,
     bound_descriptors_.push_back(set.set());
   }
   if (!bound_descriptors_.empty()) {
-    vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vkCmdBindDescriptorSets(commandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pipeline.layout(), 0,
                             static_cast<uint32_t>(bound_descriptors_.size()),
                             bound_descriptors_.data(), 0, nullptr);
@@ -227,13 +224,13 @@ void RenderExecutor::setViewportAndScissor(VkExtent2D extent) {
   viewport.minDepth = 0.0f;
   viewport.maxDepth = 1.0f;
 
-  vkCmdSetViewport(command_buffer_, 0, 1, &viewport);
+  vkCmdSetViewport(commandBuffer(), 0, 1, &viewport);
 
   VkRect2D scissor{};
   scissor.offset = {0, 0};
   scissor.extent = extent;
 
-  vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
+  vkCmdSetScissor(commandBuffer(), 0, 1, &scissor);
 }
 
 void RenderExecutor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
@@ -247,31 +244,31 @@ void RenderExecutor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
   std::array<VkDeviceSize, 1> offsets = {0};
   std::array<VkBuffer, 1> vertexBuffers = {vertexBuffer.buffer()};
 
-  vkCmdBindVertexBuffers(command_buffer_, 0, 1, vertexBuffers.data(),
+  vkCmdBindVertexBuffers(commandBuffer(), 0, 1, vertexBuffers.data(),
                          offsets.data());
-  vkCmdBindIndexBuffer(command_buffer_, indexBuffer.buffer(), 0,
+  vkCmdBindIndexBuffer(commandBuffer(), indexBuffer.buffer(), 0,
                        VK_INDEX_TYPE_UINT16);
-  vkCmdDrawIndexed(command_buffer_,
+  vkCmdDrawIndexed(commandBuffer(),
                    static_cast<uint32_t>(indexBuffer.indices().size()), 1, 0, 0,
                    0);
 }
 
 void RenderExecutor::drawFullscreenTriangle() {
   ensureFrameActive("drawFullscreenTriangle");
-  vkCmdDraw(command_buffer_, 3, 1, 0, 0);
+  vkCmdDraw(commandBuffer(), 3, 1, 0, 0);
 }
 
 void RenderExecutor::beginProfileScope(std::string_view name) {
   ensureFrameActive("beginProfileScope");
   if (profiler_) {
-    profiler_->get().beginScope(command_buffer_, name);
+    profiler_->get().beginScope(commandBuffer(), name);
   }
 }
 
 void RenderExecutor::endProfileScope() {
   ensureFrameActive("endProfileScope");
   if (profiler_) {
-    profiler_->get().endScope(command_buffer_);
+    profiler_->get().endScope(commandBuffer());
   }
 }
 
@@ -307,6 +304,7 @@ auto RenderExecutor::acquireNextImage(uint32_t &imageIndex) -> bool {
 }
 
 void RenderExecutor::submitCommandBuffer() {
+  const auto commandBuffer = command_buffers_[frame_index_].buffer();
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -320,7 +318,7 @@ void RenderExecutor::submitCommandBuffer() {
   submitInfo.pWaitSemaphores = waitSemaphores.data();
   submitInfo.pWaitDstStageMask = waitStages.data();
   submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &command_buffer_;
+  submitInfo.pCommandBuffers = &commandBuffer;
 
   std::array<VkSemaphore, 1> signalSemaphores = {
       render_finished_.at(image_index_).semaphore()};

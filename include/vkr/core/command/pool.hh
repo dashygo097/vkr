@@ -1,6 +1,8 @@
 #pragma once
 
-#include "vkr/core/device.hh"
+#include "vkr/core/command/buffer.hh"
+#include <cstdint>
+#include <vector>
 
 namespace vkr::core {
 
@@ -34,11 +36,14 @@ struct CommandPoolDesc {
 
 class CommandPool {
 public:
-  explicit CommandPool(const Device &device, CommandPoolDesc &desc);
+  explicit CommandPool(const Device &device, const CommandPoolDesc &desc);
   ~CommandPool();
 
   CommandPool(const CommandPool &) = delete;
   auto operator=(const CommandPool &) -> CommandPool & = delete;
+
+  [[nodiscard]] auto allocate() const -> CommandBuffer;
+  [[nodiscard]] auto allocate(uint32_t count) const -> std::vector<CommandBuffer>;
 
   [[nodiscard]] auto commandPool() const noexcept -> VkCommandPool {
     return vk_command_pool_;
@@ -52,11 +57,13 @@ public:
   [[nodiscard]] auto queue() const noexcept -> VkQueue { return queue_; }
 
 private:
+  friend class CommandBuffer;
+
   // dependencies
   const Device &device_;
-  CommandPoolDesc &desc_;
 
   // components
+  CommandPoolDesc desc_{};
   VkCommandPool vk_command_pool_{VK_NULL_HANDLE};
   uint32_t queue_family_{VK_QUEUE_FAMILY_IGNORED};
   VkQueue queue_{VK_NULL_HANDLE};

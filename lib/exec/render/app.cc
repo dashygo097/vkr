@@ -67,13 +67,11 @@ void RenderApplication::initVulkan() {
       std::make_unique<Profiler>(*device_, *command_pool_, ctx.profiler);
 
   // command buffers
-  command_buffers_ =
-      std::make_unique<core::CommandBuffers>(*device_, *command_pool_);
-  command_buffers_->update(ctx.commandBuffers);
+  command_buffers_ = command_pool_->allocate(ctx.framesInFlight);
 
   // scene
   scene_ = std::make_unique<vkr::scene::Scene>(*device_, *command_pool_,
-                                               *command_buffers_);
+                                               command_buffers_);
 
   // user resources
   createResources();
@@ -87,7 +85,7 @@ void RenderApplication::initVulkan() {
 
   // executor
   executor_ = std::make_unique<RenderExecutor>(
-      *device_, *swapchain_, *command_pool_, *command_buffers_);
+      *device_, *swapchain_, *command_pool_, command_buffers_);
   executor_->setProfiler(*profiler_);
 
   // render graph
@@ -103,8 +101,8 @@ auto RenderApplication::buildPresentation() -> UiPass & {
   auto &source = graph_->presentationSource();
 
   auto &uiPass = graph_->addPass<UiPass>(
-      *executor_, *window_, *instance_, *device_, *command_buffers_,
-      *swapchain_, *scene_, *asset_system_, *camera_, source, *graph_, *timer_);
+      *executor_, *window_, *instance_, *device_, command_buffers_, *swapchain_,
+      *scene_, *asset_system_, *camera_, source, *graph_, *timer_);
   uiPass.name("ui");
   uiPass.update(ctx.ui);
   graph_->addDependency(source.name(), uiPass.name());
@@ -192,7 +190,7 @@ void RenderApplication::recreateSwapchain() {
   swapchain_->recreate();
 
   executor_ = std::make_unique<RenderExecutor>(
-      *device_, *swapchain_, *command_pool_, *command_buffers_);
+      *device_, *swapchain_, *command_pool_, command_buffers_);
   executor_->setProfiler(*profiler_);
 
   graph_ = std::make_unique<RenderGraph>(*executor_, *device_, *command_pool_);

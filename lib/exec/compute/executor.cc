@@ -6,7 +6,8 @@ namespace vkr::exec {
 
 ComputeExecutor::ComputeExecutor(const core::Device &device,
                                  const core::CommandPool &commandPool)
-    : device_(device), command_pool_(commandPool) {
+    : device_(device), command_pool_(commandPool),
+      command_buffer_(commandPool.allocate()) {
   if (!device_.supportsCompute()) {
     VKR_EXEC_ERROR("ComputeExecutor requires compute queue support");
   }
@@ -16,30 +17,19 @@ ComputeExecutor::ComputeExecutor(const core::Device &device,
                    "match device compute queue family ({})",
                    command_pool_.queueFamily(), device_.computeFamily());
   }
-
-  allocateCommandBuffer();
 }
-
-ComputeExecutor::~ComputeExecutor() { freeCommandBuffer(); }
 
 void ComputeExecutor::begin() {
   ensureInactive("begin");
 
-  vkResetCommandBuffer(command_buffer_, 0);
-
-  VkCommandBufferBeginInfo beginInfo{};
-  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-  if (vkBeginCommandBuffer(command_buffer_, &beginInfo) != VK_SUCCESS) {
-    VKR_EXEC_ERROR("failed to begin compute command buffer");
-  }
+  command_buffer_.reset();
+  command_buffer_.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
   active_ = true;
   submitted_ = false;
 
   if (profiler_) {
-    profiler_->get().beginFrame(command_buffer_);
+    profiler_->get().beginFrame(command_buffer_.buffer());
   }
 }
 
@@ -51,19 +41,18 @@ void ComputeExecutor::submitAndWait() {
   }
 
   if (profiler_) {
-    profiler_->get().endFrame(command_buffer_);
+    profiler_->get().endFrame(command_buffer_.buffer());
   }
 
-  if (vkEndCommandBuffer(command_buffer_) != VK_SUCCESS) {
-    VKR_EXEC_ERROR("failed to end compute command buffer");
-  }
+  command_buffer_.end();
 
   core::Fence fence{device_};
+  const auto commandBuffer = command_buffer_.buffer();
 
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &command_buffer_;
+  submitInfo.pCommandBuffers = &commandBuffer;
 
   if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo, fence.fence()) !=
       VK_SUCCESS) {
@@ -93,7 +82,7 @@ void ComputeExecutor::clearProfiler() noexcept { profiler_.reset(); }
 
 auto ComputeExecutor::commandBuffer() const -> VkCommandBuffer {
   ensureRecording("commandBuffer");
-  return command_buffer_;
+  return command_buffer_.buffer();
 }
 
 void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline) {
@@ -107,7 +96,7 @@ void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline) {
     VKR_EXEC_ERROR("bindPipeline received null VkPipelineLayout");
   }
 
-  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
+  vkCmdBindPipeline(command_buffer_.buffer(), VK_PIPELINE_BIND_POINT_COMPUTE,
                     pipeline.pipeline());
 }
 
@@ -121,9 +110,9 @@ void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline,
   bindPipeline(pipeline);
   set.update();
   const auto descriptorSet = set.set();
-  vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
-                          pipeline.layout(), setIndex, 1, &descriptorSet, 0,
-                          nullptr);
+  vkCmdBindDescriptorSets(command_buffer_.buffer(),
+                          VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout(),
+                          setIndex, 1, &descriptorSet, 0, nullptr);
 }
 
 void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline,
@@ -138,9 +127,9 @@ void ComputeExecutor::bindPipeline(const pipe::ComputePipeline &pipeline,
     bound_descriptors_.push_back(set.set());
   }
   if (!bound_descriptors_.empty()) {
-    vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
-                            pipeline.layout(), 0,
-                            static_cast<uint32_t>(bound_descriptors_.size()),
+    vkCmdBindDescriptorSets(command_buffer_.buffer(),
+                            VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout(),
+                            0, static_cast<uint32_t>(bound_descriptors_.size()),
                             bound_descriptors_.data(), 0, nullptr);
   }
 }
@@ -154,7 +143,8 @@ void ComputeExecutor::dispatch(uint32_t groupCountX, uint32_t groupCountY,
                    groupCountY, groupCountZ);
   }
 
-  vkCmdDispatch(command_buffer_, groupCountX, groupCountY, groupCountZ);
+  vkCmdDispatch(command_buffer_.buffer(), groupCountX, groupCountY,
+                groupCountZ);
 }
 
 void ComputeExecutor::hostRead(VkBuffer buffer, VkDeviceSize size) {
@@ -168,43 +158,22 @@ void ComputeExecutor::hostRead(VkBuffer buffer, VkDeviceSize size) {
   barrier.offset = 0;
   barrier.size = size;
 
-  vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                       VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr, 1, &barrier,
-                       0, nullptr);
+  vkCmdPipelineBarrier(
+      command_buffer_.buffer(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr, 1, &barrier, 0, nullptr);
 }
 
 void ComputeExecutor::beginProfileScope(std::string_view name) {
   ensureRecording("beginProfileScope");
   if (profiler_) {
-    profiler_->get().beginScope(command_buffer_, name);
+    profiler_->get().beginScope(command_buffer_.buffer(), name);
   }
 }
 
 void ComputeExecutor::endProfileScope() {
   ensureRecording("endProfileScope");
   if (profiler_) {
-    profiler_->get().endScope(command_buffer_);
-  }
-}
-
-void ComputeExecutor::allocateCommandBuffer() {
-  VkCommandBufferAllocateInfo allocInfo{};
-  allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.commandPool = command_pool_.commandPool();
-  allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandBufferCount = 1;
-
-  if (vkAllocateCommandBuffers(device_.device(), &allocInfo,
-                               &command_buffer_) != VK_SUCCESS) {
-    VKR_EXEC_ERROR("failed to allocate compute command buffer");
-  }
-}
-
-void ComputeExecutor::freeCommandBuffer() noexcept {
-  if (command_buffer_ != VK_NULL_HANDLE) {
-    vkFreeCommandBuffers(device_.device(), command_pool_.commandPool(), 1,
-                         &command_buffer_);
-    command_buffer_ = VK_NULL_HANDLE;
+    profiler_->get().endScope(command_buffer_.buffer());
   }
 }
 

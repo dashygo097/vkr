@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command/buffers.hh"
+#include "vkr/core/command/buffer.hh"
 #include "vkr/exec/capability.hh"
 #include "vkr/exec/graph.hh"
 #include "vkr/pipeline/render_pass.hh"
@@ -20,7 +20,7 @@ class InspectorPanel final : public UiComponent {
 public:
   InspectorPanel(const core::Device &device,
                  const pipe::RenderPass &renderPass,
-                 const core::CommandBuffers &commandBuffers,
+                 const std::vector<core::CommandBuffer> &commandBuffers,
                  const scene::Scene &scene, const exec::Graph &graph,
                  const Selection &selection,
                  std::function<void(Selection)> onSelect);

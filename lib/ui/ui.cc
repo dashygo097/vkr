@@ -35,7 +35,8 @@ UI::UI(const core::Window &window, const core::Instance &instance,
        const util::AssetSystem &assetSystem, scene::Camera &camera,
        exec::Pass &source, const pipe::RenderPass &renderPass,
        const pipe::DescriptorPool &descriptorPool, exec::Graph &graph,
-       util::Timer &timer, const core::CommandBuffers &commandBuffers)
+       util::Timer &timer,
+       const std::vector<core::CommandBuffer> &commandBuffers)
     : window_(window), instance_(instance), device_(device), scene_(scene),
       asset_system_(assetSystem), camera_(camera), source_(source),
       render_pass_(renderPass), descriptor_pool_(descriptorPool), graph_(graph),
@@ -92,7 +93,8 @@ void UI::create() {
     initInfo.DescriptorPool = descriptor_pool_.pool();
     initInfo.Allocator = nullptr;
     initInfo.MinImageCount = 2;
-    initInfo.ImageCount = std::max(2U, command_buffers_.size());
+    initInfo.ImageCount =
+        std::max(2U, static_cast<uint32_t>(command_buffers_.size()));
     initInfo.CheckVkResultFn = checkVkResult;
     initInfo.PipelineInfoMain = pipelineInfo;
 

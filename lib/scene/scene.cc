@@ -3,7 +3,7 @@
 namespace vkr::scene {
 
 Scene::Scene(const core::Device &device, const core::CommandPool &commandPool,
-             const core::CommandBuffers &commandBuffers)
+             const std::vector<core::CommandBuffer> &commandBuffers)
     : device_(device), command_pool_(commandPool),
       command_buffers_(commandBuffers) {
   if (command_buffers_.empty()) {

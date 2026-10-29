@@ -2,9 +2,13 @@
 #include "vkr/logger.hh"
 
 namespace vkr::core {
-CommandPool::CommandPool(const Device &device, CommandPoolDesc &desc)
+CommandPool::CommandPool(const Device &device, const CommandPoolDesc &desc)
     : device_(device), desc_(desc) {
   VKR_CORE_INFO("Creating command pool...");
+
+  if (!desc_.isValid()) {
+    VKR_CORE_ERROR("Invalid command pool descriptor");
+  }
 
   resolveQueue();
 
@@ -53,4 +57,52 @@ void CommandPool::resolveQueue() {
     break;
   }
 }
+
+auto CommandPool::allocate() const -> CommandBuffer {
+  CommandBuffer buffer{device_, *this};
+
+  VkCommandBufferAllocateInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  info.commandPool = vk_command_pool_;
+  info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  info.commandBufferCount = 1;
+  const auto result = vkAllocateCommandBuffers(device_.device(), &info,
+                                               &buffer.vk_command_buffer_);
+  if (result != VK_SUCCESS) {
+    VKR_CORE_ERROR("Failed to allocate command buffer. VkResult: {}",
+                   static_cast<int>(result));
+  }
+  return buffer;
+}
+
+auto CommandPool::allocate(uint32_t count) const -> std::vector<CommandBuffer> {
+  if (count == 0) {
+    VKR_CORE_ERROR("Command buffer count must be nonzero");
+  }
+
+  std::vector<CommandBuffer> buffers{};
+  buffers.reserve(count);
+  for (uint32_t index = 0; index < count; ++index) {
+    buffers.emplace_back(device_, *this);
+  }
+  std::vector<VkCommandBuffer> handles(count, VK_NULL_HANDLE);
+
+  VkCommandBufferAllocateInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  info.commandPool = vk_command_pool_;
+  info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  info.commandBufferCount = count;
+  const auto result =
+      vkAllocateCommandBuffers(device_.device(), &info, handles.data());
+  if (result != VK_SUCCESS) {
+    VKR_CORE_ERROR("Failed to allocate command buffers. VkResult: {}",
+                   static_cast<int>(result));
+  }
+
+  for (uint32_t index = 0; index < count; ++index) {
+    buffers[index].vk_command_buffer_ = handles[index];
+  }
+  return buffers;
+}
+
 } // namespace vkr::core

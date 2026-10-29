@@ -161,17 +161,15 @@ TexturePreview::Frame::Frame(const core::Device &device)
                  res::UniformBuffer<Parameters>{device}},
       readback(device) {}
 
-TexturePreview::TexturePreview(const core::Device &device,
-                               const pipe::RenderPass &renderPass,
-                               const core::CommandBuffers &commandBuffers,
-                               const scene::Scene &scene,
-                               const Selection &selection)
+TexturePreview::TexturePreview(
+    const core::Device &device, const pipe::RenderPass &renderPass,
+    const std::vector<core::CommandBuffer> &commandBuffers,
+    const scene::Scene &scene, const Selection &selection)
     : device_(device), render_pass_(renderPass),
       command_buffers_(commandBuffers), scene_(scene), selection_(selection),
       image_layout_(device), parameter_layout_(device),
-      descriptor_pool_(device),
-      nearest_sampler_(device), linear_sampler_(device),
-      pipeline_(device, renderPass) {
+      descriptor_pool_(device), nearest_sampler_(device),
+      linear_sampler_(device), pipeline_(device, renderPass) {
   static_assert(sizeof(Parameters) == 32);
   static_assert(offsetof(Parameters, exposure) == 16);
   pipe::DescriptorSetLayoutDesc imageLayoutDesc{};
@@ -180,12 +178,12 @@ TexturePreview::TexturePreview(const core::Device &device,
   pipe::DescriptorSetLayoutDesc parameterLayoutDesc{};
   parameterLayoutDesc.uniform(0, VK_SHADER_STAGE_FRAGMENT_BIT);
   parameter_layout_.update(parameterLayoutDesc);
+  const auto frameCount = static_cast<uint32_t>(commandBuffers.size());
   descriptor_pool_.update({
       .poolSizes = {{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                     commandBuffers.size() * 2U},
-                    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                     commandBuffers.size() * 2U}},
-      .maxSets = commandBuffers.size() * 4U,
+                     frameCount * 2U},
+                    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, frameCount * 2U}},
+      .maxSets = frameCount * 4U,
   });
   image_sets_.reserve(commandBuffers.size() * 2U);
   parameter_sets_.reserve(commandBuffers.size() * 2U);
@@ -197,7 +195,8 @@ TexturePreview::TexturePreview(const core::Device &device,
     for (uint32_t slot = 0; slot < 2; ++slot) {
       image_sets_.emplace_back(device_, descriptor_pool_, image_layout_);
       image_sets_.back().create();
-      parameter_sets_.emplace_back(device_, descriptor_pool_, parameter_layout_);
+      parameter_sets_.emplace_back(device_, descriptor_pool_,
+                                   parameter_layout_);
       auto &parameters = parameter_sets_.back();
       parameters.uniform(0, frames_.back()->parameters[slot]);
       parameters.create();
@@ -246,7 +245,7 @@ auto TexturePreview::image() const -> std::optional<Image> {
     }
     const auto &value = cubemap->get();
     result.image = res::ImageDesc::sampled2D(value.width(), value.height(),
-                                                  value.desc().format);
+                                             value.desc().format);
     result.image.arrayLayers = 6;
     result.view =
         res::ImageViewDesc::cubemap(value.image(), value.desc().format);
@@ -402,7 +401,7 @@ void TexturePreview::prepare(uint32_t frameIndex) {
                               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     (void)frame.readback.map();
   }
-  const auto commandBuffer = command_buffers_.buffer(frameIndex);
+  const auto commandBuffer = command_buffers_.at(frameIndex).buffer();
   VkImageMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
   barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
@@ -508,8 +507,8 @@ void TexturePreview::bind(const ImDrawList *, const ImDrawCmd *command) {
                     draw.pipeline.get().pipeline());
   // Bind both sets with our layout first. ImGui may then rebind set 0 with its
   // compatible layout without disturbing the display parameters in set 1.
-  const std::array<VkDescriptorSet, 2> sets{
-      draw.images.get().set(), draw.parameters.get().set()};
+  const std::array<VkDescriptorSet, 2> sets{draw.images.get().set(),
+                                            draw.parameters.get().set()};
   vkCmdBindDescriptorSets(state.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           draw.pipeline.get().layout(), 0,
                           static_cast<uint32_t>(sets.size()), sets.data(), 0,
@@ -638,8 +637,8 @@ void TexturePreview::draw(const Image &value, ImVec2 available,
         ImGui::GetFontSize() * 0.75f, ImVec2{}, 0.0f);
     drawList.AddCallback(bind, &draws_.at(index));
     const bool flip = flip_y_;
-    drawList.AddImage(reinterpret_cast<ImTextureID>(imageSet.set()),
-                      position, end, {0.0f, flip ? 1.0f : 0.0f},
+    drawList.AddImage(reinterpret_cast<ImTextureID>(imageSet.set()), position,
+                      end, {0.0f, flip ? 1.0f : 0.0f},
                       {1.0f, flip ? 0.0f : 1.0f});
     drawList.AddCallback(ImDrawCallback_ResetRenderState, nullptr);
   }

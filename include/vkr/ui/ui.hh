@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkr/core/command/buffers.hh"
+#include "vkr/core/command/buffer.hh"
 #include "vkr/core/device.hh"
 #include "vkr/core/instance.hh"
 #include "vkr/core/window.hh"
@@ -66,7 +66,7 @@ public:
               const util::AssetSystem &assetSystem, scene::Camera &camera,
               exec::Pass &source, const pipe::RenderPass &renderPass,
               const pipe::DescriptorPool &descriptorPool, exec::Graph &graph,
-              util::Timer &timer, const core::CommandBuffers &commandBuffers);
+              util::Timer &timer, const std::vector<core::CommandBuffer> &commandBuffers);
   ~UI();
 
   UI(const UI &) = delete;
@@ -130,7 +130,7 @@ private:
   const pipe::DescriptorPool &descriptor_pool_;
   exec::Graph &graph_;
   util::Timer &timer_;
-  const core::CommandBuffers &command_buffers_;
+  const std::vector<core::CommandBuffer> &command_buffers_;
 
   // components
   UiDesc desc_{};
