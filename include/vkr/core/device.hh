@@ -125,11 +125,13 @@ private:
   VkPhysicalDeviceProperties physical_device_properties_{};
   VkPhysicalDeviceFeatures physical_device_features_{};
   uint32_t api_version_{0};
+
   PFN_vkCmdBeginRendering cmd_begin_rendering_{nullptr};
   PFN_vkCmdEndRendering cmd_end_rendering_{nullptr};
 
   std::vector<VkExtensionProperties> available_extensions_{};
   std::vector<std::string> enabled_extensions_{};
+
   std::vector<VkQueueFamilyProperties> queue_families_{};
   uint32_t graphics_family_{VK_QUEUE_FAMILY_IGNORED};
   uint32_t present_family_{VK_QUEUE_FAMILY_IGNORED};

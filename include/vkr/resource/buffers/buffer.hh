@@ -111,7 +111,10 @@ public:
   [[nodiscard]] auto descriptorInfo() const -> VkDescriptorBufferInfo;
 
 private:
+  // dependencies
   const Buffer &source_;
+
+  // components
   VkDeviceSize offset_;
   VkDeviceSize size_;
 };

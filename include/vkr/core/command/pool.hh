@@ -43,7 +43,8 @@ public:
   auto operator=(const CommandPool &) -> CommandPool & = delete;
 
   [[nodiscard]] auto allocate() const -> CommandBuffer;
-  [[nodiscard]] auto allocate(uint32_t count) const -> std::vector<CommandBuffer>;
+  [[nodiscard]] auto allocate(uint32_t count) const
+      -> std::vector<CommandBuffer>;
 
   [[nodiscard]] auto commandPool() const noexcept -> VkCommandPool {
     return vk_command_pool_;
