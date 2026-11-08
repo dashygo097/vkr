@@ -15,17 +15,19 @@ enum class SurfaceIntegration {
 struct InstanceDesc {
   std::string name{};
   uint32_t version{VK_MAKE_VERSION(1, 0, 0)};
+  uint32_t apiVersion{VK_API_VERSION_1_0};
   SurfaceIntegration surfaceIntegration{SurfaceIntegration::None};
   std::vector<std::string> requiredExtensions{};
   std::vector<std::string> optionalExtensions{};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
-    return !name.empty() && version != 0;
+    return !name.empty() && version != 0 && apiVersion >= VK_API_VERSION_1_0;
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
     ar("name", name);
     ar("version", version);
+    ar("apiVersion", apiVersion);
   }
 };
 

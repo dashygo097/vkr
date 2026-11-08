@@ -6,10 +6,14 @@
 
 namespace vkr::core {
 Instance::Instance(InstanceDesc &desc) : desc_(desc) {
-  VKR_CORE_INFO("Creating Vulkan Instance: {} ({}.{}.{})...", desc_.name,
+  VKR_CORE_INFO("Creating Vulkan Instance: {} ({}.{}.{})", desc_.name,
                 VK_VERSION_MAJOR(desc_.version),
                 VK_VERSION_MINOR(desc_.version),
                 VK_VERSION_PATCH(desc_.version));
+  VKR_CORE_INFO("Requested Vulkan API version: {}.{}.{}",
+                VK_API_VERSION_MAJOR(desc_.apiVersion),
+                VK_API_VERSION_MINOR(desc_.apiVersion),
+                VK_API_VERSION_PATCH(desc_.apiVersion));
 
   querySupport();
   resolveExtensions();
@@ -28,7 +32,7 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   appInfo.applicationVersion = desc_.version;
   appInfo.pEngineName = "vkr";
   appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.apiVersion = VK_API_VERSION_1_0;
+  appInfo.apiVersion = desc_.apiVersion;
 
   VkInstanceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

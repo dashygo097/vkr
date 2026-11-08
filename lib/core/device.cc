@@ -79,10 +79,10 @@ void Device::pickPhysicalDevice() {
 
     VKR_CORE_INFO("--- Device FOUND: {} ---",
                   physicalDeviceProperties.deviceName);
-    VKR_CORE_TRACE("  -- API Version: {}.{}.{}",
-                   VK_VERSION_MAJOR(physicalDeviceProperties.apiVersion),
-                   VK_VERSION_MINOR(physicalDeviceProperties.apiVersion),
-                   VK_VERSION_PATCH(physicalDeviceProperties.apiVersion));
+    VKR_CORE_TRACE("  -- Supported Vulkan API version: {}.{}.{}",
+                   VK_API_VERSION_MAJOR(physicalDeviceProperties.apiVersion),
+                   VK_API_VERSION_MINOR(physicalDeviceProperties.apiVersion),
+                   VK_API_VERSION_PATCH(physicalDeviceProperties.apiVersion));
     VKR_CORE_TRACE("  -- Driver Version: {}.{}.{}",
                    VK_VERSION_MAJOR(physicalDeviceProperties.driverVersion),
                    VK_VERSION_MINOR(physicalDeviceProperties.driverVersion),
