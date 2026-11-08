@@ -5,7 +5,8 @@
 #include <vector>
 
 namespace vkr::core {
-Instance::Instance(InstanceDesc &desc) : desc_(desc) {
+Instance::Instance(InstanceDesc &desc)
+    : desc_(desc), api_version_(desc.apiVersion) {
   VKR_CORE_INFO("Creating Vulkan Instance: {} ({}.{}.{})", desc_.name,
                 VK_VERSION_MAJOR(desc_.version),
                 VK_VERSION_MINOR(desc_.version),
@@ -14,6 +15,32 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
                 VK_API_VERSION_MAJOR(desc_.apiVersion),
                 VK_API_VERSION_MINOR(desc_.apiVersion),
                 VK_API_VERSION_PATCH(desc_.apiVersion));
+
+  if (!desc.isValid()) {
+    VKR_CORE_ERROR("Invalid instance descriptor: provide an application name, "
+                   "a nonzero application version, and Vulkan API version "
+                   "1.2 or later with variant 0");
+  }
+
+  const auto enumerateInstanceVersion =
+      reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
+          vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"));
+  if (!enumerateInstanceVersion) {
+    VKR_CORE_ERROR("VKR requires a Vulkan 1.2 or later loader");
+  }
+  uint32_t loaderVersion = 0;
+  const auto versionResult = enumerateInstanceVersion(&loaderVersion);
+  if (versionResult != VK_SUCCESS) {
+    VKR_CORE_ERROR("Failed to query Vulkan loader version. VkResult: {}",
+                   static_cast<int>(versionResult));
+  }
+  if (VK_API_VERSION_VARIANT(loaderVersion) != 0 ||
+      loaderVersion < VK_API_VERSION_1_2) {
+    VKR_CORE_ERROR("VKR requires a Vulkan 1.2 or later loader; found {}.{}.{}",
+                   VK_API_VERSION_MAJOR(loaderVersion),
+                   VK_API_VERSION_MINOR(loaderVersion),
+                   VK_API_VERSION_PATCH(loaderVersion));
+  }
 
   querySupport();
   resolveExtensions();
@@ -32,7 +59,7 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   appInfo.applicationVersion = desc_.version;
   appInfo.pEngineName = "vkr";
   appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.apiVersion = desc_.apiVersion;
+  appInfo.apiVersion = api_version_;
 
   VkInstanceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -80,8 +107,10 @@ Instance::Instance(InstanceDesc &desc) : desc_(desc) {
   createInfo.pNext = nullptr;
 #endif
 
-  if (vkCreateInstance(&createInfo, nullptr, &vk_instance_) != VK_SUCCESS) {
-    VKR_CORE_ERROR("failed to create instance!");
+  const auto result = vkCreateInstance(&createInfo, nullptr, &vk_instance_);
+  if (result != VK_SUCCESS) {
+    VKR_CORE_ERROR("Failed to create Vulkan instance. VkResult: {}",
+                   static_cast<int>(result));
   }
 
 #ifndef NDEBUG

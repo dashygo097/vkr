@@ -37,6 +37,16 @@ public:
   [[nodiscard]] auto physicalDevice() const noexcept -> VkPhysicalDevice {
     return vk_physical_device_;
   }
+  [[nodiscard]] auto apiVersion() const noexcept -> uint32_t {
+    return api_version_;
+  }
+  [[nodiscard]] auto cmdBeginRendering() const noexcept
+      -> PFN_vkCmdBeginRendering {
+    return cmd_begin_rendering_;
+  }
+  [[nodiscard]] auto cmdEndRendering() const noexcept -> PFN_vkCmdEndRendering {
+    return cmd_end_rendering_;
+  }
   [[nodiscard]] auto physicalDevicefeatures() const noexcept
       -> const VkPhysicalDeviceFeatures & {
     return physical_device_features_;
@@ -114,6 +124,9 @@ private:
   VkDevice vk_logical_device_{VK_NULL_HANDLE};
   VkPhysicalDeviceProperties physical_device_properties_{};
   VkPhysicalDeviceFeatures physical_device_features_{};
+  uint32_t api_version_{0};
+  PFN_vkCmdBeginRendering cmd_begin_rendering_{nullptr};
+  PFN_vkCmdEndRendering cmd_end_rendering_{nullptr};
 
   std::vector<VkExtensionProperties> available_extensions_{};
   std::vector<std::string> enabled_extensions_{};
@@ -132,7 +145,7 @@ private:
   void pickPhysicalDevice();
   void createLogicalDevice();
   void queryDeviceSupport(VkPhysicalDevice device);
-  [[nodiscard]] auto resolveExtensions() -> bool;
+  [[nodiscard]] auto resolveExtensions(uint32_t apiVersion) -> bool;
   void resolveQueueFamilies(VkPhysicalDevice device);
 };
 } // namespace vkr::core

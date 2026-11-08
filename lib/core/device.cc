@@ -74,9 +74,6 @@ void Device::pickPhysicalDevice() {
     VkPhysicalDeviceProperties physicalDeviceProperties{};
     vkGetPhysicalDeviceProperties(device, &physicalDeviceProperties);
 
-    VkPhysicalDeviceFeatures physicalDeviceFeatures{};
-    vkGetPhysicalDeviceFeatures(device, &physicalDeviceFeatures);
-
     VKR_CORE_INFO("--- Device FOUND: {} ---",
                   physicalDeviceProperties.deviceName);
     VKR_CORE_TRACE("  -- Supported Vulkan API version: {}.{}.{}",
@@ -92,6 +89,15 @@ void Device::pickPhysicalDevice() {
     VKR_CORE_TRACE("  -- Device ID: {:#06x}",
                    physicalDeviceProperties.deviceID);
 
+    if (VK_API_VERSION_VARIANT(physicalDeviceProperties.apiVersion) != 0 ||
+        physicalDeviceProperties.apiVersion < VK_API_VERSION_1_2) {
+      VKR_CORE_WARN("Skipping device without Vulkan 1.2 support: {}",
+                    physicalDeviceProperties.deviceName);
+      continue;
+    }
+    const auto apiVersion =
+        std::min(instance_.apiVersion(), physicalDeviceProperties.apiVersion);
+
     queryDeviceSupport(device);
     resolveQueueFamilies(device);
 
@@ -105,22 +111,38 @@ void Device::pickPhysicalDevice() {
     VKR_CORE_TRACE("  -- Transfer: {}",
                    supportsTransfer() ? "supported" : "unsupported");
 
-    if (!resolveExtensions()) {
+    if (!resolveExtensions(apiVersion)) {
       VKR_CORE_WARN("Skipping device with missing required extension(s): {}",
+                    physicalDeviceProperties.deviceName);
+      continue;
+    }
+
+    // NOTE: explicitly integrate dynamic rendering support
+    VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering{};
+    dynamicRendering.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+    VkPhysicalDeviceFeatures2 features{};
+    features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    features.pNext = &dynamicRendering;
+    vkGetPhysicalDeviceFeatures2(device, &features);
+    if (!dynamicRendering.dynamicRendering) {
+      VKR_CORE_WARN("Skipping device without the dynamicRendering feature: {}",
                     physicalDeviceProperties.deviceName);
       continue;
     }
 
     vk_physical_device_ = device;
     physical_device_properties_ = physicalDeviceProperties;
-    physical_device_features_ = physicalDeviceFeatures;
+    physical_device_features_ = features.features;
+    api_version_ = apiVersion;
     VKR_CORE_INFO("Selected device: {}",
                   physical_device_properties_.deviceName);
     break;
   }
 
   if (vk_physical_device_ == VK_NULL_HANDLE) {
-    VKR_CORE_ERROR("failed to find a suitable physical device!");
+    VKR_CORE_ERROR("No suitable device supports Vulkan 1.2 or later, dynamic "
+                   "rendering, and the required extensions");
   }
 }
 
@@ -157,6 +179,11 @@ void Device::createLogicalDevice() {
 
   VkDeviceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+  VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering{};
+  dynamicRendering.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+  dynamicRendering.dynamicRendering = VK_TRUE;
+  createInfo.pNext = &dynamicRendering;
 
   createInfo.queueCreateInfoCount =
       static_cast<uint32_t>(queueCreateInfos.size());
@@ -177,10 +204,35 @@ void Device::createLogicalDevice() {
   createInfo.enabledLayerCount = 0;
   createInfo.ppEnabledLayerNames = nullptr;
 
-  if (vkCreateDevice(vk_physical_device_, &createInfo, nullptr,
-                     &vk_logical_device_) != VK_SUCCESS) {
-    VKR_CORE_ERROR("Failed to create logical device!");
+  VkDevice logicalDevice{VK_NULL_HANDLE};
+  const auto result =
+      vkCreateDevice(vk_physical_device_, &createInfo, nullptr, &logicalDevice);
+  if (result != VK_SUCCESS) {
+    VKR_CORE_ERROR("Failed to create logical device. VkResult: {}",
+                   static_cast<int>(result));
   }
+
+  const bool coreRendering = api_version_ >= VK_API_VERSION_1_3;
+  const auto beginRendering =
+      reinterpret_cast<PFN_vkCmdBeginRendering>(vkGetDeviceProcAddr(
+          logicalDevice,
+          coreRendering ? "vkCmdBeginRendering" : "vkCmdBeginRenderingKHR"));
+  const auto endRendering =
+      reinterpret_cast<PFN_vkCmdEndRendering>(vkGetDeviceProcAddr(
+          logicalDevice,
+          coreRendering ? "vkCmdEndRendering" : "vkCmdEndRenderingKHR"));
+  if (!beginRendering || !endRendering) {
+    vkDestroyDevice(logicalDevice, nullptr);
+    VKR_CORE_ERROR("Dynamic rendering entry points are unavailable for the {} "
+                   "API path",
+                   coreRendering ? "Vulkan 1.3+ core" : "KHR extension");
+  }
+  vk_logical_device_ = logicalDevice;
+  cmd_begin_rendering_ = beginRendering;
+  cmd_end_rendering_ = endRendering;
+  VKR_CORE_INFO("Dynamic rendering enabled via {}",
+                coreRendering ? "Vulkan 1.3+ core"
+                              : "VK_KHR_dynamic_rendering");
 
   if (supportsGraphics()) {
     vkGetDeviceQueue(vk_logical_device_, graphics_family_, 0,
@@ -221,8 +273,17 @@ void Device::queryDeviceSupport(VkPhysicalDevice device) {
                                            queue_families_.data());
 }
 
-auto Device::resolveExtensions() -> bool {
+auto Device::resolveExtensions(uint32_t apiVersion) -> bool {
   enabled_extensions_.clear();
+
+  if (apiVersion < VK_API_VERSION_1_3) {
+    if (!hasExtension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)) {
+      VKR_CORE_WARN("Vulkan 1.2 requires the {} extension",
+                    VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+      return false;
+    }
+    enabled_extensions_.emplace_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+  }
 
   const std::string portabilityExtension{"VK_KHR_portability_subset"};
   if (hasExtension(portabilityExtension)) {

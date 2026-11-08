@@ -15,13 +15,15 @@ enum class SurfaceIntegration {
 struct InstanceDesc {
   std::string name{};
   uint32_t version{VK_MAKE_VERSION(1, 0, 0)};
-  uint32_t apiVersion{VK_API_VERSION_1_0};
+  uint32_t apiVersion{VK_API_VERSION_1_4};
   SurfaceIntegration surfaceIntegration{SurfaceIntegration::None};
   std::vector<std::string> requiredExtensions{};
   std::vector<std::string> optionalExtensions{};
 
   [[nodiscard]] auto isValid() const noexcept -> bool {
-    return !name.empty() && version != 0 && apiVersion >= VK_API_VERSION_1_0;
+    return !name.empty() && version != 0 &&
+           VK_API_VERSION_VARIANT(apiVersion) == 0 &&
+           apiVersion >= VK_API_VERSION_1_2;
   }
 
   template <typename Archive> auto serialize(Archive &ar) -> void {
@@ -71,9 +73,14 @@ public:
       -> bool;
   [[nodiscard]] auto hasLayer(const std::string &layer) const noexcept -> bool;
 
+  [[nodiscard]] auto apiVersion() const noexcept -> uint32_t {
+    return api_version_;
+  }
+
 private:
   // components
   InstanceDesc &desc_;
+  const uint32_t api_version_;
   VkInstance vk_instance_{VK_NULL_HANDLE};
   std::vector<VkExtensionProperties> available_extensions_{};
   std::vector<VkLayerProperties> available_layers_{};
