@@ -1,8 +1,8 @@
 #pragma once
 
 #include "vkr/core/device.hh"
+#include "vkr/pipeline/vertex_input.hh"
 #include "vkr/resource/shader/module.hh"
-#include "vkr/scene/geometry/vbos.hh"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -981,7 +981,7 @@ struct GraphicsPipelineDesc {
   std::string name{};
   VkPipelineCreateFlags flags{0};
   std::vector<GraphicsShaderStageDesc> shaders{};
-  scene::VertexInputDesc vertexInput{};
+  VertexInputDesc vertexInput{};
 
   GraphicsPipelineLayoutDesc layout{};
   GraphicsInputAssemblyDesc inputAssembly{};
@@ -1013,7 +1013,7 @@ struct GraphicsPipelineDesc {
     return *this;
   }
 
-  auto vertexInputDesc(scene::VertexInputDesc desc) -> GraphicsPipelineDesc & {
+  auto vertexInputDesc(VertexInputDesc desc) -> GraphicsPipelineDesc & {
     vertexInput = std::move(desc);
     return *this;
   }
@@ -1423,14 +1423,14 @@ struct GraphicsPipelineDesc {
       -> GraphicsPipelineDesc {
     GraphicsPipelineDesc desc{};
     return desc.setName(std::move(pipelineName))
-        .vertexInputDesc(scene::VertexInputDesc::none())
+        .vertexInputDesc(VertexInputDesc::none())
         .triangleList()
         .disableDepth()
         .noCull();
   }
 
   [[nodiscard]] static auto mesh(std::string pipelineName,
-                                 scene::VertexInputDesc vertexInputDesc)
+                                 VertexInputDesc vertexInputDesc)
       -> GraphicsPipelineDesc {
     GraphicsPipelineDesc desc{};
     return desc.setName(std::move(pipelineName))
@@ -1440,10 +1440,10 @@ struct GraphicsPipelineDesc {
         .cullBack();
   }
 
-  [[nodiscard]] static auto
-  wireframePreset(std::string pipelineName,
-                  scene::VertexInputDesc vertexInputDesc,
-                  float lineWidth = 1.0f) -> GraphicsPipelineDesc {
+  [[nodiscard]] static auto wireframePreset(std::string pipelineName,
+                                            VertexInputDesc vertexInputDesc,
+                                            float lineWidth = 1.0f)
+      -> GraphicsPipelineDesc {
     GraphicsPipelineDesc desc{};
     return desc.setName(std::move(pipelineName))
         .vertexInputDesc(std::move(vertexInputDesc))
@@ -1454,7 +1454,7 @@ struct GraphicsPipelineDesc {
   }
 
   [[nodiscard]] static auto
-  shadowMap(std::string pipelineName, scene::VertexInputDesc vertexInputDesc,
+  shadowMap(std::string pipelineName, VertexInputDesc vertexInputDesc,
             float depthBiasConstant = 1.25f, float depthBiasSlope = 1.75f,
             VkCullModeFlags shadowCullMode = VK_CULL_MODE_BACK_BIT,
             VkCompareOp compareOp = VK_COMPARE_OP_LESS)

@@ -71,7 +71,8 @@ public:
   void record() override;
   [[nodiscard]] auto dependencies() const
       -> std::vector<std::reference_wrapper<const Pass>> override;
-  auto mesh(std::string name, const scene::IMesh &mesh) -> OverlayPass &;
+  auto mesh(std::string name, const scene::IMesh &mesh,
+            uint32_t instanceCount = 1) -> OverlayPass &;
 
   auto uniform(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)
       -> OverlayPass &;
@@ -121,6 +122,7 @@ private:
   struct MeshEntry {
     std::reference_wrapper<const scene::IMesh> source;
     std::unique_ptr<scene::IndexBuffer> indices;
+    uint32_t instanceCount{1};
   };
 
   // dependencies
@@ -151,7 +153,8 @@ private:
   void createPipeline();
   void createMeshes();
   void validateMesh(const scene::IMesh &mesh,
-                    const scene::VertexInputDesc &input) const;
+                    const pipe::VertexInputDesc &input,
+                    uint32_t instanceCount = 1) const;
   [[nodiscard]] auto createIndices(const scene::IMesh &mesh)
       -> std::unique_ptr<scene::IndexBuffer>;
 };

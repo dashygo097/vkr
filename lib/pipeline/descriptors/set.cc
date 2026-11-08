@@ -171,7 +171,7 @@ void DescriptorSet::assign(uint32_t binding, VkDescriptorType type,
 void DescriptorSet::validateBuffer(VkDescriptorType type,
                                    const VkDescriptorBufferInfo &info) const {
   const bool uniform = type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  const auto &limits = device_.properties().limits;
+  const auto &limits = device_.physicalDeviceproperties().limits;
   const auto alignment = uniform ? limits.minUniformBufferOffsetAlignment
                                  : limits.minStorageBufferOffsetAlignment;
   const auto maxRange =

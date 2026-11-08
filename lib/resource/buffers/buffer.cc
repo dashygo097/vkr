@@ -247,7 +247,8 @@ auto Buffer::mappedRange(VkDeviceSize size, VkDeviceSize offset) const
   }
 
   const auto end = size == VK_WHOLE_SIZE ? size_ : offset + size;
-  const auto atomSize = device_.properties().limits.nonCoherentAtomSize;
+  const auto atomSize =
+      device_.physicalDeviceproperties().limits.nonCoherentAtomSize;
   const auto padding = (atomSize - end % atomSize) % atomSize;
   const auto alignedEnd = end + std::min(padding, allocation_size_ - end);
 

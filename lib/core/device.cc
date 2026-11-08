@@ -2,10 +2,9 @@
 #include "vkr/core/instance.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
-#include <limits>
-#include <numeric>
 #include <set>
 #include <vector>
+#include <vulkan/vulkan_core.h>
 
 namespace vkr::core {
 Device::Device(const Instance &instance, DeviceDesc &deviceDesc)
@@ -72,23 +71,26 @@ void Device::pickPhysicalDevice() {
     compute_family_ = VK_QUEUE_FAMILY_IGNORED;
     transfer_family_ = VK_QUEUE_FAMILY_IGNORED;
 
-    VkPhysicalDeviceProperties deviceProperties{};
-    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+    VkPhysicalDeviceProperties physicalDeviceProperties{};
+    vkGetPhysicalDeviceProperties(device, &physicalDeviceProperties);
 
-    VkPhysicalDeviceFeatures deviceFeatures{};
-    vkGetPhysicalDeviceFeatures(device, &features_);
+    VkPhysicalDeviceFeatures physicalDeviceFeatures{};
+    vkGetPhysicalDeviceFeatures(device, &physicalDeviceFeatures);
 
-    VKR_CORE_INFO("--- Device FOUND: {} ---", deviceProperties.deviceName);
+    VKR_CORE_INFO("--- Device FOUND: {} ---",
+                  physicalDeviceProperties.deviceName);
     VKR_CORE_TRACE("  -- API Version: {}.{}.{}",
-                   VK_VERSION_MAJOR(deviceProperties.apiVersion),
-                   VK_VERSION_MINOR(deviceProperties.apiVersion),
-                   VK_VERSION_PATCH(deviceProperties.apiVersion));
+                   VK_VERSION_MAJOR(physicalDeviceProperties.apiVersion),
+                   VK_VERSION_MINOR(physicalDeviceProperties.apiVersion),
+                   VK_VERSION_PATCH(physicalDeviceProperties.apiVersion));
     VKR_CORE_TRACE("  -- Driver Version: {}.{}.{}",
-                   VK_VERSION_MAJOR(deviceProperties.driverVersion),
-                   VK_VERSION_MINOR(deviceProperties.driverVersion),
-                   VK_VERSION_PATCH(deviceProperties.driverVersion));
-    VKR_CORE_TRACE("  -- Vendor ID: {:#06x}", deviceProperties.vendorID);
-    VKR_CORE_TRACE("  -- Device ID: {:#06x}", deviceProperties.deviceID);
+                   VK_VERSION_MAJOR(physicalDeviceProperties.driverVersion),
+                   VK_VERSION_MINOR(physicalDeviceProperties.driverVersion),
+                   VK_VERSION_PATCH(physicalDeviceProperties.driverVersion));
+    VKR_CORE_TRACE("  -- Vendor ID: {:#06x}",
+                   physicalDeviceProperties.vendorID);
+    VKR_CORE_TRACE("  -- Device ID: {:#06x}",
+                   physicalDeviceProperties.deviceID);
 
     queryDeviceSupport(device);
     resolveQueueFamilies(device);
@@ -105,19 +107,20 @@ void Device::pickPhysicalDevice() {
 
     if (!resolveExtensions()) {
       VKR_CORE_WARN("Skipping device with missing required extension(s): {}",
-                    deviceProperties.deviceName);
+                    physicalDeviceProperties.deviceName);
       continue;
     }
 
     vk_physical_device_ = device;
-    properties_ = deviceProperties;
-    features_ = deviceFeatures;
-    VKR_CORE_INFO("Selected device: {}", deviceProperties.deviceName);
+    physical_device_properties_ = physicalDeviceProperties;
+    physical_device_features_ = physicalDeviceFeatures;
+    VKR_CORE_INFO("Selected device: {}",
+                  physical_device_properties_.deviceName);
     break;
   }
 
   if (vk_physical_device_ == VK_NULL_HANDLE) {
-    VKR_CORE_ERROR("failed to find a suitable GPU!");
+    VKR_CORE_ERROR("failed to find a suitable physical device!");
   }
 }
 
@@ -149,7 +152,8 @@ void Device::createLogicalDevice() {
   }
 
   VkPhysicalDeviceFeatures deviceFeatures{};
-  deviceFeatures.samplerAnisotropy = VK_TRUE;
+  deviceFeatures.samplerAnisotropy =
+      physical_device_features_.samplerAnisotropy;
 
   VkDeviceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -220,23 +224,9 @@ void Device::queryDeviceSupport(VkPhysicalDevice device) {
 auto Device::resolveExtensions() -> bool {
   enabled_extensions_.clear();
 
-  const std::vector<std::string> platformRequiredExtensions{
-#ifdef __APPLE__
-      VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
-#endif
-  };
-
-  for (const auto &extension : platformRequiredExtensions) {
-    if (!hasExtension(extension)) {
-      VKR_CORE_WARN("Required device extension is not available: {}",
-                    extension);
-      return false;
-    }
-
-    if (std::find(enabled_extensions_.begin(), enabled_extensions_.end(),
-                  extension) == enabled_extensions_.end()) {
-      enabled_extensions_.push_back(extension);
-    }
+  const std::string portabilityExtension{"VK_KHR_portability_subset"};
+  if (hasExtension(portabilityExtension)) {
+    enabled_extensions_.push_back(portabilityExtension);
   }
 
   if (supportsPresent()) {
@@ -285,6 +275,9 @@ auto Device::resolveExtensions() -> bool {
 void Device::resolveQueueFamilies(VkPhysicalDevice device) {
   for (uint32_t i = 0; i < queue_families_.size(); i++) {
     const auto &queueFamily = queue_families_[i];
+    if (queueFamily.queueCount == 0) {
+      continue;
+    }
 
     if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
         !supportsGraphics()) {

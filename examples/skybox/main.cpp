@@ -1,4 +1,5 @@
 #include <array>
+#include <cstddef>
 #include <glm/glm.hpp>
 #include <string>
 #include <utility>
@@ -26,10 +27,30 @@ class SkyboxApp : public RenderApplication {
 private:
   void createResources() override {
     scene().createCubemap("skybox", skyboxFaces(), VK_FORMAT_R8G8B8A8_SRGB);
-    scene().createMesh<VertexSkybox3D>("skybox", skyboxCubeVertices(),
-                                       skyboxCubeIndices());
+    scene().createMesh<VertexSkybox3D>(
+        "skybox",
+        {
+            VertexSkybox3D{{-1.0f, -1.0f, -1.0f}},
+            VertexSkybox3D{{1.0f, -1.0f, -1.0f}},
+            VertexSkybox3D{{1.0f, 1.0f, -1.0f}},
+            VertexSkybox3D{{-1.0f, 1.0f, -1.0f}},
+            VertexSkybox3D{{-1.0f, -1.0f, 1.0f}},
+            VertexSkybox3D{{1.0f, -1.0f, 1.0f}},
+            VertexSkybox3D{{1.0f, 1.0f, 1.0f}},
+            VertexSkybox3D{{-1.0f, 1.0f, 1.0f}},
+        },
+        {
+            0, 1, 2, 2, 3, 0, 1, 5, 6, 6, 2, 1, 5, 4, 7, 7, 6, 5,
+            4, 0, 3, 3, 7, 4, 3, 2, 6, 6, 7, 3, 4, 5, 1, 1, 0, 4,
+        });
     scene().createUniformBuffer<UniformBuffer3DObject>("skybox", {});
 
+    VertexImportDesc vertexImport{};
+    vertexImport
+        .attribute(VertexSemantic::Position, VK_FORMAT_R32G32B32_SFLOAT,
+                   offsetof(Vertex3D, pos))
+        .attribute(VertexSemantic::Color, VK_FORMAT_R32G32B32_SFLOAT,
+                   offsetof(Vertex3D, color));
     for (const char *part : CornellBoxParts) {
       std::string path = "objects/cornellbox/";
       path += part;
@@ -37,7 +58,8 @@ private:
 
       std::string meshName = "cornellbox.";
       meshName += part;
-      scene().loadMesh<Vertex3D>(std::move(meshName), resolve(path));
+      scene().loadMesh<Vertex3D>(std::move(meshName), resolve(path),
+                                 vertexImport);
     }
 
     scene().createUniformBuffer<UniformBuffer3DObject>("cornellbox", {});

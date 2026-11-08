@@ -8,10 +8,6 @@
 #include <string>
 #include <vector>
 
-#ifdef __APPLE__
-#include <vulkan/vulkan_beta.h>
-#endif
-
 namespace vkr::core {
 
 struct DeviceDesc {
@@ -41,13 +37,20 @@ public:
   [[nodiscard]] auto physicalDevice() const noexcept -> VkPhysicalDevice {
     return vk_physical_device_;
   }
-  [[nodiscard]] auto features() const noexcept
-      -> const VkPhysicalDeviceFeatures {
-    return features_;
+  [[nodiscard]] auto physicalDevicefeatures() const noexcept
+      -> const VkPhysicalDeviceFeatures & {
+    return physical_device_features_;
   }
-  [[nodiscard]] auto properties() const noexcept
+  [[nodiscard]] auto physicalDeviceproperties() const noexcept
       -> const VkPhysicalDeviceProperties & {
-    return properties_;
+    return physical_device_properties_;
+  }
+  [[nodiscard]] auto formatProperties(VkFormat format) const
+      -> VkFormatProperties {
+    VkFormatProperties properties{};
+    vkGetPhysicalDeviceFormatProperties(vk_physical_device_, format,
+                                        &properties);
+    return properties;
   }
   [[nodiscard]] auto availableExtensions() const noexcept
       -> const std::vector<VkExtensionProperties> & {
@@ -109,8 +112,8 @@ private:
   DeviceDesc &desc_;
   VkPhysicalDevice vk_physical_device_{VK_NULL_HANDLE};
   VkDevice vk_logical_device_{VK_NULL_HANDLE};
-  VkPhysicalDeviceProperties properties_{};
-  VkPhysicalDeviceFeatures features_{};
+  VkPhysicalDeviceProperties physical_device_properties_{};
+  VkPhysicalDeviceFeatures physical_device_features_{};
 
   std::vector<VkExtensionProperties> available_extensions_{};
   std::vector<std::string> enabled_extensions_{};

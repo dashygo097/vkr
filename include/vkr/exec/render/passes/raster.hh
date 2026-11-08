@@ -87,7 +87,7 @@ struct RasterPassDesc {
   [[nodiscard]] static auto offscreen(std::string pipelineName, uint32_t width,
                                       uint32_t height, VkFormat colorFormat,
                                       VkFormat depthFormat,
-                                      scene::VertexInputDesc vertexInputDesc)
+                                      pipe::VertexInputDesc vertexInputDesc)
       -> RasterPassDesc {
     RasterPassDesc desc{};
     desc.target = pipe::OffscreenTargetDesc::sampledColorDepth(
@@ -99,7 +99,7 @@ struct RasterPassDesc {
 
   [[nodiscard]] static auto
   offscreen(std::string pipelineName, VkExtent2D extent2D, VkFormat colorFormat,
-            VkFormat depthFormat, scene::VertexInputDesc vertexInputDesc)
+            VkFormat depthFormat, pipe::VertexInputDesc vertexInputDesc)
       -> RasterPassDesc {
     return RasterPassDesc::offscreen(pipelineName, extent2D.width,
                                      extent2D.height, colorFormat, depthFormat,
@@ -108,7 +108,7 @@ struct RasterPassDesc {
 
   [[nodiscard]] static auto
   shadowMap(std::string pipelineName, uint32_t width, uint32_t height,
-            VkFormat depthFormat, scene::VertexInputDesc vertexInputDesc,
+            VkFormat depthFormat, pipe::VertexInputDesc vertexInputDesc,
             float depthBiasConstant = 1.25F, float depthBiasSlope = 1.75F,
             VkCullModeFlags shadowCullMode = VK_CULL_MODE_BACK_BIT,
             VkCompareOp compareOp = VK_COMPARE_OP_LESS) -> RasterPassDesc {
@@ -124,7 +124,7 @@ struct RasterPassDesc {
 
   [[nodiscard]] static auto
   shadowMap(std::string pipelineName, VkExtent2D extent2D, VkFormat depthFormat,
-            scene::VertexInputDesc vertexInputDesc,
+            pipe::VertexInputDesc vertexInputDesc,
             float depthBiasConstant = 1.25F, float depthBiasSlope = 1.75F,
             VkCullModeFlags shadowCullMode = VK_CULL_MODE_BACK_BIT,
             VkCompareOp compareOp = VK_COMPARE_OP_LESS) -> RasterPassDesc {
@@ -149,7 +149,8 @@ public:
   void destroy() noexcept override;
   void update(const RasterPassDesc &desc);
   void record() override;
-  auto mesh(const scene::IMesh &mesh) -> RasterPass &;
+  auto mesh(const scene::IMesh &mesh, uint32_t instanceCount = 1)
+      -> RasterPass &;
 
   auto uniform(uint32_t setIndex, uint32_t binding, const res::Buffer &buffer)
       -> RasterPass &;
@@ -208,6 +209,11 @@ public:
   }
 
 private:
+  struct MeshEntry {
+    std::reference_wrapper<const scene::IMesh> source;
+    uint32_t instanceCount;
+  };
+
   // dependencies
   RenderExecutor &executor_;
   const core::Device &device_;
@@ -222,7 +228,7 @@ private:
   std::vector<std::vector<pipe::DescriptorSet>> descriptor_sets_{};
   std::unique_ptr<pipe::GraphicsPipeline> pipeline_{};
   std::vector<std::reference_wrapper<Pass>> sources_{};
-  std::vector<std::reference_wrapper<const scene::IMesh>> meshes_{};
+  std::vector<MeshEntry> meshes_{};
 
   // helpers
   void createTarget();
@@ -230,7 +236,8 @@ private:
   void createFramebuffers();
   void validate(const RasterPassDesc &desc) const;
   void validateMesh(const scene::IMesh &mesh,
-                    const scene::VertexInputDesc &input) const;
+                    const pipe::VertexInputDesc &input,
+                    uint32_t instanceCount) const;
   void createDescriptors();
   void createPipeline();
 };

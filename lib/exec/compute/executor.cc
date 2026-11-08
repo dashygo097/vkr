@@ -55,8 +55,8 @@ void ComputeExecutor::submitAndWait() {
   submitInfo.pCommandBuffers = &commandBuffer;
 
   completion_.reset();
-  if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo, completion_.fence()) !=
-      VK_SUCCESS) {
+  if (vkQueueSubmit(command_pool_.queue(), 1, &submitInfo,
+                    completion_.fence()) != VK_SUCCESS) {
     VKR_EXEC_ERROR("failed to submit compute command buffer");
   }
 

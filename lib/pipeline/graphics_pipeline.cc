@@ -30,6 +30,7 @@ auto GraphicsPipeline::update(const GraphicsPipelineDesc &desc) -> bool {
   if (!nextDesc.isValid()) {
     VKR_PIPE_ERROR("Invalid graphics pipeline descriptor");
   }
+  nextDesc.vertexInput.validate(device_);
 
   if (render_pass_.renderPass() == VK_NULL_HANDLE) {
     VKR_PIPE_ERROR("Graphics pipeline '{}' requires a valid render pass",

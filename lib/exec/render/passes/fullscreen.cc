@@ -305,7 +305,7 @@ void FullscreenPass::validate(const FullscreenPassDesc &desc) const {
     VKR_EXEC_ERROR("FullscreenPass '{}' has an invalid pipeline descriptor",
                    name());
   }
-  const auto &properties = device_.properties();
+  const auto &properties = device_.physicalDeviceproperties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("FullscreenPass '{}' exceeds maxBoundDescriptorSets",

@@ -131,7 +131,7 @@ void ComputePass::validate(const ComputePassDesc &desc) const {
     VKR_EXEC_ERROR("ComputePass '{}' has invalid dispatch group counts",
                    name());
   }
-  const auto &properties = device_.properties();
+  const auto &properties = device_.physicalDeviceproperties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("ComputePass '{}' exceeds maxBoundDescriptorSets", name());

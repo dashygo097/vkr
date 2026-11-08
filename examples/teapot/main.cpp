@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <utility>
@@ -21,8 +22,18 @@ struct UniformBuffer3DObject {
 class TeapotApp : public RenderApplication {
 private:
   void createResources() override {
+    VertexImportDesc vertexImport{};
+    vertexImport
+        .attribute(VertexSemantic::Position, VK_FORMAT_R32G32B32_SFLOAT,
+                   offsetof(VertexNormalTexture3D, pos))
+        .attribute(VertexSemantic::Color, VK_FORMAT_R32G32B32_SFLOAT,
+                   offsetof(VertexNormalTexture3D, color))
+        .attribute(VertexSemantic::Normal, VK_FORMAT_R32G32B32_SFLOAT,
+                   offsetof(VertexNormalTexture3D, normal))
+        .attribute(VertexSemantic::TexCoord, VK_FORMAT_R32G32_SFLOAT,
+                   offsetof(VertexNormalTexture3D, texCoord));
     scene().loadMesh<VertexNormalTexture3D>(
-        "teapot", resolve("objects/teapot/teapot.obj"));
+        "teapot", resolve("objects/teapot/teapot.obj"), vertexImport);
     scene().loadTexture("teapot_texture",
                         resolve("objects/teapot/default.png"));
     scene().createUniformBuffer<UniformBuffer3DObject>("default", {});

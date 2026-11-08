@@ -157,7 +157,7 @@ void RenderApplication::drawFrame() {
   executor_->submitFrame();
   const auto report = profiler_ ? profiler_->collect() : ProfileReport{};
   if (ctx.profiler.logReport && !report.gpuSamples.empty()) {
-    VKR_EXEC_INFO("GPU profile report:");
+    VKR_EXEC_INFO("Device profile report:");
     for (const auto &sample : report.gpuSamples) {
       VKR_EXEC_INFO("  {}: {:.6f} ms", sample.name, sample.milliseconds);
     }

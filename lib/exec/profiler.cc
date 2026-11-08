@@ -71,7 +71,7 @@ void ProfileReport::log() const {
     }
   };
   logSamples("CPU", cpuSamples);
-  logSamples("GPU", gpuSamples);
+  logSamples("Device", gpuSamples);
 }
 
 Profiler::Profiler(const core::Device &device,
@@ -89,30 +89,31 @@ void Profiler::create() {
   }
 
   if (!desc_.enableGpuTimestamps) {
-    VKR_EXEC_INFO("GPU profiler disabled by config");
+    VKR_EXEC_INFO("Device profiler disabled by config");
     return;
   }
 
   const auto &families = device_.queueFamilies();
   if (command_pool_.queueFamily() >= families.size()) {
-    VKR_EXEC_WARN("GPU profiler disabled: command pool queue family {} is out "
-                  "of range",
-                  command_pool_.queueFamily());
+    VKR_EXEC_WARN(
+        "Device profiler disabled: command pool queue family {} is out "
+        "of range",
+        command_pool_.queueFamily());
     return;
   }
 
   timestamp_valid_bits_ =
       families[command_pool_.queueFamily()].timestampValidBits;
   if (timestamp_valid_bits_ == 0) {
-    VKR_EXEC_WARN("GPU profiler disabled: queue family {} does not support "
+    VKR_EXEC_WARN("Device profiler disabled: queue family {} does not support "
                   "timestamps",
                   command_pool_.queueFamily());
     return;
   }
 
-  timestamp_period_ = device_.properties().limits.timestampPeriod;
+  timestamp_period_ = device_.physicalDeviceproperties().limits.timestampPeriod;
   if (timestamp_period_ <= 0.0F) {
-    VKR_EXEC_WARN("GPU profiler disabled: invalid timestamp period");
+    VKR_EXEC_WARN("Device profiler disabled: invalid timestamp period");
     return;
   }
 
@@ -123,14 +124,14 @@ void Profiler::create() {
 
   if (vkCreateQueryPool(device_.device(), &queryPoolInfo, nullptr,
                         &query_pool_) != VK_SUCCESS) {
-    VKR_EXEC_WARN("GPU profiler disabled: failed to create timestamp query "
+    VKR_EXEC_WARN("Device profiler disabled: failed to create timestamp query "
                   "pool");
     query_pool_ = VK_NULL_HANDLE;
     return;
   }
 
   enabled_ = true;
-  VKR_EXEC_INFO("GPU profiler enabled: maxScopes={}, timestampPeriod={} ns",
+  VKR_EXEC_INFO("Device profiler enabled: maxScopes={}, timestampPeriod={} ns",
                 desc_.maxScopes, timestamp_period_);
 }
 
@@ -193,7 +194,7 @@ void Profiler::beginScope(VkCommandBuffer commandBuffer, std::string_view name,
   }
 
   if (next_query_ + 1 >= queryCount()) {
-    VKR_EXEC_WARN("GPU profiler scope limit reached, skipping scope '{}'",
+    VKR_EXEC_WARN("Device profiler scope limit reached, skipping scope '{}'",
                   std::string(name));
     return;
   }
@@ -226,7 +227,7 @@ void Profiler::endScope(VkCommandBuffer commandBuffer,
   }
 
   if (scope_stack_.empty()) {
-    VKR_EXEC_WARN("GPU profiler endScope called without an active scope");
+    VKR_EXEC_WARN("Device profiler endScope called without an active scope");
     return;
   }
 
@@ -252,7 +253,7 @@ auto Profiler::collect() -> ProfileReport {
       VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 
   if (result != VK_SUCCESS) {
-    VKR_EXEC_WARN("Failed to collect GPU profiler timestamp results");
+    VKR_EXEC_WARN("Failed to collect device profiler timestamp results");
     return report;
   }
 

@@ -339,24 +339,40 @@ void RenderExecutor::setViewportAndScissor(VkExtent2D extent) {
   vkCmdSetScissor(commandBuffer(), 0, 1, &scissor);
 }
 
-void RenderExecutor::drawIndexed(const scene::IVertexBuffer &vertexBuffer,
-                                 const scene::IndexBuffer &indexBuffer) {
+void RenderExecutor::bindVertexBuffer(uint32_t binding,
+                                      const scene::IVertexBuffer &buffer,
+                                      VkDeviceSize offset) {
+  ensureRecording("bindVertexBuffer");
+  if (binding >=
+          device_.physicalDeviceproperties().limits.maxVertexInputBindings ||
+      buffer.buffer() == VK_NULL_HANDLE || buffer.vertexCount() == 0 ||
+      buffer.stride() == 0 ||
+      offset / buffer.stride() >= buffer.vertexCount()) {
+    VKR_EXEC_ERROR("Invalid vertex buffer binding {} or offset {}", binding,
+                   offset);
+  }
+  const auto handle = buffer.buffer();
+  vkCmdBindVertexBuffers(commandBuffer(), binding, 1, &handle, &offset);
+}
+
+void RenderExecutor::drawIndexed(const scene::IndexBuffer &indexBuffer,
+                                 uint32_t instanceCount,
+                                 uint32_t firstInstance) {
   ensureRecording("drawIndexed");
 
-  if (vertexBuffer.vertexCount() == 0 || indexBuffer.indices().empty()) {
+  if (instanceCount == 0 || indexBuffer.indices().empty()) {
     return;
   }
 
-  std::array<VkDeviceSize, 1> offsets = {0};
-  std::array<VkBuffer, 1> vertexBuffers = {vertexBuffer.buffer()};
-
-  vkCmdBindVertexBuffers(commandBuffer(), 0, 1, vertexBuffers.data(),
-                         offsets.data());
+  if (indexBuffer.buffer() == VK_NULL_HANDLE ||
+      indexBuffer.indices().size() > std::numeric_limits<uint32_t>::max()) {
+    VKR_EXEC_ERROR("Invalid index buffer or index count");
+  }
   vkCmdBindIndexBuffer(commandBuffer(), indexBuffer.buffer(), 0,
                        VK_INDEX_TYPE_UINT16);
   vkCmdDrawIndexed(commandBuffer(),
-                   static_cast<uint32_t>(indexBuffer.indices().size()), 1, 0, 0,
-                   0);
+                   static_cast<uint32_t>(indexBuffer.indices().size()),
+                   instanceCount, 0, 0, firstInstance);
 }
 
 void RenderExecutor::drawFullscreenTriangle() {

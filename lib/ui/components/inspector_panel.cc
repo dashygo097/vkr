@@ -112,11 +112,9 @@ void InspectorPanel::renderResource() {
       ImGui::EndTable();
     }
     if (ImGui::CollapsingHeader("Advanced")) {
-      const auto vertexInput = vertexBuffer->get().vertexInputDesc();
       if (beginPropertyTable("##mesh_advanced")) {
-        propertyRow("Bindings", std::to_string(vertexInput.bindings.size()));
-        propertyRow("Attributes",
-                    std::to_string(vertexInput.attributes.size()));
+        propertyRow("Vertex stride",
+                    std::to_string(vertexBuffer->get().stride()));
         ImGui::EndTable();
       }
     }

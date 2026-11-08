@@ -84,7 +84,8 @@ void OverlayPass::update(const OverlayPassDesc &desc) {
   }
   validate(desc);
   for (const auto &entry : meshes_) {
-    validateMesh(entry.second.source.get(), desc.pipeline.vertexInput);
+    validateMesh(entry.second.source.get(), desc.pipeline.vertexInput,
+                 entry.second.instanceCount);
   }
   auto nextDesc = desc;
   const auto setCount = std::max<size_t>(1, nextDesc.descriptorLayouts.size());
@@ -158,7 +159,8 @@ auto OverlayPass::storage(uint32_t setIndex, uint32_t binding,
 void OverlayPass::create() {
   validate(desc_);
   for (const auto &entry : meshes_) {
-    validateMesh(entry.second.source.get(), desc_.pipeline.vertexInput);
+    validateMesh(entry.second.source.get(), desc_.pipeline.vertexInput,
+                 entry.second.instanceCount);
   }
   destroy();
 
@@ -194,16 +196,16 @@ void OverlayPass::destroy() noexcept {
   target_source_.reset();
 }
 
-auto OverlayPass::mesh(std::string meshName, const scene::IMesh &mesh)
-    -> OverlayPass & {
+auto OverlayPass::mesh(std::string meshName, const scene::IMesh &mesh,
+                       uint32_t instanceCount) -> OverlayPass & {
   if (meshName.empty()) {
     VKR_EXEC_ERROR("OverlayPass '{}' mesh binding name cannot be empty",
                    name());
   }
   const auto &input =
       pipeline_ ? pipeline_->desc().vertexInput : desc_.pipeline.vertexInput;
-  validateMesh(mesh, input);
-  MeshEntry next{std::cref(mesh), {}};
+  validateMesh(mesh, input, instanceCount);
+  MeshEntry next{std::cref(mesh), {}, instanceCount};
   if (pipeline_) {
     next.indices = createIndices(mesh);
     device_.waitIdle();
@@ -245,9 +247,7 @@ void OverlayPass::record() {
   }
 
   const auto &mesh = selected_mesh_->get();
-  const auto vertices = mesh.source.get().vertexBufferBase();
-  if (!vertices || vertices->get().buffer() == VK_NULL_HANDLE ||
-      !mesh.indices) {
+  if (!mesh.indices) {
     VKR_EXEC_ERROR("OverlayPass '{}' selected mesh has invalid buffers",
                    name());
   }
@@ -261,7 +261,20 @@ void OverlayPass::record() {
   } else {
     executor_.bindPipeline(*pipeline_);
   }
-  executor_.drawIndexed(vertices->get(), *mesh.indices);
+  for (const auto &binding : pipeline_->desc().vertexInput.bindings) {
+    const auto stream = mesh.source.get().stream(binding.binding);
+    const size_t required = binding.inputRate == VK_VERTEX_INPUT_RATE_INSTANCE
+                                ? mesh.instanceCount
+                                : size_t{mesh.indices->maxIndex()} + 1;
+    if (!stream || stream->get().stride() != binding.stride ||
+        stream->get().vertexCount() < required) {
+      VKR_EXEC_ERROR("OverlayPass '{}' mesh binding {} is unavailable or "
+                     "incompatible",
+                     name(), binding.binding);
+    }
+    executor_.bindVertexBuffer(binding.binding, stream->get());
+  }
+  executor_.drawIndexed(*mesh.indices, mesh.instanceCount);
   executor_.endPass();
   executor_.endProfileScope();
 }
@@ -400,7 +413,7 @@ void OverlayPass::validate(const OverlayPassDesc &desc) const {
                    name());
   }
 
-  const auto &properties = device_.properties();
+  const auto &properties = device_.physicalDeviceproperties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("OverlayPass '{}' exceeds maxBoundDescriptorSets", name());
@@ -465,20 +478,12 @@ void OverlayPass::createMeshes() {
 }
 
 void OverlayPass::validateMesh(const scene::IMesh &mesh,
-                               const scene::VertexInputDesc &expected) const {
-  const auto vertices = mesh.vertexBufferBase();
+                               const pipe::VertexInputDesc &expected,
+                               uint32_t instanceCount) const {
   const auto indices = mesh.indexBuffer();
-  if (!vertices || !indices || vertices->get().buffer() == VK_NULL_HANDLE ||
-      indices->get().buffer() == VK_NULL_HANDLE ||
-      vertices->get().vertexCount() == 0) {
+  if (!indices || indices->get().buffer() == VK_NULL_HANDLE ||
+      instanceCount == 0) {
     VKR_EXEC_ERROR("OverlayPass '{}' requires initialized mesh buffers",
-                   name());
-  }
-  const auto input = vertices->get().vertexInputDesc();
-  if (!(input == expected) || input.bindings.size() != 1 ||
-      input.bindings[0].binding != 0 ||
-      input.bindings[0].inputRate != VK_VERTEX_INPUT_RATE_VERTEX) {
-    VKR_EXEC_ERROR("OverlayPass '{}' mesh has incompatible vertex input",
                    name());
   }
   const auto &triangles = indices->get().indices();
@@ -486,9 +491,18 @@ void OverlayPass::validateMesh(const scene::IMesh &mesh,
     VKR_EXEC_ERROR("OverlayPass '{}' requires triangle-list source meshes",
                    name());
   }
-  for (const auto index : triangles) {
-    if (index >= vertices->get().vertexCount()) {
-      VKR_EXEC_ERROR("OverlayPass '{}' mesh index is out of range", name());
+  const auto maximumIndex = indices->get().maxIndex();
+  for (const auto &binding : expected.bindings) {
+    const auto stream = mesh.stream(binding.binding);
+    const size_t required = binding.inputRate == VK_VERTEX_INPUT_RATE_INSTANCE
+                                ? instanceCount
+                                : static_cast<size_t>(maximumIndex) + 1;
+    if (!stream || stream->get().buffer() == VK_NULL_HANDLE ||
+        stream->get().stride() != binding.stride ||
+        stream->get().vertexCount() < required) {
+      VKR_EXEC_ERROR("OverlayPass '{}' mesh binding {} has incompatible "
+                     "stride or insufficient elements",
+                     name(), binding.binding);
     }
   }
 }

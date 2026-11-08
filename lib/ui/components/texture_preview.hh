@@ -66,7 +66,7 @@ private:
   struct Frame {
     explicit Frame(const core::Device &device);
 
-    // Thumbnail and popup never overwrite one another's GPU state.
+    // Thumbnail and popup never overwrite one another's device state.
     std::array<res::ImageView, 2> views;
     std::array<res::UniformBuffer, 2> parameters;
     res::Buffer readback;

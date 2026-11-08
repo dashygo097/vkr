@@ -85,12 +85,12 @@ public:
   }
 
   template <typename VertexType>
-  auto loadMesh(std::string name, const std::filesystem::path &path)
-      -> Mesh<VertexType> & {
+  auto loadMesh(std::string name, const std::filesystem::path &path,
+                const VertexImportDesc &desc) -> Mesh<VertexType> & {
     validateNewResource(meshes_, name, "mesh");
 
     auto mesh = std::make_unique<Mesh<VertexType>>(device_, command_pool_);
-    mesh->load(path.string());
+    mesh->load(path, desc);
 
     auto &result = *mesh;
     meshes_.emplace(std::move(name), std::move(mesh));

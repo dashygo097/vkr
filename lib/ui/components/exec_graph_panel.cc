@@ -188,7 +188,7 @@ void ExecGraphPanel::render() {
         "Left to right: dependency direction\n"
         "Wheel: zoom at cursor\nDrag empty space: pan\n"
         "Middle/right drag: pan anywhere\nClick a pass: inspect\n"
-        "Layers indicate dependencies, not parallel GPU execution.");
+        "Layers indicate dependencies, not parallel device execution.");
   }
 
   std::array<char, 64> summary{};

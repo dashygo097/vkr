@@ -1,5 +1,6 @@
 #include "vkr/scene/geometry/index_buffer.hh"
 #include "vkr/logger.hh"
+#include <algorithm>
 
 namespace vkr::scene {
 
@@ -14,6 +15,7 @@ void IndexBuffer::create() {
   if (indices_.empty()) {
     VKR_RES_ERROR("Cannot create index buffer with no indices");
   }
+  max_index_ = *std::max_element(indices_.begin(), indices_.end());
 
   VkDeviceSize bufferSize = sizeof(indices_[0]) * indices_.size();
 
@@ -69,6 +71,7 @@ void IndexBuffer::create() {
 void IndexBuffer::destroy() {
   target_->destroy();
   indices_.clear();
+  max_index_ = 0;
 }
 
 void IndexBuffer::update(const std::vector<uint16_t> &indices) {

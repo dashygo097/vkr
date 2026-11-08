@@ -5,12 +5,12 @@
 #include "vkr/logger.hh"
 #include "vkr/scene/geometry/index_buffer.hh"
 #include "vkr/scene/geometry/vertex_buffer.hh"
+#include "vkr/scene/geometry/vertex_import.hh"
 #include "vkr/scene/transform.hh"
+#include "vkr/util/obj_loader.hh"
 #include <functional>
-#include <limits>
 #include <memory>
 #include <optional>
-#include <tiny_obj_loader.h>
 #include <unordered_map>
 #include <vector>
 
@@ -30,12 +30,29 @@ public:
   [[nodiscard]] virtual auto indexBuffer() const
       -> std::optional<std::reference_wrapper<const IndexBuffer>> = 0;
 
+  auto stream(uint32_t binding, const IVertexBuffer &buffer) -> IMesh & {
+    streams_.insert_or_assign(binding, std::cref(buffer));
+    return *this;
+  }
+  auto stream(uint32_t, const IVertexBuffer &&) -> IMesh & = delete;
+
+  [[nodiscard]] auto stream(uint32_t binding) const
+      -> std::optional<std::reference_wrapper<const IVertexBuffer>> {
+    const auto found = streams_.find(binding);
+    if (found != streams_.end()) {
+      return found->second;
+    }
+    return binding == 0 ? vertexBufferBase() : std::nullopt;
+  }
+
   [[nodiscard]] auto isValid() const -> bool {
     return vertexBufferBase().has_value() && indexBuffer().has_value();
   }
 
 private:
   Transform transform_{};
+  std::unordered_map<uint32_t, std::reference_wrapper<const IVertexBuffer>>
+      streams_{};
 };
 
 template <typename VBOType> class Mesh final : public IMesh {
@@ -61,104 +78,10 @@ public:
       update(vertices, indices);
     }
   }
-  void load(const std::string &meshFilePath) {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn;
-    std::string err;
-
-    const std::string::size_type separator = meshFilePath.find_last_of("/\\");
-    const std::string dir = separator == std::string::npos
-                                ? std::string{}
-                                : meshFilePath.substr(0, separator);
-    const char *basepath = dir.empty() ? nullptr : dir.c_str();
-
-    const bool success =
-        tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
-                         meshFilePath.c_str(), basepath, true);
-
-    if (!warn.empty()) {
-      VKR_RES_WARN("OBJ warning: {}", warn);
-    }
-
-    if (!err.empty()) {
-      VKR_RES_ERROR("OBJ error: {}", err);
-    }
-
-    if (!success) {
-      VKR_RES_ERROR("Failed to load OBJ file: {}", meshFilePath);
-    }
-
-    std::vector<VBOType> vertices;
-    std::vector<uint16_t> indices;
-    std::unordered_map<VBOType, uint16_t> uniqueVertices;
-
-    for (const auto &shape : shapes) {
-      for (const auto &index : shape.mesh.indices) {
-        glm::vec3 pos{};
-        glm::vec3 color{1.0f, 1.0f, 1.0f};
-        glm::vec3 normal{};
-        glm::vec2 texCoord{};
-
-        if (index.vertex_index >= 0) {
-          const auto vertexOffset = static_cast<size_t>(3 * index.vertex_index);
-          if (attrib.vertices.size() > vertexOffset + 2) {
-            pos = {attrib.vertices[vertexOffset + 0],
-                   attrib.vertices[vertexOffset + 1],
-                   attrib.vertices[vertexOffset + 2]};
-          }
-
-          if (attrib.colors.size() > vertexOffset + 2) {
-            color = {attrib.colors[vertexOffset + 0],
-                     attrib.colors[vertexOffset + 1],
-                     attrib.colors[vertexOffset + 2]};
-          }
-        }
-
-        if (index.normal_index >= 0) {
-          const auto normalOffset = static_cast<size_t>(3 * index.normal_index);
-          if (attrib.normals.size() > normalOffset + 2) {
-            normal = {attrib.normals[normalOffset + 0],
-                      attrib.normals[normalOffset + 1],
-                      attrib.normals[normalOffset + 2]};
-          }
-        }
-
-        if (index.texcoord_index >= 0) {
-          const auto texCoordOffset =
-              static_cast<size_t>(2 * index.texcoord_index);
-          if (attrib.texcoords.size() > texCoordOffset + 1) {
-            texCoord = {attrib.texcoords[texCoordOffset + 0],
-                        attrib.texcoords[texCoordOffset + 1]};
-          }
-        }
-
-        const VBOType vertex{
-            VertexNormalTexture3D{pos, color, normal, texCoord}};
-        const auto existing = uniqueVertices.find(vertex);
-        if (existing != uniqueVertices.end()) {
-          indices.push_back(existing->second);
-          continue;
-        }
-
-        if (vertices.size() > std::numeric_limits<uint16_t>::max()) {
-          VKR_RES_ERROR(
-              "Mesh exceeds the 16-bit index capacity of {} vertices",
-              static_cast<size_t>(std::numeric_limits<uint16_t>::max()) + 1);
-        }
-
-        const auto vertexIndex = static_cast<uint16_t>(vertices.size());
-        uniqueVertices.emplace(vertex, vertexIndex);
-        vertices.push_back(vertex);
-        indices.push_back(vertexIndex);
-      }
-    }
-
-    load(vertices, indices);
-
-    VKR_RES_INFO("Loaded mesh: {} vertices, {} indices", vertices.size(),
-                 indices.size());
+  void load(const std::filesystem::path &path, const VertexImportDesc &desc) {
+    const auto source = util::loadObj(path);
+    const auto vertices = desc.pack<VBOType>(source.vertices);
+    load(vertices, source.indices);
   }
 
   void update(const std::vector<VBOType> &vertices,

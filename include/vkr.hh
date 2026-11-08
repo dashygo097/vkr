@@ -24,6 +24,7 @@
 #include "vkr/exec/render/passes/ui.hh"
 #include "vkr/pipeline/compute_pipeline.hh"
 #include "vkr/pipeline/targets/frame_history.hh"
+#include "vkr/pipeline/vertex_input.hh"
 #include "vkr/resource/buffers/buffer.hh"
 #include "vkr/resource/buffers/storage_buffer.hh"
 #include "vkr/resource/buffers/uniform_buffer.hh"
@@ -34,8 +35,10 @@
 #include "vkr/scene/geometry/mesh.hh"
 #include "vkr/scene/geometry/vbos.hh"
 #include "vkr/scene/geometry/vertex_buffer.hh"
+#include "vkr/scene/geometry/vertex_import.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/scene/transform.hh"
+#include "vkr/util/obj_loader.hh"
 #include "vkr/util/runtime_path.hh"
 #include <exception>
 #include <iostream>

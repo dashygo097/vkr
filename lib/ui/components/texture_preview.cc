@@ -194,9 +194,7 @@ TexturePreview::TexturePreview(
   }
 }
 
-TexturePreview::~TexturePreview() {
-  pipeline_.destroy();
-}
+TexturePreview::~TexturePreview() { pipeline_.destroy(); }
 
 auto TexturePreview::image() const -> std::optional<Image> {
   Image result{};
@@ -326,12 +324,10 @@ auto TexturePreview::validate(const Image &value) const -> std::string_view {
 }
 
 void TexturePreview::createPipeline() {
-  scene::VertexInputDesc input{};
-  input.bindings = {{0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX}};
-  input.attributes = {
-      {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)},
-      {1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},
-  };
+  pipe::VertexInputDesc input{};
+  input.binding<ImDrawVert>(0)
+      .attribute(0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos))
+      .attribute(1, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv));
   auto desc =
       pipe::GraphicsPipelineDesc::fullscreen("Inspector preview")
           .vertexInputDesc(std::move(input))

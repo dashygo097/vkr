@@ -99,8 +99,10 @@ public:
                     std::vector<pipe::DescriptorSet> &sets);
   void setViewportAndScissor(VkExtent2D extent);
 
-  void drawIndexed(const scene::IVertexBuffer &vertexBuffer,
-                   const scene::IndexBuffer &indexBuffer);
+  void bindVertexBuffer(uint32_t binding, const scene::IVertexBuffer &buffer,
+                        VkDeviceSize offset = 0);
+  void drawIndexed(const scene::IndexBuffer &indexBuffer,
+                   uint32_t instanceCount = 1, uint32_t firstInstance = 0);
   void drawFullscreenTriangle();
   void beginProfileScope(std::string_view name);
   void endProfileScope();

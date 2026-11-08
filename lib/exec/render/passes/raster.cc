@@ -122,7 +122,8 @@ auto RasterPass::storage(uint32_t setIndex, uint32_t binding,
 void RasterPass::create() {
   validate(desc_);
   for (const auto &mesh : meshes_) {
-    validateMesh(mesh.get(), desc_.pipeline.vertexInput);
+    validateMesh(mesh.source.get(), desc_.pipeline.vertexInput,
+                 mesh.instanceCount);
   }
   destroy();
 
@@ -158,7 +159,8 @@ void RasterPass::update(const RasterPassDesc &desc) {
   }
   validate(desc);
   for (const auto &mesh : meshes_) {
-    validateMesh(mesh.get(), desc.pipeline.vertexInput);
+    validateMesh(mesh.source.get(), desc.pipeline.vertexInput,
+                 mesh.instanceCount);
   }
   auto nextDesc = desc;
   for (const auto &input : nextDesc.inputs) {
@@ -185,35 +187,44 @@ void RasterPass::update(const RasterPassDesc &desc) {
   desc_ = std::move(nextDesc);
 }
 
-auto RasterPass::mesh(const scene::IMesh &mesh) -> RasterPass & {
+auto RasterPass::mesh(const scene::IMesh &mesh, uint32_t instanceCount)
+    -> RasterPass & {
   const auto &input =
       pipeline_ ? pipeline_->desc().vertexInput : desc_.pipeline.vertexInput;
-  validateMesh(mesh, input);
+  validateMesh(mesh, input, instanceCount);
   const auto existing = std::find_if(
       meshes_.begin(), meshes_.end(), [&mesh](const auto &entry) -> bool {
-        return std::addressof(entry.get()) == std::addressof(mesh);
+        return std::addressof(entry.source.get()) == std::addressof(mesh);
       });
   if (existing == meshes_.end()) {
-    meshes_.emplace_back(mesh);
+    meshes_.push_back({std::cref(mesh), instanceCount});
+  } else {
+    existing->instanceCount = instanceCount;
   }
   return *this;
 }
 
 void RasterPass::validateMesh(const scene::IMesh &mesh,
-                              const scene::VertexInputDesc &expected) const {
-  const auto vertices = mesh.vertexBufferBase();
+                              const pipe::VertexInputDesc &expected,
+                              uint32_t instanceCount) const {
   const auto indices = mesh.indexBuffer();
-  if (!vertices || !indices || vertices->get().buffer() == VK_NULL_HANDLE ||
-      indices->get().buffer() == VK_NULL_HANDLE ||
-      vertices->get().vertexCount() == 0 || indices->get().indices().empty()) {
+  if (!indices || indices->get().buffer() == VK_NULL_HANDLE ||
+      indices->get().indices().empty() || instanceCount == 0) {
     VKR_EXEC_ERROR("RasterPass '{}' requires initialized mesh buffers", name());
   }
-  const auto input = vertices->get().vertexInputDesc();
-  if (!(input == expected) || input.bindings.size() != 1 ||
-      input.bindings[0].binding != 0 ||
-      input.bindings[0].inputRate != VK_VERTEX_INPUT_RATE_VERTEX) {
-    VKR_EXEC_ERROR("RasterPass '{}' mesh has incompatible vertex input",
-                   name());
+  const auto maximumIndex = indices->get().maxIndex();
+  for (const auto &binding : expected.bindings) {
+    const auto stream = mesh.stream(binding.binding);
+    const size_t required = binding.inputRate == VK_VERTEX_INPUT_RATE_INSTANCE
+                                ? instanceCount
+                                : static_cast<size_t>(maximumIndex) + 1;
+    if (!stream || stream->get().buffer() == VK_NULL_HANDLE ||
+        stream->get().stride() != binding.stride ||
+        stream->get().vertexCount() < required) {
+      VKR_EXEC_ERROR("RasterPass '{}' mesh binding {} has incompatible "
+                     "stride or insufficient elements",
+                     name(), binding.binding);
+    }
   }
 }
 
@@ -252,14 +263,27 @@ void RasterPass::record() {
       executor_.bindPipeline(*pipeline_);
     }
     for (const auto &entry : meshes_) {
-      const auto &mesh = entry.get();
-      const auto vertices = mesh.vertexBufferBase();
+      const auto &mesh = entry.source.get();
       const auto indices = mesh.indexBuffer();
-      if (!vertices || !indices) {
+      if (!indices) {
         VKR_EXEC_ERROR("RasterPass '{}' has a mesh with invalid buffers",
                        name());
       }
-      executor_.drawIndexed(vertices->get(), indices->get());
+      for (const auto &binding : pipeline_->desc().vertexInput.bindings) {
+        const auto stream = mesh.stream(binding.binding);
+        const size_t required =
+            binding.inputRate == VK_VERTEX_INPUT_RATE_INSTANCE
+                ? entry.instanceCount
+                : size_t{indices->get().maxIndex()} + 1;
+        if (!stream || stream->get().stride() != binding.stride ||
+            stream->get().vertexCount() < required) {
+          VKR_EXEC_ERROR("RasterPass '{}' mesh binding {} is unavailable or "
+                         "incompatible",
+                         name(), binding.binding);
+        }
+        executor_.bindVertexBuffer(binding.binding, stream->get());
+      }
+      executor_.drawIndexed(indices->get(), entry.instanceCount);
     }
   }
 
@@ -345,7 +369,7 @@ void RasterPass::validate(const RasterPassDesc &desc) const {
     VKR_EXEC_ERROR("RasterPass '{}' has an invalid pipeline descriptor",
                    name());
   }
-  const auto &properties = device_.properties();
+  const auto &properties = device_.physicalDeviceproperties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("RasterPass '{}' exceeds maxBoundDescriptorSets", name());

@@ -1,5 +1,8 @@
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <glm/gtc/matrix_transform.hpp>
+#include <utility>
 #include <vector>
 #include <vkr.hh>
 #include <vkr/pipeline/targets/swapchain.hh>
@@ -15,6 +18,11 @@ struct UniformObject {
   alignas(16) glm::mat4 model;
   alignas(16) glm::mat4 view;
   alignas(16) glm::mat4 proj;
+};
+
+struct CubeVertex {
+  glm::vec3 pos{};
+  std::array<uint8_t, 4> color{};
 };
 
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
@@ -62,16 +70,16 @@ auto main() -> int {
   auto commands = commandPool.allocate(MAX_FRAMES_IN_FLIGHT);
 
   // cube geometry
-  VertexBuffer<Vertex3D> vertices{device, commandPool};
+  VertexBuffer<CubeVertex> vertices{device, commandPool};
   vertices.update({
-      Vertex3D{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.2f, 0.2f}},
-      Vertex3D{{0.5f, -0.5f, -0.5f}, {0.2f, 1.0f, 0.2f}},
-      Vertex3D{{0.5f, 0.5f, -0.5f}, {0.2f, 0.2f, 1.0f}},
-      Vertex3D{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 0.2f}},
-      Vertex3D{{-0.5f, -0.5f, 0.5f}, {1.0f, 0.2f, 1.0f}},
-      Vertex3D{{0.5f, -0.5f, 0.5f}, {0.2f, 1.0f, 1.0f}},
-      Vertex3D{{0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}},
-      Vertex3D{{-0.5f, 0.5f, 0.5f}, {0.5f, 0.3f, 1.0f}},
+      CubeVertex{{-0.5f, -0.5f, -0.5f}, {255, 51, 51, 255}},
+      CubeVertex{{0.5f, -0.5f, -0.5f}, {51, 255, 51, 255}},
+      CubeVertex{{0.5f, 0.5f, -0.5f}, {51, 51, 255, 255}},
+      CubeVertex{{-0.5f, 0.5f, -0.5f}, {255, 255, 51, 255}},
+      CubeVertex{{-0.5f, -0.5f, 0.5f}, {255, 51, 255, 255}},
+      CubeVertex{{0.5f, -0.5f, 0.5f}, {51, 255, 255, 255}},
+      CubeVertex{{0.5f, 0.5f, 0.5f}, {255, 255, 255, 255}},
+      CubeVertex{{-0.5f, 0.5f, 0.5f}, {128, 77, 255, 255}},
   });
 
   IndexBuffer indices{device, commandPool};
@@ -121,8 +129,12 @@ auto main() -> int {
 
   // graphics pipeline
   const auto shaders = executableDir() / "assets" / "shaders";
+  VertexInputDesc vertexInput{};
+  vertexInput.binding<CubeVertex>(0)
+      .attribute(0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(CubeVertex, pos))
+      .attribute(1, VK_FORMAT_R8G8B8A8_UNORM, offsetof(CubeVertex, color));
   auto pipelineDesc =
-      GraphicsPipelineDesc::mesh("cube", Vertex3D::vertexInputDesc());
+      GraphicsPipelineDesc::mesh("cube", std::move(vertexInput));
   pipelineDesc.descriptorSetLayout(0, layout.layout())
       .vertexShader(ShaderModuleDesc::vertexGlslFile(shaders / "cube.vert"))
       .fragmentShader(ShaderModuleDesc::fragmentGlslFile(shaders / "cube.frag"))
@@ -182,7 +194,8 @@ auto main() -> int {
                        executor.imageIndex());
     executor.setViewportAndScissor(swapchain.extent2D());
     executor.bindPipeline(pipeline, descriptorSets[frame], 0);
-    executor.drawIndexed(vertices, indices);
+    executor.bindVertexBuffer(0, vertices);
+    executor.drawIndexed(indices);
     executor.endPass();
 
     executor.submitFrame();

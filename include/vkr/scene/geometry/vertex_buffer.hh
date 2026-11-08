@@ -4,8 +4,9 @@
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
 #include "vkr/resource/buffers/buffer.hh"
-#include "vkr/scene/geometry/vbos.hh"
+#include <limits>
 #include <memory>
+#include <type_traits>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -20,10 +21,17 @@ public:
 
   [[nodiscard]] virtual auto vertexCount() const noexcept -> size_t = 0;
 
-  [[nodiscard]] virtual auto vertexInputDesc() const -> VertexInputDesc = 0;
+  [[nodiscard]] virtual auto stride() const noexcept -> uint32_t = 0;
 };
 
 template <typename VertexType> class VertexBuffer : public IVertexBuffer {
+  static_assert(std::is_standard_layout_v<VertexType>,
+                "Vertex data must have a standard layout");
+  static_assert(std::is_trivially_copyable_v<VertexType>,
+                "Vertex data must be trivially copyable");
+  static_assert(sizeof(VertexType) <= std::numeric_limits<uint32_t>::max(),
+                "Vertex stride exceeds the Vulkan representation");
+
 public:
   explicit VertexBuffer(const core::Device &device,
                         const core::CommandPool &commandPool)
@@ -38,6 +46,10 @@ public:
   void update(const std::vector<VertexType> &vertices) {
     if (vertices.empty()) {
       VKR_RES_ERROR("Cannot update vertex buffer with no vertices!");
+    }
+    if (vertices.size() >
+        std::numeric_limits<VkDeviceSize>::max() / sizeof(VertexType)) {
+      VKR_RES_ERROR("Vertex buffer size exceeds the Vulkan representation");
     }
 
     const auto newBufferSize =
@@ -68,8 +80,8 @@ public:
     return vertices_.size();
   }
 
-  [[nodiscard]] auto vertexInputDesc() const -> VertexInputDesc override {
-    return VertexType::vertexInputDesc();
+  [[nodiscard]] auto stride() const noexcept -> uint32_t override {
+    return static_cast<uint32_t>(sizeof(VertexType));
   }
 
   [[nodiscard]] auto vertices() const noexcept

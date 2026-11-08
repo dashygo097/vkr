@@ -27,6 +27,9 @@ public:
   [[nodiscard]] auto indices() const noexcept -> const std::vector<uint16_t> & {
     return indices_;
   }
+  [[nodiscard]] auto maxIndex() const noexcept -> uint16_t {
+    return max_index_;
+  }
   [[nodiscard]] auto buffer() const noexcept -> VkBuffer {
     return target_->buffer();
   }
@@ -41,6 +44,7 @@ private:
 
   // dependencies
   std::vector<uint16_t> indices_{};
+  uint16_t max_index_{0};
   std::unique_ptr<res::Buffer> target_{};
 };
 } // namespace vkr::scene
