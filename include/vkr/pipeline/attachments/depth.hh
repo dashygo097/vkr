@@ -1,9 +1,10 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/resource/image/image.hh"
-#include "vkr/resource/image/image_view.hh"
-#include "vkr/resource/image/sampler.hh"
+#include "vkr/resource/image.hh"
+#include "vkr/resource/image_view.hh"
+#include "vkr/resource/sampler.hh"
+#include <optional>
 #include <utility>
 
 namespace vkr::pipe {
@@ -109,7 +110,7 @@ struct DepthAttachmentDesc {
 class DepthAttachment {
 public:
   explicit DepthAttachment(const core::Device &device);
-  ~DepthAttachment();
+  ~DepthAttachment() = default;
 
   DepthAttachment(const DepthAttachment &) = delete;
   auto operator=(const DepthAttachment &) -> DepthAttachment & = delete;
@@ -123,10 +124,10 @@ public:
   void update(const DepthAttachmentDesc &desc);
 
   [[nodiscard]] auto image() const noexcept -> VkImage {
-    return image_->image();
+    return image_.image();
   }
   [[nodiscard]] auto imageView() const noexcept -> VkImageView {
-    return image_view_->imageView();
+    return image_view_.imageView();
   }
 
   [[nodiscard]] auto sampler() const noexcept -> VkSampler {
@@ -134,7 +135,7 @@ public:
   }
 
   [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
-    return {sampler(), image_view_ ? image_view_->imageView() : VK_NULL_HANDLE,
+    return {sampler(), image_view_.imageView(),
             desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
                 ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
                 : desc_.finalLayout};
@@ -150,9 +151,9 @@ private:
 
   // components
   DepthAttachmentDesc desc_{};
-  std::unique_ptr<res::Image> image_;
-  std::unique_ptr<res::ImageView> image_view_;
-  std::unique_ptr<res::Sampler> sampler_;
+  res::Image image_;
+  res::ImageView image_view_;
+  std::optional<res::Sampler> sampler_{};
 };
 
 } // namespace vkr::pipe

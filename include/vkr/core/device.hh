@@ -2,6 +2,7 @@
 
 #include "vkr/core/instance.hh"
 #include "vkr/core/surface.hh"
+#include "vkr/logger.hh"
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -47,13 +48,17 @@ public:
   [[nodiscard]] auto cmdEndRendering() const noexcept -> PFN_vkCmdEndRendering {
     return cmd_end_rendering_;
   }
-  [[nodiscard]] auto physicalDevicefeatures() const noexcept
+  [[nodiscard]] auto features() const noexcept
       -> const VkPhysicalDeviceFeatures & {
-    return physical_device_features_;
+    return features_;
   }
-  [[nodiscard]] auto physicalDeviceproperties() const noexcept
+  [[nodiscard]] auto properties() const noexcept
       -> const VkPhysicalDeviceProperties & {
-    return physical_device_properties_;
+    return properties_;
+  }
+  [[nodiscard]] auto memoryProperties() const noexcept
+      -> const VkPhysicalDeviceMemoryProperties & {
+    return memory_properties_;
   }
   [[nodiscard]] auto formatProperties(VkFormat format) const
       -> VkFormatProperties {
@@ -110,8 +115,21 @@ public:
   [[nodiscard]] auto transferQueue() const noexcept -> VkQueue {
     return vk_transfer_queue_;
   }
+
   [[nodiscard]] auto hasExtension(const std::string &extension) const noexcept
       -> bool;
+
+  [[nodiscard]] auto findMemoryType(VkMemoryPropertyFlags flag,
+                                    uint32_t typeFilter) const -> uint32_t {
+    for (uint32_t i = 0; i < memory_properties_.memoryTypeCount; i++) {
+      if ((typeFilter & (1U << i)) &&
+          (memory_properties_.memoryTypes[i].propertyFlags & flag) == flag) {
+        return i;
+      }
+    }
+
+    VKR_CORE_ERROR("Failed to find suitable memory type");
+  }
 
 private:
   // dependencies
@@ -122,8 +140,9 @@ private:
   DeviceDesc &desc_;
   VkPhysicalDevice vk_physical_device_{VK_NULL_HANDLE};
   VkDevice vk_logical_device_{VK_NULL_HANDLE};
-  VkPhysicalDeviceProperties physical_device_properties_{};
-  VkPhysicalDeviceFeatures physical_device_features_{};
+  VkPhysicalDeviceProperties properties_{};
+  VkPhysicalDeviceMemoryProperties memory_properties_{};
+  VkPhysicalDeviceFeatures features_{};
   uint32_t api_version_{0};
 
   PFN_vkCmdBeginRendering cmd_begin_rendering_{nullptr};

@@ -7,8 +7,6 @@ namespace vkr::pipe {
 OffscreenTarget::OffscreenTarget(const core::Device &device)
     : device_(device) {}
 
-OffscreenTarget::~OffscreenTarget() { destory(); }
-
 void OffscreenTarget::validate() const {
   if (!desc_.colorEnabled && !desc_.depth) {
     VKR_RES_ERROR("OffscreenTarget has no attachments");

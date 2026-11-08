@@ -62,7 +62,7 @@ void VertexInputDesc::validate(const core::Device &device) const {
     VKR_PIPE_ERROR("Vertex input requires unique bindings/locations, valid "
                    "rates, and attributes within declared bindings");
   }
-  const auto &limits = device.physicalDeviceproperties().limits;
+  const auto &limits = device.properties().limits;
   if (bindings.size() > limits.maxVertexInputBindings ||
       attributes.size() > limits.maxVertexInputAttributes) {
     VKR_PIPE_ERROR("Vertex input exceeds device binding/attribute limits");

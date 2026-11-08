@@ -33,8 +33,7 @@ void SwapchainTarget::create() {
 
   for (auto image : vk_color_images_) {
     auto imageView = std::make_unique<res::ImageView>(device_);
-    imageView->update(
-        res::ImageViewDesc::color2D(image, swapchain_.format()));
+    imageView->update(res::ImageViewDesc::color2D(image, swapchain_.format()));
     color_image_views_.push_back(std::move(imageView));
   }
 

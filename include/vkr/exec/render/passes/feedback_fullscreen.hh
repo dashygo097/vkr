@@ -139,8 +139,13 @@ public:
                const std::vector<res::UniformBuffer> &buffers)
       -> FeedbackFullscreenPass &;
 
-  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture,
+               const res::Sampler &sampler) -> FeedbackFullscreenPass &;
+  auto storage(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
       -> FeedbackFullscreenPass &;
+
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const res::Texture2D &texture) -> FeedbackFullscreenPass &;
   auto texture(uint32_t setIndex, uint32_t binding, const res::Cubemap &cubemap)
       -> FeedbackFullscreenPass &;
   auto texture(uint32_t setIndex, uint32_t binding,

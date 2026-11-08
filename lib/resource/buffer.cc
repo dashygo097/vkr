@@ -1,4 +1,4 @@
-#include "vkr/resource/buffers/buffer.hh"
+#include "vkr/resource/buffer.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
 #include <cstddef>
@@ -64,14 +64,12 @@ void Buffer::create(VkDeviceSize size, VkBufferUsageFlags usage,
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits,
-                                             memory_properties_, device_);
+  allocInfo.memoryTypeIndex = device_.findMemoryType(
+      memory_properties_, memRequirements.memoryTypeBits);
 
-  VkPhysicalDeviceMemoryProperties memoryProperties{};
-  vkGetPhysicalDeviceMemoryProperties(device_.physicalDevice(),
-                                      &memoryProperties);
-  memory_properties_ =
-      memoryProperties.memoryTypes[allocInfo.memoryTypeIndex].propertyFlags;
+  memory_properties_ = device_.memoryProperties()
+                           .memoryTypes[allocInfo.memoryTypeIndex]
+                           .propertyFlags;
   allocation_size_ = allocInfo.allocationSize;
 
   if (vkAllocateMemory(device_.device(), &allocInfo, nullptr, &vk_memory_) !=
@@ -247,8 +245,7 @@ auto Buffer::mappedRange(VkDeviceSize size, VkDeviceSize offset) const
   }
 
   const auto end = size == VK_WHOLE_SIZE ? size_ : offset + size;
-  const auto atomSize =
-      device_.physicalDeviceproperties().limits.nonCoherentAtomSize;
+  const auto atomSize = device_.properties().limits.nonCoherentAtomSize;
   const auto padding = (atomSize - end % atomSize) % atomSize;
   const auto alignedEnd = end + std::min(padding, allocation_size_ - end);
 
@@ -258,23 +255,6 @@ auto Buffer::mappedRange(VkDeviceSize size, VkDeviceSize offset) const
   range.offset = offset - offset % atomSize;
   range.size = alignedEnd - range.offset;
   return range;
-}
-
-auto Buffer::findMemoryType(uint32_t typeFilter,
-                            VkMemoryPropertyFlags properties,
-                            const core::Device &device) -> uint32_t {
-  VkPhysicalDeviceMemoryProperties memProperties{};
-  vkGetPhysicalDeviceMemoryProperties(device.physicalDevice(), &memProperties);
-
-  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-    if ((typeFilter & (1U << i)) &&
-        (memProperties.memoryTypes[i].propertyFlags & properties) ==
-            properties) {
-      return i;
-    }
-  }
-
-  VKR_RES_ERROR("Failed to find suitable memory type");
 }
 
 } // namespace vkr::res

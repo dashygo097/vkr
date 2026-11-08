@@ -9,6 +9,8 @@ namespace vkr::res {
 class Buffer;
 class BufferSlice;
 class Texture;
+class Texture2D;
+class Sampler;
 class Cubemap;
 } // namespace vkr::res
 
@@ -40,7 +42,11 @@ public:
   auto storage(uint32_t binding, const res::Buffer &buffer) -> DescriptorSet &;
   auto storage(uint32_t binding, const res::BufferSlice &slice)
       -> DescriptorSet &;
-  auto texture(uint32_t binding, const res::Texture &texture)
+  auto storage(uint32_t binding, const res::Texture &texture)
+      -> DescriptorSet &;
+  auto texture(uint32_t binding, const res::Texture &texture,
+               const res::Sampler &sampler) -> DescriptorSet &;
+  auto texture(uint32_t binding, const res::Texture2D &texture)
       -> DescriptorSet &;
   auto texture(uint32_t binding, const res::Cubemap &cubemap)
       -> DescriptorSet &;
@@ -82,7 +88,7 @@ private:
   void validateBinding(uint32_t binding, VkDescriptorType type) const;
   void validateBuffer(VkDescriptorType type,
                       const VkDescriptorBufferInfo &info) const;
-  void validateImage(const VkDescriptorImageInfo &info);
+  void validateImage(VkDescriptorType type, const VkDescriptorImageInfo &info);
 };
 
 } // namespace vkr::pipe

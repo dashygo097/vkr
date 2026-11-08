@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/resource/buffers/buffer.hh"
+#include "vkr/resource/buffer.hh"
 #include <cstddef>
 #include <type_traits>
 

@@ -103,11 +103,11 @@ void Scene::selectMesh(std::string name) {
 
 void Scene::clearSelectedMesh() { selected_mesh_name_.clear(); }
 
-auto Scene::createTexture(std::string name, res::TextureDesc desc)
-    -> res::Texture & {
+auto Scene::createTexture(std::string name, res::Texture2DDesc desc)
+    -> res::Texture2D & {
   validateNewResource(textures_, name, "texture");
 
-  auto texture = std::make_unique<res::Texture>(device_, command_pool_);
+  auto texture = std::make_unique<res::Texture2D>(device_, command_pool_);
   texture->update(desc);
 
   auto &result = *texture;
@@ -116,12 +116,12 @@ auto Scene::createTexture(std::string name, res::TextureDesc desc)
 }
 
 auto Scene::loadTexture(std::string name, const std::filesystem::path &path)
-    -> res::Texture & {
+    -> res::Texture2D & {
   return createTexture(std::move(name),
-                       res::TextureDesc::textureFile(path.string()));
+                       res::Texture2DDesc::textureFile(path.string()));
 }
 
-auto Scene::texture(std::string_view name) -> res::Texture & {
+auto Scene::texture(std::string_view name) -> res::Texture2D & {
   const auto resource = findTexture(name);
   if (!resource) {
     VKR_RES_ERROR("Texture resource not found: {}", name);
@@ -129,7 +129,7 @@ auto Scene::texture(std::string_view name) -> res::Texture & {
   return resource->get();
 }
 
-auto Scene::texture(std::string_view name) const -> const res::Texture & {
+auto Scene::texture(std::string_view name) const -> const res::Texture2D & {
   const auto resource = findTexture(name);
   if (!resource) {
     VKR_RES_ERROR("Texture resource not found: {}", name);
@@ -138,12 +138,12 @@ auto Scene::texture(std::string_view name) const -> const res::Texture & {
 }
 
 auto Scene::findTexture(std::string_view name)
-    -> std::optional<std::reference_wrapper<res::Texture>> {
+    -> std::optional<std::reference_wrapper<res::Texture2D>> {
   return findResource(textures_, name);
 }
 
 auto Scene::findTexture(std::string_view name) const
-    -> std::optional<std::reference_wrapper<const res::Texture>> {
+    -> std::optional<std::reference_wrapper<const res::Texture2D>> {
   return findResource(textures_, name);
 }
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vkr/core/device.hh"
-#include "vkr/resource/image/image.hh"
+#include "vkr/resource/image.hh"
 #include <vulkan/vulkan.h>
 
 namespace vkr::res {

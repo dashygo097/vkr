@@ -6,8 +6,8 @@
 #include "vkr/pipeline/graphics_pipeline.hh"
 #include "vkr/pipeline/render_pass.hh"
 #include "vkr/resource/buffers/uniform_buffer.hh"
-#include "vkr/resource/image/image_view.hh"
-#include "vkr/resource/image/sampler.hh"
+#include "vkr/resource/image_view.hh"
+#include "vkr/resource/sampler.hh"
 #include "vkr/scene/scene.hh"
 #include "vkr/ui/selection.hh"
 #include <array>

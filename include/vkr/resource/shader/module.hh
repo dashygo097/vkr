@@ -71,20 +71,20 @@ struct ShaderModuleDesc {
 
   [[nodiscard]] static auto vertexGlslFile(const std::filesystem::path &path)
       -> ShaderModuleDesc {
-    return glsl(util::GlslCompileDesc::glslFile(
-        shaderc_glsl_vertex_shader, path.string()));
+    return glsl(util::GlslCompileDesc::glslFile(shaderc_glsl_vertex_shader,
+                                                path.string()));
   }
 
   [[nodiscard]] static auto fragmentGlslFile(const std::filesystem::path &path)
       -> ShaderModuleDesc {
-    return glsl(util::GlslCompileDesc::glslFile(
-        shaderc_glsl_fragment_shader, path.string()));
+    return glsl(util::GlslCompileDesc::glslFile(shaderc_glsl_fragment_shader,
+                                                path.string()));
   }
 
   [[nodiscard]] static auto computeGlslFile(const std::filesystem::path &path)
       -> ShaderModuleDesc {
-    return glsl(util::GlslCompileDesc::glslFile(
-        shaderc_glsl_compute_shader, path.string()));
+    return glsl(util::GlslCompileDesc::glslFile(shaderc_glsl_compute_shader,
+                                                path.string()));
   }
 
   [[nodiscard]] static auto computeSlangFile(const std::filesystem::path &path)

@@ -2,16 +2,15 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/resource/image/image.hh"
-#include "vkr/resource/image/image_view.hh"
-#include "vkr/resource/image/sampler.hh"
-#include <memory>
+#include "vkr/resource/sampler.hh"
+#include "vkr/resource/texture.hh"
+#include <optional>
 #include <string>
 #include <utility>
 
 namespace vkr::res {
 
-struct TextureDesc {
+struct Texture2DDesc {
   ImageDesc image{};
   ImageViewDesc view{};
   SamplerDesc sampler{SamplerDesc::linearRepeat()};
@@ -25,8 +24,8 @@ struct TextureDesc {
 
   [[nodiscard]] static auto textureFile(
       const std::string &path, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
-      SamplerDesc sampler = SamplerDesc::linearRepeat()) -> TextureDesc {
-    TextureDesc desc{};
+      SamplerDesc sampler = SamplerDesc::linearRepeat()) -> Texture2DDesc {
+    Texture2DDesc desc{};
     desc.filePath = path;
     desc.image.format = format;
     desc.image.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -47,8 +46,8 @@ struct TextureDesc {
   [[nodiscard]] static auto
   sampled2D(uint32_t width, uint32_t height, VkFormat format,
             SamplerDesc sampler = SamplerDesc::linearClampToEdge())
-      -> TextureDesc {
-    TextureDesc desc{};
+      -> Texture2DDesc {
+    Texture2DDesc desc{};
     desc.image = ImageDesc::sampled2D(width, height, format);
     desc.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     desc.sampler = sampler;
@@ -58,8 +57,8 @@ struct TextureDesc {
   }
 
   [[nodiscard]] static auto storage2D(uint32_t width, uint32_t height,
-                                      VkFormat format) -> TextureDesc {
-    TextureDesc desc{};
+                                      VkFormat format) -> Texture2DDesc {
+    Texture2DDesc desc{};
     desc.image = ImageDesc::storage2D(width, height, format);
     desc.image.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
     desc.layout = VK_IMAGE_LAYOUT_GENERAL;
@@ -72,8 +71,8 @@ struct TextureDesc {
   [[nodiscard]] static auto
   colorAttachment(uint32_t width, uint32_t height, VkFormat format,
                   SamplerDesc sampler = SamplerDesc::linearClampToEdge())
-      -> TextureDesc {
-    TextureDesc desc{};
+      -> Texture2DDesc {
+    Texture2DDesc desc{};
     desc.image = ImageDesc::colorAttachment(width, height, format);
     desc.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     desc.sampler = sampler;
@@ -83,8 +82,8 @@ struct TextureDesc {
   }
 
   [[nodiscard]] static auto depthAttachment(uint32_t width, uint32_t height,
-                                            VkFormat format) -> TextureDesc {
-    TextureDesc desc{};
+                                            VkFormat format) -> Texture2DDesc {
+    Texture2DDesc desc{};
     desc.image = ImageDesc::depthAttachment(width, height, format);
     desc.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     desc.sampler = SamplerDesc::shadowCompare();
@@ -96,8 +95,8 @@ struct TextureDesc {
   [[nodiscard]] static auto
   fromImageDesc(ImageDesc image,
                 SamplerDesc sampler = SamplerDesc::linearRepeat())
-      -> TextureDesc {
-    TextureDesc desc{};
+      -> Texture2DDesc {
+    Texture2DDesc desc{};
     desc.image = std::move(image);
     desc.layout = desc.image.layout;
     desc.sampler = sampler;
@@ -119,63 +118,27 @@ struct TextureDesc {
   }
 };
 
-class Texture {
+class Texture2D final : public Texture {
 public:
-  explicit Texture(const core::Device &device,
-                   const core::CommandPool &commandPool);
-  ~Texture();
-
-  Texture(const Texture &) = delete;
-  auto operator=(const Texture &) -> Texture & = delete;
+  explicit Texture2D(const core::Device &device,
+                     const core::CommandPool &commandPool);
+  ~Texture2D() override = default;
 
   void create();
-  void destroy();
-  void update(const TextureDesc &desc);
+  void destroy() noexcept override;
+  void update(const Texture2DDesc &desc);
 
-  [[nodiscard]] auto desc() const noexcept -> const TextureDesc & {
+  [[nodiscard]] auto desc() const noexcept -> const Texture2DDesc & {
     return desc_;
   }
-
-  [[nodiscard]] auto width() const noexcept -> uint32_t {
-    return image_ ? image_->width() : 0;
-  }
-
-  [[nodiscard]] auto height() const noexcept -> uint32_t {
-    return image_ ? image_->height() : 0;
-  }
-
-  [[nodiscard]] auto layout() const noexcept -> VkImageLayout {
-    return image_ ? image_->layout() : VK_IMAGE_LAYOUT_UNDEFINED;
-  }
-
-  [[nodiscard]] auto image() const -> VkImage { return image_->image(); }
-  [[nodiscard]] auto imageView() const -> VkImageView {
-    return image_view_->imageView();
-  }
   [[nodiscard]] auto sampler() const noexcept -> VkSampler {
-    return hasSampler() ? sampler_->sampler() : VK_NULL_HANDLE;
+    return sampler_ ? sampler_->sampler() : VK_NULL_HANDLE;
   }
-
-  [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
-    return {sampler(),
-            hasImageView() ? image_view_->imageView() : VK_NULL_HANDLE,
-            layout()};
-  }
-
-  [[nodiscard]] auto hasImage() const noexcept -> bool {
-    return image_ != nullptr && image_->image() != VK_NULL_HANDLE;
-  }
-
-  [[nodiscard]] auto hasImageView() const noexcept -> bool {
-    return image_view_ != nullptr && image_view_->imageView() != VK_NULL_HANDLE;
-  }
-
   [[nodiscard]] auto hasSampler() const noexcept -> bool {
-    return sampler_ != nullptr && sampler_->sampler() != VK_NULL_HANDLE;
+    return sampler() != VK_NULL_HANDLE;
   }
-
-  [[nodiscard]] auto valid() const noexcept -> bool {
-    return hasImage() && hasImageView();
+  [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
+    return {sampler(), imageView(), layout()};
   }
 
 private:
@@ -184,15 +147,8 @@ private:
   const core::CommandPool &command_pool_;
 
   // components
-  TextureDesc desc_{};
-  std::unique_ptr<Image> image_;
-  std::unique_ptr<ImageView> image_view_;
-  std::unique_ptr<Sampler> sampler_;
-
-  // helpers
-  void createFromFile();
-  void createEmpty();
-  void createViewAndSampler();
+  Texture2DDesc desc_{};
+  std::optional<Sampler> sampler_{};
 };
 
 } // namespace vkr::res

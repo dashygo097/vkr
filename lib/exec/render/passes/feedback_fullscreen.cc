@@ -76,7 +76,26 @@ auto FeedbackFullscreenPass::uniform(
 }
 
 auto FeedbackFullscreenPass::texture(uint32_t setIndex, uint32_t binding,
+                                     const res::Texture &texture,
+                                     const res::Sampler &sampler)
+    -> FeedbackFullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, texture, sampler);
+  }
+  return *this;
+}
+
+auto FeedbackFullscreenPass::storage(uint32_t setIndex, uint32_t binding,
                                      const res::Texture &texture)
+    -> FeedbackFullscreenPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, texture);
+  }
+  return *this;
+}
+
+auto FeedbackFullscreenPass::texture(uint32_t setIndex, uint32_t binding,
+                                     const res::Texture2D &texture)
     -> FeedbackFullscreenPass & {
   for (auto &frame : descriptor_sets_) {
     frame.at(setIndex).texture(binding, texture);
@@ -411,7 +430,7 @@ void FeedbackFullscreenPass::validate(
         "FeedbackFullscreenPass '{}' has an invalid pipeline descriptor",
         name());
   }
-  const auto &properties = device_.physicalDeviceproperties();
+  const auto &properties = device_.properties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("FeedbackFullscreenPass '{}' exceeds maxBoundDescriptorSets",

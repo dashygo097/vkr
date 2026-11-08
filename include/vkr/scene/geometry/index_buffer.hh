@@ -2,8 +2,7 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/resource/buffers/buffer.hh"
-#include <memory>
+#include "vkr/resource/buffer.hh"
 #include <vector>
 
 namespace vkr::scene {
@@ -12,7 +11,7 @@ class IndexBuffer {
 public:
   explicit IndexBuffer(const core::Device &device,
                        const core::CommandPool &commandPool);
-  ~IndexBuffer();
+  ~IndexBuffer() = default;
 
   IndexBuffer(const IndexBuffer &) = delete;
   auto operator=(const IndexBuffer &) -> IndexBuffer & = delete;
@@ -31,10 +30,10 @@ public:
     return max_index_;
   }
   [[nodiscard]] auto buffer() const noexcept -> VkBuffer {
-    return target_->buffer();
+    return target_.buffer();
   }
   [[nodiscard]] auto bufferMemory() const noexcept -> VkDeviceMemory {
-    return target_->memory();
+    return target_.memory();
   }
 
 private:
@@ -45,6 +44,6 @@ private:
   // dependencies
   std::vector<uint16_t> indices_{};
   uint16_t max_index_{0};
-  std::unique_ptr<res::Buffer> target_{};
+  res::Buffer target_;
 };
 } // namespace vkr::scene

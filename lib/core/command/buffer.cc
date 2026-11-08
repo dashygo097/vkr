@@ -1,5 +1,6 @@
 #include "vkr/core/command/buffer.hh"
 #include "vkr/core/command/pool.hh"
+#include "vkr/core/sync/fence.hh"
 #include "vkr/logger.hh"
 #include <utility>
 
@@ -39,6 +40,24 @@ void CommandBuffer::end() {
     VKR_CORE_ERROR("Failed to end command buffer. VkResult: {}",
                    static_cast<int>(result));
   }
+}
+
+void CommandBuffer::submitAndWait() {
+  if (!valid()) {
+    VKR_CORE_ERROR("Cannot submit an invalid command buffer");
+  }
+  Fence completion(device_);
+  VkSubmitInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  info.commandBufferCount = 1;
+  info.pCommandBuffers = &vk_command_buffer_;
+  const auto result =
+      vkQueueSubmit(command_pool_.queue(), 1, &info, completion.fence());
+  if (result != VK_SUCCESS) {
+    VKR_CORE_ERROR("Failed to submit command buffer. VkResult: {}",
+                   static_cast<int>(result));
+  }
+  completion.wait();
 }
 
 void CommandBuffer::reset(VkCommandBufferResetFlags flags) {

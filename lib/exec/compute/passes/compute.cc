@@ -22,7 +22,20 @@ auto ComputePass::uniform(uint32_t setIndex, uint32_t binding,
 }
 
 auto ComputePass::texture(uint32_t setIndex, uint32_t binding,
+                          const res::Texture &texture,
+                          const res::Sampler &sampler) -> ComputePass & {
+  descriptor_sets_.at(setIndex).texture(binding, texture, sampler);
+  return *this;
+}
+
+auto ComputePass::storage(uint32_t setIndex, uint32_t binding,
                           const res::Texture &texture) -> ComputePass & {
+  descriptor_sets_.at(setIndex).storage(binding, texture);
+  return *this;
+}
+
+auto ComputePass::texture(uint32_t setIndex, uint32_t binding,
+                          const res::Texture2D &texture) -> ComputePass & {
   descriptor_sets_.at(setIndex).texture(binding, texture);
   return *this;
 }
@@ -131,7 +144,7 @@ void ComputePass::validate(const ComputePassDesc &desc) const {
     VKR_EXEC_ERROR("ComputePass '{}' has invalid dispatch group counts",
                    name());
   }
-  const auto &properties = device_.physicalDeviceproperties();
+  const auto &properties = device_.properties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("ComputePass '{}' exceeds maxBoundDescriptorSets", name());

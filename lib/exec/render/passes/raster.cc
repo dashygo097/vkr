@@ -70,7 +70,24 @@ auto RasterPass::uniform(uint32_t setIndex, uint32_t binding,
 }
 
 auto RasterPass::texture(uint32_t setIndex, uint32_t binding,
+                         const res::Texture &texture,
+                         const res::Sampler &sampler) -> RasterPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, texture, sampler);
+  }
+  return *this;
+}
+
+auto RasterPass::storage(uint32_t setIndex, uint32_t binding,
                          const res::Texture &texture) -> RasterPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, texture);
+  }
+  return *this;
+}
+
+auto RasterPass::texture(uint32_t setIndex, uint32_t binding,
+                         const res::Texture2D &texture) -> RasterPass & {
   for (auto &frame : descriptor_sets_) {
     frame.at(setIndex).texture(binding, texture);
   }
@@ -369,7 +386,7 @@ void RasterPass::validate(const RasterPassDesc &desc) const {
     VKR_EXEC_ERROR("RasterPass '{}' has an invalid pipeline descriptor",
                    name());
   }
-  const auto &properties = device_.physicalDeviceproperties();
+  const auto &properties = device_.properties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("RasterPass '{}' exceeds maxBoundDescriptorSets", name());

@@ -2,7 +2,7 @@
 
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/buffer.hh"
+#include "vkr/resource/buffer.hh"
 #include <cstddef>
 #include <limits>
 #include <type_traits>

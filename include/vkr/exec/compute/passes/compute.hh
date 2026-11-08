@@ -99,6 +99,11 @@ struct ComputePassDesc {
     return *this;
   }
 
+  auto storageImage(uint32_t setIndex, uint32_t binding) -> ComputePassDesc & {
+    layout(setIndex).storageImage(binding, VK_SHADER_STAGE_COMPUTE_BIT);
+    return *this;
+  }
+
   auto uniform(uint32_t setIndex, uint32_t binding) -> ComputePassDesc & {
     layout(setIndex).uniform(binding, VK_SHADER_STAGE_COMPUTE_BIT);
     return *this;
@@ -179,8 +184,13 @@ public:
   auto uniform(uint32_t setIndex, uint32_t binding,
                const res::BufferSlice &slice) -> ComputePass &;
 
-  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture,
+               const res::Sampler &sampler) -> ComputePass &;
+  auto storage(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
       -> ComputePass &;
+
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const res::Texture2D &texture) -> ComputePass &;
   auto texture(uint32_t setIndex, uint32_t binding, const res::Cubemap &cubemap)
       -> ComputePass &;
   auto texture(uint32_t setIndex, uint32_t binding,

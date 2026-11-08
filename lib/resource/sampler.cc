@@ -1,4 +1,4 @@
-#include "vkr/resource/image/sampler.hh"
+#include "vkr/resource/sampler.hh"
 #include "vkr/logger.hh"
 #include <algorithm>
 
@@ -11,8 +11,8 @@ Sampler::~Sampler() { destroy(); }
 void Sampler::create() {
   destroy();
 
-  const auto &properties = device_.physicalDeviceproperties();
-  const auto &features = device_.physicalDevicefeatures();
+  const auto &properties = device_.properties();
+  const auto &features = device_.features();
 
   SamplerDesc effective = desc_;
 

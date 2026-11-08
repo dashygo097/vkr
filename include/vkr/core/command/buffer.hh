@@ -20,6 +20,8 @@ public:
 
   void begin(VkCommandBufferUsageFlags flags = 0);
   void end();
+  // Submit an ended command buffer to its pool's queue and wait for completion.
+  void submitAndWait();
   void reset(VkCommandBufferResetFlags flags = 0);
   void destroy() noexcept;
 

@@ -251,9 +251,7 @@ auto TexturePreview::image() const -> std::optional<Image> {
     result.view.layerCount =
         result.image.arrayLayers - result.view.baseArrayLayer;
   }
-  VkFormatProperties properties{};
-  vkGetPhysicalDeviceFormatProperties(device_.physicalDevice(),
-                                      result.view.format, &properties);
+  const auto &properties = device_.formatProperties(result.view.format);
   result.features = result.image.tiling == VK_IMAGE_TILING_OPTIMAL
                         ? properties.optimalTilingFeatures
                         : properties.linearTilingFeatures;

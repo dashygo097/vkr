@@ -160,8 +160,13 @@ public:
                const std::vector<res::UniformBuffer> &buffers)
       -> FullscreenPass &;
 
-  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture,
+               const res::Sampler &sampler) -> FullscreenPass &;
+  auto storage(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
       -> FullscreenPass &;
+
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const res::Texture2D &texture) -> FullscreenPass &;
   auto texture(uint32_t setIndex, uint32_t binding, const res::Cubemap &cubemap)
       -> FullscreenPass &;
   auto texture(uint32_t setIndex, uint32_t binding,

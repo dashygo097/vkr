@@ -159,8 +159,13 @@ public:
   auto uniform(uint32_t setIndex, uint32_t binding,
                const std::vector<res::UniformBuffer> &buffers) -> RasterPass &;
 
-  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture,
+               const res::Sampler &sampler) -> RasterPass &;
+  auto storage(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
       -> RasterPass &;
+
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const res::Texture2D &texture) -> RasterPass &;
   auto texture(uint32_t setIndex, uint32_t binding, const res::Cubemap &cubemap)
       -> RasterPass &;
   auto texture(uint32_t setIndex, uint32_t binding,

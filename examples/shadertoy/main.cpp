@@ -215,7 +215,7 @@ private:
         std::string(kShaderToyUniformName), {});
     scene().createTexture(
         std::string(kFallbackTextureName),
-        TextureDesc::sampled2D(1, 1, VK_FORMAT_R8G8B8A8_UNORM));
+        Texture2DDesc::sampled2D(1, 1, VK_FORMAT_R8G8B8A8_UNORM));
   }
 
   void buildGraph() override {

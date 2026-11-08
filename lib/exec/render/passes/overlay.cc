@@ -107,7 +107,24 @@ void OverlayPass::update(const OverlayPassDesc &desc) {
 }
 
 auto OverlayPass::texture(uint32_t setIndex, uint32_t binding,
+                          const res::Texture &texture,
+                          const res::Sampler &sampler) -> OverlayPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).texture(binding, texture, sampler);
+  }
+  return *this;
+}
+
+auto OverlayPass::storage(uint32_t setIndex, uint32_t binding,
                           const res::Texture &texture) -> OverlayPass & {
+  for (auto &frame : descriptor_sets_) {
+    frame.at(setIndex).storage(binding, texture);
+  }
+  return *this;
+}
+
+auto OverlayPass::texture(uint32_t setIndex, uint32_t binding,
+                          const res::Texture2D &texture) -> OverlayPass & {
   for (auto &frame : descriptor_sets_) {
     frame.at(setIndex).texture(binding, texture);
   }
@@ -413,7 +430,7 @@ void OverlayPass::validate(const OverlayPassDesc &desc) const {
                    name());
   }
 
-  const auto &properties = device_.physicalDeviceproperties();
+  const auto &properties = device_.properties();
   auto layouts = desc.descriptorLayouts;
   if (layouts.size() > properties.limits.maxBoundDescriptorSets) {
     VKR_EXEC_ERROR("OverlayPass '{}' exceeds maxBoundDescriptorSets", name());

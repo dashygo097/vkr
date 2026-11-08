@@ -3,12 +3,8 @@
 
 namespace vkr::pipe {
 
-ColorAttachment::ColorAttachment(const core::Device &device) : device_(device) {
-  image_ = std::make_unique<res::Image>(device_);
-  image_view_ = std::make_unique<res::ImageView>(device_);
-}
-
-ColorAttachment::~ColorAttachment() { destory(); }
+ColorAttachment::ColorAttachment(const core::Device &device)
+    : device_(device), image_(device), image_view_(device) {}
 
 void ColorAttachment::create() {
   if (desc_.format == VK_FORMAT_UNDEFINED) {
@@ -20,39 +16,28 @@ void ColorAttachment::create() {
                   desc_.height);
   }
 
-  auto imageDesc = res::ImageDesc::colorAttachment(
-      desc_.width, desc_.height, desc_.format);
+  auto imageDesc =
+      res::ImageDesc::colorAttachment(desc_.width, desc_.height, desc_.format);
 
   imageDesc.usage = desc_.usage;
 
-  image_->update(imageDesc);
-  image_->layout(desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
+  destory();
+  image_.update(imageDesc);
+  image_.layout(desc_.finalLayout == VK_IMAGE_LAYOUT_UNDEFINED
                      ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
                      : desc_.finalLayout);
-  image_view_->update(
-      res::ImageViewDesc::color2D(image_->image(), desc_.format));
+  image_view_.update(
+      res::ImageViewDesc::color2D(image_.image(), desc_.format));
 
   if (desc_.createSampler) {
-    if (!sampler_) {
-      sampler_ = std::make_unique<res::Sampler>(device_);
-    }
-
-    sampler_->update(desc_.sampler);
-  } else {
-    sampler_.reset();
+    sampler_.emplace(device_).update(desc_.sampler);
   }
 }
 
 void ColorAttachment::destory() {
   sampler_.reset();
-
-  if (image_view_) {
-    image_view_->destroy();
-  }
-
-  if (image_) {
-    image_->destroy();
-  }
+  image_view_.destroy();
+  image_.destroy();
 }
 
 void ColorAttachment::update(const ColorAttachmentDesc &desc) {

@@ -27,6 +27,11 @@ struct DescriptorSetLayoutDesc {
     return binding(index, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stages);
   }
 
+  auto storageImage(uint32_t index, VkShaderStageFlags stages)
+      -> DescriptorSetLayoutDesc & {
+    return binding(index, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, stages);
+  }
+
   auto texture(uint32_t index, VkShaderStageFlags stages)
       -> DescriptorSetLayoutDesc & {
     return binding(index, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, stages);

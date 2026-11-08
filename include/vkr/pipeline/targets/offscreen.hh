@@ -145,7 +145,7 @@ struct OffscreenTargetDesc {
 class OffscreenTarget {
 public:
   explicit OffscreenTarget(const core::Device &device);
-  ~OffscreenTarget();
+  ~OffscreenTarget() = default;
 
   OffscreenTarget(const OffscreenTarget &) = delete;
   auto operator=(const OffscreenTarget &) -> OffscreenTarget & = delete;

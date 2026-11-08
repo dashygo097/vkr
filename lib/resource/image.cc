@@ -1,6 +1,5 @@
-#include "vkr/resource/image/image.hh"
+#include "vkr/resource/image.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/buffer.hh"
 
 namespace vkr::res {
 
@@ -46,8 +45,8 @@ void Image::create() {
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = Buffer::findMemoryType(
-      memRequirements.memoryTypeBits, desc_.memoryProperties, device_);
+  allocInfo.memoryTypeIndex = device_.findMemoryType(
+      desc_.memoryProperties, memRequirements.memoryTypeBits);
 
   if (vkAllocateMemory(device_.device(), &allocInfo, nullptr, &vk_memory_) !=
       VK_SUCCESS) {

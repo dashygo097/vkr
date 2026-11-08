@@ -2,11 +2,10 @@
 
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
-#include "vkr/resource/image/image.hh"
-#include "vkr/resource/image/image_view.hh"
-#include "vkr/resource/image/sampler.hh"
+#include "vkr/resource/sampler.hh"
+#include "vkr/resource/texture.hh"
 #include <array>
-#include <memory>
+#include <optional>
 #include <string>
 
 namespace vkr::res {
@@ -17,6 +16,7 @@ struct CubemapDesc {
   VkImageLayout layout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
   SamplerDesc sampler{SamplerDesc::linearClampToEdge()};
   bool forceRgba{true};
+  bool createSampler{true};
 
   [[nodiscard]] static auto
   files(const std::array<std::string, 6> &faces,
@@ -44,53 +44,26 @@ struct CubemapDesc {
   }
 };
 
-class Cubemap {
+class Cubemap final : public Texture {
 public:
   explicit Cubemap(const core::Device &device,
                    const core::CommandPool &commandPool);
-  ~Cubemap();
+  ~Cubemap() override = default;
 
-  Cubemap(const Cubemap &) = delete;
-  auto operator=(const Cubemap &) -> Cubemap & = delete;
-
-  void destroy();
+  void destroy() noexcept override;
   void update(const CubemapDesc &desc);
 
   [[nodiscard]] auto desc() const noexcept -> const CubemapDesc & {
     return desc_;
   }
-
-  [[nodiscard]] auto width() const noexcept -> uint32_t {
-    return image_ ? image_->width() : 0;
-  }
-
-  [[nodiscard]] auto height() const noexcept -> uint32_t {
-    return image_ ? image_->height() : 0;
-  }
-
-  [[nodiscard]] auto layout() const noexcept -> VkImageLayout {
-    return image_ ? image_->layout() : VK_IMAGE_LAYOUT_UNDEFINED;
-  }
-
-  [[nodiscard]] auto image() const noexcept -> VkImage {
-    return image_ ? image_->image() : VK_NULL_HANDLE;
-  }
-
-  [[nodiscard]] auto imageView() const noexcept -> VkImageView {
-    return image_view_ ? image_view_->imageView() : VK_NULL_HANDLE;
-  }
-
   [[nodiscard]] auto sampler() const noexcept -> VkSampler {
     return sampler_ ? sampler_->sampler() : VK_NULL_HANDLE;
   }
-
+  [[nodiscard]] auto hasSampler() const noexcept -> bool {
+    return sampler() != VK_NULL_HANDLE;
+  }
   [[nodiscard]] auto descriptorInfo() const noexcept -> VkDescriptorImageInfo {
     return {sampler(), imageView(), layout()};
-  }
-
-  [[nodiscard]] auto valid() const noexcept -> bool {
-    return image() != VK_NULL_HANDLE && imageView() != VK_NULL_HANDLE &&
-           sampler() != VK_NULL_HANDLE;
   }
 
 private:
@@ -100,9 +73,7 @@ private:
 
   // components
   CubemapDesc desc_{};
-  std::unique_ptr<Image> image_;
-  std::unique_ptr<ImageView> image_view_;
-  std::unique_ptr<Sampler> sampler_;
+  std::optional<Sampler> sampler_{};
 
   // helpers
   void create();

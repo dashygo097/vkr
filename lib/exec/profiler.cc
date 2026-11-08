@@ -111,7 +111,7 @@ void Profiler::create() {
     return;
   }
 
-  timestamp_period_ = device_.physicalDeviceproperties().limits.timestampPeriod;
+  timestamp_period_ = device_.properties().limits.timestampPeriod;
   if (timestamp_period_ <= 0.0F) {
     VKR_EXEC_WARN("Device profiler disabled: invalid timestamp period");
     return;

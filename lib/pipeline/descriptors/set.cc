@@ -3,9 +3,9 @@
 #include "vkr/pipeline/attachments/color.hh"
 #include "vkr/pipeline/attachments/depth.hh"
 #include "vkr/pipeline/descriptors/pool.hh"
-#include "vkr/resource/buffers/buffer.hh"
-#include "vkr/resource/image/cubemap.hh"
-#include "vkr/resource/image/texture.hh"
+#include "vkr/resource/buffer.hh"
+#include "vkr/resource/textures/cubemap.hh"
+#include "vkr/resource/textures/texture2d.hh"
 #include <algorithm>
 #include <utility>
 
@@ -18,8 +18,31 @@ DescriptorSet::DescriptorSet(const core::Device &device,
 
 DescriptorSet::~DescriptorSet() { destroy(); }
 
-auto DescriptorSet::texture(uint32_t binding, const res::Texture &texture)
+auto DescriptorSet::texture(uint32_t binding, const res::Texture &texture,
+                            const res::Sampler &sampler) -> DescriptorSet & {
+  if ((texture.usage() & VK_IMAGE_USAGE_SAMPLED_BIT) == 0) {
+    VKR_PIPE_ERROR("Texture binding requires SAMPLED usage");
+  }
+  auto info = texture.descriptorInfo();
+  info.sampler = sampler.sampler();
+  assign(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, info);
+  return *this;
+}
+
+auto DescriptorSet::storage(uint32_t binding, const res::Texture &texture)
     -> DescriptorSet & {
+  if ((texture.usage() & VK_IMAGE_USAGE_STORAGE_BIT) == 0) {
+    VKR_PIPE_ERROR("Storage image binding requires STORAGE usage");
+  }
+  assign(binding, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, texture.descriptorInfo());
+  return *this;
+}
+
+auto DescriptorSet::texture(uint32_t binding, const res::Texture2D &texture)
+    -> DescriptorSet & {
+  if ((texture.usage() & VK_IMAGE_USAGE_SAMPLED_BIT) == 0) {
+    VKR_PIPE_ERROR("Texture binding requires SAMPLED usage");
+  }
   assign(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
          texture.descriptorInfo());
   return *this;
@@ -27,6 +50,9 @@ auto DescriptorSet::texture(uint32_t binding, const res::Texture &texture)
 
 auto DescriptorSet::texture(uint32_t binding, const res::Cubemap &cubemap)
     -> DescriptorSet & {
+  if ((cubemap.usage() & VK_IMAGE_USAGE_SAMPLED_BIT) == 0) {
+    VKR_PIPE_ERROR("Texture binding requires SAMPLED usage");
+  }
   assign(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
          cubemap.descriptorInfo());
   return *this;
@@ -99,7 +125,7 @@ void DescriptorSet::create() {
   }
   for (const auto &image : images_) {
     validateBinding(image.binding, image.type);
-    validateImage(image.info);
+    validateImage(image.type, image.info);
   }
 
   const auto layout = layout_.layout();
@@ -171,7 +197,7 @@ void DescriptorSet::assign(uint32_t binding, VkDescriptorType type,
 void DescriptorSet::validateBuffer(VkDescriptorType type,
                                    const VkDescriptorBufferInfo &info) const {
   const bool uniform = type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  const auto &limits = device_.physicalDeviceproperties().limits;
+  const auto &limits = device_.properties().limits;
   const auto alignment = uniform ? limits.minUniformBufferOffsetAlignment
                                  : limits.minStorageBufferOffsetAlignment;
   const auto maxRange =
@@ -185,7 +211,7 @@ void DescriptorSet::validateBuffer(VkDescriptorType type,
 
 void DescriptorSet::assign(uint32_t binding, VkDescriptorType type,
                            VkDescriptorImageInfo info) {
-  validateImage(info);
+  validateImage(type, info);
   if (layout_.valid()) {
     validateBinding(binding, type);
   }
@@ -206,11 +232,24 @@ void DescriptorSet::assign(uint32_t binding, VkDescriptorType type,
   }
 }
 
-void DescriptorSet::validateImage(const VkDescriptorImageInfo &info) {
-  if (info.imageView == VK_NULL_HANDLE || info.sampler == VK_NULL_HANDLE ||
-      info.imageLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
-    VKR_PIPE_ERROR("Texture binding requires a valid image view, sampler, "
-                   "and descriptor layout");
+void DescriptorSet::validateImage(VkDescriptorType type,
+                                  const VkDescriptorImageInfo &info) {
+  if (info.imageView == VK_NULL_HANDLE) {
+    VKR_PIPE_ERROR("Image binding requires a valid image view");
+  }
+  if (type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+    if (info.imageLayout != VK_IMAGE_LAYOUT_GENERAL) {
+      VKR_PIPE_ERROR("Storage image binding requires GENERAL layout");
+    }
+    return;
+  }
+  if (type != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+      info.sampler == VK_NULL_HANDLE ||
+      (info.imageLayout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL &&
+       info.imageLayout != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL &&
+       info.imageLayout != VK_IMAGE_LAYOUT_GENERAL)) {
+    VKR_PIPE_ERROR(
+        "Texture binding requires a sampler and a shader-readable layout");
   }
 }
 
@@ -257,7 +296,7 @@ void DescriptorSet::update() {
       continue;
     }
     validateBinding(image.binding, image.type);
-    validateImage(image.info);
+    validateImage(image.type, image.info);
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.dstSet = set_;

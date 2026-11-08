@@ -3,9 +3,8 @@
 #include "vkr/core/command/pool.hh"
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/buffer.hh"
+#include "vkr/resource/buffer.hh"
 #include <limits>
-#include <memory>
 #include <type_traits>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -36,7 +35,7 @@ public:
   explicit VertexBuffer(const core::Device &device,
                         const core::CommandPool &commandPool)
       : device_(device), command_pool_(commandPool),
-        target_(std::make_unique<res::Buffer>(device)) {}
+        target_(device) {}
 
   ~VertexBuffer() override = default;
 
@@ -59,7 +58,7 @@ public:
 
     vertices_ = vertices;
 
-    if (newBufferSize != oldBufferSize || !target_->isValid()) {
+    if (newBufferSize != oldBufferSize || !target_.isValid()) {
       destroy();
       create();
       return;
@@ -69,11 +68,11 @@ public:
   }
 
   [[nodiscard]] auto buffer() const -> const VkBuffer & override {
-    return target_->buffer();
+    return target_.buffer();
   }
 
   [[nodiscard]] auto memory() const -> const VkDeviceMemory & override {
-    return target_->memory();
+    return target_.memory();
   }
 
   [[nodiscard]] auto vertexCount() const noexcept -> size_t override {
@@ -98,7 +97,7 @@ protected:
     const auto bufferSize =
         static_cast<VkDeviceSize>(sizeof(VertexType) * vertices_.size());
 
-    target_->update(bufferSize,
+    target_.update(bufferSize,
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -106,7 +105,7 @@ protected:
     upload(vertices_.data(), bufferSize);
   }
 
-  void destroy() { target_->destroy(); }
+  void destroy() { target_.destroy(); }
 
   void upload(const VertexType *vertices, VkDeviceSize bufferSize) {
     if (vertices == nullptr || bufferSize == 0) {
@@ -125,7 +124,7 @@ protected:
 
     VkBufferCopy copyRegion{};
     copyRegion.size = bufferSize;
-    vkCmdCopyBuffer(commandBuffer, staging.buffer(), target_->buffer(), 1,
+    vkCmdCopyBuffer(commandBuffer, staging.buffer(), target_.buffer(), 1,
                     &copyRegion);
 
     commands.end();
@@ -152,7 +151,7 @@ protected:
 
   // components
   std::vector<VertexType> vertices_{};
-  std::unique_ptr<res::Buffer> target_{};
+  res::Buffer target_;
 };
 
 } // namespace vkr::scene

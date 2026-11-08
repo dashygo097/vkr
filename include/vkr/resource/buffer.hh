@@ -61,10 +61,6 @@ public:
   [[nodiscard]] auto slice(VkDeviceSize,
                            VkDeviceSize) const && -> BufferSlice = delete;
 
-  static auto findMemoryType(uint32_t typeFilter,
-                             VkMemoryPropertyFlags properties,
-                             const core::Device &device) -> uint32_t;
-
 private:
   friend class BufferSlice;
 

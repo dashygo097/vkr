@@ -3,7 +3,7 @@
 #include "vkr/core/device.hh"
 #include "vkr/core/swapchain.hh"
 #include "vkr/pipeline/attachments/depth.hh"
-#include "vkr/resource/image/image_view.hh"
+#include "vkr/resource/image_view.hh"
 #include <optional>
 #include <utility>
 

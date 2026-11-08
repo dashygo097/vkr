@@ -1,7 +1,7 @@
 #include "vkr/exec/compute/executor.hh"
 #include "vkr/exec/profiler.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/buffer.hh"
+#include "vkr/resource/buffer.hh"
 #include <algorithm>
 
 namespace vkr::exec {

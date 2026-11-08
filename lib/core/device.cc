@@ -71,32 +71,32 @@ void Device::pickPhysicalDevice() {
     compute_family_ = VK_QUEUE_FAMILY_IGNORED;
     transfer_family_ = VK_QUEUE_FAMILY_IGNORED;
 
-    VkPhysicalDeviceProperties physicalDeviceProperties{};
-    vkGetPhysicalDeviceProperties(device, &physicalDeviceProperties);
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(device, &properties);
 
-    VKR_CORE_INFO("--- Device FOUND: {} ---",
-                  physicalDeviceProperties.deviceName);
+    VkPhysicalDeviceMemoryProperties memoryProperties{};
+    vkGetPhysicalDeviceMemoryProperties(device, &memoryProperties);
+
+    VKR_CORE_INFO("--- Device FOUND: {} ---", properties.deviceName);
     VKR_CORE_TRACE("  -- Supported Vulkan API version: {}.{}.{}",
-                   VK_API_VERSION_MAJOR(physicalDeviceProperties.apiVersion),
-                   VK_API_VERSION_MINOR(physicalDeviceProperties.apiVersion),
-                   VK_API_VERSION_PATCH(physicalDeviceProperties.apiVersion));
+                   VK_API_VERSION_MAJOR(properties.apiVersion),
+                   VK_API_VERSION_MINOR(properties.apiVersion),
+                   VK_API_VERSION_PATCH(properties.apiVersion));
     VKR_CORE_TRACE("  -- Driver Version: {}.{}.{}",
-                   VK_VERSION_MAJOR(physicalDeviceProperties.driverVersion),
-                   VK_VERSION_MINOR(physicalDeviceProperties.driverVersion),
-                   VK_VERSION_PATCH(physicalDeviceProperties.driverVersion));
-    VKR_CORE_TRACE("  -- Vendor ID: {:#06x}",
-                   physicalDeviceProperties.vendorID);
-    VKR_CORE_TRACE("  -- Device ID: {:#06x}",
-                   physicalDeviceProperties.deviceID);
+                   VK_VERSION_MAJOR(properties.driverVersion),
+                   VK_VERSION_MINOR(properties.driverVersion),
+                   VK_VERSION_PATCH(properties.driverVersion));
+    VKR_CORE_TRACE("  -- Vendor ID: {:#06x}", properties.vendorID);
+    VKR_CORE_TRACE("  -- Device ID: {:#06x}", properties.deviceID);
 
-    if (VK_API_VERSION_VARIANT(physicalDeviceProperties.apiVersion) != 0 ||
-        physicalDeviceProperties.apiVersion < VK_API_VERSION_1_2) {
+    if (VK_API_VERSION_VARIANT(properties.apiVersion) != 0 ||
+        properties.apiVersion < VK_API_VERSION_1_2) {
       VKR_CORE_WARN("Skipping device without Vulkan 1.2 support: {}",
-                    physicalDeviceProperties.deviceName);
+                    properties.deviceName);
       continue;
     }
     const auto apiVersion =
-        std::min(instance_.apiVersion(), physicalDeviceProperties.apiVersion);
+        std::min(instance_.apiVersion(), properties.apiVersion);
 
     queryDeviceSupport(device);
     resolveQueueFamilies(device);
@@ -113,7 +113,7 @@ void Device::pickPhysicalDevice() {
 
     if (!resolveExtensions(apiVersion)) {
       VKR_CORE_WARN("Skipping device with missing required extension(s): {}",
-                    physicalDeviceProperties.deviceName);
+                    properties.deviceName);
       continue;
     }
 
@@ -127,16 +127,16 @@ void Device::pickPhysicalDevice() {
     vkGetPhysicalDeviceFeatures2(device, &features);
     if (!dynamicRendering.dynamicRendering) {
       VKR_CORE_WARN("Skipping device without the dynamicRendering feature: {}",
-                    physicalDeviceProperties.deviceName);
+                    properties.deviceName);
       continue;
     }
 
     vk_physical_device_ = device;
-    physical_device_properties_ = physicalDeviceProperties;
-    physical_device_features_ = features.features;
+    properties_ = properties;
+    memory_properties_ = memoryProperties;
+    features_ = features.features;
     api_version_ = apiVersion;
-    VKR_CORE_INFO("Selected device: {}",
-                  physical_device_properties_.deviceName);
+    VKR_CORE_INFO("Selected device: {}", properties_.deviceName);
     break;
   }
 
@@ -174,8 +174,7 @@ void Device::createLogicalDevice() {
   }
 
   VkPhysicalDeviceFeatures deviceFeatures{};
-  deviceFeatures.samplerAnisotropy =
-      physical_device_features_.samplerAnisotropy;
+  deviceFeatures.samplerAnisotropy = features_.samplerAnisotropy;
 
   VkDeviceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

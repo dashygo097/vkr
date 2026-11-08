@@ -26,7 +26,7 @@ struct FrameHistoryTargetDesc {
 class FrameHistoryTarget {
 public:
   explicit FrameHistoryTarget(const core::Device &device);
-  ~FrameHistoryTarget();
+  ~FrameHistoryTarget() = default;
 
   FrameHistoryTarget(const FrameHistoryTarget &) = delete;
   auto operator=(const FrameHistoryTarget &) -> FrameHistoryTarget & = delete;

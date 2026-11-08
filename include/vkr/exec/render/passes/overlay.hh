@@ -81,8 +81,13 @@ public:
   auto uniform(uint32_t setIndex, uint32_t binding,
                const std::vector<res::UniformBuffer> &buffers) -> OverlayPass &;
 
-  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
+  auto texture(uint32_t setIndex, uint32_t binding, const res::Texture &texture,
+               const res::Sampler &sampler) -> OverlayPass &;
+  auto storage(uint32_t setIndex, uint32_t binding, const res::Texture &texture)
       -> OverlayPass &;
+
+  auto texture(uint32_t setIndex, uint32_t binding,
+               const res::Texture2D &texture) -> OverlayPass &;
   auto texture(uint32_t setIndex, uint32_t binding, const res::Cubemap &cubemap)
       -> OverlayPass &;
   auto texture(uint32_t setIndex, uint32_t binding,

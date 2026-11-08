@@ -7,9 +7,7 @@ namespace vkr::scene {
 IndexBuffer::IndexBuffer(const core::Device &device,
                          const core::CommandPool &commandPool)
     : device_(device), command_pool_(commandPool),
-      target_(std::make_unique<res::Buffer>(device)) {}
-
-IndexBuffer::~IndexBuffer() = default;
+      target_(device) {}
 
 void IndexBuffer::create() {
   if (indices_.empty()) {
@@ -25,7 +23,7 @@ void IndexBuffer::create() {
                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   staging.write(indices_.data(), bufferSize);
 
-  target_->update(bufferSize,
+  target_.update(bufferSize,
                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                       VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -36,7 +34,7 @@ void IndexBuffer::create() {
 
   VkBufferCopy copyRegion{};
   copyRegion.size = bufferSize;
-  vkCmdCopyBuffer(commandBuffer, staging.buffer(), target_->buffer(), 1,
+  vkCmdCopyBuffer(commandBuffer, staging.buffer(), target_.buffer(), 1,
                   &copyRegion);
 
   VkBufferMemoryBarrier uploadBarrier{};
@@ -45,7 +43,7 @@ void IndexBuffer::create() {
   uploadBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
   uploadBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   uploadBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  uploadBarrier.buffer = target_->buffer();
+  uploadBarrier.buffer = target_.buffer();
   uploadBarrier.size = bufferSize;
   vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 1,
@@ -69,7 +67,7 @@ void IndexBuffer::create() {
 }
 
 void IndexBuffer::destroy() {
-  target_->destroy();
+  target_.destroy();
   indices_.clear();
   max_index_ = 0;
 }

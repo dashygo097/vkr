@@ -9,35 +9,50 @@ std::unordered_map<GLFWwindow *, Window *> Window::windows_{};
 Window::Window(WindowDesc &desc) : desc_(desc) {
   VKR_CORE_INFO("Creating window: {} ({}x{})...", desc_.title, desc_.width,
                 desc_.height);
-  if (!glfwInit()) {
+  const bool firstWindow = windows_.empty();
+  if (firstWindow && !glfwInit()) {
     VKR_CORE_ERROR("Failed to initialize GLFW!");
   }
 
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, desc_.resizable ? GLFW_TRUE : GLFW_FALSE);
+  try {
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, desc_.resizable ? GLFW_TRUE : GLFW_FALSE);
 
-  window_ = glfwCreateWindow(desc_.width, desc_.height, desc_.title.c_str(),
-                             nullptr, nullptr);
-  if (!window_) {
-    glfwTerminate();
-    VKR_CORE_ERROR("Failed to create GLFW window!");
+    window_ = glfwCreateWindow(desc_.width, desc_.height, desc_.title.c_str(),
+                               nullptr, nullptr);
+    if (!window_) {
+      VKR_CORE_ERROR("Failed to create GLFW window!");
+    }
+
+    windows_.emplace(window_, this);
+    glfwSetFramebufferSizeCallback(window_, framebufferSizeCallback);
+    VKR_CORE_INFO("Window created successfully.");
+  } catch (...) {
+    if (window_) {
+      glfwSetFramebufferSizeCallback(window_, nullptr);
+      windows_.erase(window_);
+      glfwDestroyWindow(window_);
+      window_ = nullptr;
+    }
+    if (firstWindow) {
+      glfwTerminate();
+    }
+    throw;
   }
-
-  windows_[window_] = this;
-  glfwSetFramebufferSizeCallback(window_, framebufferSizeCallback);
-
-  VKR_CORE_INFO("Window created successfully.");
 }
 
 Window::~Window() {
-  if (window_) {
-    windows_.erase(window_);
-    glfwSetFramebufferSizeCallback(window_, nullptr);
-    glfwDestroyWindow(window_);
-    window_ = nullptr;
+  if (!window_) {
+    return;
   }
 
-  glfwTerminate();
+  glfwSetFramebufferSizeCallback(window_, nullptr);
+  windows_.erase(window_);
+  glfwDestroyWindow(window_);
+  window_ = nullptr;
+  if (windows_.empty()) {
+    glfwTerminate();
+  }
 }
 
 auto Window::shouldClose() const -> bool {

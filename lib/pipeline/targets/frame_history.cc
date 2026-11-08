@@ -6,8 +6,6 @@ namespace vkr::pipe {
 FrameHistoryTarget::FrameHistoryTarget(const core::Device &device)
     : device_(device) {}
 
-FrameHistoryTarget::~FrameHistoryTarget() { destroy(); }
-
 void FrameHistoryTarget::create() {
   if (desc_.frameCount == 0) {
     VKR_RES_ERROR("FrameHistoryTargetDesc frameCount must be greater than "

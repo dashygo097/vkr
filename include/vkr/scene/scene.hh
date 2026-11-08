@@ -5,8 +5,8 @@
 #include "vkr/core/device.hh"
 #include "vkr/logger.hh"
 #include "vkr/resource/buffers/uniform_buffer.hh"
-#include "vkr/resource/image/cubemap.hh"
-#include "vkr/resource/image/texture.hh"
+#include "vkr/resource/textures/cubemap.hh"
+#include "vkr/resource/textures/texture2d.hh"
 #include "vkr/scene/geometry/mesh.hh"
 #include <array>
 #include <cstdint>
@@ -139,21 +139,22 @@ public:
   void clearSelectedMesh();
 
   // Texture management
-  auto createTexture(std::string name, res::TextureDesc desc) -> res::Texture &;
+  auto createTexture(std::string name, res::Texture2DDesc desc)
+      -> res::Texture2D &;
 
   auto loadTexture(std::string name, const std::filesystem::path &path)
-      -> res::Texture &;
+      -> res::Texture2D &;
 
-  [[nodiscard]] auto texture(std::string_view name) -> res::Texture &;
+  [[nodiscard]] auto texture(std::string_view name) -> res::Texture2D &;
 
   [[nodiscard]] auto texture(std::string_view name) const
-      -> const res::Texture &;
+      -> const res::Texture2D &;
 
   [[nodiscard]] auto findTexture(std::string_view name)
-      -> std::optional<std::reference_wrapper<res::Texture>>;
+      -> std::optional<std::reference_wrapper<res::Texture2D>>;
 
   [[nodiscard]] auto findTexture(std::string_view name) const
-      -> std::optional<std::reference_wrapper<const res::Texture>>;
+      -> std::optional<std::reference_wrapper<const res::Texture2D>>;
 
   auto createCubemap(std::string name, res::CubemapDesc desc) -> res::Cubemap &;
 
@@ -258,7 +259,7 @@ private:
   Transform world_{};
   std::unordered_map<std::string, std::vector<res::UniformBuffer>>
       uniform_buffers_{};
-  ResourceMap<res::Texture> textures_{};
+  ResourceMap<res::Texture2D> textures_{};
   ResourceMap<res::Cubemap> cubemaps_{};
   ResourceMap<IMesh> meshes_{};
   std::string selected_mesh_name_{};

@@ -1,6 +1,6 @@
 #include "vkr/exec/render/executor.hh"
 #include "vkr/logger.hh"
-#include "vkr/resource/buffers/buffer.hh"
+#include "vkr/resource/buffer.hh"
 #include <algorithm>
 #include <array>
 #include <limits>
@@ -343,8 +343,7 @@ void RenderExecutor::bindVertexBuffer(uint32_t binding,
                                       const scene::IVertexBuffer &buffer,
                                       VkDeviceSize offset) {
   ensureRecording("bindVertexBuffer");
-  if (binding >=
-          device_.physicalDeviceproperties().limits.maxVertexInputBindings ||
+  if (binding >= device_.properties().limits.maxVertexInputBindings ||
       buffer.buffer() == VK_NULL_HANDLE || buffer.vertexCount() == 0 ||
       buffer.stride() == 0 ||
       offset / buffer.stride() >= buffer.vertexCount()) {
