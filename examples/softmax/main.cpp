@@ -41,21 +41,8 @@ auto main() -> int {
   auto inBuffer = StorageBuffer<float>{device};
   auto outBuffer = StorageBuffer<float>{device};
 
-  auto inDesc = StorageBufferDesc{};
-  inDesc.elements(ElementCount)
-      .readonly()
-      .storage()
-      .transfer()
-      .hostVisible()
-      .mapped();
-
-  auto outDesc = StorageBufferDesc{};
-  outDesc.elements(ElementCount)
-      .writeonly()
-      .storage()
-      .transfer()
-      .hostVisible()
-      .mapped();
+  const auto inDesc = StorageBufferDesc::input(ElementCount);
+  const auto outDesc = StorageBufferDesc::output(ElementCount);
 
   in.resize(ElementCount);
   out.assign(ElementCount, 0.0f);

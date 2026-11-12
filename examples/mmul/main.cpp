@@ -82,27 +82,9 @@ class MMulApplication final : public ComputeApplication {
       }
     }
 
-    StorageBufferDesc descA{}, descB{}, descC{};
-    descA.elements(M * K)
-        .hostVisible()
-        .storage()
-        .readonly()
-        .transfer()
-        .mapped();
-
-    descB.elements(K * N)
-        .hostVisible()
-        .storage()
-        .readonly()
-        .transfer()
-        .mapped();
-
-    descC.elements(M * N)
-        .hostVisible()
-        .storage()
-        .writeonly()
-        .transfer()
-        .mapped();
+    const auto descA = StorageBufferDesc::input(M * K);
+    const auto descB = StorageBufferDesc::input(K * N);
+    const auto descC = StorageBufferDesc::output(M * N);
 
     input_A_ = std::make_unique<StorageBuffer<float>>(device(), descA);
     input_B_ = std::make_unique<StorageBuffer<float>>(device(), descB);

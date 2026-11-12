@@ -89,21 +89,8 @@ private:
       b_[i] = static_cast<float>(ElementCount - i);
     }
 
-    auto inputDesc = StorageBufferDesc{};
-    inputDesc.elements(ElementCount)
-        .readonly()
-        .storage()
-        .transfer()
-        .hostVisible()
-        .mapped();
-
-    auto outputDesc = StorageBufferDesc{};
-    outputDesc.elements(ElementCount)
-        .writeonly()
-        .storage()
-        .transfer()
-        .hostVisible()
-        .mapped();
+    const auto inputDesc = StorageBufferDesc::input(ElementCount);
+    const auto outputDesc = StorageBufferDesc::output(ElementCount);
 
     input_a_ = std::make_unique<StorageBuffer<float>>(device(), inputDesc);
     input_b_ = std::make_unique<StorageBuffer<float>>(device(), inputDesc);
